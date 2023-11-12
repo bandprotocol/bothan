@@ -68,15 +68,33 @@ impl BinanceWebsocketService {
             token.cancel();
         }
     }
+}
 
-    pub async fn get_price(&mut self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
-        let symbol = format!("{}/{}", base, quote);
-
+impl BinanceWebsocketService {
+    async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
+        let mut prices = Vec::new();
         let locked_cached_price = self.cached_price.lock().await;
-        if let Some(price) = locked_cached_price.get(&symbol) {
-            Ok(price.clone())
-        } else {
-            Err(Error::NotFound(symbol))
+
+        for (base, quote) in symbol_ids {
+            let symbol = format!("{}/{}", base, quote);
+
+            let price = match locked_cached_price.get(&symbol) {
+                Some(price) => Ok(price.clone()),
+                None => Err(Error::NotFound(symbol)),
+            };
+
+            prices.push(price);
         }
+
+        prices
+    }
+
+    pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
+        let symbol_ids = vec![(base, quote)];
+        let mut prices = self.get_prices(&symbol_ids).await;
+
+        prices
+            .pop()
+            .ok_or(Error::NotFound(format!("{}/{}", base, quote)))?
     }
 }

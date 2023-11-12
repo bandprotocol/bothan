@@ -38,19 +38,6 @@ impl CoingeckoBase {
         self
     }
 
-    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
-        match self._get_prices(symbol_ids).await {
-            Ok(results) => results,
-            Err(err) => {
-                tracing::error!("get prices error: {}", err);
-                symbol_ids
-                    .iter()
-                    .map(|_| Err(Error::GeneralQueryPriceError()))
-                    .collect()
-            }
-        }
-    }
-
     async fn _get_prices(
         &self,
         symbol_ids: &[(&str, &str)],
@@ -143,5 +130,29 @@ impl CoingeckoBase {
                 }
             })
             .collect::<Vec<_>>()
+    }
+}
+
+impl CoingeckoBase {
+    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
+        match self._get_prices(symbol_ids).await {
+            Ok(results) => results,
+            Err(err) => {
+                tracing::error!("get prices error: {}", err);
+                symbol_ids
+                    .iter()
+                    .map(|_| Err(Error::GeneralQueryPriceError()))
+                    .collect()
+            }
+        }
+    }
+
+    pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
+        let symbol_ids = vec![(base, quote)];
+        let mut prices = self.get_prices(&symbol_ids).await;
+
+        prices
+            .pop()
+            .ok_or(Error::NotFound(format!("{}/{}", base, quote)))?
     }
 }

@@ -14,8 +14,14 @@ impl CoingeckoPro {
         self.0 = self.0.api_key(api_key);
         self
     }
+}
 
+impl CoingeckoPro {
     pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
         self.0.get_prices(symbol_ids).await
+    }
+
+    pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
+        self.0.get_price(base, quote).await
     }
 }
