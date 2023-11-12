@@ -4,14 +4,14 @@ use itertools::Itertools;
 use reqwest::{Client, Response, StatusCode};
 use serde::Deserialize;
 
-use crate::error::Error;
+use crate::{error::Error, types::PriceInfo};
 
 // id can get from https://www.coingecko.com/api/documentation.
 
-const USD: &str = "usd";
+const USD: &str = "USD";
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct PriceInfo {
+pub struct CoinMarketResponse {
     pub id: String,
     pub symbol: String,
     pub name: String,
@@ -19,16 +19,16 @@ pub struct PriceInfo {
 }
 
 #[derive(Default)]
-pub struct CoingeckoPro {
+pub struct CoingeckoBase {
     api_key: String,
     url: String,
     client: Client,
 }
 
-impl CoingeckoPro {
-    pub fn new() -> Self {
+impl CoingeckoBase {
+    pub fn new(url: String) -> Self {
         Self {
-            url: "https://pro-api.coingecko.com/api/v3".into(),
+            url: url,
             ..Default::default()
         }
     }
@@ -38,11 +38,11 @@ impl CoingeckoPro {
         self
     }
 
-    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<f64, Error>> {
+    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
         match self._get_prices(symbol_ids).await {
             Ok(results) => results,
             Err(err) => {
-                tracing::error!("coingecko pro get prices error: {}", err);
+                tracing::error!("get prices error: {}", err);
                 symbol_ids
                     .iter()
                     .map(|_| Err(Error::GeneralQueryPriceError()))
@@ -54,29 +54,43 @@ impl CoingeckoPro {
     async fn _get_prices(
         &self,
         symbol_ids: &[(&str, &str)],
-    ) -> Result<Vec<Result<f64, Error>>, Error> {
+    ) -> Result<Vec<Result<PriceInfo, Error>>, Error> {
         let unique_ids = self.get_unique_ids(symbol_ids);
 
+        let timestamp = chrono::Utc::now().timestamp() as u64;
         let response = self.send_request(&unique_ids).await?;
 
         let id_to_prices = response
-            .json::<Vec<PriceInfo>>()
+            .json::<Vec<CoinMarketResponse>>()
             .await?
             .into_iter()
             .map(|item| (item.id, item.current_price))
             .collect::<HashMap<String, f64>>();
 
-        let results = self.calculate_pair_prices(symbol_ids, id_to_prices);
+        let prices = self.calculate_pair_prices(symbol_ids, id_to_prices);
+
+        let results = symbol_ids
+            .iter()
+            .zip(prices.into_iter())
+            .map(|((base, quote), price)| {
+                price.map(|price| PriceInfo {
+                    base: base.to_string(),
+                    quote: quote.to_string(),
+                    price,
+                    timestamp,
+                })
+            })
+            .collect::<Vec<_>>();
 
         Ok(results)
     }
 
     async fn send_request(&self, unique_ids: &[&str]) -> Result<Response, Error> {
-        let query = [
-            ("ids", unique_ids.join(",")),
-            ("vs_currency", "usd".into()),
-            ("x_cg_pro_api_key", self.api_key.clone()),
-        ];
+        let mut query = vec![("ids", unique_ids.join(",")), ("vs_currency", "usd".into())];
+        if !self.api_key.is_empty() {
+            query.push(("x_cg_pro_api_key", self.api_key.clone()))
+        }
+
         let url = format!("{}/coins/markets", self.url);
         let response = self.client.get(url).query(&query).send().await?;
         let response_status = response.status();
