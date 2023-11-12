@@ -9,8 +9,17 @@ pub enum Error {
     #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
 
-    #[error("cannot query price data; please try again later")]
+    #[error("cannot query price data; please check error log.")]
     GeneralQueryPriceError(),
+
+    #[error("tokio-tungstenite error: {0}")]
+    TokioTungsteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+
+    #[error("{0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+
+    #[error("{0}")]
+    ParsingFloatError(#[from] std::num::ParseFloatError),
 
     #[error("response status is not OK; got {0}")]
     ResponseStatusNotOk(StatusCode),
