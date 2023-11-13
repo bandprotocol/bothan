@@ -26,8 +26,12 @@ impl BinanceWebsocketBuilder {
             .map(|(base, quote)| (base.to_string(), quote.to_string()))
             .collect::<Vec<_>>();
 
-        self.query_symbols.extend(symbols);
+        self.query_symbols = symbols;
         self
+    }
+
+    pub fn query_symbols(&self) -> &[(String, String)] {
+        &self.query_symbols
     }
 
     pub async fn build(&self) -> Result<BinanceWebsocket, Error> {
