@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "band-price-adapter"
+name = "price-adapter-raw"
 version = "0.1.0"
