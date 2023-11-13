@@ -17,8 +17,8 @@ impl CoingeckoPro {
     }
 
     /// set up an api key.
-    pub fn api_key(mut self, api_key: String) -> Self {
-        self.0 = self.0.api_key(api_key);
+    pub fn set_api_key(mut self, api_key: String) -> Self {
+        self.0 = self.0.set_api_key(api_key);
         self
     }
 
