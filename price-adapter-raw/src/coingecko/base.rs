@@ -6,9 +6,9 @@ use serde::Deserialize;
 
 use crate::{error::Error, types::PriceInfo};
 
-// id can get from https://www.coingecko.com/api/documentation.
+use super::USD;
 
-const USD: &str = "USD";
+// id can get from https://www.coingecko.com/api/documentation.
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CoinMarketResponse {

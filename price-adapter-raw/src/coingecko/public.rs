@@ -1,4 +1,4 @@
-use super::base::CoingeckoBase;
+use super::{base::CoingeckoBase, PUBLIC_ENDPOINT};
 use crate::{error::Error, types::PriceInfo};
 
 /// An object to query Coingecko public api.
@@ -12,9 +12,7 @@ impl Default for CoingeckoPublic {
 
 impl CoingeckoPublic {
     pub fn new() -> Self {
-        Self(CoingeckoBase::new(
-            "https://api.coingecko.com/api/v3/".into(),
-        ))
+        Self(CoingeckoBase::new(PUBLIC_ENDPOINT.into()))
     }
 
     /// get pair prices from the given queries (list of a tuple of (base, quote)).

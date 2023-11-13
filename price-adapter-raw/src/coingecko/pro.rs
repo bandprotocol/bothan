@@ -1,4 +1,4 @@
-use super::base::CoingeckoBase;
+use super::{base::CoingeckoBase, PRO_ENDPOINT};
 use crate::{error::Error, types::PriceInfo};
 
 /// An object to query Coingecko pro api.
@@ -13,9 +13,7 @@ impl Default for CoingeckoPro {
 impl CoingeckoPro {
     /// initiate new api object.
     pub fn new() -> Self {
-        Self(CoingeckoBase::new(
-            "https://pro-api.coingecko.com/api/v3/".into(),
-        ))
+        Self(CoingeckoBase::new(PRO_ENDPOINT.into()))
     }
 
     /// set up an api key.

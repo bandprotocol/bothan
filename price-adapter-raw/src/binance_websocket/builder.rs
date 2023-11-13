@@ -3,7 +3,7 @@ use tokio_tungstenite::connect_async;
 
 use crate::error::Error;
 
-use super::websocket::BinanceWebsocket;
+use super::{websocket::BinanceWebsocket, WEBSOCKET_URL};
 
 /// An object for creating a binance websocket.
 #[derive(Default)]
@@ -15,7 +15,7 @@ pub struct BinanceWebsocketBuilder {
 impl BinanceWebsocketBuilder {
     pub fn new() -> Self {
         Self {
-            url: "wss://stream.binance.com:9443".into(),
+            url: WEBSOCKET_URL.into(),
             ..Default::default()
         }
     }
