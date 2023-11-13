@@ -83,7 +83,7 @@ impl Stream for BinanceWebsocket {
                         Ok(info) => info,
                         Err(err) => {
                             tracing::error!("cannot convert received text to PriceInfo: {}", err);
-                            return Poll::Ready(Some(Err(err.into())));
+                            return Poll::Ready(Some(Err(err)));
                         }
                     };
 

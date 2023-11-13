@@ -30,7 +30,7 @@ impl CoingeckoBase {
     /// initiate new api object.
     pub fn new(url: String) -> Self {
         Self {
-            url: url,
+            url,
             ..Default::default()
         }
     }

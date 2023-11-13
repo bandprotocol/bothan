@@ -22,7 +22,7 @@ impl BinanceWebsocketBuilder {
 
     pub fn set_query_symbols(mut self, symbols: &[(&str, &str)]) -> Self {
         let symbols = symbols
-            .into_iter()
+            .iter()
             .map(|(base, quote)| (base.to_string(), quote.to_string()))
             .collect::<Vec<_>>();
 

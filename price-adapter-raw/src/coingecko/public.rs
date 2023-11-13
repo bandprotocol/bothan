@@ -4,6 +4,12 @@ use crate::{error::Error, types::PriceInfo};
 /// An object to query Coingecko public api.
 pub struct CoingeckoPublic(CoingeckoBase);
 
+impl Default for CoingeckoPublic {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoingeckoPublic {
     pub fn new() -> Self {
         Self(CoingeckoBase::new(
