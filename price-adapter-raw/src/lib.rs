@@ -11,7 +11,7 @@
 //! ## Coingecko
 //! To use coingecko api, you need to create a `CoingeckoPro` instance and set the api key.
 //! ```rust
-//! use price_explorer::CoingeckoPro;
+//! use price_adapter_raw::CoingeckoPro;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -26,7 +26,7 @@
 //! To use binance websocket api, you need to create a `BinanceWebsocket` instance and set the
 //! query symbols.
 //! ```rust
-//! use price_explorer::BinanceWebsocketBuilder;
+//! use price_adapter_raw::BinanceWebsocketBuilder;
 //! use futures_util::StreamExt;
 //!
 //! #[tokio::main]
@@ -53,7 +53,7 @@
 //!
 //! Or use `BinanceWebsocketService` to query price data.
 //! ```rust
-//! use price_explorer::{BinanceWebsocketBuilder, BinanceWebsocketService};
+//! use price_adapter_raw::{BinanceWebsocketBuilder, BinanceWebsocketService};
 //! use std::time::Duration;
 //!
 //! #[tokio::main]
