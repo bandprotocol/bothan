@@ -5,6 +5,7 @@ use crate::error::Error;
 
 use super::websocket::BinanceWebsocket;
 
+/// An object for creating a binance websocket.
 #[derive(Default)]
 pub struct BinanceWebsocketBuilder {
     url: String,

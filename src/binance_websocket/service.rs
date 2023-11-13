@@ -6,6 +6,7 @@ use tokio_util::sync::CancellationToken;
 use super::websocket::BinanceWebsocket;
 use crate::{error::Error, types::PriceInfo};
 
+/// A caching object storing prices received from binance websocket.
 pub struct BinanceWebsocketService {
     socket: Arc<Mutex<BinanceWebsocket>>,
     cached_price: Arc<Mutex<HashMap<String, PriceInfo>>>,
@@ -13,6 +14,7 @@ pub struct BinanceWebsocketService {
 }
 
 impl BinanceWebsocketService {
+    /// initiate new object from created socket.
     pub fn new(socket: BinanceWebsocket) -> Self {
         Self {
             socket: Arc::new(Mutex::new(socket)),
@@ -21,6 +23,7 @@ impl BinanceWebsocketService {
         }
     }
 
+    /// start a service.
     pub fn start(&mut self) -> Result<(), Error> {
         self.stop();
 
@@ -63,15 +66,15 @@ impl BinanceWebsocketService {
         Ok(())
     }
 
+    /// stop a service.
     pub fn stop(&mut self) {
         if let Some(token) = &self.cancellation_token {
             token.cancel();
         }
     }
-}
 
-impl BinanceWebsocketService {
-    async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
+    /// get pair prices from the given queries (list of a tuple of (base, quote)).
+    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
         let mut prices = Vec::new();
         let locked_cached_price = self.cached_price.lock().await;
 
@@ -89,6 +92,7 @@ impl BinanceWebsocketService {
         prices
     }
 
+    /// get a pair price from the given query.
     pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
         let symbol_ids = vec![(base, quote)];
         let mut prices = self.get_prices(&symbol_ids).await;

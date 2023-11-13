@@ -11,6 +11,7 @@ use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use crate::{error::Error, types::PriceInfo};
 
+/// A binance websocket object.
 pub struct BinanceWebsocket {
     socket: WebSocketStream<MaybeTlsStream<TcpStream>>,
     stream_id_to_symbols: HashMap<String, (String, String)>,

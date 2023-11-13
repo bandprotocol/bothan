@@ -18,6 +18,7 @@ pub struct CoinMarketResponse {
     pub current_price: f64,
 }
 
+/// Base object to query Coingecko api.
 #[derive(Default)]
 pub struct CoingeckoBase {
     api_key: String,
@@ -26,6 +27,7 @@ pub struct CoingeckoBase {
 }
 
 impl CoingeckoBase {
+    /// initiate new api object.
     pub fn new(url: String) -> Self {
         Self {
             url: url,
@@ -33,6 +35,7 @@ impl CoingeckoBase {
         }
     }
 
+    /// set up an api key.
     pub fn api_key(mut self, api_key: String) -> Self {
         self.api_key = api_key;
         self
@@ -131,9 +134,8 @@ impl CoingeckoBase {
             })
             .collect::<Vec<_>>()
     }
-}
 
-impl CoingeckoBase {
+    /// get pair prices from the given queries (list of a tuple of (base, quote)).
     pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
         match self._get_prices(symbol_ids).await {
             Ok(results) => results,
@@ -147,6 +149,7 @@ impl CoingeckoBase {
         }
     }
 
+    /// get a pair price from the given query.
     pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
         let symbol_ids = vec![(base, quote)];
         let mut prices = self.get_prices(&symbol_ids).await;
