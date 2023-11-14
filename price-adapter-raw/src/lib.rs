@@ -16,7 +16,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!     let coingecko = CoingeckoPro::new().set_api_key("$API_KEY".into());
-//!     let queries = vec![("ethereum", "USD")];
+//!     let queries = vec!["ethereum"];
 //!     let prices = coingecko.get_prices(&queries).await;
 //!     println!("prices: {:?}", prices);
 //! }
@@ -32,7 +32,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!    let mut binance_ws = BinanceWebsocketBuilder::new()
-//!         .set_query_symbols(&[("eth", "btc"), ("btc", "usdt")])
+//!         .set_ids(&["ethbtc", "btcusdt"])
 //!         .build()
 //!         .await
 //!         .unwrap();
@@ -59,7 +59,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!    let mut binance_ws = BinanceWebsocketBuilder::new()
-//!         .set_query_symbols(&[("eth", "btc"), ("btc", "usdt")])
+//!         .set_ids(&["ethbtc", "btcusdt"])
 //!         .build()
 //!         .await
 //!         .unwrap();
@@ -67,7 +67,7 @@
 //!     service.start().unwrap();
 //!     tokio::time::sleep(Duration::from_secs(1)).await;
 //!
-//!     let price = service.get_price("btc", "usdt").await;
+//!     let price = service.get_prices(&["btcusdt"]).await;
 //!     println!("price: {:?}", price);
 //! }
 //! ```

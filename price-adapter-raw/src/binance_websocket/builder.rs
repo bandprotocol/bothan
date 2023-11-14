@@ -9,7 +9,7 @@ use super::{websocket::BinanceWebsocket, WEBSOCKET_URL};
 #[derive(Default)]
 pub struct BinanceWebsocketBuilder {
     url: String,
-    query_symbols: Vec<(String, String)>,
+    ids: Vec<String>,
 }
 
 impl BinanceWebsocketBuilder {
@@ -20,25 +20,20 @@ impl BinanceWebsocketBuilder {
         }
     }
 
-    pub fn set_query_symbols(mut self, symbols: &[(&str, &str)]) -> Self {
-        let symbols = symbols
-            .iter()
-            .map(|(base, quote)| (base.to_string(), quote.to_string()))
-            .collect::<Vec<_>>();
-
-        self.query_symbols = symbols;
+    pub fn set_ids(mut self, ids: &[&str]) -> Self {
+        self.ids = ids.iter().map(|id| id.to_string()).collect();
         self
     }
 
-    pub fn query_symbols(&self) -> &[(String, String)] {
-        &self.query_symbols
+    pub fn ids(&self) -> &[String] {
+        &self.ids
     }
 
     pub async fn build(&self) -> Result<BinanceWebsocket, Error> {
         let streams = self
-            .query_symbols
+            .ids
             .iter()
-            .map(|(base, quote)| format!("{}{}@miniTicker", base, quote,))
+            .map(|id| format!("{}@miniTicker", id))
             .collect::<Vec<_>>();
 
         let ws_url = format!("{}/stream?streams={}", self.url, streams.join("/"));
@@ -50,6 +45,6 @@ impl BinanceWebsocketBuilder {
             return Err(Error::ResponseStatusNotOk(response_status));
         }
 
-        Ok(BinanceWebsocket::new(socket, &self.query_symbols))
+        Ok(BinanceWebsocket::new(socket))
     }
 }

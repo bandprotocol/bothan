@@ -47,8 +47,7 @@ impl BinanceWebsocketService {
                         match result {
                             Some(Ok(price_info)) => {
                                 let mut locked_cached_price = cloned_cached_price.lock().await;
-                                let symbol = format!("{}/{}", price_info.base, price_info.quote);
-                                locked_cached_price.insert(symbol, price_info);
+                                locked_cached_price.insert(price_info.id.to_string(), price_info);
                             }
                             Some(Err(err)) => {
                                 tracing::error!("cannot get price: {}", err);
@@ -73,32 +72,19 @@ impl BinanceWebsocketService {
         }
     }
 
-    /// get pair prices from the given queries (list of a tuple of (base, quote)).
-    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
+    pub async fn get_prices(&self, ids: &[&str]) -> Vec<Result<PriceInfo, Error>> {
         let mut prices = Vec::new();
         let locked_cached_price = self.cached_price.lock().await;
 
-        for (base, quote) in symbol_ids {
-            let symbol = format!("{}/{}", base, quote);
-
-            let price = match locked_cached_price.get(&symbol) {
+        for &id in ids {
+            let price = match locked_cached_price.get(&id.to_ascii_uppercase()) {
                 Some(price) => Ok(price.clone()),
-                None => Err(Error::NotFound(symbol)),
+                None => Err(Error::NotFound(id.to_string())),
             };
 
             prices.push(price);
         }
 
         prices
-    }
-
-    /// get a pair price from the given query.
-    pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
-        let symbol_ids = vec![(base, quote)];
-        let mut prices = self.get_prices(&symbol_ids).await;
-
-        prices
-            .pop()
-            .ok_or(Error::NotFound(format!("{}/{}", base, quote)))?
     }
 }

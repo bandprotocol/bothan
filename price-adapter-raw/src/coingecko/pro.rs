@@ -22,13 +22,7 @@ impl CoingeckoPro {
         self
     }
 
-    /// get pair prices from the given queries (list of a tuple of (base, quote)).
-    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
-        self.0.get_prices(symbol_ids).await
-    }
-
-    /// get a pair price from the given query.
-    pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
-        self.0.get_price(base, quote).await
+    pub async fn get_prices(&self, ids: &[&str]) -> Vec<Result<PriceInfo, Error>> {
+        self.0.get_prices(ids).await
     }
 }

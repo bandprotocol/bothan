@@ -1,14 +1,10 @@
 use std::collections::HashMap;
 
-use itertools::Itertools;
+use chrono::{NaiveDateTime, TimeZone, Utc};
 use reqwest::{Client, Response, StatusCode};
 use serde::Deserialize;
 
 use crate::{error::Error, types::PriceInfo};
-
-use super::USD;
-
-// id can get from https://www.coingecko.com/api/documentation.
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CoinMarketResponse {
@@ -16,6 +12,7 @@ pub struct CoinMarketResponse {
     pub symbol: String,
     pub name: String,
     pub current_price: f64,
+    pub last_updated: String,
 }
 
 /// Base object to query Coingecko api.
@@ -41,33 +38,49 @@ impl CoingeckoBase {
         self
     }
 
-    async fn _get_prices(
-        &self,
-        symbol_ids: &[(&str, &str)],
-    ) -> Result<Vec<Result<PriceInfo, Error>>, Error> {
-        let unique_ids = self.get_unique_ids(symbol_ids);
+    pub async fn get_prices(&self, ids: &[&str]) -> Vec<Result<PriceInfo, Error>> {
+        match self._get_prices(ids).await {
+            Ok(results) => results,
+            Err(err) => {
+                tracing::error!("get prices error: {}", err);
+                ids.iter()
+                    .map(|_| Err(Error::GeneralQueryPriceError()))
+                    .collect()
+            }
+        }
+    }
 
-        let timestamp = chrono::Utc::now().timestamp() as u64;
-        let response = self.send_request(&unique_ids).await?;
+    async fn _get_prices(&self, ids: &[&str]) -> Result<Vec<Result<PriceInfo, Error>>, Error> {
+        let response = self.send_request(ids).await?;
 
-        let id_to_prices = response
-            .json::<Vec<CoinMarketResponse>>()
-            .await?
+        let parsed_response = response.json::<Vec<CoinMarketResponse>>().await?;
+
+        let id_to_response = parsed_response
             .into_iter()
-            .map(|item| (item.id, item.current_price))
-            .collect::<HashMap<String, f64>>();
+            .map(|item| (item.id.to_string(), item))
+            .collect::<HashMap<String, CoinMarketResponse>>();
 
-        let prices = self.calculate_pair_prices(symbol_ids, id_to_prices);
-
-        let results = symbol_ids
+        let results = ids
             .iter()
-            .zip(prices.into_iter())
-            .map(|((base, quote), price)| {
-                price.map(|price| PriceInfo {
-                    base: base.to_string(),
-                    quote: quote.to_string(),
-                    price,
-                    timestamp,
+            .map(|&id| {
+                let Some(price_info) = id_to_response.get(id) else {
+                    return Err(Error::NotFound("price info".into()));
+                };
+
+                let naive_datetime = match NaiveDateTime::parse_from_str(
+                    &price_info.last_updated,
+                    "%Y-%m-%dT%H:%M:%S.%fZ",
+                ) {
+                    Ok(datetime) => datetime,
+                    Err(err) => return Err(err.into()),
+                };
+
+                let datetime = Utc.from_utc_datetime(&naive_datetime);
+
+                Ok(PriceInfo {
+                    id: id.to_string(),
+                    price: price_info.current_price,
+                    timestamp: datetime.timestamp() as u64,
                 })
             })
             .collect::<Vec<_>>();
@@ -94,68 +107,5 @@ impl CoingeckoBase {
         }
 
         Ok(response)
-    }
-
-    fn get_unique_ids<'a>(&self, symbol_ids: &[(&'a str, &'a str)]) -> Vec<&'a str> {
-        let (base_ids, quote_ids): (Vec<&str>, Vec<&str>) =
-            symbol_ids.iter().map(|(base, quote)| (base, quote)).unzip();
-
-        base_ids
-            .iter()
-            .chain(quote_ids.iter())
-            .unique()
-            .filter(|&&id| id != USD)
-            .copied()
-            .collect::<Vec<_>>()
-    }
-
-    fn calculate_pair_prices(
-        &self,
-        symbol_ids: &[(&str, &str)],
-        id_to_prices: HashMap<String, f64>,
-    ) -> Vec<Result<f64, Error>> {
-        symbol_ids
-            .iter()
-            .map(|(base, quote)| {
-                let base_price = id_to_prices.get(*base).copied();
-                let quote_price = id_to_prices.get(*quote).copied();
-
-                match (*quote, base_price, quote_price) {
-                    (USD, Some(price), _) => Ok(price),
-                    (_, None, _) | (_, _, None) => Err(Error::NotFound((*base).into())),
-                    (_, Some(base_price), Some(quote_price)) => {
-                        if quote_price != 0.0 {
-                            Ok(base_price / quote_price)
-                        } else {
-                            Err(Error::ZeroPrice((*quote).into()))
-                        }
-                    }
-                }
-            })
-            .collect::<Vec<_>>()
-    }
-
-    /// get pair prices from the given queries (list of a tuple of (base, quote)).
-    pub async fn get_prices(&self, symbol_ids: &[(&str, &str)]) -> Vec<Result<PriceInfo, Error>> {
-        match self._get_prices(symbol_ids).await {
-            Ok(results) => results,
-            Err(err) => {
-                tracing::error!("get prices error: {}", err);
-                symbol_ids
-                    .iter()
-                    .map(|_| Err(Error::GeneralQueryPriceError()))
-                    .collect()
-            }
-        }
-    }
-
-    /// get a pair price from the given query.
-    pub async fn get_price(&self, base: &str, quote: &str) -> Result<PriceInfo, Error> {
-        let symbol_ids = vec![(base, quote)];
-        let mut prices = self.get_prices(&symbol_ids).await;
-
-        prices
-            .pop()
-            .ok_or(Error::NotFound(format!("{}/{}", base, quote)))?
     }
 }

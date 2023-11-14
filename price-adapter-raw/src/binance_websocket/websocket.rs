@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -14,14 +13,19 @@ use crate::{error::Error, types::PriceInfo};
 /// A binance websocket object.
 pub struct BinanceWebsocket {
     socket: WebSocketStream<MaybeTlsStream<TcpStream>>,
-    stream_id_to_symbols: HashMap<String, (String, String)>,
     ended: bool,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct MiniTickerInfo {
+    #[serde(rename = "s")]
+    id: String,
+
     #[serde(rename = "c")]
     current_price: String,
+
+    #[serde(rename = "E")]
+    timestamp: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,21 +35,9 @@ pub struct MiniTickerResponse {
 }
 
 impl BinanceWebsocket {
-    pub fn new(
-        socket: WebSocketStream<MaybeTlsStream<TcpStream>>,
-        symbols: &[(String, String)],
-    ) -> Self {
-        let stream_id_to_symbols = symbols
-            .iter()
-            .map(|(base, quote)| {
-                let stream_id = format!("{}{}@miniTicker", base, quote);
-                (stream_id, (base.clone(), quote.clone()))
-            })
-            .collect();
-
+    pub fn new(socket: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         Self {
             socket,
-            stream_id_to_symbols,
             ended: false,
         }
     }
@@ -53,17 +45,18 @@ impl BinanceWebsocket {
     fn to_price_info(&self, mini_ticker_resp: String) -> Result<PriceInfo, Error> {
         let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&mini_ticker_resp)?;
 
-        let (base, quote) = self
-            .stream_id_to_symbols
-            .get(&mini_ticker_response.stream)
-            .ok_or(Error::NotFound(mini_ticker_response.stream.clone()))?;
+        let MiniTickerInfo {
+            id,
+            current_price,
+            timestamp,
+            ..
+        } = mini_ticker_response.data;
 
-        let price = mini_ticker_response.data.current_price.parse::<f64>()?;
+        let price = current_price.parse::<f64>()?;
         Ok(PriceInfo {
-            base: base.to_string(),
-            quote: quote.to_string(),
+            id,
             price,
-            timestamp: chrono::Utc::now().timestamp() as u64,
+            timestamp,
         })
     }
 }
