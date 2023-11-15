@@ -4,9 +4,10 @@ use std::{
 };
 
 use futures_util::{stream::FusedStream, Stream, StreamExt};
+use reqwest::StatusCode;
 use serde::Deserialize;
 use tokio::net::TcpStream;
-use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use crate::{error::Error, types::PriceInfo};
 
@@ -35,11 +36,25 @@ pub struct MiniTickerResponse {
 }
 
 impl BinanceWebsocket {
-    pub fn new(socket: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
-        Self {
+    pub async fn new(url: &str, ids: &[&str]) -> Result<Self, Error> {
+        let stream_ids = ids
+            .iter()
+            .map(|id| format!("{}@miniTicker", id))
+            .collect::<Vec<_>>();
+
+        let ws_url = format!("{}/stream?streams={}", url, stream_ids.join("/"));
+        let (socket, response) = connect_async(ws_url).await?;
+
+        let response_status = response.status();
+        if StatusCode::is_success(&response_status) {
+            tracing::error!("query request get error status {}", response_status);
+            return Err(Error::ResponseStatusNotOk(response_status));
+        }
+
+        Ok(Self {
             socket,
             ended: false,
-        }
+        })
     }
 
     fn to_price_info(&self, mini_ticker_resp: String) -> Result<PriceInfo, Error> {

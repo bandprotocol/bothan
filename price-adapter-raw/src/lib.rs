@@ -11,11 +11,11 @@
 //! ## Coingecko
 //! To use coingecko api, you need to create a `CoingeckoPro` instance and set the api key.
 //! ```rust
-//! use price_adapter_raw::CoingeckoPro;
+//! use price_adapter_raw::CoinGecko;
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let coingecko = CoingeckoPro::new().set_api_key("$API_KEY".into());
+//!     let coingecko = CoinGecko::new(Some("$API_KEY".into())).unwrap();
 //!     let queries = vec!["ethereum"];
 //!     let prices = coingecko.get_prices(&queries).await;
 //!     println!("prices: {:?}", prices);
@@ -26,14 +26,12 @@
 //! To use binance websocket api, you need to create a `BinanceWebsocket` instance and set the
 //! query symbols.
 //! ```rust
-//! use price_adapter_raw::BinanceWebsocketBuilder;
+//! use price_adapter_raw::BinanceWebsocket;
 //! use futures_util::StreamExt;
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!    let mut binance_ws = BinanceWebsocketBuilder::new()
-//!         .set_ids(&["ethbtc", "btcusdt"])
-//!         .build()
+//!    let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"])
 //!         .await
 //!         .unwrap();
 //!     while let Some(data) = binance_ws.next().await {
@@ -53,14 +51,12 @@
 //!
 //! Or use `BinanceWebsocketService` to query price data.
 //! ```rust
-//! use price_adapter_raw::{BinanceWebsocketBuilder, BinanceWebsocketService};
+//! use price_adapter_raw::{BinanceWebsocket, BinanceWebsocketService};
 //! use std::time::Duration;
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!    let mut binance_ws = BinanceWebsocketBuilder::new()
-//!         .set_ids(&["ethbtc", "btcusdt"])
-//!         .build()
+//!    let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"])
 //!         .await
 //!         .unwrap();
 //!     let mut service = BinanceWebsocketService::new(binance_ws);
@@ -77,5 +73,5 @@ mod coingecko;
 mod error;
 mod types;
 
-pub use binance_websocket::{BinanceWebsocket, BinanceWebsocketBuilder, BinanceWebsocketService};
-pub use coingecko::{CoingeckoPro, CoingeckoPublic};
+pub use binance_websocket::{BinanceWebsocket, BinanceWebsocketService};
+pub use coingecko::CoinGecko;

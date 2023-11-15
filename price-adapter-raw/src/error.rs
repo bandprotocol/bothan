@@ -51,3 +51,9 @@ impl From<chrono::ParseError> for Error {
         Self::ParsingError("chrono::ParseError".into(), err.to_string())
     }
 }
+
+impl From<reqwest::header::InvalidHeaderValue> for Error {
+    fn from(err: reqwest::header::InvalidHeaderValue) -> Self {
+        Self::ParsingError("reqwest::header::InvalidHeaderValue".into(), err.to_string())
+    }
+}
