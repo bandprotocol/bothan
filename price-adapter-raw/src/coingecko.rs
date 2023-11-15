@@ -47,7 +47,7 @@ impl CoinGecko {
         match self._get_prices(ids).await {
             Ok(results) => results,
             Err(err) => {
-                tracing::error!("get prices error: {}", err);
+                tracing::trace!("get prices error: {}", err);
                 ids.iter()
                     .map(|_| Err(Error::GeneralQueryPriceError()))
                     .collect()
@@ -103,7 +103,7 @@ impl CoinGecko {
         let response = self.client.get(url).query(&query).send().await?;
         let response_status = response.status();
         if response_status != StatusCode::OK {
-            tracing::error!(
+            tracing::trace!(
                 "query request get error status {} {}",
                 response_status,
                 response.text().await?

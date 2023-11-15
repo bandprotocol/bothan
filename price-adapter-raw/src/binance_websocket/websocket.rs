@@ -74,7 +74,7 @@ impl BinanceWebsocket {
 
         let response_status = response.status();
         if StatusCode::is_success(&response_status) {
-            tracing::error!("query request get error status {}", response_status);
+            tracing::trace!("query request get error status {}", response_status);
             return Err(Error::ResponseStatusNotOk(response_status));
         }
 
@@ -106,7 +106,7 @@ impl Stream for BinanceWebsocket {
                     let price_info = match parse_into_price_info(text) {
                         Ok(info) => info,
                         Err(err) => {
-                            tracing::error!("cannot convert received text to PriceInfo: {}", err);
+                            tracing::trace!("cannot convert received text to PriceInfo: {}", err);
                             return Poll::Ready(Some(Err(err)));
                         }
                     };
@@ -114,7 +114,7 @@ impl Stream for BinanceWebsocket {
                     Poll::Ready(Some(Ok(price_info)))
                 }
                 Ok(_) => {
-                    tracing::error!("received non-text message");
+                    tracing::trace!("received non-text message");
                     Poll::Pending
                 }
                 Err(err) => Poll::Ready(Some(Err(err.into()))),

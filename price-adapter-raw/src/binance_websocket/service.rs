@@ -58,10 +58,10 @@ impl BinanceWebsocketService {
                                 locked_cached_price.insert(price_info.id.to_string(), price_info);
                             }
                             Some(Err(err)) => {
-                                tracing::error!("cannot get price: {}", err);
+                                tracing::trace!("cannot get price: {}", err);
                             }
                             None => {
-                                tracing::error!("cannot get price: stream ended");
+                                tracing::trace!("cannot get price: stream ended");
                                 break;
                             }
                         }
