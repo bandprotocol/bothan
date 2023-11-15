@@ -39,7 +39,7 @@ impl CoinGecko {
         Self {
             api_key,
             url: PRO_ENDPOINT.into(),
-            ..Default::default()
+            ..Self::default()
         }
     }
 
