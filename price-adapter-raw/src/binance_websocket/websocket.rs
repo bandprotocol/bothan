@@ -13,7 +13,8 @@ use crate::{error::Error, types::PriceInfo};
 
 /// A binance websocket object.
 pub struct BinanceWebsocket {
-    socket: WebSocketStream<MaybeTlsStream<TcpStream>>,
+    url: String,
+    socket: Option<WebSocketStream<MaybeTlsStream<TcpStream>>>,
     ended: bool,
 }
 
@@ -35,7 +36,7 @@ pub struct MiniTickerResponse {
     pub data: MiniTickerInfo,
 }
 
-fn to_price_info(mini_ticker_resp: String) -> Result<PriceInfo, Error> {
+fn parse_into_price_info(mini_ticker_resp: String) -> Result<PriceInfo, Error> {
     let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&mini_ticker_resp)?;
 
     let MiniTickerInfo {
@@ -54,14 +55,23 @@ fn to_price_info(mini_ticker_resp: String) -> Result<PriceInfo, Error> {
 }
 
 impl BinanceWebsocket {
-    pub async fn new(url: &str, ids: &[&str]) -> Result<Self, Error> {
+    pub fn new(url: &str, ids: &[&str]) -> Self {
         let stream_ids = ids
             .iter()
             .map(|id| format!("{}@miniTicker", id))
             .collect::<Vec<_>>();
 
         let ws_url = format!("{}/stream?streams={}", url, stream_ids.join("/"));
-        let (socket, response) = connect_async(ws_url).await?;
+
+        Self {
+            url: ws_url,
+            socket: None,
+            ended: false,
+        }
+    }
+
+    pub async fn connect(&mut self) -> Result<(), Error> {
+        let (socket, response) = connect_async(&self.url).await?;
 
         let response_status = response.status();
         if StatusCode::is_success(&response_status) {
@@ -69,10 +79,13 @@ impl BinanceWebsocket {
             return Err(Error::ResponseStatusNotOk(response_status));
         }
 
-        Ok(Self {
-            socket,
-            ended: false,
-        })
+        self.socket = Some(socket);
+
+        Ok(())
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.socket.is_some()
     }
 }
 
@@ -84,10 +97,14 @@ impl Stream for BinanceWebsocket {
             return Poll::Ready(None);
         }
 
-        match self.socket.poll_next_unpin(cx) {
+        let Some(socket) = self.socket.as_mut() else {
+            return Poll::Ready(None);
+        };
+
+        match socket.poll_next_unpin(cx) {
             Poll::Ready(Some(message)) => match message {
                 Ok(Message::Text(text)) => {
-                    let price_info = match to_price_info(text) {
+                    let price_info = match parse_into_price_info(text) {
                         Ok(info) => info,
                         Err(err) => {
                             tracing::error!("cannot convert received text to PriceInfo: {}", err);

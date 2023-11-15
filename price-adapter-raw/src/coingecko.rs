@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use reqwest::{header::HeaderMap, Client, Response, StatusCode};
+use reqwest::{Client, Response, StatusCode};
 use serde::Deserialize;
 
 use crate::{error::Error, types::PriceInfo};
@@ -21,28 +21,25 @@ pub struct CoinMarketResponse {
 /// Base object to query CoinGecko api.
 #[derive(Default)]
 pub struct CoinGecko {
-    header: HeaderMap,
+    api_key: String,
     url: String,
     client: Client,
 }
 
 impl CoinGecko {
     /// initiate new api object.
-    pub fn new(api_key: Option<String>) -> Result<Self, Error> {
+    pub fn new(api_key: Option<String>) -> Self {
         if let Some(api_key) = api_key {
-            let mut header = HeaderMap::new();
-            header.insert("x-cg-pro-api-key", api_key.parse()?);
-
-            Ok(Self {
+            Self {
+                api_key,
                 url: PRO_ENDPOINT.into(),
-                header,
                 ..Default::default()
-            })
+            }
         } else {
-            Ok(Self {
+            Self {
                 url: PUBLIC_ENDPOINT.into(),
                 ..Self::default()
-            })
+            }
         }
     }
 
@@ -97,16 +94,13 @@ impl CoinGecko {
     }
 
     async fn send_request(&self, unique_ids: &[&str]) -> Result<Response, Error> {
-        let query = vec![("ids", unique_ids.join(",")), ("vs_currency", "usd".into())];
+        let mut query = vec![("ids", unique_ids.join(",")), ("vs_currency", "usd".into())];
+        if !self.api_key.is_empty() {
+            query.push(("x_cg_pro_api_key", self.api_key.clone()));
+        }
 
         let url = format!("{}/coins/markets", self.url);
-        let response = self
-            .client
-            .get(url)
-            .headers(self.header.clone())
-            .query(&query)
-            .send()
-            .await?;
+        let response = self.client.get(url).query(&query).send().await?;
         let response_status = response.status();
         if response_status != StatusCode::OK {
             tracing::error!(

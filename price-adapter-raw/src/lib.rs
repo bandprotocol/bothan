@@ -15,7 +15,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let coingecko = CoinGecko::new(Some("$API_KEY".into())).unwrap();
+//!     let coingecko = CoinGecko::new(Some("$API_KEY".into()));
 //!     let queries = vec!["ethereum"];
 //!     let prices = coingecko.get_prices(&queries).await;
 //!     println!("prices: {:?}", prices);
@@ -31,9 +31,8 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!    let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"])
-//!         .await
-//!         .unwrap();
+//!     let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"]);
+//!     binance_ws.connect().await.unwrap();
 //!     while let Some(data) = binance_ws.next().await {
 //!         match data {
 //!             Ok(price) => {
@@ -56,11 +55,10 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!    let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"])
-//!         .await
-//!         .unwrap();
+//!     let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"]);
+//!
 //!     let mut service = BinanceWebsocketService::new(binance_ws);
-//!     service.start().unwrap();
+//!     service.start().await.unwrap();
 //!     tokio::time::sleep(Duration::from_secs(1)).await;
 //!
 //!     let price = service.get_prices(&["btcusdt"]).await;

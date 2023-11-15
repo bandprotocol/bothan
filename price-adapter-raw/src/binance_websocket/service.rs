@@ -24,8 +24,14 @@ impl BinanceWebsocketService {
     }
 
     /// start a service.
-    pub fn start(&mut self) -> Result<(), Error> {
+    pub async fn start(&mut self) -> Result<(), Error> {
         self.stop();
+
+        let mut locked_socket = self.socket.lock().await;
+        if !locked_socket.is_connected() {
+            locked_socket.connect().await?;
+        }
+        drop(locked_socket);
 
         let token = CancellationToken::new();
         let cloned_token = token.clone();
