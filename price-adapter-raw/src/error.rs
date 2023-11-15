@@ -21,7 +21,7 @@ pub enum Error {
     #[error("response status is not OK; got {0}")]
     ResponseStatusNotOk(StatusCode),
 
-    #[error("cannot query price for id {0}")]
+    #[error("Not found: {0}")]
     NotFound(String),
 
     #[error("cannot use {0} as quote")]
@@ -54,6 +54,9 @@ impl From<chrono::ParseError> for Error {
 
 impl From<reqwest::header::InvalidHeaderValue> for Error {
     fn from(err: reqwest::header::InvalidHeaderValue) -> Self {
-        Self::ParsingError("reqwest::header::InvalidHeaderValue".into(), err.to_string())
+        Self::ParsingError(
+            "reqwest::header::InvalidHeaderValue".into(),
+            err.to_string(),
+        )
     }
 }

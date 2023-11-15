@@ -35,6 +35,24 @@ pub struct MiniTickerResponse {
     pub data: MiniTickerInfo,
 }
 
+fn to_price_info(mini_ticker_resp: String) -> Result<PriceInfo, Error> {
+    let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&mini_ticker_resp)?;
+
+    let MiniTickerInfo {
+        id,
+        current_price,
+        timestamp,
+        ..
+    } = mini_ticker_response.data;
+
+    let price = current_price.parse::<f64>()?;
+    Ok(PriceInfo {
+        id,
+        price,
+        timestamp,
+    })
+}
+
 impl BinanceWebsocket {
     pub async fn new(url: &str, ids: &[&str]) -> Result<Self, Error> {
         let stream_ids = ids
@@ -56,24 +74,6 @@ impl BinanceWebsocket {
             ended: false,
         })
     }
-
-    fn to_price_info(&self, mini_ticker_resp: String) -> Result<PriceInfo, Error> {
-        let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&mini_ticker_resp)?;
-
-        let MiniTickerInfo {
-            id,
-            current_price,
-            timestamp,
-            ..
-        } = mini_ticker_response.data;
-
-        let price = current_price.parse::<f64>()?;
-        Ok(PriceInfo {
-            id,
-            price,
-            timestamp,
-        })
-    }
 }
 
 impl Stream for BinanceWebsocket {
@@ -87,7 +87,7 @@ impl Stream for BinanceWebsocket {
         match self.socket.poll_next_unpin(cx) {
             Poll::Ready(Some(message)) => match message {
                 Ok(Message::Text(text)) => {
-                    let price_info = match self.to_price_info(text) {
+                    let price_info = match to_price_info(text) {
                         Ok(info) => info,
                         Err(err) => {
                             tracing::error!("cannot convert received text to PriceInfo: {}", err);
