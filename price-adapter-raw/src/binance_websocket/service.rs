@@ -25,7 +25,9 @@ impl BinanceWebsocketService {
 
     /// start a service.
     pub async fn start(&mut self) -> Result<(), Error> {
-        self.stop();
+        if self.cancellation_token.is_some() {
+            return Err(Error::AlreadyStarted);
+        }
 
         let mut locked_socket = self.socket.lock().await;
         if !locked_socket.is_connected() {
@@ -76,6 +78,7 @@ impl BinanceWebsocketService {
         if let Some(token) = &self.cancellation_token {
             token.cancel();
         }
+        self.cancellation_token = None;
     }
 
     pub async fn get_prices(&self, ids: &[&str]) -> Vec<Result<PriceInfo, Error>> {

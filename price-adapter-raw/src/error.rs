@@ -6,6 +6,9 @@ pub enum Error {
     #[error("unknown error")]
     Unknown,
 
+    #[error("service already started")]
+    AlreadyStarted,
+
     #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
 

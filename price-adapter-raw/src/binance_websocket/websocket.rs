@@ -43,7 +43,6 @@ fn parse_into_price_info(mini_ticker_resp: String) -> Result<PriceInfo, Error> {
         id,
         current_price,
         timestamp,
-        ..
     } = mini_ticker_response.data;
 
     let price = current_price.parse::<f64>()?;

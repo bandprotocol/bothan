@@ -15,7 +15,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let coingecko = CoinGecko::new(Some("$API_KEY".into()));
+//!     let coingecko = CoinGecko::new_with_api_key("$API_KEY".into());
 //!     let queries = vec!["ethereum"];
 //!     let prices = coingecko.get_prices(&queries).await;
 //!     println!("prices: {:?}", prices);

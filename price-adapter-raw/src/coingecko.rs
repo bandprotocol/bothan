@@ -28,18 +28,18 @@ pub struct CoinGecko {
 
 impl CoinGecko {
     /// initiate new api object.
-    pub fn new(api_key: Option<String>) -> Self {
-        if let Some(api_key) = api_key {
-            Self {
-                api_key,
-                url: PRO_ENDPOINT.into(),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                url: PUBLIC_ENDPOINT.into(),
-                ..Self::default()
-            }
+    pub fn new() -> Self {
+        Self {
+            url: PUBLIC_ENDPOINT.into(),
+            ..Self::default()
+        }
+    }
+
+    pub fn new_with_api_key(api_key: String) -> Self {
+        Self {
+            api_key,
+            url: PRO_ENDPOINT.into(),
+            ..Default::default()
         }
     }
 
