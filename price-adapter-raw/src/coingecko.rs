@@ -99,8 +99,15 @@ impl CoinGecko {
             query.push(("x_cg_pro_api_key", self.api_key.clone()));
         }
 
-        let url = format!("{}/coins/markets", self.url);
-        let response = self.client.get(url).query(&query).send().await?;
+        let url = format!("{}coins/markets", self.url);
+
+        let response = self
+            .client
+            .get(url)
+            .query(&query)
+            .header("User-Agent", "BandPriceAdapter")
+            .send()
+            .await?;
         let response_status = response.status();
         if response_status != StatusCode::OK {
             tracing::trace!(
