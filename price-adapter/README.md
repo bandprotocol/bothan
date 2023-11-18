@@ -1,0 +1,3 @@
+# Price adapter
+
+The primary purpose of the price adapter library is to provide a versatile tool for retrieving the current price of a wide range of supported financial symbols from various data sources, all standardized in terms of the United States Dollar (USD) unit. This library offers a comprehensive and efficient solution for seamlessly accessing and integrating real-time or historical pricing information for a multitude of financial instruments, ensuring that users can effortlessly obtain accurate pricing data in USD for their respective symbols, regardless of the specific data source they choose to utilize.
