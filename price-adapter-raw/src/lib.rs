@@ -68,8 +68,8 @@
 
 mod binance_websocket;
 mod coingecko;
-mod error;
-mod types;
+pub mod error;
+pub mod types;
 
 pub use binance_websocket::{BinanceWebsocket, BinanceWebsocketService};
 pub use coingecko::CoinGecko;
