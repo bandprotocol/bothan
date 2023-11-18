@@ -1,4 +1,4 @@
-use super::Mapper;
+use super::types::Mapper;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;

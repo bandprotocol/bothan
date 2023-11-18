@@ -1,4 +1,4 @@
-use super::mapper::Mapper;
+use super::mapper::types::Mapper;
 use crate::error::Error;
 use price_adapter_raw::types::PriceInfo;
 use price_adapter_raw::CoinGecko as CoinGeckoRaw;
@@ -27,19 +27,13 @@ impl CoinGecko {
 
         let ids = symbols
             .iter()
-            .filter_map(|&symbol| {
-                if let Some(id) = mapping.get(symbol) {
-                    Some(id.as_str().unwrap())
-                } else {
-                    None
-                }
-            })
+            .filter_map(|&symbol| mapping.get(symbol).map(|id| id.as_str().unwrap()))
             .collect::<Vec<_>>();
 
         let res = self.raw.get_prices(ids.as_slice()).await;
 
         res.into_iter()
-            .map(|result| result.map_err(|e| Error::RawError(e)))
+            .map(|result| result.map_err(Error::RawError))
             .collect()
     }
 }
