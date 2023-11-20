@@ -10,4 +10,7 @@ pub enum Error {
 
     #[error("file error: {0}")]
     FileError(#[from] std::io::Error),
+
+    #[error("unsupported symbol")]
+    UnsupportedSymbol,
 }

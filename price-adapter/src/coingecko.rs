@@ -1,6 +1,6 @@
 use super::mapper::types::Mapper;
 use crate::error::Error;
-use price_adapter_raw::types::PriceInfo;
+use crate::types::PriceInfo;
 use price_adapter_raw::CoinGecko as CoinGeckoRaw;
 
 /// An object to query Coingecko public api.
@@ -25,15 +25,34 @@ impl<M: Mapper> CoinGecko<M> {
     pub async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
         let mapping = self.mapper.get_mapping();
 
-        let ids = symbols
+        let ids_with_index: Vec<(&str, &str, usize)> = symbols
             .iter()
-            .filter_map(|&symbol| mapping.get(symbol).map(|id| id.as_str().unwrap()))
-            .collect::<Vec<_>>();
+            .enumerate()
+            .filter_map(|(index, &symbol)| {
+                mapping
+                    .get(symbol)
+                    .and_then(|id| id.as_str().and_then(|id| Some((symbol, id, index))))
+            })
+            .collect();
 
-        let res = self.raw.get_prices(ids.as_slice()).await;
+        let ids: Vec<&str> = ids_with_index.iter().map(|(_, id, _)| *id).collect();
+        let prices = self.raw.get_prices(ids.as_slice()).await;
 
-        res.into_iter()
-            .map(|result| result.map_err(Error::PriceAdapterRawError))
-            .collect()
+        let mut res: Vec<Result<PriceInfo, Error>> = symbols
+            .iter()
+            .map(|_| Err(Error::UnsupportedSymbol))
+            .collect();
+
+        for (&id, price) in ids_with_index.iter().zip(prices) {
+            res[id.2] = price
+                .map_err(Error::PriceAdapterRawError)
+                .map(|p| PriceInfo {
+                    symbol: id.0.to_string(),
+                    price: p.price,
+                    timestamp: p.timestamp,
+                });
+        }
+
+        res
     }
 }
