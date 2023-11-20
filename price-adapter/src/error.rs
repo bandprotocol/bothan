@@ -11,6 +11,12 @@ pub enum Error {
     #[error("file error: {0}")]
     FileError(#[from] std::io::Error),
 
+    #[error("serde-json error: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+
     #[error("unsupported symbol")]
     UnsupportedSymbol,
+
+    #[error("mapping error")]
+    MappingError,
 }
