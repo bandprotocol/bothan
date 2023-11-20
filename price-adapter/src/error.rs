@@ -5,8 +5,8 @@ pub enum Error {
     #[error("unknown error")]
     Unknown,
 
-    #[error("raw error: {0}")]
-    RawError(#[from] price_adapter_raw::error::Error),
+    #[error("price-adapter-raw error: {0}")]
+    PriceAdapterRawError(#[from] price_adapter_raw::error::Error),
 
     #[error("file error: {0}")]
     FileError(#[from] std::io::Error),

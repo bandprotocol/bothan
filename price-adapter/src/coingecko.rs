@@ -4,13 +4,13 @@ use price_adapter_raw::types::PriceInfo;
 use price_adapter_raw::CoinGecko as CoinGeckoRaw;
 
 /// An object to query Coingecko public api.
-pub struct CoinGecko {
+pub struct CoinGecko<M: Mapper> {
     raw: CoinGeckoRaw,
-    mapper: Box<dyn Mapper>,
+    mapper: M,
 }
 
-impl CoinGecko {
-    pub fn new(mapper: Box<dyn Mapper>, api_key: Option<String>) -> Self {
+impl<M: Mapper> CoinGecko<M> {
+    pub fn new(mapper: M, api_key: Option<String>) -> Self {
         let raw: CoinGeckoRaw;
         if let Some(key) = api_key {
             raw = CoinGeckoRaw::new_with_api_key(key);
@@ -33,7 +33,7 @@ impl CoinGecko {
         let res = self.raw.get_prices(ids.as_slice()).await;
 
         res.into_iter()
-            .map(|result| result.map_err(Error::RawError))
+            .map(|result| result.map_err(Error::PriceAdapterRawError))
             .collect()
     }
 }
