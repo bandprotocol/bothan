@@ -9,6 +9,9 @@ pub enum Error {
     #[error("service already started")]
     AlreadyStarted,
 
+    #[error("service not connected")]
+    NotConnected,
+
     #[error("reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
 

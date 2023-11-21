@@ -4,7 +4,7 @@ use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
 use super::websocket::BinanceWebsocket;
-use crate::{error::Error, types::PriceInfo};
+use crate::{binance_websocket::websocket::Response, error::Error, types::PriceInfo};
 
 /// A caching object storing prices received from binance websocket.
 pub struct BinanceWebsocketService {
@@ -53,10 +53,11 @@ impl BinanceWebsocketService {
                         drop(locked_socket);
 
                         match result {
-                            Some(Ok(price_info)) => {
+                            Some(Ok(Response::PriceInfo(price_info))) => {
                                 let mut locked_cached_price = cloned_cached_price.lock().await;
                                 locked_cached_price.insert(price_info.id.to_string(), price_info);
                             }
+                            Some(Ok(Response::WebsocketResponse(_ws_response))) => {}
                             Some(Err(err)) => {
                                 tracing::trace!("cannot get price: {}", err);
                             }

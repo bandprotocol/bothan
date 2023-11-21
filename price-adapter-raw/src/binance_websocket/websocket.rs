@@ -3,9 +3,10 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures_util::{stream::FusedStream, Stream, StreamExt};
+use futures_util::{stream::FusedStream, SinkExt, Stream, StreamExt};
 use reqwest::StatusCode;
 use serde::Deserialize;
+use serde_json::{json, Value};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
@@ -35,38 +36,101 @@ pub struct MiniTickerResponse {
     pub stream: String,
     pub data: MiniTickerInfo,
 }
+#[derive(Debug, Deserialize)]
+pub struct WebsocketResponse {
+    pub result: Value,
+    pub id: u64,
+}
 
-fn parse_into_price_info(mini_ticker_resp: String) -> Result<PriceInfo, Error> {
-    let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&mini_ticker_resp)?;
+#[derive(Debug)]
+pub enum Response {
+    PriceInfo(PriceInfo),
+    WebsocketResponse(WebsocketResponse),
+}
 
-    let MiniTickerInfo {
-        id,
-        current_price,
-        timestamp,
-    } = mini_ticker_response.data;
+fn parse_response(resp: String) -> Result<Response, Error> {
+    let websocket_response = serde_json::from_str::<WebsocketResponse>(&resp);
+    if let Ok(response) = websocket_response {
+        return Ok(Response::WebsocketResponse(response));
+    }
 
-    let price = current_price.parse::<f64>()?;
-    Ok(PriceInfo {
-        id,
-        price,
-        timestamp,
-    })
+    let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&resp);
+    if let Ok(response) = mini_ticker_response {
+        let MiniTickerInfo {
+            id,
+            current_price,
+            timestamp,
+        } = response.data;
+
+        let price = current_price.parse::<f64>()?;
+        return Ok(Response::PriceInfo(PriceInfo {
+            id,
+            price,
+            timestamp,
+        }));
+    }
+
+    Err(Error::ParsingError(
+        "binance websocket response".into(),
+        "not a valid websocket response".into(),
+    ))
 }
 
 impl BinanceWebsocket {
-    pub fn new(url: &str, ids: &[&str]) -> Self {
-        let stream_ids = ids
-            .iter()
-            .map(|id| format!("{}@miniTicker", id))
-            .collect::<Vec<_>>();
-
-        let ws_url = format!("{}/stream?streams={}", url, stream_ids.join("/"));
+    pub fn new(url: &str) -> Self {
+        let ws_url = format!("{}/stream", url);
 
         Self {
             url: ws_url,
             socket: None,
             ended: false,
         }
+    }
+
+    pub async fn subscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
+        let socket = self.socket.as_mut().ok_or(Error::NotConnected)?;
+        let (mut write, _) = socket.split();
+
+        let stream_ids = ids
+            .iter()
+            .map(|id| format!("{}@miniTicker", id))
+            .collect::<Vec<_>>();
+
+        let message = Message::Text(
+            json!({
+                "method": "SUBSCRIBE",
+                "params": stream_ids,
+                "id": 1
+            })
+            .to_string(),
+        );
+
+        write.send(message).await?;
+
+        Ok(())
+    }
+
+    pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
+        let socket = self.socket.as_mut().ok_or(Error::NotConnected)?;
+        let (mut write, _) = socket.split();
+
+        let stream_ids = ids
+            .iter()
+            .map(|id| format!("{}@miniTicker", id))
+            .collect::<Vec<_>>();
+
+        let message = Message::Text(
+            json!({
+                "method": "UNSUBSCRIBE",
+                "params": stream_ids,
+                "id": 1
+            })
+            .to_string(),
+        );
+
+        write.send(message).await?;
+
+        Ok(())
     }
 
     pub async fn connect(&mut self) -> Result<(), Error> {
@@ -89,7 +153,7 @@ impl BinanceWebsocket {
 }
 
 impl Stream for BinanceWebsocket {
-    type Item = Result<PriceInfo, Error>;
+    type Item = Result<Response, Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         if self.ended {
@@ -103,7 +167,8 @@ impl Stream for BinanceWebsocket {
         match socket.poll_next_unpin(cx) {
             Poll::Ready(Some(message)) => match message {
                 Ok(Message::Text(text)) => {
-                    let price_info = match parse_into_price_info(text) {
+                    tracing::info!("received text message: {}", text);
+                    let response = match parse_response(text) {
                         Ok(info) => info,
                         Err(err) => {
                             tracing::trace!("cannot convert received text to PriceInfo: {}", err);
@@ -111,7 +176,7 @@ impl Stream for BinanceWebsocket {
                         }
                     };
 
-                    Poll::Ready(Some(Ok(price_info)))
+                    Poll::Ready(Some(Ok(response)))
                 }
                 Ok(_) => {
                     tracing::trace!("received non-text message");
