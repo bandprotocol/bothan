@@ -40,9 +40,10 @@ impl BandStaticMapper {
 }
 
 // Implementing the Mapper trait for BandStaticMapper.
+#[async_trait::async_trait]
 impl Mapper for BandStaticMapper {
     // Retrieve the mapping as a reference, wrapped in a Result.
-    fn get_mapping(&self) -> Result<&HashMap<String, Value>, Error> {
+    async fn get_mapping(&self) -> Result<&HashMap<String, Value>, Error> {
         Ok(&self.mapping)
     }
 }

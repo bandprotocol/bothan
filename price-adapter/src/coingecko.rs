@@ -1,6 +1,7 @@
-use super::mapper::types::Mapper;
 use crate::error::Error;
-use crate::types::PriceInfo;
+use crate::mapper::types::Mapper;
+use crate::mapper::BandStaticMapper;
+use crate::types::{PriceAdapter, PriceInfo};
 use price_adapter_raw::CoinGecko as CoinGeckoRaw;
 
 // Generic struct `CoinGecko` parameterized over a `Mapper` type.
@@ -21,11 +22,21 @@ impl<M: Mapper> CoinGecko<M> {
 
         Self { raw, mapper }
     }
+}
 
+impl CoinGecko<BandStaticMapper> {
+    pub fn default(api_key: Option<String>) -> Result<Self, Error> {
+        let mapper = BandStaticMapper::from_source("coingecko")?;
+        Ok(Self::new(mapper, api_key))
+    }
+}
+
+#[async_trait::async_trait]
+impl<M: Mapper> PriceAdapter for CoinGecko<M> {
     // Asynchronous function to get prices for symbols.
-    pub async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
+    async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
         // Retrieve the symbol-to-id mapping from the provided mapper.
-        let mapping = self.mapper.get_mapping();
+        let mapping = self.mapper.get_mapping().await;
 
         // Match on the result of obtaining the mapping.
         if let Ok(mapping) = mapping {

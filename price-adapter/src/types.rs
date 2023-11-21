@@ -1,3 +1,4 @@
+use crate::error::Error;
 use core::fmt;
 
 #[derive(Clone, Debug)]
@@ -15,4 +16,9 @@ impl fmt::Display for PriceInfo {
             self.symbol, self.price, self.timestamp
         )
     }
+}
+
+#[async_trait::async_trait]
+pub trait PriceAdapter: Send + Sync + 'static {
+    async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>>;
 }

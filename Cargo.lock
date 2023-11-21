@@ -33,6 +33,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-trait"
+version = "0.1.74"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a66537f1bb974b254c98ed142ff995236e81b9d0fe4db0575f46612cb15eb0f9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -729,11 +740,15 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 name = "price-adapter"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "futures-util",
  "price-adapter-raw",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
+ "tokio-tungstenite",
+ "tokio-util",
 ]
 
 [[package]]
