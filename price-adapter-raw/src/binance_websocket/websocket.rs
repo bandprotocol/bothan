@@ -1,4 +1,5 @@
 use futures_util::{stream::FusedStream, SinkExt, Stream, StreamExt};
+use rand::Rng;
 use reqwest::StatusCode;
 use serde_json::json;
 use std::{
@@ -55,9 +56,12 @@ impl BinanceWebsocket {
         }
     }
 
-    pub async fn subscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
+    pub async fn subscribe(&mut self, ids: &[&str]) -> Result<u32, Error> {
         let socket = self.socket.as_mut().ok_or(Error::NotConnected)?;
         let (mut write, _) = socket.split();
+
+        let mut rng = rand::thread_rng();
+        let request_id: u32 = rng.gen();
 
         let stream_ids = ids
             .iter()
@@ -68,19 +72,22 @@ impl BinanceWebsocket {
             json!({
                 "method": RequestMethod::Subscribe.to_string(),
                 "params": stream_ids,
-                "id": 1
+                "id": request_id
             })
             .to_string(),
         );
 
         write.send(message).await?;
 
-        Ok(())
+        Ok(request_id)
     }
 
-    pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
+    pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<u32, Error> {
         let socket = self.socket.as_mut().ok_or(Error::NotConnected)?;
         let (mut write, _) = socket.split();
+
+        let mut rng = rand::thread_rng();
+        let request_id: u32 = rng.gen();
 
         let stream_ids = ids
             .iter()
@@ -91,14 +98,14 @@ impl BinanceWebsocket {
             json!({
                 "method": RequestMethod::Unsubscribe.to_string(),
                 "params": stream_ids,
-                "id": 1
+                "id": request_id
             })
             .to_string(),
         );
 
         write.send(message).await?;
 
-        Ok(())
+        Ok(request_id)
     }
 
     pub async fn connect(&mut self) -> Result<(), Error> {
