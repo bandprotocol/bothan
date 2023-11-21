@@ -1,4 +1,6 @@
 use core::fmt;
+use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Clone, Debug)]
 pub struct PriceInfo {
@@ -15,4 +17,15 @@ impl fmt::Display for PriceInfo {
             self.id, self.price, self.timestamp
         )
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SettingResponse {
+    pub data: Value,
+}
+
+#[derive(Debug)]
+pub enum WebsocketMessage {
+    PriceInfo(PriceInfo),
+    SettingResponse(SettingResponse),
 }

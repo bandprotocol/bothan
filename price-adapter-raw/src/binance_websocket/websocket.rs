@@ -9,9 +9,12 @@ use std::{
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
-use crate::{binance_websocket::types::RequestMethod, error::Error, types::PriceInfo};
-
-use super::types::{MiniTickerInfo, MiniTickerResponse, SettingResponse, WebsocketMessage};
+use super::types::{MiniTickerInfo, MiniTickerResponse, SettingResponse as BinanceSettingResponse};
+use crate::{
+    binance_websocket::types::RequestMethod,
+    error::Error,
+    types::{PriceInfo, SettingResponse, WebsocketMessage},
+};
 
 /// A binance websocket object.
 pub struct BinanceWebsocket {
@@ -21,9 +24,10 @@ pub struct BinanceWebsocket {
 }
 
 fn parse_message(resp: String) -> Result<WebsocketMessage, Error> {
-    let setting_response = serde_json::from_str::<SettingResponse>(&resp);
+    let setting_response = serde_json::from_str::<BinanceSettingResponse>(&resp);
     if let Ok(response) = setting_response {
-        return Ok(WebsocketMessage::SettingResponse(response));
+        let data = serde_json::to_value(response)?;
+        return Ok(WebsocketMessage::SettingResponse(SettingResponse { data }));
     }
 
     let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&resp);

@@ -4,7 +4,10 @@ use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
 use super::websocket::BinanceWebsocket;
-use crate::{binance_websocket::types::WebsocketMessage, error::Error, types::PriceInfo};
+use crate::{
+    error::Error,
+    types::{PriceInfo, WebsocketMessage},
+};
 
 /// A caching object storing prices received from binance websocket.
 pub struct BinanceWebsocketService {
@@ -24,7 +27,7 @@ impl BinanceWebsocketService {
     }
 
     /// start a service.
-    pub async fn start(&mut self) -> Result<(), Error> {
+    pub async fn start(&mut self, ids: &[&str]) -> Result<(), Error> {
         if self.cancellation_token.is_some() {
             return Err(Error::AlreadyStarted);
         }
@@ -32,6 +35,7 @@ impl BinanceWebsocketService {
         let mut locked_socket = self.socket.lock().await;
         if !locked_socket.is_connected() {
             locked_socket.connect().await?;
+            locked_socket.subscribe(ids).await?;
         }
         drop(locked_socket);
 

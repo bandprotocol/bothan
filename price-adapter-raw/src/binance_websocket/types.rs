@@ -1,7 +1,5 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-use crate::types::PriceInfo;
 
 #[derive(Debug)]
 pub enum RequestMethod {
@@ -33,14 +31,8 @@ pub struct MiniTickerResponse {
     pub data: MiniTickerInfo,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SettingResponse {
     pub result: Value,
     pub id: u64,
-}
-
-#[derive(Debug)]
-pub enum WebsocketMessage {
-    PriceInfo(PriceInfo),
-    SettingResponse(SettingResponse),
 }
