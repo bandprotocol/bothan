@@ -1,16 +1,16 @@
+use futures_util::{stream::FusedStream, SinkExt, Stream, StreamExt};
+use reqwest::StatusCode;
+use serde_json::json;
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-
-use futures_util::{stream::FusedStream, SinkExt, Stream, StreamExt};
-use reqwest::StatusCode;
-use serde::Deserialize;
-use serde_json::{json, Value};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
-use crate::{error::Error, types::PriceInfo};
+use crate::{binance_websocket::types::RequestMethod, error::Error, types::PriceInfo};
+
+use super::types::{MiniTickerInfo, MiniTickerResponse, SettingResponse, WebsocketMessage};
 
 /// A binance websocket object.
 pub struct BinanceWebsocket {
@@ -19,39 +19,10 @@ pub struct BinanceWebsocket {
     ended: bool,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct MiniTickerInfo {
-    #[serde(rename = "s")]
-    id: String,
-
-    #[serde(rename = "c")]
-    current_price: String,
-
-    #[serde(rename = "E")]
-    timestamp: u64,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct MiniTickerResponse {
-    pub stream: String,
-    pub data: MiniTickerInfo,
-}
-#[derive(Debug, Deserialize)]
-pub struct WebsocketResponse {
-    pub result: Value,
-    pub id: u64,
-}
-
-#[derive(Debug)]
-pub enum Response {
-    PriceInfo(PriceInfo),
-    WebsocketResponse(WebsocketResponse),
-}
-
-fn parse_response(resp: String) -> Result<Response, Error> {
-    let websocket_response = serde_json::from_str::<WebsocketResponse>(&resp);
-    if let Ok(response) = websocket_response {
-        return Ok(Response::WebsocketResponse(response));
+fn parse_message(resp: String) -> Result<WebsocketMessage, Error> {
+    let setting_response = serde_json::from_str::<SettingResponse>(&resp);
+    if let Ok(response) = setting_response {
+        return Ok(WebsocketMessage::SettingResponse(response));
     }
 
     let mini_ticker_response = serde_json::from_str::<MiniTickerResponse>(&resp);
@@ -63,17 +34,14 @@ fn parse_response(resp: String) -> Result<Response, Error> {
         } = response.data;
 
         let price = current_price.parse::<f64>()?;
-        return Ok(Response::PriceInfo(PriceInfo {
+        return Ok(WebsocketMessage::PriceInfo(PriceInfo {
             id,
             price,
             timestamp,
         }));
     }
 
-    Err(Error::ParsingError(
-        "binance websocket response".into(),
-        "not a valid websocket response".into(),
-    ))
+    Err(Error::ParsingError("response".into(), "not support".into()))
 }
 
 impl BinanceWebsocket {
@@ -98,7 +66,7 @@ impl BinanceWebsocket {
 
         let message = Message::Text(
             json!({
-                "method": "SUBSCRIBE",
+                "method": RequestMethod::Subscribe.to_string(),
                 "params": stream_ids,
                 "id": 1
             })
@@ -121,7 +89,7 @@ impl BinanceWebsocket {
 
         let message = Message::Text(
             json!({
-                "method": "UNSUBSCRIBE",
+                "method": RequestMethod::Unsubscribe.to_string(),
                 "params": stream_ids,
                 "id": 1
             })
@@ -153,7 +121,7 @@ impl BinanceWebsocket {
 }
 
 impl Stream for BinanceWebsocket {
-    type Item = Result<Response, Error>;
+    type Item = Result<WebsocketMessage, Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         if self.ended {
@@ -168,7 +136,7 @@ impl Stream for BinanceWebsocket {
             Poll::Ready(Some(message)) => match message {
                 Ok(Message::Text(text)) => {
                     tracing::info!("received text message: {}", text);
-                    let response = match parse_response(text) {
+                    let response = match parse_message(text) {
                         Ok(info) => info,
                         Err(err) => {
                             tracing::trace!("cannot convert received text to PriceInfo: {}", err);
