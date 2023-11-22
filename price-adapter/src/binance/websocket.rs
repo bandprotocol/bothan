@@ -77,31 +77,40 @@ impl<M: Mapper> Stream for BinanceWebsocket<M> {
     type Item = Result<u64, Error>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        println!("start poll_next");
         let Some(raw) = &self.raw else {
             return Poll::Ready(None);
         };
 
-        loop {
-            let Ok(mut locked_raw) = raw.try_lock() else {
+        let Ok(mut locked_raw) = raw.try_lock() else {
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        };
 
-                continue;
-            };
+        match locked_raw.poll_next_unpin(cx) {
+            Poll::Ready(Some(message)) => {
+                println!("message: {:?}", message);
+                let result = match message {
+                    Ok(WebsocketMessageRaw::PriceInfo(price_info)) => {
+                        println!("internal: {:?}", price_info);
+                        Poll::Ready(Some(Ok(0_u64)))
+                    }
+                    Ok(_) => {
+                        cx.waker().wake_by_ref();
+                        println!("!!! before sleep");
+                        std::thread::sleep(tokio::time::Duration::from_secs(4));
+                        println!("!!! after sleep");
 
-            match locked_raw.poll_next_unpin(cx) {
-                Poll::Ready(Some(message)) => {
-                    let result = match message {
-                        Ok(WebsocketMessageRaw::PriceInfo(price_info)) => {
-                            println!("internal: {:?}", price_info);
-                            Poll::Ready(Some(Ok(0_u64)))
-                        }
-                        Ok(_) => continue,
-                        Err(err) => Poll::Ready(Some(Err(err.into()))),
-                    };
-                    return result;
-                }
-                Poll::Ready(None) => return Poll::Ready(None),
-                Poll::Pending => return Poll::Pending,
-            };
-        }
+                        return Poll::Pending;
+                    }
+                    Err(err) => Poll::Ready(Some(Err(err.into()))),
+                };
+                return result;
+            }
+            Poll::Ready(None) => return Poll::Ready(None),
+            Poll::Pending => {
+                return Poll::Pending;
+            }
+        };
     }
 }
