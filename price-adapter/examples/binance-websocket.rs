@@ -1,0 +1,18 @@
+use futures_util::StreamExt;
+use price_adapter::BinanceWebsocket;
+
+#[tokio::main]
+async fn main() {
+    let mut binance_websocket = BinanceWebsocket::default().unwrap();
+    let symbols = vec!["ETH", "BTC"];
+
+    binance_websocket.connect().await.unwrap();
+    binance_websocket
+        .subscribe(symbols.as_slice())
+        .await
+        .unwrap();
+
+    while let Some(data) = binance_websocket.next().await {
+        println!("{:?}", data);
+    }
+}
