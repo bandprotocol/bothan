@@ -1,3 +1,6 @@
+use serde::Deserialize;
+use serde_json::Value;
+
 use crate::error::Error;
 use core::fmt;
 
@@ -21,4 +24,15 @@ impl fmt::Display for PriceInfo {
 #[async_trait::async_trait]
 pub trait PriceAdapter: Send + Sync + 'static {
     async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>>;
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SettingResponse {
+    pub data: Value,
+}
+
+#[derive(Debug)]
+pub enum WebsocketMessage {
+    PriceInfo(PriceInfo),
+    SettingResponse(SettingResponse),
 }
