@@ -1,10 +1,12 @@
-use crate::error::Error;
 use crate::mapper::types::Mapper;
 use crate::mapper::BandStaticMapper;
+use crate::types::WebsocketMessage;
+use crate::{error::Error, types::PriceInfo};
 use futures_util::{Stream, StreamExt};
 use price_adapter_raw::types::WebsocketMessage as WebsocketMessageRaw;
 use price_adapter_raw::BinanceWebsocket as BinanceWebsocketRaw;
 use std::{
+    collections::HashMap,
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
@@ -14,13 +16,18 @@ use tokio::sync::Mutex;
 // Generic struct `BinanceWebsocket` parameterized over a `Mapper` type.
 pub struct BinanceWebsocket<M: Mapper> {
     raw: Option<Arc<Mutex<BinanceWebsocketRaw>>>,
+    mapping_back: HashMap<String, String>,
     mapper: M,
 }
 
 impl<M: Mapper> BinanceWebsocket<M> {
     // Constructor for the `BinanceWebsocket` struct.
     pub fn new(mapper: M) -> Self {
-        Self { raw: None, mapper }
+        Self {
+            raw: None,
+            mapping_back: HashMap::new(),
+            mapper,
+        }
     }
 
     pub async fn connect(&mut self) -> Result<(), Error> {
@@ -42,6 +49,13 @@ impl<M: Mapper> BinanceWebsocket<M> {
     pub async fn subscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
         // Retrieve the symbol-to-id mapping from the provided mapper.
         let mapping = self.mapper.get_mapping().await?;
+
+        for (key, value) in mapping {
+            if let Some(pair) = value.as_str() {
+                self.mapping_back
+                    .insert(pair.to_string().to_uppercase(), key.to_string());
+            }
+        }
 
         let ids: Vec<&str> = symbols
             .iter()
@@ -74,10 +88,9 @@ impl BinanceWebsocket<BandStaticMapper> {
 }
 
 impl<M: Mapper> Stream for BinanceWebsocket<M> {
-    type Item = Result<u64, Error>;
+    type Item = Result<WebsocketMessage, Error>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        println!("start poll_next");
         let Some(raw) = &self.raw else {
             return Poll::Ready(None);
         };
@@ -89,18 +102,21 @@ impl<M: Mapper> Stream for BinanceWebsocket<M> {
 
         match locked_raw.poll_next_unpin(cx) {
             Poll::Ready(Some(message)) => {
-                println!("message: {:?}", message);
                 let result = match message {
-                    Ok(WebsocketMessageRaw::PriceInfo(price_info)) => {
-                        println!("internal: {:?}", price_info);
-                        Poll::Ready(Some(Ok(0_u64)))
+                    Ok(WebsocketMessageRaw::PriceInfo(price_info_raw)) => {
+                        if let Some(symbol) = self.mapping_back.get(&price_info_raw.id) {
+                            return Poll::Ready(Some(Ok(WebsocketMessage::PriceInfo(PriceInfo {
+                                symbol: symbol.to_string(),
+                                price: price_info_raw.price,
+                                timestamp: price_info_raw.timestamp,
+                            }))));
+                        }
+
+                        cx.waker().wake_by_ref();
+                        return Poll::Pending;
                     }
                     Ok(_) => {
                         cx.waker().wake_by_ref();
-                        println!("!!! before sleep");
-                        std::thread::sleep(tokio::time::Duration::from_secs(4));
-                        println!("!!! after sleep");
-
                         return Poll::Pending;
                     }
                     Err(err) => Poll::Ready(Some(Err(err.into()))),
