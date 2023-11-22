@@ -143,31 +143,40 @@ impl Stream for BinanceWebsocket {
             return Poll::Ready(None);
         };
 
-        match socket.poll_next_unpin(cx) {
-            Poll::Ready(Some(message)) => match message {
-                Ok(Message::Text(text)) => {
-                    tracing::info!("received text message: {}", text);
-                    let response = match parse_message(text) {
-                        Ok(info) => info,
-                        Err(err) => {
-                            tracing::trace!("cannot convert received text to PriceInfo: {}", err);
-                            return Poll::Ready(Some(Err(err)));
+        loop {
+            match socket.poll_next_unpin(cx) {
+                Poll::Ready(Some(message)) => {
+                    let result = match message {
+                        Ok(Message::Text(text)) => {
+                            tracing::info!("received text message: {}", text);
+                            let response = match parse_message(text) {
+                                Ok(info) => info,
+                                Err(err) => {
+                                    tracing::trace!(
+                                        "cannot convert received text to PriceInfo: {}",
+                                        err
+                                    );
+                                    return Poll::Ready(Some(Err(err)));
+                                }
+                            };
+                            Poll::Ready(Some(Ok(response)))
                         }
+                        Ok(_) => {
+                            tracing::trace!("received non-text message");
+                            continue;
+                        }
+                        Err(err) => Poll::Ready(Some(Err(err.into()))),
                     };
-
-                    Poll::Ready(Some(Ok(response)))
+                    return result;
                 }
-                Ok(_) => {
-                    tracing::trace!("received non-text message");
-                    Poll::Pending
+                Poll::Ready(None) => {
+                    self.ended = true;
+                    return Poll::Ready(None);
                 }
-                Err(err) => Poll::Ready(Some(Err(err.into()))),
-            },
-            Poll::Ready(None) => {
-                self.ended = true;
-                Poll::Ready(None)
+                Poll::Pending => {
+                    return Poll::Pending;
+                }
             }
-            Poll::Pending => Poll::Pending,
         }
     }
 }
