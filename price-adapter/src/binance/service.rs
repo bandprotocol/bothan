@@ -5,9 +5,10 @@ use crate::{
     error::Error,
     types::{PriceInfo, WebsocketMessage},
 };
+use tokio::{select, sync::Mutex};
+
 use futures_util::StreamExt;
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
 /// A caching object storing prices received from binance websocket.
@@ -41,6 +42,7 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocketService<M, S> {
         drop(locked_socket);
 
         let token = CancellationToken::new();
+        let cloned_token = token.clone();
         let cloned_socket = Arc::clone(&self.socket);
         let cloned_cached_price = Arc::clone(&self.cached_price);
         self.cancellation_token = Some(token);
@@ -48,16 +50,26 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocketService<M, S> {
         tokio::spawn(async move {
             loop {
                 let mut locked_socket = cloned_socket.lock().await;
+                select! {
+                    _ = cloned_token.cancelled() => {
+                        break;
+                    }
 
-                while let Some(result) = locked_socket.next().await {
-                    match result {
-                        Ok(WebsocketMessage::PriceInfo(price_info)) => {
-                            let mut locked_cached_price = cloned_cached_price.lock().await;
-                            locked_cached_price
-                                .insert(price_info.symbol.to_string(), price_info.clone());
+                    result = locked_socket.next() => {
+                        drop(locked_socket);
+
+                        match result {
+                            Some(Ok(WebsocketMessage::PriceInfo(price_info))) => {
+                                let mut locked_cached_price = cloned_cached_price.lock().await;
+                                locked_cached_price.insert(price_info.symbol.to_string(), price_info);
+                            }
+                            Some(Ok(WebsocketMessage::SettingResponse(_response))) => {}
+                            Some(Err(_)) => {
+                            }
+                            None => {
+                                break;
+                            }
                         }
-                        Ok(WebsocketMessage::SettingResponse(_response)) => {}
-                        Err(_) => {}
                     }
                 }
             }
