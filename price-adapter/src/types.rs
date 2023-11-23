@@ -27,9 +27,10 @@ pub trait PriceAdapter: Send + Sync + 'static {
 }
 
 #[async_trait::async_trait]
-pub trait WebsocketPriceAdapter: Sync + 'static {
+pub trait WebsocketPriceAdapter: Send + Sync + 'static {
     async fn connect(&mut self) -> Result<(), Error>;
     async fn subscribe(&mut self, symbols: &[&str]) -> Result<u32, Error>;
+    async fn unsubscribe(&mut self, symbols: &[&str]) -> Result<u32, Error>;
     fn is_connected(&self) -> bool;
 }
 
