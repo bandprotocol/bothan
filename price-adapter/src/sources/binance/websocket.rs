@@ -1,6 +1,6 @@
-use crate::mapper::{types::Mapper, BandStaticMapper};
-use crate::stable_coin::{types::StableCoin, BandStableCoin};
-use crate::types::{WebsocketMessage, WebsocketPriceAdapter};
+use crate::mappers::BandStaticMapper;
+use crate::stable_coin::BandStableCoin;
+use crate::types::{Mapper, SettingResponse, StableCoin, WebSocketSource, WebsocketMessage};
 use crate::{error::Error, types::PriceInfo};
 use futures_util::{stream::FusedStream, Stream, StreamExt};
 use price_adapter_raw::{
@@ -14,17 +14,17 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-// Generic struct `BinanceWebsocket` parameterized over a `Mapper` type.
+/// A generic struct `BinanceWebsocket` parameterized over `Mapper` and `StableCoin` types.
 pub struct BinanceWebsocket<M: Mapper, S: StableCoin> {
     mapper: M,
     stable_coin: S,
-
     raw: Option<Arc<Mutex<BinanceWebsocketRaw>>>,
     mapping_back: HashMap<String, String>,
     ended: bool,
 }
+
 impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
-    // Constructor for the `BinanceWebsocket` struct.
+    /// Constructor for the `BinanceWebsocket` struct.
     pub fn new(mapper: M, stable_coin: S) -> Self {
         Self {
             mapper,
@@ -36,8 +36,10 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
     }
 }
 
+// Implementing the WebSocketSource trait for BinanceWebsocket.
 #[async_trait::async_trait]
-impl<M: Mapper, S: StableCoin> WebsocketPriceAdapter for BinanceWebsocket<M, S> {
+impl<M: Mapper, S: StableCoin> WebSocketSource for BinanceWebsocket<M, S> {
+    /// Asynchronous function to connect to the WebSocket.
     async fn connect(&mut self) -> Result<(), Error> {
         let raw = Arc::new(Mutex::new(BinanceWebsocketRaw::new(
             "wss://stream.binance.com:9443",
@@ -54,6 +56,7 @@ impl<M: Mapper, S: StableCoin> WebsocketPriceAdapter for BinanceWebsocket<M, S> 
         Ok(())
     }
 
+    /// Asynchronous function to subscribe to symbols.
     async fn subscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
         // Retrieve the symbol-to-id mapping from the provided mapper.
         let mapping = self.mapper.get_mapping().await?;
@@ -84,6 +87,7 @@ impl<M: Mapper, S: StableCoin> WebsocketPriceAdapter for BinanceWebsocket<M, S> 
             .map_err(Error::PriceAdapterRawError)
     }
 
+    /// Asynchronous function to unsubscribe from symbols.
     async fn unsubscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
         let ids: Vec<&str> = symbols
             .iter()
@@ -103,12 +107,15 @@ impl<M: Mapper, S: StableCoin> WebsocketPriceAdapter for BinanceWebsocket<M, S> 
             .map_err(Error::PriceAdapterRawError)
     }
 
+    /// Check if the WebSocket is connected.
     fn is_connected(&self) -> bool {
         self.raw.is_some()
     }
 }
 
+// Implementing BinanceWebsocket for specific types (BandStaticMapper, BandStableCoin).
 impl BinanceWebsocket<BandStaticMapper, BandStableCoin> {
+    /// Constructor for creating a new BinanceWebsocket with default settings.
     pub fn new_with_default() -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("binance")?;
         let stable_coin = BandStableCoin::new();
@@ -116,6 +123,7 @@ impl BinanceWebsocket<BandStaticMapper, BandStableCoin> {
     }
 }
 
+// Implementing Stream for BinanceWebsocket.
 impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
     type Item = Result<WebsocketMessage, Error>;
 
@@ -147,14 +155,16 @@ impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
                             timestamp: price_info_raw.timestamp,
                         }))))
                     } else {
+                        // If symbol not found, wake up the waker and return Pending.
                         cx.waker().wake_by_ref();
                         Poll::Pending
                     }
                 }
-                Ok(_) => {
-                    cx.waker().wake_by_ref();
-                    Poll::Pending
-                }
+                Ok(WebsocketMessageRaw::SettingResponse(response)) => Poll::Ready(Some(Ok(
+                    WebsocketMessage::SettingResponse(SettingResponse {
+                        data: response.data,
+                    }),
+                ))),
                 Err(err) => Poll::Ready(Some(Err(err.into()))),
             },
             Poll::Ready(None) => {
@@ -167,7 +177,9 @@ impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
     }
 }
 
+// Implementing FusedStream for BinanceWebsocket.
 impl<M: Mapper, S: StableCoin> FusedStream for BinanceWebsocket<M, S> {
+    /// Check if the stream is terminated.
     fn is_terminated(&self) -> bool {
         self.ended
     }

@@ -1,6 +1,6 @@
 use futures_util::StreamExt;
-use price_adapter::types::WebsocketPriceAdapter;
-use price_adapter::BinanceWebsocket;
+use price_adapter::sources::BinanceWebsocket;
+use price_adapter::types::WebSocketSource;
 
 #[tokio::main]
 async fn main() {

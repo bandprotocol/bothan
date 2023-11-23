@@ -1,30 +1,29 @@
-use crate::types::WebsocketPriceAdapter;
 use crate::{
     error::Error,
-    types::{PriceInfo, WebsocketMessage},
+    types::{PriceInfo, WebSocketSource, WebsocketMessage},
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-/// A caching object storing prices received from binance websocket.
-pub struct WebsocketService<W: WebsocketPriceAdapter> {
-    socket: Arc<Mutex<W>>,
-    cached_price: Arc<Mutex<HashMap<String, PriceInfo>>>,
+/// A caching object storing prices received from Binance WebSocket.
+pub struct WebsocketService<S: WebSocketSource> {
+    socket: Arc<Mutex<S>>,
+    cached_prices: Arc<Mutex<HashMap<String, PriceInfo>>>,
     cancellation_token: Option<CancellationToken>,
 }
 
-impl<W: WebsocketPriceAdapter> WebsocketService<W> {
-    /// initiate new object from created socket.
-    pub fn new(socket: W) -> Self {
+impl<S: WebSocketSource> WebsocketService<S> {
+    /// Creates a new `WebsocketService` with the provided WebSocket source.
+    pub fn new(socket: S) -> Self {
         Self {
             socket: Arc::new(Mutex::new(socket)),
-            cached_price: Arc::new(Mutex::new(HashMap::new())),
+            cached_prices: Arc::new(Mutex::new(HashMap::new())),
             cancellation_token: None,
         }
     }
 
-    /// start a service.
+    /// Starts the service, connecting to the WebSocket and subscribing to symbols.
     pub async fn start(&mut self, symbols: &[&str]) -> Result<(), Error> {
         if self.cancellation_token.is_some() {
             return Err(Error::AlreadyStarted);
@@ -40,7 +39,7 @@ impl<W: WebsocketPriceAdapter> WebsocketService<W> {
         let token = CancellationToken::new();
         let cloned_token = token.clone();
         let cloned_socket = Arc::clone(&self.socket);
-        let cloned_cached_price = Arc::clone(&self.cached_price);
+        let cloned_cached_prices = Arc::clone(&self.cached_prices);
         self.cancellation_token = Some(token);
 
         tokio::spawn(async move {
@@ -56,12 +55,11 @@ impl<W: WebsocketPriceAdapter> WebsocketService<W> {
 
                         match result {
                             Some(Ok(WebsocketMessage::PriceInfo(price_info))) => {
-                                let mut locked_cached_price = cloned_cached_price.lock().await;
-                                locked_cached_price.insert(price_info.symbol.to_string(), price_info);
+                                let mut locked_cached_prices = cloned_cached_prices.lock().await;
+                                locked_cached_prices.insert(price_info.symbol.to_string(), price_info);
                             }
                             Some(Ok(WebsocketMessage::SettingResponse(_response))) => {}
-                            Some(Err(_)) => {
-                            }
+                            Some(Err(_)) => {}
                             None => {
                                 break;
                             }
@@ -74,7 +72,7 @@ impl<W: WebsocketPriceAdapter> WebsocketService<W> {
         Ok(())
     }
 
-    /// stop a service.
+    /// Stops the service, cancelling the WebSocket subscription.
     pub fn stop(&mut self) {
         if let Some(token) = &self.cancellation_token {
             token.cancel();
@@ -82,19 +80,19 @@ impl<W: WebsocketPriceAdapter> WebsocketService<W> {
         self.cancellation_token = None;
     }
 
+    /// Retrieves prices for the specified symbols from the cached prices.
     pub async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
-        let mut prices = Vec::new();
-        let locked_cached_price = self.cached_price.lock().await;
-
-        for &symbol in symbols {
-            let price = match locked_cached_price.get(&symbol.to_ascii_uppercase()) {
-                Some(price) => Ok(price.clone()),
-                None => Err(Error::NotFound(symbol.to_string())),
-            };
-
-            prices.push(price);
-        }
-
-        prices
+        let locked_cached_prices = self.cached_prices.lock().await;
+        symbols
+            .iter()
+            .map(|&symbol| {
+                locked_cached_prices
+                    .get(&symbol.to_ascii_uppercase())
+                    .map_or_else(
+                        || Err(Error::NotFound(symbol.to_string())),
+                        |price| Ok(price.clone()),
+                    )
+            })
+            .collect()
     }
 }
