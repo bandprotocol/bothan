@@ -1,4 +1,4 @@
-use price_adapter::{BinanceWebsocket, BinanceWebsocketService};
+use price_adapter::BinanceWebsocket;
 use std::time::Duration;
 
 #[tokio::main]
