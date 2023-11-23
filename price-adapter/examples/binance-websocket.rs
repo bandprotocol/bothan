@@ -4,7 +4,7 @@ use price_adapter::BinanceWebsocket;
 
 #[tokio::main]
 async fn main() {
-    let mut binance_websocket = BinanceWebsocket::default().unwrap();
+    let mut binance_websocket = BinanceWebsocket::new_with_default().unwrap();
     let symbols = vec!["ETH", "BTC"];
 
     binance_websocket.connect().await.unwrap();
