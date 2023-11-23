@@ -26,6 +26,13 @@ pub trait PriceAdapter: Send + Sync + 'static {
     async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>>;
 }
 
+#[async_trait::async_trait]
+pub trait WebsocketPriceAdapter: Sync + 'static {
+    async fn connect(&mut self) -> Result<(), Error>;
+    async fn subscribe(&mut self, symbols: &[&str]) -> Result<u32, Error>;
+    fn is_connected(&self) -> bool;
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SettingResponse {
     pub data: Value,

@@ -1,10 +1,11 @@
-use crate::mapper::types::Mapper;
-use crate::mapper::BandStaticMapper;
+use crate::mapper::{types::Mapper, BandStaticMapper};
+use crate::stable_coin::{types::StableCoin, BandStableCoin};
 use crate::types::WebsocketMessage;
 use crate::{error::Error, types::PriceInfo};
 use futures_util::{Stream, StreamExt};
-use price_adapter_raw::types::WebsocketMessage as WebsocketMessageRaw;
-use price_adapter_raw::BinanceWebsocket as BinanceWebsocketRaw;
+use price_adapter_raw::{
+    types::WebsocketMessage as WebsocketMessageRaw, BinanceWebsocket as BinanceWebsocketRaw,
+};
 use std::{
     collections::HashMap,
     pin::Pin,
@@ -14,19 +15,22 @@ use std::{
 use tokio::sync::Mutex;
 
 // Generic struct `BinanceWebsocket` parameterized over a `Mapper` type.
-pub struct BinanceWebsocket<M: Mapper> {
+pub struct BinanceWebsocket<M: Mapper, S: StableCoin> {
+    mapper: M,
+    stable_coin: S,
+
     raw: Option<Arc<Mutex<BinanceWebsocketRaw>>>,
     mapping_back: HashMap<String, String>,
-    mapper: M,
 }
 
-impl<M: Mapper> BinanceWebsocket<M> {
+impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
     // Constructor for the `BinanceWebsocket` struct.
-    pub fn new(mapper: M) -> Self {
+    pub fn new(mapper: M, stable_coin: S) -> Self {
         Self {
+            mapper,
+            stable_coin,
             raw: None,
             mapping_back: HashMap::new(),
-            mapper,
         }
     }
 
@@ -75,19 +79,39 @@ impl<M: Mapper> BinanceWebsocket<M> {
             .map_err(Error::PriceAdapterRawError)
     }
 
+    pub async fn unsubscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
+        let ids: Vec<&str> = symbols
+            .iter()
+            .filter_map(|&symbol| self.mapping_back.get(symbol))
+            .map(|string_ref| string_ref.as_str())
+            .collect();
+
+        if ids.len() != symbols.len() {
+            return Err(Error::UnsupportedSymbol);
+        }
+
+        let raw = self.raw.as_mut().ok_or(Error::Unknown)?;
+        let mut locked_raw = raw.lock().await;
+        locked_raw
+            .unsubscribe(ids.as_slice())
+            .await
+            .map_err(Error::PriceAdapterRawError)
+    }
+
     pub fn is_connected(&self) -> bool {
         self.raw.is_some()
     }
 }
 
-impl BinanceWebsocket<BandStaticMapper> {
+impl BinanceWebsocket<BandStaticMapper, BandStableCoin> {
     pub fn default() -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("binance")?;
-        Ok(Self::new(mapper))
+        let stable_coin = BandStableCoin::new();
+        Ok(Self::new(mapper, stable_coin))
     }
 }
 
-impl<M: Mapper> Stream for BinanceWebsocket<M> {
+impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
     type Item = Result<WebsocketMessage, Error>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -101,32 +125,31 @@ impl<M: Mapper> Stream for BinanceWebsocket<M> {
         };
 
         match locked_raw.poll_next_unpin(cx) {
-            Poll::Ready(Some(message)) => {
-                let result = match message {
-                    Ok(WebsocketMessageRaw::PriceInfo(price_info_raw)) => {
-                        if let Some(symbol) = self.mapping_back.get(&price_info_raw.id) {
-                            return Poll::Ready(Some(Ok(WebsocketMessage::PriceInfo(PriceInfo {
-                                symbol: symbol.to_string(),
-                                price: price_info_raw.price,
-                                timestamp: price_info_raw.timestamp,
-                            }))));
-                        }
+            Poll::Ready(Some(message)) => match message {
+                Ok(WebsocketMessageRaw::PriceInfo(price_info_raw)) => {
+                    if let Some(symbol) = self.mapping_back.get(&price_info_raw.id) {
+                        let Ok(usdt_price) = self.stable_coin.get_price("USDT".to_string()) else {
+                            return Poll::Pending;
+                        };
 
+                        Poll::Ready(Some(Ok(WebsocketMessage::PriceInfo(PriceInfo {
+                            symbol: symbol.to_string(),
+                            price: price_info_raw.price / usdt_price,
+                            timestamp: price_info_raw.timestamp,
+                        }))))
+                    } else {
                         cx.waker().wake_by_ref();
-                        return Poll::Pending;
+                        Poll::Pending
                     }
-                    Ok(_) => {
-                        cx.waker().wake_by_ref();
-                        return Poll::Pending;
-                    }
-                    Err(err) => Poll::Ready(Some(Err(err.into()))),
-                };
-                return result;
-            }
-            Poll::Ready(None) => return Poll::Ready(None),
-            Poll::Pending => {
-                return Poll::Pending;
-            }
-        };
+                }
+                Ok(_) => {
+                    cx.waker().wake_by_ref();
+                    Poll::Pending
+                }
+                Err(err) => Poll::Ready(Some(Err(err.into()))),
+            },
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
+        }
     }
 }

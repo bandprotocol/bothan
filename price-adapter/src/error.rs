@@ -19,4 +19,13 @@ pub enum Error {
 
     #[error("mapping error")]
     MappingError,
+
+    #[error("service already started")]
+    AlreadyStarted,
+
+    #[error("service not connected")]
+    NotConnected,
+
+    #[error("Not found: {0}")]
+    NotFound(String),
 }
