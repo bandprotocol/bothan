@@ -1,27 +1,22 @@
-use super::websocket::BinanceWebsocket;
-use crate::mapper::types::Mapper;
-use crate::stable_coin::types::StableCoin;
 use crate::types::WebsocketPriceAdapter;
 use crate::{
     error::Error,
     types::{PriceInfo, WebsocketMessage},
 };
-use tokio::{select, sync::Mutex};
-
-use futures_util::StreamExt;
 use std::{collections::HashMap, sync::Arc};
+use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
 /// A caching object storing prices received from binance websocket.
-pub struct BinanceWebsocketService<M: Mapper, S: StableCoin> {
-    socket: Arc<Mutex<BinanceWebsocket<M, S>>>,
+pub struct WebsocketService<W: WebsocketPriceAdapter> {
+    socket: Arc<Mutex<W>>,
     cached_price: Arc<Mutex<HashMap<String, PriceInfo>>>,
     cancellation_token: Option<CancellationToken>,
 }
 
-impl<M: Mapper, S: StableCoin> BinanceWebsocketService<M, S> {
+impl<W: WebsocketPriceAdapter> WebsocketService<W> {
     /// initiate new object from created socket.
-    pub fn new(socket: BinanceWebsocket<M, S>) -> Self {
+    pub fn new(socket: W) -> Self {
         Self {
             socket: Arc::new(Mutex::new(socket)),
             cached_price: Arc::new(Mutex::new(HashMap::new())),
