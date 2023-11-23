@@ -1,8 +1,8 @@
 use crate::mapper::{types::Mapper, BandStaticMapper};
 use crate::stable_coin::{types::StableCoin, BandStableCoin};
-use crate::types::WebsocketMessage;
+use crate::types::{WebsocketMessage, WebsocketPriceAdapter};
 use crate::{error::Error, types::PriceInfo};
-use futures_util::{Stream, StreamExt};
+use futures_util::{stream::FusedStream, Stream, StreamExt};
 use price_adapter_raw::{
     types::WebsocketMessage as WebsocketMessageRaw, BinanceWebsocket as BinanceWebsocketRaw,
 };
@@ -21,8 +21,8 @@ pub struct BinanceWebsocket<M: Mapper, S: StableCoin> {
 
     raw: Option<Arc<Mutex<BinanceWebsocketRaw>>>,
     mapping_back: HashMap<String, String>,
+    ended: bool,
 }
-
 impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
     // Constructor for the `BinanceWebsocket` struct.
     pub fn new(mapper: M, stable_coin: S) -> Self {
@@ -31,10 +31,14 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
             stable_coin,
             raw: None,
             mapping_back: HashMap::new(),
+            ended: false,
         }
     }
+}
 
-    pub async fn connect(&mut self) -> Result<(), Error> {
+#[async_trait::async_trait]
+impl<M: Mapper, S: StableCoin> WebsocketPriceAdapter for BinanceWebsocket<M, S> {
+    async fn connect(&mut self) -> Result<(), Error> {
         let raw = Arc::new(Mutex::new(BinanceWebsocketRaw::new(
             "wss://stream.binance.com:9443",
         )));
@@ -50,7 +54,7 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
         Ok(())
     }
 
-    pub async fn subscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
+    async fn subscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
         // Retrieve the symbol-to-id mapping from the provided mapper.
         let mapping = self.mapper.get_mapping().await?;
 
@@ -73,13 +77,14 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
 
         let raw = self.raw.as_mut().ok_or(Error::Unknown)?;
         let mut locked_raw = raw.lock().await;
-        locked_raw
-            .subscribe(ids.as_slice())
-            .await
-            .map_err(Error::PriceAdapterRawError)
+
+        let result = locked_raw.subscribe(ids.as_slice()).await;
+        // .map_err(Error::PriceAdapterRawError);
+
+        Ok(0)
     }
 
-    pub async fn unsubscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
+    async fn unsubscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
         let ids: Vec<&str> = symbols
             .iter()
             .filter_map(|&symbol| self.mapping_back.get(symbol))
@@ -98,7 +103,7 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
             .map_err(Error::PriceAdapterRawError)
     }
 
-    pub fn is_connected(&self) -> bool {
+    fn is_connected(&self) -> bool {
         self.raw.is_some()
     }
 }
@@ -114,7 +119,11 @@ impl BinanceWebsocket<BandStaticMapper, BandStableCoin> {
 impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
     type Item = Result<WebsocketMessage, Error>;
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        if self.ended {
+            return Poll::Ready(None);
+        }
+
         let Some(raw) = &self.raw else {
             return Poll::Ready(None);
         };
@@ -148,8 +157,18 @@ impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
                 }
                 Err(err) => Poll::Ready(Some(Err(err.into()))),
             },
-            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Ready(None) => {
+                drop(locked_raw);
+                self.ended = true;
+                Poll::Ready(None)
+            }
             Poll::Pending => Poll::Pending,
         }
+    }
+}
+
+impl<M: Mapper, S: StableCoin> FusedStream for BinanceWebsocket<M, S> {
+    fn is_terminated(&self) -> bool {
+        self.ended
     }
 }
