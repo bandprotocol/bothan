@@ -1,5 +1,4 @@
 use futures_util::{stream::FusedStream, SinkExt, Stream, StreamExt};
-use rand::Rng;
 use reqwest::StatusCode;
 use serde_json::json;
 use std::{
@@ -64,8 +63,7 @@ impl BinanceWebsocket {
         let socket = self.socket.as_mut().ok_or(Error::NotConnected)?;
         let (mut write, _) = socket.split();
 
-        let mut rng = rand::thread_rng();
-        let request_id: u32 = rng.gen();
+        let id: u32 = rand::random();
 
         let stream_ids = ids
             .iter()
@@ -76,22 +74,21 @@ impl BinanceWebsocket {
             json!({
                 "method": RequestMethod::Subscribe.to_string(),
                 "params": stream_ids,
-                "id": request_id
+                "id": id
             })
             .to_string(),
         );
 
         write.send(message).await?;
 
-        Ok(request_id)
+        Ok(id)
     }
 
     pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<u32, Error> {
         let socket = self.socket.as_mut().ok_or(Error::NotConnected)?;
         let (mut write, _) = socket.split();
 
-        let mut rng = rand::thread_rng();
-        let request_id: u32 = rng.gen();
+        let id: u32 = rand::random();
 
         let stream_ids = ids
             .iter()
@@ -102,14 +99,14 @@ impl BinanceWebsocket {
             json!({
                 "method": RequestMethod::Unsubscribe.to_string(),
                 "params": stream_ids,
-                "id": request_id
+                "id": id
             })
             .to_string(),
         );
 
         write.send(message).await?;
 
-        Ok(request_id)
+        Ok(id)
     }
 
     pub async fn connect(&mut self) -> Result<(), Error> {
@@ -143,39 +140,37 @@ impl Stream for BinanceWebsocket {
             return Poll::Ready(None);
         };
 
-        loop {
-            match socket.poll_next_unpin(cx) {
-                Poll::Ready(Some(message)) => {
-                    let result = match message {
-                        Ok(Message::Text(text)) => {
-                            tracing::info!("received text message: {}", text);
-                            let response = match parse_message(text) {
-                                Ok(info) => info,
-                                Err(err) => {
-                                    tracing::trace!(
-                                        "cannot convert received text to PriceInfo: {}",
-                                        err
-                                    );
-                                    return Poll::Ready(Some(Err(err)));
-                                }
-                            };
-                            Poll::Ready(Some(Ok(response)))
+        match socket.poll_next_unpin(cx) {
+            Poll::Ready(Some(message)) => {
+                let result = match message {
+                    Ok(Message::Text(text)) => {
+                        tracing::info!("received text message: {}", text);
+                        match parse_message(text) {
+                            Ok(info) => Poll::Ready(Some(Ok(info))),
+                            Err(err) => {
+                                tracing::trace!(
+                                    "cannot convert received text to PriceInfo: {}",
+                                    err
+                                );
+                                Poll::Ready(Some(Err(err)))
+                            }
                         }
-                        Ok(_) => {
-                            tracing::trace!("received non-text message");
-                            continue;
-                        }
-                        Err(err) => Poll::Ready(Some(Err(err.into()))),
-                    };
-                    return result;
-                }
-                Poll::Ready(None) => {
-                    self.ended = true;
-                    return Poll::Ready(None);
-                }
-                Poll::Pending => {
-                    return Poll::Pending;
-                }
+                    }
+                    Ok(_) => {
+                        tracing::trace!("received non-text message");
+                        cx.waker().wake_by_ref();
+                        Poll::Pending
+                    }
+                    Err(err) => Poll::Ready(Some(Err(err.into()))),
+                };
+                return result;
+            }
+            Poll::Ready(None) => {
+                self.ended = true;
+                return Poll::Ready(None);
+            }
+            Poll::Pending => {
+                return Poll::Pending;
             }
         }
     }
