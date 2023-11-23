@@ -1,5 +1,5 @@
-use price_adapter::service::IntervalService;
-use price_adapter::CoinGecko;
+use price_adapter::services::IntervalService;
+use price_adapter::sources::CoinGecko;
 use std::time::Duration;
 
 #[tokio::main]

@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+/// Custom error type for the application.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("unknown error")]

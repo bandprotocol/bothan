@@ -1,13 +1,13 @@
-use super::types::StableCoin;
 use crate::error::Error;
+use crate::types::StableCoin;
 
-// A struct representing a static mapper using a HashMap of String keys to Values.
-pub struct BandStableCoin {}
+/// A struct representing a stable coin with a constant price.
+pub struct BandStableCoin;
 
 impl BandStableCoin {
-    // Constructor to create a new BandStaticMapper from a pre-existing mapping.
+    /// Constructor to create a new BandStableCoin.
     pub fn new() -> Self {
-        Self {}
+        Self
     }
 }
 
@@ -17,10 +17,12 @@ impl Default for BandStableCoin {
     }
 }
 
-// Implementing the Mapper trait for BandStaticMapper.
+// Implementing the StableCoin trait for BandStableCoin.
 impl StableCoin for BandStableCoin {
-    // Retrieve the mapping as a reference, wrapped in a Result.
+    /// Retrieve the price of the stable coin.
+    ///
+    /// This method returns a constant value of 1.0 for any symbol.
     fn get_price(&self, _symbol: String) -> Result<f64, Error> {
-        Ok(1_f64)
+        Ok(1.0)
     }
 }

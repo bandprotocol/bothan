@@ -1,7 +1,7 @@
 use crate::error::Error;
-use crate::mapper::types::Mapper;
-use crate::mapper::BandStaticMapper;
-use crate::types::{PriceAdapter, PriceInfo};
+use crate::mappers::BandStaticMapper;
+use crate::types::Mapper;
+use crate::types::{HttpSource, PriceInfo};
 use price_adapter_raw::CoinGecko as CoinGeckoRaw;
 
 // Generic struct `CoinGecko` parameterized over a `Mapper` type.
@@ -14,8 +14,8 @@ impl<M: Mapper> CoinGecko<M> {
     // Constructor for the `CoinGecko` struct.
     pub fn new(mapper: M, api_key: Option<String>) -> Self {
         // Initialize `CoinGeckoRaw` based on the presence of an API key.
-        let raw = if let Some(key) = api_key {
-            CoinGeckoRaw::new_with_api_key(key)
+        let raw = if let Some(key) = &api_key {
+            CoinGeckoRaw::new_with_api_key(key.to_string())
         } else {
             CoinGeckoRaw::new()
         };
@@ -25,6 +25,7 @@ impl<M: Mapper> CoinGecko<M> {
 }
 
 impl CoinGecko<BandStaticMapper> {
+    // Constructor for a default `CoinGecko` instance with `BandStaticMapper`.
     pub fn default(api_key: Option<String>) -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("coingecko")?;
         Ok(Self::new(mapper, api_key))
@@ -32,14 +33,14 @@ impl CoinGecko<BandStaticMapper> {
 }
 
 #[async_trait::async_trait]
-impl<M: Mapper> PriceAdapter for CoinGecko<M> {
+impl<M: Mapper> HttpSource for CoinGecko<M> {
     // Asynchronous function to get prices for symbols.
     async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
         // Retrieve the symbol-to-id mapping from the provided mapper.
         let mapping = self.mapper.get_mapping().await;
 
         // Match on the result of obtaining the mapping.
-        if let Ok(mapping) = mapping {
+        if let Ok(mapping) = &mapping {
             // Collect symbols with associated ids and indices.
             let ids_with_index: Vec<(&str, &str, usize)> = symbols
                 .iter()

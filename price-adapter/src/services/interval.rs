@@ -1,4 +1,4 @@
-use crate::types::PriceAdapter;
+use crate::types::HttpSource;
 use crate::{error::Error, types::PriceInfo};
 use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
@@ -6,24 +6,24 @@ use tokio::time::sleep;
 use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-/// A caching object storing prices received from binance websocket.
-pub struct IntervalService<P: PriceAdapter> {
-    adapter: Arc<Mutex<P>>,
-    cached_price: Arc<Mutex<HashMap<String, PriceInfo>>>,
+/// A caching object storing prices received from Binance WebSocket at regular intervals.
+pub struct IntervalService<S: HttpSource> {
+    adapter: Arc<Mutex<S>>,
+    cached_prices: Arc<Mutex<HashMap<String, PriceInfo>>>,
     cancellation_token: Option<CancellationToken>,
 }
 
-impl<P: PriceAdapter> IntervalService<P> {
-    /// initiate new object from created socket.
-    pub fn new(adapter: P) -> Self {
+impl<S: HttpSource> IntervalService<S> {
+    /// Creates a new `IntervalService` with the provided HTTP source adapter.
+    pub fn new(adapter: S) -> Self {
         Self {
             adapter: Arc::new(Mutex::new(adapter)),
-            cached_price: Arc::new(Mutex::new(HashMap::new())),
+            cached_prices: Arc::new(Mutex::new(HashMap::new())),
             cancellation_token: None,
         }
     }
 
-    /// start a service.
+    /// Starts the service, fetching prices at regular intervals and caching them.
     pub async fn start(&mut self, symbols: &[&str], interval_sec: u64) -> Result<(), Error> {
         if self.cancellation_token.is_some() {
             return Err(Error::AlreadyStarted);
@@ -33,7 +33,7 @@ impl<P: PriceAdapter> IntervalService<P> {
         let cloned_token = token.clone();
         let cloned_adapter = Arc::clone(&self.adapter);
         let cloned_symbols: Vec<String> = symbols.iter().map(|&s| s.to_string()).collect();
-        let cloned_cached_price = Arc::clone(&self.cached_price);
+        let cloned_cached_prices = Arc::clone(&self.cached_prices);
         let interval_duration = Duration::from_secs(interval_sec);
         self.cancellation_token = Some(token);
 
@@ -41,18 +41,19 @@ impl<P: PriceAdapter> IntervalService<P> {
             loop {
                 let borrowed_symbols: Vec<&str> =
                     cloned_symbols.iter().map(|s| s.as_str()).collect();
-                let locked_adapter: tokio::sync::MutexGuard<'_, P> = cloned_adapter.lock().await;
+                let locked_adapter = cloned_adapter.lock().await;
+
                 select! {
                     _ = cloned_token.cancelled() => {
                         break;
                     }
 
-                    prices = locked_adapter.get_prices(borrowed_symbols.as_slice()) => {
+                    prices = locked_adapter.get_prices(&borrowed_symbols) => {
                         drop(locked_adapter);
 
+                        let mut locked_cached_prices = cloned_cached_prices.lock().await;
                         for price in prices.into_iter().flatten() {
-                            let mut locked_cached_price = cloned_cached_price.lock().await;
-                            locked_cached_price.insert(price.symbol.to_string(), price);
+                            locked_cached_prices.insert(price.symbol.to_string(), price);
                         }
                     }
                 }
@@ -64,7 +65,7 @@ impl<P: PriceAdapter> IntervalService<P> {
         Ok(())
     }
 
-    /// stop a service.
+    /// Stops the service, cancelling the interval fetching.
     pub fn stop(&mut self) {
         if let Some(token) = &self.cancellation_token {
             token.cancel();
@@ -72,19 +73,19 @@ impl<P: PriceAdapter> IntervalService<P> {
         self.cancellation_token = None;
     }
 
+    /// Retrieves prices for the specified symbols from the cached prices.
     pub async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
-        let mut prices = Vec::new();
-        let locked_cached_price = self.cached_price.lock().await;
-
-        for &symbol in symbols {
-            let price = match locked_cached_price.get(&symbol.to_ascii_uppercase()) {
-                Some(price) => Ok(price.clone()),
-                None => Err(Error::NotFound(symbol.to_string())),
-            };
-
-            prices.push(price);
-        }
-
-        prices
+        let locked_cached_prices = self.cached_prices.lock().await;
+        symbols
+            .iter()
+            .map(|&symbol| {
+                locked_cached_prices
+                    .get(&symbol.to_ascii_uppercase())
+                    .map_or_else(
+                        || Err(Error::NotFound(symbol.to_string())),
+                        |price| Ok(price.clone()),
+                    )
+            })
+            .collect()
     }
 }
