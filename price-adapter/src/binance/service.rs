@@ -1,6 +1,7 @@
 use super::websocket::BinanceWebsocket;
 use crate::mapper::types::Mapper;
 use crate::stable_coin::types::StableCoin;
+use crate::types::WebsocketPriceAdapter;
 use crate::{
     error::Error,
     types::{PriceInfo, WebsocketMessage},

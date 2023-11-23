@@ -1,4 +1,5 @@
 use futures_util::StreamExt;
+use price_adapter::types::WebsocketPriceAdapter;
 use price_adapter::BinanceWebsocket;
 
 #[tokio::main]
