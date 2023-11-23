@@ -109,7 +109,7 @@ impl<M: Mapper, S: StableCoin> WebsocketPriceAdapter for BinanceWebsocket<M, S> 
 }
 
 impl BinanceWebsocket<BandStaticMapper, BandStableCoin> {
-    pub fn default() -> Result<Self, Error> {
+    pub fn new_with_default() -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("binance")?;
         let stable_coin = BandStableCoin::new();
         Ok(Self::new(mapper, stable_coin))

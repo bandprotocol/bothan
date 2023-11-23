@@ -50,11 +50,9 @@ impl<P: PriceAdapter> IntervalService<P> {
                     prices = locked_adapter.get_prices(borrowed_symbols.as_slice()) => {
                         drop(locked_adapter);
 
-                        for price in prices {
-                            if let Ok(p) = price {
-                                let mut locked_cached_price = cloned_cached_price.lock().await;
-                                locked_cached_price.insert(p.symbol.to_string(), p);
-                            }
+                        for price in prices.into_iter().flatten() {
+                            let mut locked_cached_price = cloned_cached_price.lock().await;
+                            locked_cached_price.insert(price.symbol.to_string(), price);
                         }
                     }
                 }
