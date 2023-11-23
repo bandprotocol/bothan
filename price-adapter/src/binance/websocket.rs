@@ -78,10 +78,10 @@ impl<M: Mapper, S: StableCoin> WebsocketPriceAdapter for BinanceWebsocket<M, S> 
         let raw = self.raw.as_mut().ok_or(Error::Unknown)?;
         let mut locked_raw = raw.lock().await;
 
-        let result = locked_raw.subscribe(ids.as_slice()).await;
-        // .map_err(Error::PriceAdapterRawError);
-
-        Ok(0)
+        locked_raw
+            .subscribe(ids.as_slice())
+            .await
+            .map_err(Error::PriceAdapterRawError)
     }
 
     async fn unsubscribe(&mut self, symbols: &[&str]) -> Result<u32, Error> {
