@@ -19,7 +19,13 @@ impl BandStaticMapper {
 
     /// Constructor to create a BandStaticMapper from a source file.
     pub fn from_source(source: &str) -> Result<Self, Error> {
-        let path = format!("resources/{}.json", source.to_lowercase());
+        // let path = format!("resources/{}.json", source.to_lowercase());
+        let crate_path = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let path = crate_path
+            .parent()
+            .map(|x| x.join(format!("resources/{}.json", source.to_lowercase())))
+            .ok_or(Error::InvalidPath)?;
+
         Self::from_path(path)
     }
 

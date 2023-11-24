@@ -29,4 +29,7 @@ pub enum Error {
 
     #[error("Not found: {0}")]
     NotFound(String),
+
+    #[error("Path is invalid")]
+    InvalidPath,
 }
