@@ -18,6 +18,9 @@ pub enum Error {
     #[error("unsupported symbol")]
     UnsupportedSymbol,
 
+    #[error("unsupported source")]
+    UnsupportedSource,
+
     #[error("mapping error")]
     MappingError,
 
