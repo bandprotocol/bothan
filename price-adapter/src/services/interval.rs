@@ -1,4 +1,4 @@
-use crate::types::HttpSource;
+use crate::types::Source;
 use crate::{error::Error, types::PriceInfo};
 use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
@@ -7,13 +7,13 @@ use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
 /// A caching object storing prices received from Binance WebSocket at regular intervals.
-pub struct IntervalService<S: HttpSource> {
+pub struct IntervalService<S: Source> {
     adapter: Arc<Mutex<S>>,
     cached_prices: Arc<Mutex<HashMap<String, PriceInfo>>>,
     cancellation_token: Option<CancellationToken>,
 }
 
-impl<S: HttpSource> IntervalService<S> {
+impl<S: Source> IntervalService<S> {
     /// Creates a new `IntervalService` with the provided HTTP source adapter.
     pub fn new(adapter: S) -> Self {
         Self {
@@ -72,9 +72,12 @@ impl<S: HttpSource> IntervalService<S> {
         }
         self.cancellation_token = None;
     }
+}
 
+#[async_trait::async_trait]
+impl<S: Source> Source for IntervalService<S> {
     /// Retrieves prices for the specified symbols from the cached prices.
-    pub async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
+    async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
         let locked_cached_prices = self.cached_prices.lock().await;
         symbols
             .iter()
@@ -87,5 +90,13 @@ impl<S: HttpSource> IntervalService<S> {
                     )
             })
             .collect()
+    }
+
+    // Asynchronous function to get price for a symbol.
+    async fn get_price(&self, symbol: &str) -> Result<PriceInfo, Error> {
+        self.get_prices(&[symbol])
+            .await
+            .pop()
+            .ok_or(Error::Unknown)?
     }
 }

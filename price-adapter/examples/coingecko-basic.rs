@@ -1,5 +1,5 @@
 use price_adapter::sources::CoinGecko;
-use price_adapter::types::HttpSource;
+use price_adapter::types::Source;
 
 #[tokio::main]
 async fn main() {

@@ -6,15 +6,19 @@ use futures_util::{stream::FusedStream, StreamExt};
 /// Represents a source for fetching prices through HTTP requests.
 ///
 /// This trait defines methods for obtaining price information for a given set
-/// of symbols using HTTP requests. Implementors are expected to provide an
+/// of symbols. Implementors are expected to provide an
 /// asynchronous implementation for retrieving prices.
-pub trait HttpSource: Send + Sync + 'static {
+pub trait Source: Send + Sync + 'static {
     /// Asynchronously retrieves prices for the specified symbols.
     ///
-    /// This method takes a slice of symbol strings and returns a vector of
-    /// `Result<PriceInfo, Error>`. Each result represents the outcome of
+    /// Return a vector of `Result<PriceInfo, Error>`. Each result represents the outcome of
     /// attempting to fetch price information for a specific symbol.
     async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>>;
+
+    /// Asynchronously retrieves the price for a specified symbol.
+    ///
+    /// Return price information for the specified symbol.
+    async fn get_price(&self, symbol: &str) -> Result<PriceInfo, Error>;
 }
 
 #[async_trait::async_trait]

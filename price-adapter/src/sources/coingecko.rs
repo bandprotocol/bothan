@@ -1,7 +1,7 @@
 use crate::error::Error;
 use crate::mappers::BandStaticMapper;
 use crate::types::Mapper;
-use crate::types::{HttpSource, PriceInfo};
+use crate::types::{PriceInfo, Source};
 use price_adapter_raw::CoinGecko as CoinGeckoRaw;
 
 // Generic struct `CoinGecko` parameterized over a `Mapper` type.
@@ -33,7 +33,7 @@ impl CoinGecko<BandStaticMapper> {
 }
 
 #[async_trait::async_trait]
-impl<M: Mapper> HttpSource for CoinGecko<M> {
+impl<M: Mapper> Source for CoinGecko<M> {
     // Asynchronous function to get prices for symbols.
     async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
         // Retrieve the symbol-to-id mapping from the provided mapper.
@@ -82,5 +82,13 @@ impl<M: Mapper> HttpSource for CoinGecko<M> {
             // Return errors for symbols if there's an issue with the mapping.
             symbols.iter().map(|_| Err(Error::MappingError)).collect()
         }
+    }
+
+    // Asynchronous function to get price for a symbol.
+    async fn get_price(&self, symbol: &str) -> Result<PriceInfo, Error> {
+        self.get_prices(&[symbol])
+            .await
+            .pop()
+            .ok_or(Error::Unknown)?
     }
 }

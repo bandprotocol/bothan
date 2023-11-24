@@ -1,6 +1,6 @@
 use crate::{
     error::Error,
-    types::{PriceInfo, WebSocketSource, WebsocketMessage},
+    types::{PriceInfo, Source, WebSocketSource, WebsocketMessage},
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::{select, sync::Mutex};
@@ -79,9 +79,12 @@ impl<S: WebSocketSource> WebsocketService<S> {
         }
         self.cancellation_token = None;
     }
+}
 
+#[async_trait::async_trait]
+impl<S: WebSocketSource> Source for WebsocketService<S> {
     /// Retrieves prices for the specified symbols from the cached prices.
-    pub async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
+    async fn get_prices(&self, symbols: &[&str]) -> Vec<Result<PriceInfo, Error>> {
         let locked_cached_prices = self.cached_prices.lock().await;
         symbols
             .iter()
@@ -94,5 +97,13 @@ impl<S: WebSocketSource> WebsocketService<S> {
                     )
             })
             .collect()
+    }
+
+    // Asynchronous function to get price for a symbol.
+    async fn get_price(&self, symbol: &str) -> Result<PriceInfo, Error> {
+        self.get_prices(&[symbol])
+            .await
+            .pop()
+            .ok_or(Error::Unknown)?
     }
 }
