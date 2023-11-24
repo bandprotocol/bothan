@@ -1,6 +1,5 @@
 use crate::error::Error;
 use crate::types::Mapper;
-use include_dir::{include_dir, Dir};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;

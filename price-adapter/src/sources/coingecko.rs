@@ -26,7 +26,7 @@ impl<M: Mapper> CoinGecko<M> {
 
 impl CoinGecko<BandStaticMapper> {
     // Constructor for a default `CoinGecko` instance with `BandStaticMapper`.
-    pub fn default(api_key: Option<String>) -> Result<Self, Error> {
+    pub fn new_with_default(api_key: Option<String>) -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("coingecko")?;
         Ok(Self::new(mapper, api_key))
     }
