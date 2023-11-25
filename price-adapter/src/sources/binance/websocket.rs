@@ -1,11 +1,12 @@
 use crate::mappers::BandStaticMapper;
-use crate::stable_coin::BandStableCoin;
-use crate::types::{Mapper, SettingResponse, StableCoin, WebSocketSource, WebsocketMessage};
+use crate::sources::BandStableCoin;
+use crate::types::{Mapper, SettingResponse, Source, WebSocketSource, WebsocketMessage};
 use crate::{error::Error, types::PriceInfo};
 use futures_util::{stream::FusedStream, Stream, StreamExt};
 use price_adapter_raw::{
     types::WebsocketMessage as WebsocketMessageRaw, BinanceWebsocket as BinanceWebsocketRaw,
 };
+use std::time::Duration;
 use std::{
     collections::HashMap,
     pin::Pin,
@@ -13,22 +14,28 @@ use std::{
     task::{Context, Poll},
 };
 use tokio::sync::Mutex;
+use tokio::time::sleep;
 
 /// A generic struct `BinanceWebsocket` parameterized over `Mapper` and `StableCoin` types.
-pub struct BinanceWebsocket<M: Mapper, S: StableCoin> {
+pub struct BinanceWebsocket<M: Mapper, S: Source> {
     mapper: M,
-    stable_coin: S,
+    usdt_source: Arc<S>,
+    usdt_interval: Duration,
+
+    usdt_price: Arc<Mutex<Option<PriceInfo>>>,
     raw: Option<Arc<Mutex<BinanceWebsocketRaw>>>,
     mapping_back: HashMap<String, String>,
     ended: bool,
 }
 
-impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
+impl<M: Mapper, S: Source> BinanceWebsocket<M, S> {
     /// Constructor for the `BinanceWebsocket` struct.
-    pub fn new(mapper: M, stable_coin: S) -> Self {
+    pub fn new(mapper: M, usdt_source: S, usdt_interval: Duration) -> Self {
         Self {
             mapper,
-            stable_coin,
+            usdt_source: Arc::new(usdt_source),
+            usdt_interval,
+            usdt_price: Arc::new(Mutex::new(None)),
             raw: None,
             mapping_back: HashMap::new(),
             ended: false,
@@ -38,7 +45,7 @@ impl<M: Mapper, S: StableCoin> BinanceWebsocket<M, S> {
 
 // Implementing the WebSocketSource trait for BinanceWebsocket.
 #[async_trait::async_trait]
-impl<M: Mapper, S: StableCoin> WebSocketSource for BinanceWebsocket<M, S> {
+impl<M: Mapper, S: Source> WebSocketSource for BinanceWebsocket<M, S> {
     /// Asynchronous function to connect to the WebSocket.
     async fn connect(&mut self) -> Result<(), Error> {
         let raw = Arc::new(Mutex::new(BinanceWebsocketRaw::new(
@@ -52,6 +59,25 @@ impl<M: Mapper, S: StableCoin> WebSocketSource for BinanceWebsocket<M, S> {
         drop(locked_raw);
 
         self.raw = Some(raw);
+
+        let cloned_usdt_source = Arc::clone(&self.usdt_source);
+        let cloned_usdt_price = Arc::clone(&self.usdt_price);
+        let cloned_usdt_interval = self.usdt_interval;
+
+        tokio::spawn(async move {
+            loop {
+                let price_info = cloned_usdt_source.get_price("USDT").await;
+                let mut locked_usdt_price = cloned_usdt_price.lock().await;
+                if let Ok(price) = price_info {
+                    *locked_usdt_price = Some(price);
+                } else {
+                    *locked_usdt_price = None;
+                }
+                drop(locked_usdt_price);
+
+                sleep(cloned_usdt_interval).await;
+            }
+        });
 
         Ok(())
     }
@@ -118,13 +144,13 @@ impl BinanceWebsocket<BandStaticMapper, BandStableCoin> {
     /// Constructor for creating a new BinanceWebsocket with default settings.
     pub fn new_with_default() -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("binance")?;
-        let stable_coin = BandStableCoin::new();
-        Ok(Self::new(mapper, stable_coin))
+        let band_stable_coin = BandStableCoin::new();
+        Ok(Self::new(mapper, band_stable_coin, Duration::from_secs(5)))
     }
 }
 
 // Implementing Stream for BinanceWebsocket.
-impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
+impl<M: Mapper, S: Source> Stream for BinanceWebsocket<M, S> {
     type Item = Result<WebsocketMessage, Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -141,17 +167,24 @@ impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
             return Poll::Pending;
         };
 
+        let clone_usdt_price = Arc::clone(&self.usdt_price);
+        let Ok(locked_usdt_price) = clone_usdt_price.try_lock() else {
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        };
+
+        let Some(usdt_price) = &*locked_usdt_price else {
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        };
+
         match locked_raw.poll_next_unpin(cx) {
             Poll::Ready(Some(message)) => match message {
                 Ok(WebsocketMessageRaw::PriceInfo(price_info_raw)) => {
                     if let Some(symbol) = self.mapping_back.get(&price_info_raw.id) {
-                        let Ok(usdt_price) = self.stable_coin.get_price("USDT".to_string()) else {
-                            return Poll::Pending;
-                        };
-
                         Poll::Ready(Some(Ok(WebsocketMessage::PriceInfo(PriceInfo {
                             symbol: symbol.to_string(),
-                            price: price_info_raw.price / usdt_price,
+                            price: price_info_raw.price / usdt_price.price,
                             timestamp: price_info_raw.timestamp,
                         }))))
                     } else {
@@ -178,7 +211,7 @@ impl<M: Mapper, S: StableCoin> Stream for BinanceWebsocket<M, S> {
 }
 
 // Implementing FusedStream for BinanceWebsocket.
-impl<M: Mapper, S: StableCoin> FusedStream for BinanceWebsocket<M, S> {
+impl<M: Mapper, S: Source> FusedStream for BinanceWebsocket<M, S> {
     /// Check if the stream is terminated.
     fn is_terminated(&self) -> bool {
         self.ended

@@ -32,4 +32,7 @@ pub enum Error {
 
     #[error("Not found: {0}")]
     NotFound(String),
+
+    #[error("system-time error: {0}")]
+    SystemTimeError(#[from] std::time::SystemTimeError),
 }

@@ -8,7 +8,7 @@ use futures_util::{stream::FusedStream, StreamExt};
 /// This trait defines methods for obtaining price information for a given set
 /// of symbols. Implementors are expected to provide an
 /// asynchronous implementation for retrieving prices.
-pub trait Source: Send + Sync + 'static {
+pub trait Source: Send + Sync + Unpin + 'static {
     /// Asynchronously retrieves prices for the specified symbols.
     ///
     /// Return a vector of `Result<PriceInfo, Error>`. Each result represents the outcome of

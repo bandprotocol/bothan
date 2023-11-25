@@ -32,7 +32,7 @@ impl BandStaticMapper {
         }?;
 
         // Deserialize the JSON content into a HashMap<String, Value>.
-        let mapping = serde_json::from_str(&content)?;
+        let mapping = serde_json::from_str(content)?;
 
         Ok(Self { mapping })
     }
