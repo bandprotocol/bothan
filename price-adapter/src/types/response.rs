@@ -1,12 +1,12 @@
 use core::fmt;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Represents information about the price of a symbol.
 ///
 /// This struct is used to store details about the price of a symbol,
 /// including the symbol name, the price value, and the timestamp.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PriceInfo {
     pub symbol: String,
     pub price: f64,
