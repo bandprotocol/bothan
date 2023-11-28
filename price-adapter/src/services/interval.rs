@@ -6,7 +6,7 @@ use tokio::time::sleep;
 use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-/// A caching object storing prices received from Binance WebSocket at regular intervals.
+/// A caching object storing prices received from Source at regular intervals.
 pub struct IntervalService<S: Source> {
     adapter: Arc<Mutex<S>>,
     cached_prices: Arc<Mutex<HashMap<String, PriceInfo>>>,
@@ -14,7 +14,7 @@ pub struct IntervalService<S: Source> {
 }
 
 impl<S: Source> IntervalService<S> {
-    /// Creates a new `IntervalService` with the provided HTTP source adapter.
+    /// Creates a new `IntervalService` with the provided Source.
     pub fn new(adapter: S) -> Self {
         Self {
             adapter: Arc::new(Mutex::new(adapter)),

@@ -6,7 +6,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-/// A caching object storing prices received from Binance WebSocket.
+/// A caching object storing prices received from WebSocketSource.
 pub struct WebsocketService<S: WebSocketSource> {
     socket: Arc<Mutex<S>>,
     cached_prices: Arc<Mutex<HashMap<String, PriceInfo>>>,
@@ -14,7 +14,7 @@ pub struct WebsocketService<S: WebSocketSource> {
 }
 
 impl<S: WebSocketSource> WebsocketService<S> {
-    /// Creates a new `WebsocketService` with the provided WebSocket source.
+    /// Creates a new `WebsocketService` with the provided WebSocketSource.
     pub fn new(socket: S) -> Self {
         Self {
             socket: Arc::new(Mutex::new(socket)),
