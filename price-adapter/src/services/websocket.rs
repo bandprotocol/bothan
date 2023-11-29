@@ -1,6 +1,6 @@
 use crate::{
     error::Error,
-    types::{PriceInfo, Source, WebSocketSource, WebsocketMessage},
+    types::{PriceInfo, Service, Source, WebSocketSource, WebsocketMessage},
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::{select, sync::Mutex};
@@ -22,9 +22,12 @@ impl<S: WebSocketSource> WebsocketService<S> {
             cancellation_token: None,
         }
     }
+}
 
+#[async_trait::async_trait]
+impl<S: WebSocketSource> Service for WebsocketService<S> {
     /// Starts the service, connecting to the WebSocket and subscribing to symbols.
-    pub async fn start(&mut self, symbols: &[&str]) -> Result<(), Error> {
+    async fn start(&mut self, symbols: &[&str]) -> Result<(), Error> {
         if self.started() {
             return Err(Error::AlreadyStarted);
         }
@@ -73,7 +76,7 @@ impl<S: WebSocketSource> WebsocketService<S> {
     }
 
     /// Stops the service, cancelling the WebSocket subscription.
-    pub fn stop(&mut self) {
+    fn stop(&mut self) {
         if let Some(token) = &self.cancellation_token {
             token.cancel();
         }
@@ -81,7 +84,7 @@ impl<S: WebSocketSource> WebsocketService<S> {
     }
 
     // To check if the service is started.
-    pub fn started(&self) -> bool {
+    fn started(&self) -> bool {
         self.cancellation_token.is_some()
     }
 }

@@ -1,6 +1,6 @@
 use price_adapter::services::WebsocketService;
 use price_adapter::sources::BinanceWebsocket;
-use price_adapter::types::Source;
+use price_adapter::types::{Service, Source};
 use std::time::Duration;
 
 #[tokio::main]
