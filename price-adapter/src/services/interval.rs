@@ -25,7 +25,7 @@ impl<S: Source> IntervalService<S> {
 
     /// Starts the service, fetching prices at regular intervals and caching them.
     pub async fn start(&mut self, symbols: &[&str], interval_sec: u64) -> Result<(), Error> {
-        if self.cancellation_token.is_some() {
+        if self.started() {
             return Err(Error::AlreadyStarted);
         }
 
@@ -71,6 +71,11 @@ impl<S: Source> IntervalService<S> {
             token.cancel();
         }
         self.cancellation_token = None;
+    }
+
+    // To check if the service is started.
+    pub fn started(&self) -> bool {
+        self.cancellation_token.is_some()
     }
 }
 

@@ -25,7 +25,7 @@ impl<S: WebSocketSource> WebsocketService<S> {
 
     /// Starts the service, connecting to the WebSocket and subscribing to symbols.
     pub async fn start(&mut self, symbols: &[&str]) -> Result<(), Error> {
-        if self.cancellation_token.is_some() {
+        if self.started() {
             return Err(Error::AlreadyStarted);
         }
 
@@ -78,6 +78,11 @@ impl<S: WebSocketSource> WebsocketService<S> {
             token.cancel();
         }
         self.cancellation_token = None;
+    }
+
+    // To check if the service is started.
+    pub fn started(&self) -> bool {
+        self.cancellation_token.is_some()
     }
 }
 
