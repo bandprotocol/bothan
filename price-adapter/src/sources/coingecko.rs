@@ -4,6 +4,8 @@ use crate::types::Mapper;
 use crate::types::{PriceInfo, Source};
 use price_adapter_raw::CoinGecko as CoinGeckoRaw;
 
+pub type DefaultCoinGecko = CoinGecko<BandStaticMapper>;
+
 // Generic struct `CoinGecko` parameterized over a `Mapper` type.
 pub struct CoinGecko<M: Mapper> {
     raw: CoinGeckoRaw,
@@ -24,7 +26,7 @@ impl<M: Mapper> CoinGecko<M> {
     }
 }
 
-impl CoinGecko<BandStaticMapper> {
+impl DefaultCoinGecko {
     // Constructor for a default `CoinGecko` instance with `BandStaticMapper`.
     pub fn new_with_default(api_key: Option<String>) -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("coingecko")?;

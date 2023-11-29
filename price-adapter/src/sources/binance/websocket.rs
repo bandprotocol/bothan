@@ -16,6 +16,8 @@ use std::{
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
+pub type DefaultBinanceWebsocket = BinanceWebsocket<BandStaticMapper, BandStableCoin>;
+
 /// A generic struct `BinanceWebsocket` parameterized over `Mapper` and `StableCoin` types.
 pub struct BinanceWebsocket<M: Mapper, S: Source> {
     mapper: M,
@@ -140,7 +142,7 @@ impl<M: Mapper, S: Source> WebSocketSource for BinanceWebsocket<M, S> {
 }
 
 // Implementing BinanceWebsocket for specific types (BandStaticMapper, BandStableCoin).
-impl BinanceWebsocket<BandStaticMapper, BandStableCoin> {
+impl DefaultBinanceWebsocket {
     /// Constructor for creating a new BinanceWebsocket with default settings.
     pub fn new_with_default() -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("binance")?;
