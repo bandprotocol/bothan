@@ -39,7 +39,7 @@ impl<S: Source> Service for IntervalService<S> {
         let cloned_adapter = Arc::clone(&self.adapter);
         let cloned_symbols: Vec<String> = symbols.iter().map(|&s| s.to_string()).collect();
         let cloned_cached_prices = Arc::clone(&self.cached_prices);
-        let interval_duration = self.interval.clone();
+        let interval_duration = self.interval
         self.cancellation_token = Some(token);
 
         tokio::spawn(async move {
