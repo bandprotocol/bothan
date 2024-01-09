@@ -13,7 +13,7 @@ use crate::{
 pub struct BinanceWebsocketService {
     socket: Arc<Mutex<BinanceWebsocket>>,
     cached_price: Arc<Mutex<HashMap<String, PriceInfo>>>,
-    cancellation_token: Option<CancellationToken>,
+    cancellation_token: Mutex<Option<CancellationToken>>,
 }
 
 impl BinanceWebsocketService {
@@ -22,15 +22,21 @@ impl BinanceWebsocketService {
         Self {
             socket: Arc::new(Mutex::new(socket)),
             cached_price: Arc::new(Mutex::new(HashMap::new())),
-            cancellation_token: None,
+            cancellation_token: Mutex::new(None),
         }
     }
 
     /// start a service.
-    pub async fn start(&mut self, ids: &[&str]) -> Result<(), Error> {
-        if self.cancellation_token.is_some() {
+    pub async fn start(&self, ids: &[&str]) -> Result<(), Error> {
+        let mut locked_token = self.cancellation_token.lock().await;
+        if locked_token.is_some() {
             return Err(Error::AlreadyStarted);
         }
+
+        let token = CancellationToken::new();
+        let cloned_token = token.clone();
+        *locked_token = Some(token);
+        drop(locked_token);
 
         let mut locked_socket = self.socket.lock().await;
         if !locked_socket.is_connected() {
@@ -39,11 +45,8 @@ impl BinanceWebsocketService {
         }
         drop(locked_socket);
 
-        let token = CancellationToken::new();
-        let cloned_token = token.clone();
         let cloned_socket = Arc::clone(&self.socket);
         let cloned_cached_price = Arc::clone(&self.cached_price);
-        self.cancellation_token = Some(token);
 
         tokio::spawn(async move {
             loop {
@@ -79,11 +82,11 @@ impl BinanceWebsocketService {
     }
 
     /// stop a service.
-    pub fn stop(&mut self) {
-        if let Some(token) = &self.cancellation_token {
+    pub async fn stop(&self) {
+        let mut locked_token = self.cancellation_token.lock().await;
+        if let Some(token) = locked_token.take() {
             token.cancel();
         }
-        self.cancellation_token = None;
     }
 
     pub async fn get_prices(&self, ids: &[&str]) -> Vec<Result<PriceInfo, Error>> {
