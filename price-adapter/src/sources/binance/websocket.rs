@@ -18,7 +18,7 @@ use tokio::time::sleep;
 
 pub type DefaultBinanceWebsocket = BinanceWebsocket<BandStaticMapper, BandStableCoin>;
 
-/// A generic struct `BinanceWebsocket` parameterized over `Mapper` and `StableCoin` types.
+/// A generic struct `BinanceWebsocket` parameterized over `Mapper` and `Source` types.
 pub struct BinanceWebsocket<M: Mapper, S: Source> {
     mapper: M,
     usdt_source: Arc<S>,
@@ -189,11 +189,11 @@ impl<M: Mapper, S: Source> Stream for BinanceWebsocket<M, S> {
                 }
                 Ok(WebsocketMessageRaw::SettingResponse(response)) => {
                     tracing::trace!("received setting response raw: {:?}", response);
-                    return Poll::Ready(Some(Ok(WebsocketMessage::SettingResponse(
+                    Poll::Ready(Some(Ok(WebsocketMessage::SettingResponse(
                         SettingResponse {
                             data: response.data,
                         },
-                    ))));
+                    ))))
                 }
                 Err(err) => Poll::Ready(Some(Err(err.into()))),
             },
