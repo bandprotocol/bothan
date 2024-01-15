@@ -31,18 +31,16 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"]);
+//!     let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443");
 //!     binance_ws.connect().await.unwrap();
-//!     while let Some(data) = binance_ws.next().await {
-//!         match data {
-//!             Ok(price) => {
-//!                 println!("price: {}", price);
-//!                 # break;
-//!             }
-//!             Err(e) => {
-//!                 eprintln!("Error: {}", e);
-//!                 break;
-//!             }
+//!     binance_ws.subscribe(&["ethbtc", "btcusdt"]).await;
+//!     let data = binance_ws.next().await.unwrap();
+//!     match data {
+//!         Ok(price) => {
+//!             println!("price: {:?}", price);
+//!         }
+//!         Err(e) => {
+//!             eprintln!("Error: {}", e);
 //!         }
 //!     }
 //! }
@@ -55,10 +53,9 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443", &["ethbtc", "btcusdt"]);
-//!
+//!     let mut binance_ws = BinanceWebsocket::new("wss://stream.binance.com:9443");
 //!     let mut service = BinanceWebsocketService::new(binance_ws);
-//!     service.start().await.unwrap();
+//!     service.start(&["ethbtc", "btcusdt"]).await.unwrap();
 //!     tokio::time::sleep(Duration::from_secs(1)).await;
 //!
 //!     let price = service.get_prices(&["btcusdt"]).await;

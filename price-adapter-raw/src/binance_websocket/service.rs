@@ -13,7 +13,7 @@ use crate::{
 pub struct BinanceWebsocketService {
     socket: Arc<Mutex<BinanceWebsocket>>,
     cached_price: Arc<Mutex<HashMap<String, PriceInfo>>>,
-    cancellation_token: Mutex<Option<CancellationToken>>,
+    cancellation_token: Arc<Mutex<Option<CancellationToken>>>,
 }
 
 impl BinanceWebsocketService {
@@ -22,7 +22,7 @@ impl BinanceWebsocketService {
         Self {
             socket: Arc::new(Mutex::new(socket)),
             cached_price: Arc::new(Mutex::new(HashMap::new())),
-            cancellation_token: Mutex::new(None),
+            cancellation_token: Arc::new(Mutex::new(None)),
         }
     }
 

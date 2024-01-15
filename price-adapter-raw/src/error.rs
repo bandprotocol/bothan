@@ -29,9 +29,6 @@ pub enum Error {
 
     #[error("Not found: {0}")]
     NotFound(String),
-
-    #[error("cannot use {0} as quote")]
-    ZeroPrice(String),
 }
 
 impl From<std::num::ParseFloatError> for Error {
