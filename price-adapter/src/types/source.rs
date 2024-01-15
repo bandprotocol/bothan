@@ -44,5 +44,5 @@ pub trait WebSocketSource:
     async fn unsubscribe(&mut self, symbols: &[&str]) -> Result<u32, Error>;
 
     /// Checks whether the WebSocket is currently connected.
-    fn is_connected(&self) -> bool;
+    async fn is_connected(&self) -> bool;
 }

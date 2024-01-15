@@ -30,7 +30,7 @@ impl<S: Source> IntervalService<S> {
 impl<S: Source> Service for IntervalService<S> {
     /// Starts the service, fetching prices at regular intervals and caching them.
     async fn start(&mut self, symbols: &[&str]) -> Result<(), Error> {
-        if self.started() {
+        if self.is_started().await {
             return Err(Error::AlreadyStarted);
         }
 
@@ -71,7 +71,7 @@ impl<S: Source> Service for IntervalService<S> {
     }
 
     /// Stops the service, cancelling the interval fetching.
-    fn stop(&mut self) {
+    async fn stop(&mut self) {
         if let Some(token) = &self.cancellation_token {
             token.cancel();
         }
@@ -79,7 +79,7 @@ impl<S: Source> Service for IntervalService<S> {
     }
 
     // To check if the service is started.
-    fn started(&self) -> bool {
+    async fn is_started(&self) -> bool {
         self.cancellation_token.is_some()
     }
 }

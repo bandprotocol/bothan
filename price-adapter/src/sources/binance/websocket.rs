@@ -25,7 +25,7 @@ pub struct BinanceWebsocket<M: Mapper, S: Source> {
     usdt_interval: Duration,
 
     usdt_price: Arc<Mutex<Option<PriceInfo>>>,
-    raw: Option<Arc<Mutex<BinanceWebsocketRaw>>>,
+    raw: Arc<Mutex<BinanceWebsocketRaw>>,
     mapping_back: HashMap<String, String>,
     ended: bool,
 }
@@ -38,7 +38,9 @@ impl<M: Mapper, S: Source> BinanceWebsocket<M, S> {
             usdt_source: Arc::new(usdt_source),
             usdt_interval,
             usdt_price: Arc::new(Mutex::new(None)),
-            raw: None,
+            raw: Arc::new(Mutex::new(BinanceWebsocketRaw::new(
+                "wss://stream.binance.com:9443",
+            ))),
             mapping_back: HashMap::new(),
             ended: false,
         }
@@ -50,17 +52,11 @@ impl<M: Mapper, S: Source> BinanceWebsocket<M, S> {
 impl<M: Mapper, S: Source> WebSocketSource for BinanceWebsocket<M, S> {
     /// Asynchronous function to connect to the WebSocket.
     async fn connect(&mut self) -> Result<(), Error> {
-        let raw = Arc::new(Mutex::new(BinanceWebsocketRaw::new(
-            "wss://stream.binance.com:9443",
-        )));
-
-        let mut locked_raw = raw.lock().await;
+        let mut locked_raw = self.raw.lock().await;
         if !locked_raw.is_connected() {
             locked_raw.connect().await?;
         }
         drop(locked_raw);
-
-        self.raw = Some(raw);
 
         let cloned_usdt_source = Arc::clone(&self.usdt_source);
         let cloned_usdt_price = Arc::clone(&self.usdt_price);
@@ -106,9 +102,7 @@ impl<M: Mapper, S: Source> WebSocketSource for BinanceWebsocket<M, S> {
             return Err(Error::UnsupportedSymbol);
         }
 
-        let raw = self.raw.as_mut().ok_or(Error::Unknown)?;
-        let mut locked_raw = raw.lock().await;
-
+        let mut locked_raw = self.raw.lock().await;
         locked_raw
             .subscribe(ids.as_slice())
             .await
@@ -127,8 +121,7 @@ impl<M: Mapper, S: Source> WebSocketSource for BinanceWebsocket<M, S> {
             return Err(Error::UnsupportedSymbol);
         }
 
-        let raw = self.raw.as_mut().ok_or(Error::Unknown)?;
-        let mut locked_raw = raw.lock().await;
+        let mut locked_raw = self.raw.lock().await;
         locked_raw
             .unsubscribe(ids.as_slice())
             .await
@@ -136,8 +129,9 @@ impl<M: Mapper, S: Source> WebSocketSource for BinanceWebsocket<M, S> {
     }
 
     /// Check if the WebSocket is connected.
-    fn is_connected(&self) -> bool {
-        self.raw.is_some()
+    async fn is_connected(&self) -> bool {
+        let locked_raw = self.raw.lock().await;
+        locked_raw.is_connected()
     }
 }
 
@@ -160,11 +154,7 @@ impl<M: Mapper, S: Source> Stream for BinanceWebsocket<M, S> {
             return Poll::Ready(None);
         }
 
-        let Some(raw) = &self.raw else {
-            return Poll::Ready(None);
-        };
-
-        let Ok(mut locked_raw) = raw.try_lock() else {
+        let Ok(mut locked_raw) = self.raw.try_lock() else {
             cx.waker().wake_by_ref();
             return Poll::Pending;
         };

@@ -28,12 +28,12 @@ impl<S: WebSocketSource> WebsocketService<S> {
 impl<S: WebSocketSource> Service for WebsocketService<S> {
     /// Starts the service, connecting to the WebSocket and subscribing to symbols.
     async fn start(&mut self, symbols: &[&str]) -> Result<(), Error> {
-        if self.started() {
+        if self.is_started().await {
             return Err(Error::AlreadyStarted);
         }
 
         let mut locked_socket = self.socket.lock().await;
-        if !locked_socket.is_connected() {
+        if !locked_socket.is_connected().await {
             locked_socket.connect().await?;
             locked_socket.subscribe(symbols).await?;
         }
@@ -62,8 +62,11 @@ impl<S: WebSocketSource> Service for WebsocketService<S> {
                                 locked_cached_prices.insert(price_info.symbol.to_string(), price_info);
                             }
                             Some(Ok(WebsocketMessage::SettingResponse(_response))) => {}
-                            Some(Err(_)) => {}
+                            Some(Err(err)) => {
+                                tracing::trace!("cannot get price: {}", err);
+                            }
                             None => {
+                                tracing::trace!("cannot get price: stream ended");
                                 break;
                             }
                         }
@@ -76,7 +79,7 @@ impl<S: WebSocketSource> Service for WebsocketService<S> {
     }
 
     /// Stops the service, cancelling the WebSocket subscription.
-    fn stop(&mut self) {
+    async fn stop(&mut self) {
         if let Some(token) = &self.cancellation_token {
             token.cancel();
         }
@@ -84,7 +87,7 @@ impl<S: WebSocketSource> Service for WebsocketService<S> {
     }
 
     // To check if the service is started.
-    fn started(&self) -> bool {
+    async fn is_started(&self) -> bool {
         self.cancellation_token.is_some()
     }
 }
