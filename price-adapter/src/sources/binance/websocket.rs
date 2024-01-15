@@ -173,6 +173,7 @@ impl<M: Mapper, S: Source> Stream for BinanceWebsocket<M, S> {
         match locked_raw.poll_next_unpin(cx) {
             Poll::Ready(Some(message)) => match message {
                 Ok(WebsocketMessageRaw::PriceInfo(price_info_raw)) => {
+                    tracing::trace!("received price info raw: {}", price_info_raw);
                     if let Some(symbol) = self.mapping_back.get(&price_info_raw.id) {
                         Poll::Ready(Some(Ok(WebsocketMessage::PriceInfo(PriceInfo {
                             symbol: symbol.to_string(),
@@ -181,15 +182,19 @@ impl<M: Mapper, S: Source> Stream for BinanceWebsocket<M, S> {
                         }))))
                     } else {
                         // If symbol not found, wake up the waker and return Pending.
+                        tracing::trace!("received symbol doesn't match");
                         cx.waker().wake_by_ref();
                         Poll::Pending
                     }
                 }
-                Ok(WebsocketMessageRaw::SettingResponse(response)) => Poll::Ready(Some(Ok(
-                    WebsocketMessage::SettingResponse(SettingResponse {
-                        data: response.data,
-                    }),
-                ))),
+                Ok(WebsocketMessageRaw::SettingResponse(response)) => {
+                    tracing::trace!("received setting response raw: {:?}", response);
+                    return Poll::Ready(Some(Ok(WebsocketMessage::SettingResponse(
+                        SettingResponse {
+                            data: response.data,
+                        },
+                    ))));
+                }
                 Err(err) => Poll::Ready(Some(Err(err.into()))),
             },
             Poll::Ready(None) => {
