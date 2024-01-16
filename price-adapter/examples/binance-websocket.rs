@@ -4,6 +4,7 @@ use price_adapter::types::WebSocketSource;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     let mut binance_websocket = BinanceWebsocket::new_with_default().unwrap();
     let symbols = vec!["ETH", "BTC"];
 

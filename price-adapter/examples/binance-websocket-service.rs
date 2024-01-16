@@ -5,6 +5,7 @@ use std::time::Duration;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     let binance_websocket = BinanceWebsocket::new_with_default().unwrap();
     let mut service = WebsocketService::new(binance_websocket);
     service.start(vec!["BTC"].as_slice()).await.unwrap();

@@ -5,6 +5,7 @@ use std::time::Duration;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     let coingecko = CoinGecko::new_with_default(None).unwrap();
     let mut service = IntervalService::new(coingecko, Duration::from_secs(20));
     service.start(vec!["BTC"].as_slice()).await.unwrap();
