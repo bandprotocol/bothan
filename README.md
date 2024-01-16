@@ -18,4 +18,4 @@ For more details about this package, refer to the documentation [here](./price-a
 We welcome contributions from the community! Before submitting a pull request, please review our [contributing guidelines](CONTRIBUTING.md).
 
 ## License
-Band Price Adapter is released under the GPL-3.0 license. Your use of this library is subject to the terms outlined in the [LICENSE](LICENSE.md) file.
+Band Price Adapter is released under the GPL-3.0 license. Your use of this library is subject to the terms outlined in the [LICENSE](LICENSE) file.
