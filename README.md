@@ -1,5 +1,5 @@
 # Band Price Adapter
-`Band-Price-Adapter` is a Rust library designed to facilitate the retrieval of price information for various cryptocurrencies and assets from diverse sources.
+`band-price-adapter` is a Rust library designed to facilitate the retrieval of price information for various cryptocurrencies and assets from diverse sources.
 
 ## Packages
 This project comprises two distinct packages:
