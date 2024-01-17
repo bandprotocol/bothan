@@ -1,8 +1,7 @@
-//! # price-explorer
-//! price-explorer is a price query adapter for crypto exchanges and price aggregators.
+//! # price-adapter-raw
+//! price-adapter-raw is a price query adapter for crypto exchanges and price aggregators.
 //!
-//! It provides a unified interface for querying price data from different exchanges and
-//! price aggregators. Currently, it supports the following exchanges and price aggregators:
+//! Currently, it supports the following exchanges and price aggregators:
 //! - Binance
 //! - CoinGecko
 

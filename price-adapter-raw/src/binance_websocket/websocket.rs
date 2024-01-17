@@ -143,7 +143,7 @@ impl Stream for BinanceWebsocket {
         match socket.poll_next_unpin(cx) {
             Poll::Ready(Some(message)) => match message {
                 Ok(Message::Text(text)) => {
-                    tracing::info!("received text message: {}", text);
+                    tracing::trace!("received text message: {}", text);
                     match parse_message(text) {
                         Ok(info) => Poll::Ready(Some(Ok(info))),
                         Err(err) => {
