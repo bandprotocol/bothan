@@ -64,8 +64,8 @@
 
 mod binance_websocket;
 mod coingecko;
-mod huobipro;
 pub mod error;
+mod huobipro;
 pub mod types;
 
 pub use binance_websocket::{BinanceWebsocket, BinanceWebsocketService};
