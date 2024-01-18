@@ -6,7 +6,7 @@ use std::time::Duration;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-    let huobipro = HuobiPro::new_with_default(None).unwrap();
+    let huobipro = HuobiPro::new_with_default().unwrap();
     let mut service = IntervalService::new(huobipro, Duration::from_secs(20));
     service.start(vec!["BTC"].as_slice()).await.unwrap();
 
