@@ -28,6 +28,10 @@ impl BandStaticMapper {
                 env!("CARGO_MANIFEST_DIR"),
                 "/resources/coingecko.json"
             ))),
+            "huobipro" => Ok(include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/resources/huobipro.json"
+            ))),
             _ => Err(Error::UnsupportedSource), // Add more matches for other sources
         }?;
 
