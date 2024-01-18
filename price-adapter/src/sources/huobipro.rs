@@ -14,7 +14,7 @@ pub struct HuobiPro<M: Mapper> {
 
 impl<M: Mapper> HuobiPro<M> {
     // Constructor for the `HuobiPro` struct.
-    pub fn new(mapper: M, api_key: Option<String>) -> Self {
+    pub fn new(mapper: M) -> Self {
         let raw = HuobiProRaw::new();
         Self { raw, mapper }
     }
@@ -22,9 +22,9 @@ impl<M: Mapper> HuobiPro<M> {
 
 impl DefaultHuobiPro {
     // Constructor for a default `HuobiPro` instance with `BandStaticMapper`.
-    pub fn new_with_default(api_key: Option<String>) -> Result<Self, Error> {
+    pub fn new_with_default() -> Result<Self, Error> {
         let mapper = BandStaticMapper::from_source("huobipro")?;
-        Ok(Self::new(mapper, api_key))
+        Ok(Self::new(mapper))
     }
 }
 

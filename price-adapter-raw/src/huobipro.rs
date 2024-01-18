@@ -10,8 +10,16 @@ const ENDPOINT: &str = "https://api.huobi.pro/";
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CoinMarketResponse {
+    pub data: Vec<ResponseData>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ResponseData {
+    #[serde(rename = "symbol")]
     pub id: String,
-    pub close: f64,
+
+    #[serde(rename = "close")]
+    pub price: f64,
 }
 
 /// Base object to query HuobiPro api.
@@ -45,12 +53,12 @@ impl HuobiPro {
     async fn _get_prices(&self, ids: &[&str]) -> Result<Vec<Result<PriceInfo, Error>>, Error> {
         let response = self.send_request().await?;
 
-        let parsed_response = response.json::<Vec<CoinMarketResponse>>().await?;
+        let parsed_response = response.json::<CoinMarketResponse>().await?.data;
 
         let id_to_response = parsed_response
             .into_iter()
             .map(|item| (item.id.to_string(), item))
-            .collect::<HashMap<String, CoinMarketResponse>>();
+            .collect::<HashMap<String, ResponseData>>();
 
         let results = ids
             .iter()
@@ -61,7 +69,7 @@ impl HuobiPro {
 
                 Ok(PriceInfo {
                     id: id.to_string(),
-                    price: price_info.close,
+                    price: price_info.price,
                     timestamp: Utc::now().timestamp() as u64,
                 })
             })
