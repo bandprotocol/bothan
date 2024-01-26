@@ -68,8 +68,8 @@ impl CoinMarketCap {
 
         let id_to_response = parsed_response
             .data
-            .into_iter()
-            .map(|(_, value)| (value.slug.clone(), value))
+            .values()
+            .map(|coin_info| (coin_info.slug.clone(), coin_info.clone()))
             .collect::<HashMap<String, CoinInfo>>();
 
         let results = ids
