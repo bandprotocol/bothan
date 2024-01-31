@@ -71,5 +71,5 @@ pub mod types;
 
 pub use binance_websocket::{BinanceWebsocket, BinanceWebsocketService};
 pub use coingecko::CoinGecko;
-pub use huobipro::HuobiPro;
 pub use coinmarketcap::CoinMarketCap;
+pub use huobipro::HuobiPro;
