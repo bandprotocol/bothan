@@ -31,6 +31,7 @@ impl BandStaticMapper {
             "huobipro" => Ok(include_str!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/resources/huobipro.json"
+            ))),
             "coinmarketcap" => Ok(include_str!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/resources/coinmarketcap.json"
