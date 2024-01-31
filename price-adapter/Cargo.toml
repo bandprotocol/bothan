@@ -1,12 +1,12 @@
 [package]
 name = "price-adapter"
 description = "price-adapter"
-version = "0.1.8"
-edition = "2021"
-license = "MIT OR Apache-2.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
-price-adapter-raw = { version = "0.1.0", path = "../price-adapter-raw" }
+price-adapter-raw.workspace = true
 thiserror = "1.0.50"
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0.192", features = ["serde_derive"] }

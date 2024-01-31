@@ -26,6 +26,22 @@ async fn main() {
 }
 ```
 
+### CoinMarketCap
+
+To use CoinMarketCap API, you need to create a `CoinMarketCapPro` instance and set the api key.
+
+```rust
+use price_adapter_raw::CoinMarketCap;
+
+#[tokio::main]
+async fn main() {
+    let coingecko = CoinMarketCap::new_with_api_key("$API_KEY".into());
+    let queries = vec!["ethereum"];
+    let prices = coingecko.get_prices(&queries).await;
+    println!("prices: {:?}", prices);
+}
+```
+
 ### Binance Websocket
 
 To use binance websocket API, you need to create a `BinanceWebsocket` instance and set the query symbols.
