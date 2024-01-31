@@ -6,6 +6,7 @@ Currently, it supports the following exchanges and price aggregators:
 
 - Binance
 - CoinGecko
+- HuobiPro
 
 ## Usage
 
@@ -81,5 +82,19 @@ async fn main() {
 
     let price = service.get_prices(&["btcusdt"]).await;
     println!("price: {:?}", price);
+}
+```
+
+### HuobiPro
+
+```rust
+use price_adapter_raw::HuobiPro;
+
+#[tokio::main]
+async fn main() {
+    let huobipro = HuobiPro::new_with_api_key("$API_KEY".into());
+    let queries = vec!["ethereum"];
+    let prices = huobipro.get_prices(&queries).await;
+    println!("prices: {:?}", prices);
 }
 ```
