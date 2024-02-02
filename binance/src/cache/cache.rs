@@ -48,10 +48,10 @@ impl Cache {
                 select! {
                     _ = interval.tick() => {
                         let keys = cloned_price_map.iter().filter_map(|r| {
-                            let stored = r.value();
-                            if let Some((k, _)) = cloned_price_map.remove_if(&stored.data.id, |_, v| check_timeout(stored.last_used)) {
-                                cloned_subscription_map.remove(&k);
-                                Some(k)
+                            let (k, v) = r.pair();
+                            if check_timeout(v.last_used) {
+                                    cloned_price_map.remove(k);
+                                    cloned_subscription_map.remove(k)
                             } else {
                                 None
                             }
