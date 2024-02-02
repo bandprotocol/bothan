@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use futures_util::{SinkExt, StreamExt};
 use futures_util::stream::{SplitSink, SplitStream};
+use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
 use crate::error::Error;
 use crate::websocket::types::MiniTickerInfo;
@@ -39,7 +39,9 @@ impl BinanceWebsocket {
     pub async fn connect(&mut self) -> Result<(), Error> {
         let (socket, response) = connect_async(&self.url).await?;
 
-        if !(StatusCode::is_server_error(&response.status()) || StatusCode::is_client_error(&response.status())) {
+        if !(StatusCode::is_server_error(&response.status())
+            || StatusCode::is_client_error(&response.status()))
+        {
             let (sender, receiver) = socket.split();
             self.sender = Some(sender);
             self.receiver = Some(receiver);

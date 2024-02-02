@@ -1,9 +1,9 @@
-mod types;
-mod error;
-mod websocket;
 mod cache;
+mod error;
 mod service;
+mod types;
+mod websocket;
 
-pub use service::BinanceService;
 pub use cache::Cache;
+pub use service::BinanceService;
 pub use websocket::BinanceWebsocket;
