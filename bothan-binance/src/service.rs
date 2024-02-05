@@ -3,14 +3,14 @@ use std::time::Duration;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Sender};
-use tokio::time::{interval, timeout, MissedTickBehavior};
+use tokio::time::{interval, MissedTickBehavior, timeout};
 use tracing::{error, info, warn};
 
 use crate::cache::{Cache, Error as CacheError};
 use crate::error::Error;
 use crate::types::PriceData;
-use crate::websocket::types::{BinanceResponse, Data};
 use crate::websocket::BinanceWebsocket;
+use crate::websocket::types::{BinanceResponse, Data};
 
 pub const DEFAULT_CHANNEL_SIZE: usize = 100;
 

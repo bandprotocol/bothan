@@ -1,7 +1,6 @@
 use std::ops::Sub;
 use std::sync::Arc;
 
-use crate::cache::error::Error;
 use dashmap::{DashMap, DashSet};
 use tokio::select;
 use tokio::sync::mpsc::Sender;
@@ -9,6 +8,7 @@ use tokio::time::{interval, Duration, Instant};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
+use crate::cache::error::Error;
 use crate::types::PriceData;
 
 // TODO: move out into its own crate
