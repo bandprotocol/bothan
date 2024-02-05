@@ -4,10 +4,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [workspace]
-members = ["price-adapter-raw", "price-adapter", "binance"]
+members = ["price-adapter-raw", "price-adapter", "bothan-binance"]
 resolver = "2"
 
 [workspace.dependencies]
 price-adapter = { version = "0.1.8", path = "price-adapter" }
 price-adapter-raw = { version = "0.1.8", path = "price-adapter-raw" }
-bothan-binance = { version = "0.1.8", path = "binance" }
+bothan-binance = { version = "0.1.8", path = "bothan-binance" }
