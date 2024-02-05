@@ -3,14 +3,14 @@ use std::time::Duration;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Sender};
-use tokio::time::{interval, MissedTickBehavior, timeout};
+use tokio::time::{interval, timeout, MissedTickBehavior};
 use tracing::{error, info, warn};
 
 use crate::cache::{Cache, Error as CacheError};
 use crate::error::Error;
 use crate::types::PriceData;
-use crate::websocket::BinanceWebsocket;
 use crate::websocket::types::{BinanceResponse, Data};
+use crate::websocket::BinanceWebsocket;
 
 pub const DEFAULT_CHANNEL_SIZE: usize = 100;
 
@@ -20,7 +20,7 @@ enum Command {
 
 pub struct BinanceService {
     cache: Arc<Cache>,
-    command_tx: Arc<Sender<Command>>,
+    cmd_tx: Arc<Sender<Command>>,
 }
 
 impl BinanceService {
@@ -67,7 +67,7 @@ impl BinanceService {
                                                 let price_data = PriceData {
                                                     id: ticker.symbol.clone(),
                                                     price: ticker.close_price.clone().to_string(),
-                                                    timestamp: ticker.event_time.clone()
+                                                    timestamp: ticker.event_time,
                                                 };
                                                 info!("received prices: {:?}", price_data);
                                                 cloned_cache.set_data(ticker.symbol.clone(), price_data);
@@ -87,16 +87,15 @@ impl BinanceService {
                                     }
                                 }
                             },
-                            Err(e) => {
+                            Err(_) => {
                                 error!("timeout waiting for response from binance, attempting to reconnect");
+                                // reconnect
                                 _ = ws.disconnect().await;
                                 _ = ws.connect().await;
-                                // resub
+                                //  resubscribe to all ids
                                 let keys = cloned_cache.keys();
-                                if !keys.is_empty() {
-                                    if let Err(_) = cloned_command_tx.send(Command::Subscribe(keys)).await {
-                                        warn!("Failed to send subscribe command");
-                                    }
+                                if !keys.is_empty() && cloned_command_tx.send(Command::Subscribe(keys)).await.is_err() {
+                                    warn!("Failed to send subscribe command");
                                 }
                             }
                         }
@@ -113,19 +112,22 @@ impl BinanceService {
                 }
             }
         });
-        Ok(Self { cache, command_tx })
+        Ok(Self {
+            cache,
+            cmd_tx: command_tx,
+        })
     }
 
     pub async fn get_price_data(&mut self, ids: &[&str]) -> Vec<Result<PriceData, Error>> {
         let mut result = Vec::new();
-        let mut ids_to_subscribe = Vec::new();
+        let mut sub_ids = Vec::new();
 
         for id in ids {
             match self.cache.get(id) {
                 Ok(price_data) => result.push(Ok(price_data)),
                 Err(CacheError::DoesNotExist) => {
                     // If the id is not in the cache, subscribe to it
-                    ids_to_subscribe.push(id.to_string());
+                    sub_ids.push(id.to_string());
                     result.push(Err(Error::Pending))
                 }
                 Err(CacheError::Invalid) => {
@@ -134,13 +136,7 @@ impl BinanceService {
             }
         }
 
-        if ids_to_subscribe.len() > 0
-            && self
-                .command_tx
-                .send(Command::Subscribe(ids_to_subscribe))
-                .await
-                .is_err()
-        {
+        if !sub_ids.is_empty() && self.cmd_tx.send(Command::Subscribe(sub_ids)).await.is_err() {
             warn!("Failed to send subscribe command");
         }
 

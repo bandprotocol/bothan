@@ -1,10 +1,10 @@
-use futures_util::{SinkExt, StreamExt};
 use futures_util::stream::{SplitSink, SplitStream};
+use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
 use crate::websocket::error::Error;
 use crate::websocket::types::BinanceResponse;
@@ -24,10 +24,6 @@ impl BinanceWebsocket {
             sender: None,
             receiver: None,
         }
-    }
-
-    pub fn default() -> Self {
-        Self::new(DEFAULT_URL)
     }
 
     pub async fn connect(&mut self) -> Result<(), Error> {
@@ -97,5 +93,11 @@ impl BinanceWebsocket {
         } else {
             Err(Error::Unknown)
         }
+    }
+}
+
+impl Default for BinanceWebsocket {
+    fn default() -> Self {
+        Self::new(DEFAULT_URL)
     }
 }
