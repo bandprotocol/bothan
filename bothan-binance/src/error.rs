@@ -8,5 +8,5 @@ pub enum Error {
     Pending,
 
     #[error("tungstenite error")]
-    TungsteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+    Tungstenite(#[from] tokio_tungstenite::tungstenite::Error),
 }
