@@ -2,13 +2,9 @@ use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
-use tokio_tungstenite::tungstenite::client::connect_with_config;
 use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{
-    connect_async, connect_async_tls_with_config, MaybeTlsStream, WebSocketStream,
-};
+use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
 use crate::websocket::error::Error;
 use crate::websocket::types::BinanceResponse;
@@ -39,7 +35,7 @@ impl BinanceWebsocket {
 
         let status = response.status();
         if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
-            return Err(Error::ConnectionError(status));
+            return Err(Error::Connection(status));
         }
 
         let (sender, receiver) = socket.split();

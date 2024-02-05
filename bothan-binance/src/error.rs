@@ -1,7 +1,5 @@
-use thiserror::Error;
-
 // TODO: Add more errors apart from catch all
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("unknown error")]
     Unknown,
@@ -11,5 +9,4 @@ pub enum Error {
 
     #[error("tungstenite error")]
     TungsteniteError(#[from] tokio_tungstenite::tungstenite::Error),
-    
 }

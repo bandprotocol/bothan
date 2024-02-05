@@ -1,17 +1,15 @@
-use thiserror::Error;
 use tokio_tungstenite::tungstenite::{self, http::StatusCode};
-use tracing::error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("unknown error")]
     Unknown,
 
     #[error("failed to connect with response code {0}")]
-    ConnectionError(StatusCode),
+    Connection(StatusCode),
 
     #[error("failed to parse")]
-    ParseError(#[from] serde_json::Error),
+    Parse(#[from] serde_json::Error),
 
     #[error("not connected")]
     NotConnected(),
@@ -20,5 +18,5 @@ pub enum Error {
     AlreadyConnected(),
 
     #[error("tungstenite error")]
-    TungsteniteError(#[from] tungstenite::Error),
+    Tungstenite(#[from] tungstenite::Error),
 }
