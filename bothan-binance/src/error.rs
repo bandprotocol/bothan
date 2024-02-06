@@ -9,4 +9,7 @@ pub enum Error {
 
     #[error("tungstenite error")]
     Tungstenite(#[from] tokio_tungstenite::tungstenite::Error),
+
+    #[error("api error: {0}")]
+    Api(#[from] crate::api::error::Error),
 }

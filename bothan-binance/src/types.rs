@@ -1,22 +1,12 @@
-use core::fmt;
-
+use derive_more::Display;
 use serde::Deserialize;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Display)]
+#[display("id: {}, price: {}, timestamp: {}", id, price, timestamp)]
 pub struct PriceData {
     pub id: String,
     pub price: String,
     pub timestamp: u64,
-}
-
-impl fmt::Display for PriceData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "PriceInfo {{ id: {}, price: {}, timestamp: {} }}",
-            self.id, self.price, self.timestamp
-        )
-    }
 }
 
 #[derive(Debug, Deserialize)]

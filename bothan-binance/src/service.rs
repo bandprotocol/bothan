@@ -1,3 +1,4 @@
+use reqwest::Url;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -6,11 +7,12 @@ use tokio::sync::mpsc::{channel, Sender};
 use tokio::time::{interval, timeout, MissedTickBehavior};
 use tracing::{error, info, warn};
 
+use crate::api::error::Error as BinanceError;
+use crate::api::types::{BinanceResponse, Data};
+use crate::api::websocket::BinanceWebsocket;
 use crate::cache::{Cache, Error as CacheError};
 use crate::error::Error;
 use crate::types::PriceData;
-use crate::websocket::types::{BinanceResponse, Data};
-use crate::websocket::BinanceWebsocket;
 
 pub const DEFAULT_CHANNEL_SIZE: usize = 100;
 
@@ -24,7 +26,10 @@ pub struct BinanceService {
 }
 
 impl BinanceService {
-    pub async fn new(mut ws: BinanceWebsocket) -> Result<Self, Error> {
+    pub async fn new(url: Option<&str>) -> Result<Self, Error> {
+        let mut ws = get_websocket(url);
+        ws.connect().await?;
+
         let (command_tx, mut command_rx) = channel::<Command>(DEFAULT_CHANNEL_SIZE);
         let (removed_ids_tx, mut removed_ids_rx) = channel::<Vec<String>>(DEFAULT_CHANNEL_SIZE);
 
@@ -39,64 +44,19 @@ impl BinanceService {
         timeout_interval.tick().await;
         timeout_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
-        // TODO: need to implement reconnect in case of binance disconnect
         tokio::spawn(async move {
             loop {
                 select! {
                     Some(cmd) = command_rx.recv() => {
-                        match &cmd {
-                            Command::Subscribe(ids) => {
-                                let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-                                if ws.subscribe(vec_ids.as_slice()).await.is_err() {
-                                    warn!("Failed to subscribe to ids: {:?}", ids);
-                                }
-
-                                for id in ids {
-                                    cloned_cache.set_pending(id.clone());
-                                }
-                            }
-                        }
+                        process_command(&cmd, &mut ws, &cloned_cache).await;
                     },
                     result = timeout(Duration::new(120, 0), ws.next()) => {
                         match &result {
-                            Ok(binance_result) => {
-                                match binance_result {
-                                    Ok(BinanceResponse::Stream(resp)) => {
-                                        match &resp.data {
-                                            Data::MiniTicker(ticker) => {
-                                                let price_data = PriceData {
-                                                    id: ticker.symbol.clone(),
-                                                    price: ticker.close_price.clone().to_string(),
-                                                    timestamp: ticker.event_time,
-                                                };
-                                                info!("received prices: {:?}", price_data);
-                                                cloned_cache.set_data(ticker.symbol.clone(), price_data);
-                                            },
-                                        }
-                                    }
-                                    Ok(BinanceResponse::Success(_)) => {
-                                        // TODO: better logging
-                                        info!("subscribed to ids");
-                                    }
-                                    Ok(BinanceResponse::Error(_)) => {
-                                        // TODO: better logging
-                                        error!("error received from binance");
-                                    }
-                                    Err(e) => {
-                                        error!("unable able to parse message from binance: {:?}", e);
-                                    }
-                                }
+                            Ok(result) => {
+                                process_results(result, &cloned_cache).await;
                             },
                             Err(_) => {
-                                error!("timeout waiting for response from binance, attempting to reconnect");
-                                // reconnect
-                                _ = ws.disconnect().await;
-                                _ = ws.connect().await;
-                                //  resubscribe to all ids
-                                let keys = cloned_cache.keys();
-                                if !keys.is_empty() && cloned_command_tx.send(Command::Subscribe(keys)).await.is_err() {
-                                    warn!("Failed to send subscribe command");
-                                }
+                                handle_reconnect(&mut ws, &cloned_cache, &cloned_command_tx).await;
                             }
                         }
                     },
@@ -112,6 +72,7 @@ impl BinanceService {
                 }
             }
         });
+
         Ok(Self {
             cache,
             cmd_tx: command_tx,
@@ -119,27 +80,90 @@ impl BinanceService {
     }
 
     pub async fn get_price_data(&mut self, ids: &[&str]) -> Vec<Result<PriceData, Error>> {
-        let mut result = Vec::new();
         let mut sub_ids = Vec::new();
-
-        for id in ids {
-            match self.cache.get(id) {
-                Ok(price_data) => result.push(Ok(price_data)),
+        let result = ids
+            .iter()
+            .map(|id| match self.cache.get(id) {
+                Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     // If the id is not in the cache, subscribe to it
                     sub_ids.push(id.to_string());
-                    result.push(Err(Error::Pending))
+                    Err(Error::Pending)
                 }
-                Err(CacheError::Invalid) => {
-                    result.push(Err(Error::Unknown));
-                }
-            }
-        }
+                Err(CacheError::Invalid) => Err(Error::Unknown),
+            })
+            .collect::<Vec<Result<PriceData, Error>>>();
 
         if !sub_ids.is_empty() && self.cmd_tx.send(Command::Subscribe(sub_ids)).await.is_err() {
             warn!("Failed to send subscribe command");
         }
 
         result
+    }
+}
+
+fn get_websocket(url: Option<&str>) -> BinanceWebsocket {
+    if let Some(endpoint) = url {
+        BinanceWebsocket::new(endpoint)
+    } else {
+        BinanceWebsocket::default()
+    }
+}
+
+async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cloned_cache: &Arc<Cache>) {
+    match cmd {
+        Command::Subscribe(ids) => {
+            let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
+            if ws.subscribe(vec_ids.as_slice()).await.is_err() {
+                warn!("Failed to subscribe to ids: {:?}", ids);
+            }
+
+            for id in ids {
+                cloned_cache.set_pending(id.clone());
+            }
+        }
+    }
+}
+
+async fn handle_reconnect(
+    ws: &mut BinanceWebsocket,
+    cache: &Arc<Cache>,
+    command_tx: &Sender<Command>,
+) {
+    error!("timeout waiting for response from binance, attempting to reconnect");
+    // reconnect
+    _ = ws.disconnect().await;
+    _ = ws.connect().await;
+    //  resubscribe to all ids
+    let keys = cache.keys();
+    if !keys.is_empty() && command_tx.send(Command::Subscribe(keys)).await.is_err() {
+        warn!("Failed to send subscribe command");
+    };
+}
+
+async fn process_results(results: &Result<BinanceResponse, BinanceError>, cache: &Arc<Cache>) {
+    match results {
+        Ok(BinanceResponse::Stream(resp)) => match &resp.data {
+            Data::MiniTicker(ticker) => {
+                let price_data = PriceData {
+                    id: ticker.symbol.clone(),
+                    price: ticker.close_price.clone().to_string(),
+                    timestamp: ticker.event_time,
+                };
+                info!("received prices: {:?}", price_data);
+                cache.set_data(ticker.symbol.clone(), price_data);
+            }
+        },
+        Ok(BinanceResponse::Success(_)) => {
+            // TODO: better logging
+            info!("subscribed to ids");
+        }
+        Ok(BinanceResponse::Error(_)) => {
+            // TODO: better logging
+            error!("error received from binance");
+        }
+        Err(e) => {
+            error!("unable able to parse message from binance: {:?}", e);
+        }
     }
 }
