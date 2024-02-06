@@ -1,6 +1,6 @@
 use tracing_subscriber::fmt::init;
 
-use bothan_binance::{BinanceService, BinanceWebsocket};
+use bothan_binance::BinanceService;
 
 #[tokio::main]
 async fn main() {

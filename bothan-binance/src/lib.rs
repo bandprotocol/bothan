@@ -1,6 +1,6 @@
+pub use api::websocket::BinanceWebsocket;
 pub use cache::Cache;
 pub use service::BinanceService;
-pub use api::websocket::BinanceWebsocket;
 
 mod api;
 mod cache;

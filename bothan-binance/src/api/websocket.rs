@@ -1,10 +1,10 @@
-use futures_util::{SinkExt, StreamExt};
 use futures_util::stream::{SplitSink, SplitStream};
+use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tracing::warn;
 
 use crate::api::error::Error;
@@ -45,7 +45,7 @@ impl BinanceWebsocket {
     pub async fn disconnect(&mut self) -> Result<(), Error> {
         let mut sender = self.sender.take().ok_or(Error::NotConnected())?;
         // Ignore result as we just want to send a close message
-        if let Err(_) = sender.send(Message::Close(None)).await {
+        if sender.send(Message::Close(None)).await.is_err() {
             warn!("unable to send close frame")
         }
 
