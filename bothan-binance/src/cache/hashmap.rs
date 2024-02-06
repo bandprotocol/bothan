@@ -3,14 +3,14 @@ use std::ops::Sub;
 use std::sync::Arc;
 
 use tokio::select;
-use tokio::sync::{Mutex, MutexGuard};
 use tokio::sync::mpsc::Sender;
-use tokio::time::{Instant, interval};
+use tokio::sync::{Mutex, MutexGuard};
+use tokio::time::{interval, Instant};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use crate::cache::error::Error;
-use crate::cache::types::{DEFAULT_CLEANUP_INTERVAL, DEFAULT_TIMEOUT, StoredPriceData};
+use crate::cache::types::{StoredPriceData, DEFAULT_CLEANUP_INTERVAL, DEFAULT_TIMEOUT};
 use crate::types::PriceData;
 
 type Map = HashMap<String, Option<StoredPriceData>>;

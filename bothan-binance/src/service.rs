@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Sender};
-use tokio::time::{interval, MissedTickBehavior, timeout};
+use tokio::time::{interval, timeout, MissedTickBehavior};
 use tracing::{error, info, warn};
 
 use crate::api::error::Error as BinanceError;
