@@ -7,6 +7,9 @@ pub enum Error {
     #[error("pending result")]
     Pending,
 
+    #[error("invalid symbol")]
+    InvalidSymbol,
+
     #[error("tungstenite error")]
     Tungstenite(#[from] tokio_tungstenite::tungstenite::Error),
 

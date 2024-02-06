@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Sender};
-use tokio::time::{interval, timeout, MissedTickBehavior};
+use tokio::time::{interval, MissedTickBehavior, timeout};
 use tracing::{error, info, warn};
 
 use crate::api::error::Error as BinanceError;
@@ -11,13 +11,9 @@ use crate::api::types::{BinanceResponse, Data};
 use crate::api::websocket::BinanceWebsocket;
 use crate::cache::{Cache, Error as CacheError};
 use crate::error::Error;
-use crate::types::PriceData;
+use crate::types::{Command, PriceData};
 
 pub const DEFAULT_CHANNEL_SIZE: usize = 100;
-
-enum Command {
-    Subscribe(Vec<String>),
-}
 
 pub struct BinanceService {
     cache: Arc<Cache>,
@@ -52,7 +48,7 @@ impl BinanceService {
                     result = timeout(Duration::new(120, 0), ws.next()) => {
                         match &result {
                             Ok(result) => {
-                                process_results(result, &cloned_cache).await;
+                                process_result(result, &cloned_cache).await;
                             },
                             Err(_) => {
                                 handle_reconnect(&mut ws, &cloned_cache, &cloned_command_tx).await;
@@ -60,9 +56,6 @@ impl BinanceService {
                         }
                     },
                     Some(ids) = removed_ids_rx.recv() => {
-                        // TODO: this may reinit data that is meant to be removed if
-                        // a packet comes in before the unsubscribe is completed. Need
-                        // to resolve this later
                         let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
                         if ws.unsubscribe(vec_ids.as_slice()).await.is_err() {
                             warn!("failed to unsubscribe to ids: {:?}", ids);
@@ -80,18 +73,24 @@ impl BinanceService {
 
     pub async fn get_price_data(&mut self, ids: &[&str]) -> Vec<Result<PriceData, Error>> {
         let mut sub_ids = Vec::new();
-        let result = ids
-            .iter()
-            .map(|id| match self.cache.get(id) {
+
+        let result = self
+            .cache
+            .get_batch(ids)
+            .await
+            .into_iter()
+            .enumerate()
+            .map(|(idx, result)| match result {
                 Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     // If the id is not in the cache, subscribe to it
-                    sub_ids.push(id.to_string());
+                    sub_ids.push(ids[idx].to_string());
                     Err(Error::Pending)
                 }
-                Err(CacheError::Invalid) => Err(Error::Unknown),
+                Err(CacheError::Invalid) => Err(Error::InvalidSymbol),
+                Err(_) => Err(Error::Unknown),
             })
-            .collect::<Vec<Result<PriceData, Error>>>();
+            .collect();
 
         if !sub_ids.is_empty() && self.cmd_tx.send(Command::Subscribe(sub_ids)).await.is_err() {
             warn!("Failed to send subscribe command");
@@ -118,7 +117,9 @@ async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cloned_cache:
             }
 
             for id in ids {
-                cloned_cache.set_pending(id.clone());
+                if cloned_cache.set_pending(id.clone()).await.is_err() {
+                    warn!("Failed to set pending for id: {}", id);
+                }
             }
         }
     }
@@ -129,37 +130,55 @@ async fn handle_reconnect(
     cache: &Arc<Cache>,
     command_tx: &Sender<Command>,
 ) {
-    error!("timeout waiting for response from binance, attempting to reconnect");
+    warn!("timeout waiting for response from binance, attempting to reconnect");
     // reconnect
     _ = ws.disconnect().await;
+
+    // TODO: handle this if reconnect attempt fails
     _ = ws.connect().await;
+
     //  resubscribe to all ids
-    let keys = cache.keys();
+    let keys = cache.keys().await;
     if !keys.is_empty() && command_tx.send(Command::Subscribe(keys)).await.is_err() {
-        warn!("Failed to send subscribe command");
+        error!("Failed to send subscribe command");
     };
 }
 
-async fn process_results(results: &Result<BinanceResponse, BinanceError>, cache: &Arc<Cache>) {
-    match results {
-        Ok(BinanceResponse::Stream(resp)) => match &resp.data {
-            Data::MiniTicker(ticker) => {
-                let price_data = PriceData {
-                    id: ticker.symbol.clone(),
-                    price: ticker.close_price.clone().to_string(),
-                    timestamp: ticker.event_time,
-                };
-                info!("received prices: {:?}", price_data);
-                cache.set_data(ticker.symbol.clone(), price_data);
+async fn save_data(data: &Data, cache: &Arc<Cache>) {
+    match data {
+        Data::MiniTicker(ticker) => {
+            let price_data = PriceData {
+                id: ticker.symbol.clone(),
+                price: ticker.close_price.clone().to_string(),
+                timestamp: ticker.event_time,
+            };
+            info!("received prices: {:?}", price_data);
+            match cache.set_data(ticker.symbol.clone(), price_data).await {
+                Ok(_) => {
+                    info!("successfully set {} in cache", ticker.symbol);
+                }
+                Err(CacheError::PendingNotSet) => {
+                    warn!(
+                        "received data for id that was not pending: {}",
+                        ticker.symbol
+                    );
+                }
+                Err(e) => {
+                    error!("error setting data in cache: {:?}", e)
+                }
             }
-        },
-        Ok(BinanceResponse::Success(_)) => {
-            // TODO: better logging
-            info!("subscribed to ids");
         }
-        Ok(BinanceResponse::Error(_)) => {
-            // TODO: better logging
-            error!("error received from binance");
+    }
+}
+
+async fn process_result(result: &Result<BinanceResponse, BinanceError>, cache: &Arc<Cache>) {
+    match result {
+        Ok(BinanceResponse::Stream(resp)) => save_data(&resp.data, cache).await,
+        Ok(BinanceResponse::Success(_)) => {
+            info!("subscription success");
+        }
+        Ok(BinanceResponse::Error(e)) => {
+            error!("error code {} received from binance: {}", e.code, e.msg);
         }
         Err(e) => {
             error!("unable able to parse message from binance: {:?}", e);

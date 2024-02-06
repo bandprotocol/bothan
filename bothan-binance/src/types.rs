@@ -9,8 +9,6 @@ pub struct PriceData {
     pub timestamp: u64,
 }
 
-#[derive(Debug, Deserialize)]
-pub enum ServiceMessage {
-    Relay(String),
-    Close(Option<String>),
+pub(crate) enum Command {
+    Subscribe(Vec<String>),
 }
