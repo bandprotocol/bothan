@@ -19,9 +19,9 @@ pub struct BinanceWebsocket {
 }
 
 impl BinanceWebsocket {
-    pub fn new(url: &str) -> Self {
+    pub fn new(url: impl Into<String>) -> Self {
         Self {
-            url: url.to_string(),
+            url: url.into(),
             sender: None,
             receiver: None,
         }
@@ -66,16 +66,19 @@ impl BinanceWebsocket {
             "params": stream_ids,
             "id": rand::random::<u32>()
         });
+
         let message = Message::Text(payload.to_string());
         Ok(sender.send(message).await?)
     }
 
     pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
         let sender = self.sender.as_mut().ok_or(Error::NotConnected())?;
+
         let stream_ids = ids
             .iter()
             .map(|id| format!("{}@miniTicker", id))
             .collect::<Vec<_>>();
+
         let payload = json!({
             "method": "UNSUBSCRIBE",
             "params": stream_ids,
@@ -83,10 +86,7 @@ impl BinanceWebsocket {
         });
 
         let message = Message::Text(payload.to_string());
-
-        sender.send(message).await?;
-
-        Ok(())
+        Ok(sender.send(message).await?)
     }
 
     pub async fn next(&mut self) -> Result<BinanceResponse, Error> {

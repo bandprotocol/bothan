@@ -1,7 +1,9 @@
-use crate::types::PriceData;
-use tokio::time::Instant;
+use tokio::time::{Duration, Instant};
 
-pub const DEFAULT_TIMEOUT: u64 = 6000;
+use crate::types::PriceData;
+
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(6000);
+pub const DEFAULT_CLEANUP_INTERVAL: Duration = Duration::from_secs(10);
 
 #[derive(Debug, Clone)]
 pub struct StoredPriceData {

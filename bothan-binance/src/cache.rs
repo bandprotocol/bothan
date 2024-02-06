@@ -1,8 +1,8 @@
 // TODO: move into own crate
 
-pub use dash_map::Cache;
 pub use error::Error;
+pub use hashmap::Cache;
 
-pub mod dash_map;
 pub mod error;
+pub mod hashmap;
 mod types;

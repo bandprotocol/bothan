@@ -6,7 +6,7 @@ pub enum Error {
     Unknown,
 
     #[error("failed to connect with response code {0}")]
-    Connection(StatusCode),
+    ConnectionFailure(StatusCode),
 
     #[error("failed to parse")]
     Parse(#[from] serde_json::Error),
