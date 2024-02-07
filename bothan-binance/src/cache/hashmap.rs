@@ -85,7 +85,11 @@ impl Cache {
     }
 }
 
-fn start_eviction_process(store: Arc<Store>, token: CancellationToken, sender: Sender<Vec<String>>) {
+fn start_eviction_process(
+    store: Arc<Store>,
+    token: CancellationToken,
+    sender: Sender<Vec<String>>,
+) {
     tokio::spawn(async move {
         let mut interval = interval(DEFAULT_EVICTION_CHECK_INTERVAL);
         loop {
@@ -107,21 +111,23 @@ fn is_timed_out(last_used: Instant) -> bool {
 
 async fn remove_timed_out_data(store: &Store, sender: &Sender<Vec<String>>) {
     let mut locked_map = store.lock().await;
-    let mut keys = Vec::new();
+    let mut evicted_keys = Vec::new();
 
+    // Remove entries that needs to be evicted and collect their keys into a vec
+    // to be sent to the sender to unsubscribe
     locked_map.retain(|k, v| {
         if let Some(price_data) = v {
             if is_timed_out(price_data.last_used) {
-                keys.push(k.clone());
+                evicted_keys.push(k.clone());
                 return false;
             }
         }
         true
     });
 
-    if !keys.is_empty() {
-        info!("evicting timed out symbols: {:?}", keys);
-        let _res = sender.send(keys).await;
+    if !evicted_keys.is_empty() {
+        info!("evicting timed out symbols: {:?}", evicted_keys);
+        let _res = sender.send(evicted_keys).await;
     }
 }
 
