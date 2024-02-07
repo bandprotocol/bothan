@@ -10,7 +10,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use crate::cache::error::Error;
-use crate::cache::types::{StoredPriceData, DEFAULT_CLEANUP_INTERVAL, DEFAULT_TIMEOUT};
+use crate::cache::types::{StoredPriceData, DEFAULT_EVICTION_CHECK_INTERVAL, DEFAULT_TIMEOUT};
 use crate::types::PriceData;
 
 type Map = HashMap<String, Option<StoredPriceData>>;
@@ -32,7 +32,7 @@ impl Cache {
         let store: Arc<Store> = Arc::new(Mutex::new(HashMap::new()));
         let token = CancellationToken::new();
 
-        start_cleanup_process(store.clone(), token.clone(), sender);
+        start_eviction_process(store.clone(), token.clone(), sender);
 
         Self { store, token }
     }
@@ -85,13 +85,13 @@ impl Cache {
     }
 }
 
-fn start_cleanup_process(store: Arc<Store>, token: CancellationToken, sender: Sender<Vec<String>>) {
+fn start_eviction_process(store: Arc<Store>, token: CancellationToken, sender: Sender<Vec<String>>) {
     tokio::spawn(async move {
-        let mut interval = interval(DEFAULT_CLEANUP_INTERVAL);
+        let mut interval = interval(DEFAULT_EVICTION_CHECK_INTERVAL);
         loop {
             select! {
                 _ = interval.tick() => {
-                    remove_timeout_data(&store, &sender).await;
+                    remove_timed_out_data(&store, &sender).await;
                 }
                 _ = token.cancelled() => {
                     break
@@ -105,7 +105,7 @@ fn is_timed_out(last_used: Instant) -> bool {
     Instant::now().sub(last_used) > DEFAULT_TIMEOUT
 }
 
-async fn remove_timeout_data(store: &Store, sender: &Sender<Vec<String>>) {
+async fn remove_timed_out_data(store: &Store, sender: &Sender<Vec<String>>) {
     let mut locked_map = store.lock().await;
     let mut keys = Vec::new();
 

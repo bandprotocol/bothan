@@ -88,7 +88,7 @@ impl BinanceService {
                     Err(Error::Pending)
                 }
                 Err(CacheError::Invalid) => Err(Error::InvalidSymbol),
-                Err(_) => Err(Error::Unknown),
+                Err(_) => panic!(), // This should never happen
             })
             .collect();
 

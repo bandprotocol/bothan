@@ -2,9 +2,6 @@ use tokio_tungstenite::tungstenite::{self, http::StatusCode};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("unknown error")]
-    Unknown,
-
     #[error("failed to connect with response code {0}")]
     ConnectionFailure(StatusCode),
 
@@ -19,4 +16,7 @@ pub enum Error {
 
     #[error("tungstenite error")]
     Tungstenite(#[from] tungstenite::Error),
+
+    #[error("internal channel closed")]
+    ChannelClosed,
 }
