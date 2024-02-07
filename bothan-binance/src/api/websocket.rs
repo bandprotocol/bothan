@@ -99,7 +99,7 @@ impl BinanceWebsocket {
             }
             None => {
                 // internal channel closed, this should never happen
-                panic!()
+                panic!("internal channel closed unexpectedly")
             }
         }
     }
