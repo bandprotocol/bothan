@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Sender};
-use tokio::time::{interval, timeout, MissedTickBehavior};
+use tokio::time::timeout;
 use tracing::{error, info, warn};
 
 use crate::api::error::Error as BinanceError;
@@ -33,11 +33,6 @@ impl BinanceService {
 
         let cache = Arc::new(Cache::new(removed_ids_tx));
         let cloned_cache = cache.clone();
-
-        let mut timeout_interval = interval(Duration::new(120, 0));
-        // consume the first tick to start the interval
-        timeout_interval.tick().await;
-        timeout_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
         tokio::spawn(async move {
             loop {
@@ -144,7 +139,7 @@ async fn handle_reconnect(
     };
 }
 
-async fn save_data(data: &Data, cache: &Arc<Cache>) {
+async fn save_datum(data: &Data, cache: &Arc<Cache>) {
     match data {
         Data::MiniTicker(ticker) => {
             let price_data = PriceData {
@@ -173,7 +168,7 @@ async fn save_data(data: &Data, cache: &Arc<Cache>) {
 
 async fn process_result(result: &Result<BinanceResponse, BinanceError>, cache: &Arc<Cache>) {
     match result {
-        Ok(BinanceResponse::Stream(resp)) => save_data(&resp.data, cache).await,
+        Ok(BinanceResponse::Stream(resp)) => save_datum(&resp.data, cache).await,
         Ok(BinanceResponse::Success(_)) => {
             info!("subscription success");
         }

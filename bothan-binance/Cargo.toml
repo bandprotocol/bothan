@@ -11,7 +11,7 @@ license.workspace = true
 reqwest = { version = "0.11.22", features = ["json"] }
 thiserror = "1.0.56"
 tracing = { version = "0.1.40", features = [] }
-tokio = { version = "1.0.3", features = ["full"] }
+tokio = { version = "1.36.0", features = ["full"] }
 tracing-subscriber = "0.3.17"
 serde = { version = "1.0.196", features = ["std", "derive", "alloc"] }
 serde_json = "1.0.108"
@@ -23,3 +23,4 @@ chrono = "0.4.31"
 rand = "0.8.4"
 dashmap = "5.5.3"
 derive_more = {  version = "1.0.0-beta.6", features = ["full"] }
+futures = "0.3.30"

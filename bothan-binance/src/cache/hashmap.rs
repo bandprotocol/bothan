@@ -2,6 +2,7 @@ use std::collections::hash_map::{Entry, HashMap};
 use std::ops::Sub;
 use std::sync::Arc;
 
+use futures::future::join_all;
 use tokio::select;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, MutexGuard};
@@ -45,6 +46,11 @@ impl Cache {
                 Ok(())
             }
         }
+    }
+
+    pub async fn set_batch_pending(&self, ids: Vec<String>) -> Vec<Result<(), Error>> {
+        let handles = ids.into_iter().map(|id| self.set_pending(id));
+        join_all(handles).await
     }
 
     pub async fn set_data(&self, id: String, data: PriceData) -> Result<(), Error> {
