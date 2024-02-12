@@ -11,9 +11,7 @@ use crate::api::types::{BinanceResponse, Data};
 use crate::api::websocket::BinanceWebsocket;
 use crate::cache::{Cache, Error as CacheError};
 use crate::error::Error;
-use crate::types::{Command, PriceData};
-
-pub const DEFAULT_CHANNEL_SIZE: usize = 100;
+use crate::types::{Command, PriceData, DEFAULT_CHANNEL_SIZE, DEFAULT_TIMEOUT};
 
 pub struct BinanceService {
     cache: Arc<Cache>,
@@ -106,7 +104,7 @@ fn start_service(
                     process_command(&cmd, &mut ws, &cache).await;
                 },
                 // MOVE TIMEOUT to default config
-                result = timeout(Duration::new(360, 0), ws.next()) => {
+                result = timeout(DEFAULT_TIMEOUT, ws.next()) => {
                     match &result {
                         Ok(Ok(result)) => {
                             process_response(result, &cache).await;
