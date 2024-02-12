@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SuccessResponse {
     pub result: Option<String>,
-    pub id: String,
+    pub id: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub code: u16,
     pub msg: String,
-    pub id: String,
+    pub id: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -59,4 +59,5 @@ pub enum BinanceResponse {
     Success(SuccessResponse),
     Error(ErrorResponse),
     Stream(StreamResponse),
+    Ping,
 }

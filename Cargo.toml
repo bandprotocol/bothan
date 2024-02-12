@@ -10,4 +10,4 @@ resolver = "2"
 [workspace.dependencies]
 price-adapter = { version = "0.1.8", path = "price-adapter" }
 price-adapter-raw = { version = "0.1.8", path = "price-adapter-raw" }
-bothan-binance = { version = "0.1.8", path = "bothan-binance" }
+bothan-binance = { version = "0.1.0", path = "bothan-binance" }

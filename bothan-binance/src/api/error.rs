@@ -17,6 +17,9 @@ pub enum Error {
     #[error("tungstenite error")]
     Tungstenite(#[from] tungstenite::Error),
 
-    #[error("internal channel closed")]
+    #[error("channel closed")]
     ChannelClosed,
+
+    #[error("unsupported message")]
+    UnsupportedMessage,
 }

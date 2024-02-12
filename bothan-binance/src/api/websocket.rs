@@ -92,16 +92,16 @@ impl BinanceWebsocket {
     pub async fn next(&mut self) -> Result<BinanceResponse, Error> {
         let receiver = self.receiver.as_mut().ok_or(Error::NotConnected())?;
 
-        match receiver.next().await {
-            Some(result_msg) => {
-                let msg = result_msg?;
-                Ok(serde_json::from_str::<BinanceResponse>(&msg.to_string())?)
-            }
-            None => {
-                // internal channel closed, this should never happen
-                panic!("internal channel closed unexpectedly")
-            }
+        if let Some(result_msg) = receiver.next().await {
+            return match result_msg {
+                Ok(Message::Text(msg)) => Ok(serde_json::from_str::<BinanceResponse>(&msg)?),
+                Ok(Message::Ping(_)) => Ok(BinanceResponse::Ping),
+                Ok(Message::Close(_)) => Err(Error::ChannelClosed),
+                _ => Err(Error::UnsupportedMessage),
+            };
         }
+
+        Err(Error::ChannelClosed)
     }
 }
 

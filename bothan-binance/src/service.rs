@@ -1,9 +1,8 @@
-use itertools::cloned;
 use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::select;
-use tokio::sync::mpsc::{channel, Sender};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::time::timeout;
 use tracing::{error, info, warn};
 
@@ -22,49 +21,46 @@ pub struct BinanceService {
 }
 
 impl BinanceService {
-    pub async fn new(url: Option<&str>) -> Result<Self, Error> {
-        let mut ws = get_websocket(url);
+    pub async fn new(
+        url: impl Into<String>,
+        cmd_ch_size: usize,
+        rem_id_ch_size: usize,
+    ) -> Result<Self, Error> {
+        Self::_new(BinanceWebsocket::new(url), cmd_ch_size, rem_id_ch_size).await
+    }
+
+    pub async fn default() -> Result<Self, Error> {
+        Self::_new(
+            BinanceWebsocket::default(),
+            DEFAULT_CHANNEL_SIZE,
+            DEFAULT_CHANNEL_SIZE,
+        )
+        .await
+    }
+
+    pub async fn _new(
+        mut ws: BinanceWebsocket,
+        cmd_ch_size: usize,
+        rem_id_ch_size: usize,
+    ) -> Result<Self, Error> {
         ws.connect().await?;
 
-        let (command_tx, mut command_rx) = channel::<Command>(DEFAULT_CHANNEL_SIZE);
-        let (removed_ids_tx, mut removed_ids_rx) = channel::<Vec<String>>(DEFAULT_CHANNEL_SIZE);
+        let (command_tx, command_rx) = channel::<Command>(cmd_ch_size);
+        let (removed_ids_tx, removed_ids_rx) = channel::<Vec<String>>(rem_id_ch_size);
 
-        let command_tx = Arc::new(command_tx);
-        let cloned_command_tx = command_tx.clone();
+        let cmd_tx = Arc::new(command_tx);
 
         let cache = Arc::new(Cache::new(removed_ids_tx));
-        let cloned_cache = cache.clone();
 
-        tokio::spawn(async move {
-            loop {
-                select! {
-                    Some(cmd) = command_rx.recv() => {
-                        process_command(&cmd, &mut ws, &cloned_cache).await;
-                    },
-                    result = timeout(Duration::new(120, 0), ws.next()) => {
-                        match &result {
-                            Ok(result) => {
-                                process_result(result, &cloned_cache).await;
-                            },
-                            Err(_) => {
-                                handle_reconnect(&mut ws, &cloned_cache, &cloned_command_tx).await;
-                            }
-                        }
-                    },
-                    Some(ids) = removed_ids_rx.recv() => {
-                        let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-                        if ws.unsubscribe(vec_ids.as_slice()).await.is_err() {
-                            warn!("failed to unsubscribe to ids: {:?}", ids);
-                        }
-                    }
-                }
-            }
-        });
+        start_service(
+            ws,
+            command_rx,
+            removed_ids_rx,
+            cache.clone(),
+            cmd_tx.clone(),
+        );
 
-        Ok(Self {
-            cache,
-            cmd_tx: command_tx,
-        })
+        Ok(Self { cache, cmd_tx })
     }
 
     pub async fn get_price_data(&mut self, ids: &[&str]) -> Vec<Result<PriceData, Error>> {
@@ -96,27 +92,53 @@ impl BinanceService {
     }
 }
 
-fn get_websocket(url: Option<&str>) -> BinanceWebsocket {
-    if let Some(endpoint) = url {
-        BinanceWebsocket::new(endpoint)
-    } else {
-        BinanceWebsocket::default()
-    }
+fn start_service(
+    mut ws: BinanceWebsocket,
+    mut command_rx: Receiver<Command>,
+    mut removed_ids_rx: Receiver<Vec<String>>,
+    cache: Arc<Cache>,
+    arced_command_tx: Arc<Sender<Command>>,
+) {
+    tokio::spawn(async move {
+        loop {
+            select! {
+                Some(cmd) = command_rx.recv() => {
+                    process_command(&cmd, &mut ws, &cache).await;
+                },
+                // MOVE TIMEOUT to default config
+                result = timeout(Duration::new(360, 0), ws.next()) => {
+                    match &result {
+                        Ok(Ok(result)) => {
+                            process_response(result, &cache).await;
+                        },
+                        Ok(Err(BinanceError::ChannelClosed)) | Err(_) => {
+                            // Attempt to reconnect on timeout or on channel close
+                            handle_reconnect(&mut ws, &cache, &arced_command_tx).await;
+                        }
+                        Ok(Err(e)) => {
+                            error!("unexpected error: {}", e);
+                        }
+                    }
+                },
+                Some(ids) = removed_ids_rx.recv() => {
+                    let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
+                    if ws.unsubscribe(vec_ids.as_slice()).await.is_err() {
+                        warn!("failed to unsubscribe to ids: {:?}", ids);
+                    }
+                }
+            }
+        }
+    });
 }
 
-async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cloned_cache: &Arc<Cache>) {
+async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<Cache>) {
     match cmd {
         Command::Subscribe(ids) => {
+            cache.set_batch_pending(ids.clone()).await;
+
             let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
             if ws.subscribe(vec_ids.as_slice()).await.is_err() {
                 warn!("Failed to subscribe to ids: {:?}", ids);
-            }
-
-            let results = cloned_cache.set_batch_pending(ids.clone()).await;
-            for (idx, result) in results.into_iter().enumerate() {
-                if result.is_err() {
-                    warn!("Failed to set pending for id: {}", ids[idx]);
-                }
             }
         }
     }
@@ -127,12 +149,17 @@ async fn handle_reconnect(
     cache: &Arc<Cache>,
     command_tx: &Sender<Command>,
 ) {
-    warn!("timeout waiting for response from binance, attempting to reconnect");
+    warn!("attempting to reconnect to binance");
     // reconnect
     _ = ws.disconnect().await;
 
     // TODO: handle this if reconnect attempt fails
-    _ = ws.connect().await;
+    let result = ws.connect().await;
+    if result.is_err() {
+        error!("failed to reconnect to binance");
+    } else {
+        info!("reconnected to binance")
+    }
 
     //  resubscribe to all ids
     let keys = cache.keys().await;
@@ -168,17 +195,17 @@ async fn save_datum(data: &Data, cache: &Arc<Cache>) {
     }
 }
 
-async fn process_result(result: &Result<BinanceResponse, BinanceError>, cache: &Arc<Cache>) {
-    match result {
-        Ok(BinanceResponse::Stream(resp)) => save_datum(&resp.data, cache).await,
-        Ok(BinanceResponse::Success(_)) => {
+async fn process_response(resp: &BinanceResponse, cache: &Arc<Cache>) {
+    match resp {
+        BinanceResponse::Stream(resp) => save_datum(&resp.data, cache).await,
+        BinanceResponse::Success(_) => {
             info!("subscription success");
         }
-        Ok(BinanceResponse::Error(e)) => {
-            error!("error code {} received from binance: {}", e.code, e.msg);
+        BinanceResponse::Ping => {
+            info!("received ping from binance");
         }
-        Err(e) => {
-            error!("unable able to parse message from binance: {:?}", e);
+        BinanceResponse::Error(e) => {
+            error!("error code {} received from binance: {}", e.code, e.msg);
         }
     }
 }

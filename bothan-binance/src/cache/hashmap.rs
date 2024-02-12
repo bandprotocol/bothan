@@ -38,19 +38,17 @@ impl Cache {
         Self { store, token }
     }
 
-    pub async fn set_pending(&self, id: String) -> Result<(), Error> {
-        match self.store.lock().await.entry(id.to_ascii_lowercase()) {
-            Entry::Occupied(_) => Err(Error::AlreadySet),
-            Entry::Vacant(entry) => {
-                entry.insert(None);
-                Ok(())
-            }
-        }
+    pub async fn set_pending(&self, id: String) {
+        self.store
+            .lock()
+            .await
+            .entry(id.to_ascii_lowercase())
+            .or_insert(None);
     }
 
-    pub async fn set_batch_pending(&self, ids: Vec<String>) -> Vec<Result<(), Error>> {
+    pub async fn set_batch_pending(&self, ids: Vec<String>) {
         let handles = ids.into_iter().map(|id| self.set_pending(id));
-        join_all(handles).await
+        join_all(handles).await;
     }
 
     pub async fn set_data(&self, id: String, data: PriceData) -> Result<(), Error> {
@@ -133,6 +131,7 @@ async fn remove_timed_out_data(store: &Store, sender: &Sender<Vec<String>>) {
 
     if !evicted_keys.is_empty() {
         info!("evicting timed out symbols: {:?}", evicted_keys);
+        // TODO: Handle this
         let _res = sender.send(evicted_keys).await;
     }
 }
