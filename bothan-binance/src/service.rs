@@ -1,3 +1,4 @@
+use itertools::cloned;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -111,9 +112,10 @@ async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cloned_cache:
                 warn!("Failed to subscribe to ids: {:?}", ids);
             }
 
-            for id in ids {
-                if cloned_cache.set_pending(id.clone()).await.is_err() {
-                    warn!("Failed to set pending for id: {}", id);
+            let results = cloned_cache.set_batch_pending(ids.clone()).await;
+            for (idx, result) in results.into_iter().enumerate() {
+                if result.is_err() {
+                    warn!("Failed to set pending for id: {}", ids[idx]);
                 }
             }
         }
