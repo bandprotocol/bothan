@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use bothan_core::cache::{Cache, Error as CacheError};
+use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
+use bothan_core::types::PriceData;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::time::timeout;
@@ -8,16 +11,15 @@ use tracing::{error, info, warn};
 use crate::api::error::Error as BinanceError;
 use crate::api::types::{BinanceResponse, Data};
 use crate::api::websocket::BinanceWebsocket;
-use crate::cache::{Cache, Error as CacheError};
 use crate::error::Error;
-use crate::types::{Command, PriceData, DEFAULT_CHANNEL_SIZE, DEFAULT_TIMEOUT};
+use crate::types::{Command, DEFAULT_CHANNEL_SIZE, DEFAULT_TIMEOUT};
 
-pub struct BinanceService {
+pub struct Binance {
     cache: Arc<Cache>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
-impl BinanceService {
+impl Binance {
     pub async fn new(
         url: impl Into<String>,
         cmd_ch_size: usize,
@@ -35,7 +37,7 @@ impl BinanceService {
         .await
     }
 
-    pub async fn _new(
+    async fn _new(
         mut ws: BinanceWebsocket,
         cmd_ch_size: usize,
         rem_id_ch_size: usize,
@@ -47,7 +49,7 @@ impl BinanceService {
 
         let cmd_tx = Arc::new(command_tx);
 
-        let cache = Arc::new(Cache::new(removed_ids_tx));
+        let cache = Arc::new(Cache::new(Some(removed_ids_tx)));
 
         start_service(
             ws,
@@ -59,8 +61,11 @@ impl BinanceService {
 
         Ok(Self { cache, cmd_tx })
     }
+}
 
-    pub async fn get_price_data(&mut self, ids: &[&str]) -> Vec<Result<PriceData, Error>> {
+#[async_trait::async_trait]
+impl Service for Binance {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut sub_ids = Vec::new();
 
         let result = self
@@ -74,9 +79,9 @@ impl BinanceService {
                 Err(CacheError::DoesNotExist) => {
                     // If the id is not in the cache, subscribe to it
                     sub_ids.push(ids[idx].to_string());
-                    Err(Error::Pending)
+                    Err(ServiceError::Pending)
                 }
-                Err(CacheError::Invalid) => Err(Error::InvalidSymbol),
+                Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
                 Err(e) => panic!("unexpected error: {}", e), // This should never happen
             })
             .collect();

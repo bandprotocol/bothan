@@ -1,9 +1,7 @@
 pub use api::websocket::BinanceWebsocket;
-pub use cache::Cache;
-pub use service::BinanceService;
+pub use service::Binance;
 
 mod api;
-mod cache;
 mod error;
 mod service;
 mod types;

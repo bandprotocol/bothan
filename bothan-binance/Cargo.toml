@@ -22,5 +22,7 @@ tokio-util = "0.7.10"
 chrono = "0.4.31"
 rand = "0.8.4"
 dashmap = "5.5.3"
-derive_more = {  version = "1.0.0-beta.6", features = ["full"] }
+derive_more = { version = "1.0.0-beta.6", features = ["full"] }
 futures = "0.3.30"
+bothan-core = { path = "../bothan-core" }
+async-trait = "0.1.77"
