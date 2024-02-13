@@ -6,7 +6,7 @@ use bothan_core::types::PriceData;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::time::timeout;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::api::error::Error as BinanceError;
 use crate::api::types::{BinanceResponse, Data};
@@ -107,7 +107,6 @@ fn start_service(
                 Some(cmd) = command_rx.recv() => {
                     process_command(&cmd, &mut ws, &cache).await;
                 },
-                // MOVE TIMEOUT to default config
                 result = timeout(DEFAULT_TIMEOUT, ws.next()) => {
                     match &result {
                         Ok(Ok(result)) => {
@@ -204,7 +203,7 @@ async fn process_response(resp: &BinanceResponse, cache: &Arc<Cache>) {
             info!("subscription success");
         }
         BinanceResponse::Ping => {
-            info!("received ping from binance");
+            debug!("received ping from binance");
         }
         BinanceResponse::Error(e) => {
             error!("error code {} received from binance: {}", e.code, e.msg);

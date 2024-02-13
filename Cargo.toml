@@ -12,3 +12,4 @@ price-adapter = { version = "0.1.8", path = "price-adapter" }
 price-adapter-raw = { version = "0.1.8", path = "price-adapter-raw" }
 bothan-core = { version = "0.1.0", path = "bothan-core" }
 bothan-binance = { version = "0.1.0", path = "bothan-binance" }
+bothan-coin-gecko = { version = "0.1.0", path = "bothan-coin-gecko" }
