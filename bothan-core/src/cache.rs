@@ -3,4 +3,4 @@ pub use hashmap::Cache;
 
 pub mod error;
 pub mod hashmap;
-mod types;
+pub mod types;

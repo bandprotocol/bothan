@@ -1,36 +1,37 @@
-use std::collections::hash_map::{Entry, HashMap};
+use std::collections::hash_map::{Entry as MapEntry, HashMap};
 use std::ops::Sub;
 use std::sync::Arc;
 
 use futures::future::join_all;
 use tokio::select;
-use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, MutexGuard};
-use tokio::time::{interval, Instant};
+use tokio::sync::mpsc::Sender;
+use tokio::time::{Instant, interval};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use crate::cache::error::Error;
-use crate::cache::types::{StoredPriceData, DEFAULT_EVICTION_CHECK_INTERVAL, DEFAULT_TIMEOUT};
-use crate::types::PriceData;
+use crate::cache::types::{DEFAULT_EVICTION_CHECK_INTERVAL, DEFAULT_TIMEOUT, Entry};
 
-type Map = HashMap<String, Option<StoredPriceData>>;
-type Store = Mutex<Map>;
+type Store<T> = HashMap<String, Option<Entry<T>>>;
 
-pub struct Cache {
-    store: Arc<Store>,
+pub struct Cache<T> {
+    store: Arc<Mutex<Store<T>>>,
     token: CancellationToken,
 }
 
-impl Drop for Cache {
+impl<T> Drop for Cache<T> {
     fn drop(&mut self) {
         self.token.cancel()
     }
 }
 
-impl Cache {
+// Naive implementation of a cache. Eviction is done on a separate task at a regular interval
+// for O(n) key eviction
+// TODO: Write a better implementation
+impl<T: Send + Clone + 'static> Cache<T> {
     pub fn new(sender: Option<Sender<Vec<String>>>) -> Self {
-        let store: Arc<Store> = Arc::new(Mutex::new(HashMap::new()));
+        let store: Arc<Mutex<Store<T>>> = Arc::new(Mutex::new(HashMap::new()));
         let token = CancellationToken::new();
 
         start_eviction_process(store.clone(), token.clone(), sender);
@@ -51,28 +52,28 @@ impl Cache {
         join_all(handles).await;
     }
 
-    pub async fn set_data(&self, id: String, data: PriceData) -> Result<(), Error> {
+    pub async fn set_data(&self, id: String, data: T) -> Result<(), Error> {
         match self.store.lock().await.entry(id.to_ascii_lowercase()) {
-            Entry::Occupied(mut entry) => {
+            MapEntry::Occupied(mut entry) => {
                 match entry.get_mut() {
                     Some(stored) => {
                         stored.update(data);
                     }
                     None => {
-                        entry.insert(Some(StoredPriceData::new(data)));
+                        entry.insert(Some(Entry::new(data)));
                     }
                 };
                 Ok(())
             }
-            Entry::Vacant(_) => Err(Error::PendingNotSet),
+            MapEntry::Vacant(_) => Err(Error::PendingNotSet),
         }
     }
 
-    pub async fn get(&self, id: &str) -> Result<PriceData, Error> {
+    pub async fn get(&self, id: &str) -> Result<T, Error> {
         get_value(id, &mut self.store.lock().await)
     }
 
-    pub async fn get_batch(&self, ids: &[&str]) -> Vec<Result<PriceData, Error>> {
+    pub async fn get_batch(&self, ids: &[&str]) -> Vec<Result<T, Error>> {
         let mut locked_map = self.store.lock().await;
         ids.iter()
             .map(|id| get_value(id, &mut locked_map))
@@ -89,8 +90,8 @@ impl Cache {
     }
 }
 
-fn start_eviction_process(
-    store: Arc<Store>,
+fn start_eviction_process<T: Send + Clone + 'static>(
+    store: Arc<Mutex<Store<T>>>,
     token: CancellationToken,
     sender: Option<Sender<Vec<String>>>,
 ) {
@@ -113,7 +114,10 @@ fn is_timed_out(last_used: Instant) -> bool {
     Instant::now().sub(last_used) > DEFAULT_TIMEOUT
 }
 
-async fn remove_timed_out_data(store: &Store, sender: &Option<Sender<Vec<String>>>) {
+async fn remove_timed_out_data<T: Send + Clone + 'static>(
+    store: &Arc<Mutex<Store<T>>>,
+    sender: &Option<Sender<Vec<String>>>,
+) {
     let mut locked_map = store.lock().await;
     let mut evicted_keys = Vec::new();
 
@@ -138,15 +142,18 @@ async fn remove_timed_out_data(store: &Store, sender: &Option<Sender<Vec<String>
     }
 }
 
-fn get_value(id: &str, locked_map: &mut MutexGuard<Map>) -> Result<PriceData, Error> {
+fn get_value<T: Send + Clone + 'static>(
+    id: &str,
+    locked_map: &mut MutexGuard<Store<T>>,
+) -> Result<T, Error> {
     match locked_map.entry(id.to_ascii_lowercase()) {
-        Entry::Occupied(mut entry) => match entry.get_mut() {
+        MapEntry::Occupied(mut entry) => match entry.get_mut() {
             Some(stored) => {
                 stored.bump_last_used();
                 Ok(stored.data.clone())
             }
             None => Err(Error::Invalid),
         },
-        Entry::Vacant(_) => Err(Error::DoesNotExist),
+        MapEntry::Vacant(_) => Err(Error::DoesNotExist),
     }
 }

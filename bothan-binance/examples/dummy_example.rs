@@ -10,7 +10,7 @@ async fn main() {
         loop {
             let data = service.get_price_data(&["btcusdt", "ethusdt"]).await;
             println!("{:?}", data);
-            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
         }
     }
 }

@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use bothan_core::cache::{Cache, Error as CacheError};
-use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
+
+use bothan_core::cache::{Cache, Error as CacheError};
+use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
+use bothan_core::types::PriceData;
 
 use crate::api::error::Error as BinanceError;
 use crate::api::types::{BinanceResponse, Data};
@@ -15,7 +16,7 @@ use crate::error::Error;
 use crate::types::{Command, DEFAULT_CHANNEL_SIZE, DEFAULT_TIMEOUT};
 
 pub struct Binance {
-    cache: Arc<Cache>,
+    cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
@@ -98,7 +99,7 @@ fn start_service(
     mut ws: BinanceWebsocket,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
-    cache: Arc<Cache>,
+    cache: Arc<Cache<PriceData>>,
     arced_command_tx: Arc<Sender<Command>>,
 ) {
     tokio::spawn(async move {
@@ -132,7 +133,7 @@ fn start_service(
     });
 }
 
-async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<Cache>) {
+async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<Cache<PriceData>>) {
     match cmd {
         Command::Subscribe(ids) => {
             cache.set_batch_pending(ids.clone()).await;
@@ -147,7 +148,7 @@ async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<C
 
 async fn handle_reconnect(
     ws: &mut BinanceWebsocket,
-    cache: &Arc<Cache>,
+    cache: &Arc<Cache<PriceData>>,
     command_tx: &Sender<Command>,
 ) {
     warn!("attempting to reconnect to binance");
@@ -169,7 +170,7 @@ async fn handle_reconnect(
     };
 }
 
-async fn save_datum(data: &Data, cache: &Arc<Cache>) {
+async fn save_datum(data: &Data, cache: &Arc<Cache<PriceData>>) {
     match data {
         Data::MiniTicker(ticker) => {
             let price_data = PriceData {
@@ -196,7 +197,7 @@ async fn save_datum(data: &Data, cache: &Arc<Cache>) {
     }
 }
 
-async fn process_response(resp: &BinanceResponse, cache: &Arc<Cache>) {
+async fn process_response(resp: &BinanceResponse, cache: &Arc<Cache<PriceData>>) {
     match resp {
         BinanceResponse::Stream(resp) => save_datum(&resp.data, cache).await,
         BinanceResponse::Success(_) => {

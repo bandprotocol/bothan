@@ -8,3 +8,13 @@ pub struct PriceData {
     pub price: String,
     pub timestamp: u64,
 }
+
+impl PriceData {
+    pub fn new(id: String, price: String, timestamp: u64) -> Self {
+        Self {
+            id,
+            price,
+            timestamp,
+        }
+    }
+}
