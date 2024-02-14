@@ -4,14 +4,14 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use tokio::select;
-use tokio::sync::{Mutex, MutexGuard};
 use tokio::sync::mpsc::Sender;
-use tokio::time::{Instant, interval};
+use tokio::sync::{Mutex, MutexGuard};
+use tokio::time::{interval, Instant};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use crate::cache::error::Error;
-use crate::cache::types::{DEFAULT_EVICTION_CHECK_INTERVAL, DEFAULT_TIMEOUT, Entry};
+use crate::cache::types::{Entry, DEFAULT_EVICTION_CHECK_INTERVAL, DEFAULT_TIMEOUT};
 
 type Store<T> = HashMap<String, Option<Entry<T>>>;
 
