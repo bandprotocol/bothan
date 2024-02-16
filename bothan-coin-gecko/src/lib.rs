@@ -1,5 +1,8 @@
-pub use service::CoinGecko;
+pub use builder::CoinGeckoServiceBuilder;
+pub use service::CoinGeckoService;
+
 pub mod api;
-mod error;
-mod service;
-mod types;
+pub mod builder;
+pub mod error;
+pub mod service;
+pub mod types;
