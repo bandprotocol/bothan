@@ -137,11 +137,12 @@ async fn process_market_data(market: &Market, cache: &Arc<Cache<PriceData>>) {
 }
 
 fn parse_market(market: &Market) -> Result<PriceData, Error> {
-    let naive_date_time =
-        NaiveDateTime::parse_from_str(market.last_updated.as_str(), "%Y-%m-%dT%H:%M:%S.%fZ")
-            .map_err(|_| Error::InvalidTimestamp)?;
+    let last_updated = market.last_updated.as_str();
+    let naive_date_time = NaiveDateTime::parse_from_str(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ")
+        .map_err(|_| Error::InvalidTimestamp)?;
     let timestamp =
         u64::try_from(naive_date_time.timestamp()).map_err(|_| Error::InvalidTimestamp)?;
+
     Ok(PriceData::new(
         market.id.clone(),
         market.current_price.to_string(),
