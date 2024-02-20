@@ -10,10 +10,18 @@ use crate::api::CoinGeckoRestAPI;
 pub struct CoinGeckoRestAPIBuilder {
     url: Option<String>,
     api_key: Option<String>,
-    user_agent: Option<String>,
+    user_agent: String,
 }
 
 impl CoinGeckoRestAPIBuilder {
+    pub fn new() -> Self {
+        CoinGeckoRestAPIBuilder {
+            url: None,
+            api_key: None,
+            user_agent: DEFAULT_USER_AGENT.into(),
+        }
+    }
+
     pub fn set_url(&mut self, url: &str) -> &Self {
         self.url = Some(url.into());
         self
@@ -25,18 +33,22 @@ impl CoinGeckoRestAPIBuilder {
     }
 
     pub fn set_user_agent(&mut self, user_agent: &str) -> &Self {
-        self.user_agent = Some(user_agent.into());
+        self.user_agent = user_agent.into();
         self
     }
 
     pub fn build(self) -> Result<CoinGeckoRestAPI, Error> {
         let mut headers = HeaderMap::new();
+        headers.insert("User-Agent", HeaderValue::from_str(&self.user_agent)?);
 
-        let user_agent = match &self.user_agent {
-            Some(user_agent) => user_agent,
-            None => DEFAULT_USER_AGENT,
+        let url = match self.url {
+            Some(url) => url,
+            None => match &self.api_key {
+                None => DEFAULT_URL.to_string(),
+                Some(_) => DEFAULT_PRO_URL.to_string(),
+            },
         };
-        headers.insert("User-Agent", HeaderValue::from_str(user_agent)?);
+        let parsed_url = Url::parse(&url)?;
 
         if let Some(key) = &self.api_key {
             let mut val = HeaderValue::from_str(key)?;
@@ -44,15 +56,6 @@ impl CoinGeckoRestAPIBuilder {
             headers.insert("x-cg-pro-api-key", val);
         }
 
-        let url = match &self.url {
-            Some(url) => url,
-            None => match &self.api_key {
-                Some(_) => DEFAULT_PRO_URL,
-                None => DEFAULT_URL,
-            },
-        };
-
-        let parsed_url = Url::parse(url)?;
         let client = ClientBuilder::new().default_headers(headers).build()?;
 
         Ok(CoinGeckoRestAPI::new(parsed_url, client))

@@ -1,5 +1,6 @@
 use tokio::time::Duration;
 
+use crate::api::types::DEFAULT_USER_AGENT;
 use crate::api::CoinGeckoRestAPIBuilder;
 use crate::error::Error;
 use crate::types::{DEFAULT_UPDATE_INTERVAL, DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL};
@@ -9,12 +10,21 @@ use crate::CoinGeckoService;
 pub struct CoinGeckoServiceBuilder {
     url: Option<String>,
     api_key: Option<String>,
-    user_agent: Option<String>,
-    update_interval: Option<Duration>,
-    update_supported_assets_interval: Option<Duration>,
+    user_agent: String,
+    update_interval: Duration,
+    update_supported_assets_interval: Duration,
 }
 
 impl CoinGeckoServiceBuilder {
+    pub fn new() -> Self {
+        CoinGeckoServiceBuilder {
+            url: None,
+            api_key: None,
+            user_agent: DEFAULT_USER_AGENT.into(),
+            update_interval: DEFAULT_UPDATE_INTERVAL,
+            update_supported_assets_interval: DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL,
+        }
+    }
     pub fn set_url(mut self, url: &str) -> Self {
         self.url = Some(url.into());
         self
@@ -26,12 +36,12 @@ impl CoinGeckoServiceBuilder {
     }
 
     pub fn set_user_agent(mut self, user_agent: &str) -> Self {
-        self.user_agent = Some(user_agent.into());
+        self.user_agent = user_agent.into();
         self
     }
 
     pub fn set_update_interval(mut self, update_interval: Duration) -> Self {
-        self.update_interval = Some(update_interval);
+        self.update_interval = update_interval;
         self
     }
 
@@ -39,7 +49,7 @@ impl CoinGeckoServiceBuilder {
         mut self,
         update_supported_assets_interval: Duration,
     ) -> Self {
-        self.update_supported_assets_interval = Some(update_supported_assets_interval);
+        self.update_supported_assets_interval = update_supported_assets_interval;
         self
     }
 
@@ -48,21 +58,17 @@ impl CoinGeckoServiceBuilder {
         if let Some(url) = &self.url {
             api_builder.set_url(url);
         };
-
         if let Some(api_key) = &self.api_key {
             api_builder.set_api_key(api_key);
         };
-
-        if let Some(user_agent) = &self.user_agent {
-            api_builder.set_user_agent(user_agent);
-        };
-
-        let update_interval = self.update_interval.unwrap_or(DEFAULT_UPDATE_INTERVAL);
-        let update_supported_assets_interval = self
-            .update_supported_assets_interval
-            .unwrap_or(DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL);
-
+        api_builder.set_user_agent(&self.user_agent);
         let api = api_builder.build()?;
-        Ok(CoinGeckoService::new(api, update_interval, update_supported_assets_interval).await)
+
+        Ok(CoinGeckoService::new(
+            api,
+            self.update_interval,
+            self.update_supported_assets_interval,
+        )
+        .await)
     }
 }
