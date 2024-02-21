@@ -1,17 +1,20 @@
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, PartialEq, thiserror::Error)]
 pub enum Error {
-    #[error("temporary catch all")]
-    CatchAll,
-
     #[error("reqwest error: {0}")]
-    Reqwest(#[from] reqwest::Error),
+    Reqwest(String),
 
     #[error("invalid header value")]
-    InvalidHeaderValue(#[from] reqwest::header::InvalidHeaderValue),
+    InvalidHeaderValue(String),
 
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
 
     #[error("http error: {0}")]
     Http(reqwest::StatusCode),
+
+    #[error("invalid id")]
+    InvalidID,
+
+    #[error("failed to parse")]
+    Parse,
 }
