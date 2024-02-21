@@ -43,11 +43,10 @@ impl CoinGeckoRestAPI {
 
             let builder_with_query = self.client.get(&url).query(&params);
             let market_data = match send_request(builder_with_query).await {
-                Ok(response) => {
-                    if let Ok(markets) = response.json::<Vec<Market>>().await {
+                Ok(response) => match parse_response::<Vec<Market>>(response).await {
+                    Ok(markets) => {
                         let map: HashMap<String, Market> =
                             HashMap::from_iter(markets.into_iter().map(|m| (m.id.clone(), m)));
-                        // Not found error
                         page_ids
                             .iter()
                             .map(|id| {
@@ -55,15 +54,14 @@ impl CoinGeckoRestAPI {
                                 if let Some(market) = val {
                                     Ok(market)
                                 } else {
-                                    Err(Error::CatchAll)
+                                    Err(Error::InvalidID)
                                 }
                             })
                             .collect::<Vec<Result<Market, Error>>>()
-                    } else {
-                        page_ids.iter().map(|_| Err(Error::CatchAll)).collect()
                     }
-                }
-                Err(_) => page_ids.iter().map(|_| Err(Error::CatchAll)).collect(),
+                    Err(e) => vec![Err(e.clone()); page_ids.len()],
+                },
+                Err(e) => vec![Err(e.clone()); page_ids.len()],
             };
             markets.extend(market_data);
         }
@@ -80,4 +78,8 @@ async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error
     }
 
     Ok(response)
+}
+
+async fn parse_response<T: serde::de::DeserializeOwned>(response: Response) -> Result<T, Error> {
+    Ok(response.json::<T>().await?)
 }
