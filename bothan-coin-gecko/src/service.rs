@@ -149,3 +149,113 @@ fn parse_market(market: &Market) -> Result<PriceData, Error> {
         timestamp,
     ))
 }
+
+#[cfg(test)]
+mod test {
+    use mockito::ServerGuard;
+
+    use crate::api::rest::test::{setup as api_setup, MockGecko};
+    use crate::api::types::Coin;
+
+    use super::*;
+
+    fn setup() -> (CoinGeckoRestAPI, Arc<Cache<PriceData>>, ServerGuard) {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let (server, rest_api) = api_setup();
+        (rest_api, cache, server)
+    }
+
+    #[tokio::test]
+    async fn test_update_price_data() {
+        let (rest_api, cache, mut server) = setup();
+        let coin_market = vec![Market {
+            id: "bitcoin".to_string(),
+            symbol: "BTC".to_string(),
+            name: "Bitcoin".to_string(),
+            current_price: 8426.69,
+            last_updated: "2021-01-01T00:00:00.000Z".to_string(),
+        }];
+        server.set_successful_coins_market(&["bitcoin"], &coin_market);
+        cache.set_batch_pending(vec!["bitcoin".to_string()]).await;
+
+        update_price_data(&rest_api, &cache).await;
+        let result = cache.get("bitcoin").await;
+        let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[tokio::test]
+    async fn test_update_coin_list() {
+        let (rest_api, _, mut server) = setup();
+        let coin_list_store = Arc::new(RwLock::new(HashSet::<String>::new()));
+        let coin_list = vec![Coin {
+            id: "bitcoin".to_string(),
+            symbol: "BTC".to_string(),
+            name: "Bitcoin".to_string(),
+        }];
+        server.set_successful_coin_list(&coin_list);
+
+        update_coin_list(&rest_api, &coin_list_store).await;
+        assert!(coin_list_store.read().await.contains("bitcoin"));
+    }
+
+    #[tokio::test]
+    async fn test_process_market_data() {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let market = Market {
+            id: "bitcoin".to_string(),
+            symbol: "BTC".to_string(),
+            name: "Bitcoin".to_string(),
+            current_price: 8426.69,
+            last_updated: "2021-01-01T00:00:00.000Z".to_string(),
+        };
+
+        cache.set_batch_pending(vec!["bitcoin".to_string()]).await;
+        process_market_data(&market, &cache).await;
+        let result = cache.get("bitcoin").await;
+        let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[tokio::test]
+    async fn test_process_market_data_without_set_pending() {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let market = Market {
+            id: "bitcoin".to_string(),
+            symbol: "BTC".to_string(),
+            name: "Bitcoin".to_string(),
+            current_price: 8426.69,
+            last_updated: "2021-01-01T00:00:00.000Z".to_string(),
+        };
+
+        process_market_data(&market, &cache).await;
+        let result = cache.get("bitcoin").await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_market() {
+        let market = Market {
+            id: "bitcoin".to_string(),
+            symbol: "BTC".to_string(),
+            name: "Bitcoin".to_string(),
+            current_price: 8426.69,
+            last_updated: "2021-01-01T00:00:00.000Z".to_string(),
+        };
+        let result = parse_market(&market);
+        let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_parse_market_with_failure() {
+        let market = Market {
+            id: "bitcoin".to_string(),
+            symbol: "BTC".to_string(),
+            name: "Bitcoin".to_string(),
+            current_price: 8426.69,
+            last_updated: "johnny appleseed".to_string(),
+        };
+        assert!(parse_market(&market).is_err());
+    }
+}

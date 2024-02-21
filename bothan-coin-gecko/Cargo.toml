@@ -19,3 +19,8 @@ async-trait = "0.1.77"
 chrono = "0.4.34"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
+serde_json = "1.0.113"
+
+[dev-dependencies]
+mockall = "0.12.1"
+mockito = "1.2.0"
