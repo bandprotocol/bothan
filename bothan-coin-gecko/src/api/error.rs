@@ -18,3 +18,15 @@ pub enum Error {
     #[error("failed to parse")]
     Parse,
 }
+
+impl From<reqwest::Error> for Error {
+    fn from(e: reqwest::Error) -> Self {
+        Error::Reqwest(e.to_string())
+    }
+}
+
+impl From<reqwest::header::InvalidHeaderValue> for Error {
+    fn from(e: reqwest::header::InvalidHeaderValue) -> Self {
+        Error::InvalidHeaderValue(e.to_string())
+    }
+}
