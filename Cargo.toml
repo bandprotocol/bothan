@@ -4,7 +4,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [workspace]
-members = ["price-adapter-raw", "price-adapter", "bothan-core", "bothan-binance", "bothan-coin-gecko"]
+members = ["price-adapter-raw", "price-adapter", "bothan-core", "bothan-binance", "bothan-coin-gecko", "bothan-api"]
 resolver = "2"
 
 [workspace.dependencies]

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package price;
+
+service PriceService {
+  rpc GetPriceData(PriceDataRequest) returns (PriceDataResponse) {}
+}
+
+message PriceDataRequest { string id = 1; }
+
+message PriceDataResponse { repeated PriceData price_data_list = 1; }
+
+message PriceData {
+  string id = 1;
+  string price = 2;
+  uint64 timestamp = 3;
+}
