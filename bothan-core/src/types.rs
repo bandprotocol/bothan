@@ -1,7 +1,7 @@
 use derive_more::Display;
 use serde::Deserialize;
 
-#[derive(Clone, Debug, Deserialize, Display)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Display)]
 #[display("id: {}, price: {}, timestamp: {}", id, price, timestamp)]
 pub struct PriceData {
     pub id: String,
