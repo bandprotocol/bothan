@@ -9,6 +9,7 @@ license.workspace = true
 [dependencies]
 url = "2.5.0"
 chrono = "0.4.34"
+futures = "0.3.30"
 
 bothan-core = { workspace = true }
 async-trait = { workspace = true }

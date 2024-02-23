@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use chrono::NaiveDateTime;
+use futures::future::join_all;
 use tokio::select;
 use tokio::sync::RwLock;
 use tokio::time::{interval, Duration, Interval};
@@ -10,6 +11,7 @@ use tracing::warn;
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
+use futures::stream::{FuturesUnordered, StreamExt};
 
 use crate::api::types::Market;
 use crate::api::CoinGeckoRestAPI;
@@ -121,6 +123,7 @@ async fn update_price_data(
         keys.len().div_ceil(page_size)
     };
 
+    let tasks = FuturesUnordered::new();
     for page in 1..=pages {
         if let Some(interval) = delay.as_mut() {
             interval.tick().await;
@@ -128,10 +131,12 @@ async fn update_price_data(
 
         let cloned_api = rest_api.clone();
         let cloned_cache = cache.clone();
-        tokio::spawn(async move {
+        tasks.push(tokio::spawn(async move {
             update_price_data_from_api(&cloned_api, &cloned_cache, page, page_size).await;
-        });
+        }));
     }
+
+    join_all(tasks).await;
 }
 
 async fn update_price_data_from_api(
