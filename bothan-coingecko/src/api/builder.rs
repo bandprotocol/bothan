@@ -6,7 +6,6 @@ use crate::api::error::Error;
 use crate::api::types::{DEFAULT_PRO_URL, DEFAULT_URL, DEFAULT_USER_AGENT};
 use crate::api::CoinGeckoRestAPI;
 
-#[derive(Default)]
 pub struct CoinGeckoRestAPIBuilder {
     url: Option<String>,
     api_key: Option<String>,
@@ -14,14 +13,6 @@ pub struct CoinGeckoRestAPIBuilder {
 }
 
 impl CoinGeckoRestAPIBuilder {
-    pub fn new() -> Self {
-        CoinGeckoRestAPIBuilder {
-            url: None,
-            api_key: None,
-            user_agent: DEFAULT_USER_AGENT.into(),
-        }
-    }
-
     pub fn set_url(&mut self, url: &str) -> &Self {
         self.url = Some(url.into());
         self
@@ -59,5 +50,15 @@ impl CoinGeckoRestAPIBuilder {
         let client = ClientBuilder::new().default_headers(headers).build()?;
 
         Ok(CoinGeckoRestAPI::new(parsed_url, client))
+    }
+}
+
+impl Default for CoinGeckoRestAPIBuilder {
+    fn default() -> Self {
+        CoinGeckoRestAPIBuilder {
+            url: None,
+            api_key: None,
+            user_agent: DEFAULT_USER_AGENT.into(),
+        }
     }
 }

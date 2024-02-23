@@ -25,6 +25,8 @@ impl CoinGeckoService {
         rest_api: CoinGeckoRestAPI,
         update_interval: Duration,
         update_supported_assets_interval: Duration,
+        page_size: usize,
+        page_query_delay: Option<Duration>,
     ) -> Self {
         let cache = Arc::new(Cache::new(None));
         let coin_list = Arc::new(RwLock::new(HashSet::<String>::new()));
@@ -32,11 +34,13 @@ impl CoinGeckoService {
         let update_supported_assets_interval = interval(update_supported_assets_interval);
 
         start_service(
-            rest_api,
+            Arc::new(rest_api),
             cache.clone(),
             update_price_interval,
             update_supported_assets_interval,
             coin_list.clone(),
+            page_size,
+            page_query_delay,
         )
         .await;
 
@@ -66,7 +70,7 @@ impl Service for CoinGeckoService {
                         Err(ServiceError::InvalidSymbol)
                     }
                 }
-                Err(CacheError::Invalid) => Err(ServiceError::Pending),
+                Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
                 Err(_) => Err(ServiceError::Pending),
             })
             .collect();
@@ -80,11 +84,13 @@ impl Service for CoinGeckoService {
 }
 
 pub async fn start_service(
-    rest_api: CoinGeckoRestAPI,
+    rest_api: Arc<CoinGeckoRestAPI>,
     cache: Arc<Cache<PriceData>>,
     mut update_price_interval: Interval,
     mut update_supported_assets_interval: Interval,
     coin_list: Arc<RwLock<HashSet<String>>>,
+    page_size: usize,
+    page_query_delay: Option<Duration>,
 ) {
     update_coin_list(&rest_api, &coin_list).await;
 
@@ -92,7 +98,7 @@ pub async fn start_service(
         loop {
             select! {
                 _ = update_price_interval.tick() => {
-                    update_price_data(&rest_api, &cache).await;
+                    update_price_data(&rest_api, &cache, page_size, page_query_delay).await;
                 },
                 _ = update_supported_assets_interval.tick() => {
                     update_coin_list(&rest_api, &coin_list).await;
@@ -102,20 +108,60 @@ pub async fn start_service(
     });
 }
 
-async fn update_price_data(rest_api: &CoinGeckoRestAPI, cache: &Arc<Cache<PriceData>>) {
-    let keys = cache.keys().await;
-    let ids = keys.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-    let market_results = rest_api.get_coins_market(&ids).await;
-    for market_result in market_results {
-        if let Ok(market) = market_result {
-            process_market_data(&market, cache).await;
-        } else {
-            warn!("failed to get market data");
+async fn update_price_data(
+    rest_api: &Arc<CoinGeckoRestAPI>,
+    cache: &Arc<Cache<PriceData>>,
+    page_size: usize,
+    page_query_delay: Option<Duration>,
+) {
+    let mut delay = page_query_delay.map(interval);
+
+    let pages = {
+        let keys = cache.keys().await;
+        keys.len().div_ceil(page_size)
+    };
+
+    for page in 1..=pages {
+        if let Some(interval) = delay.as_mut() {
+            interval.tick().await;
         }
+
+        let cloned_api = rest_api.clone();
+        let cloned_cache = cache.clone();
+        tokio::spawn(async move {
+            update_price_data_from_api(&cloned_api, &cloned_cache, page, page_size).await;
+        });
     }
 }
 
-async fn update_coin_list(rest_api: &CoinGeckoRestAPI, coin_list: &Arc<RwLock<HashSet<String>>>) {
+async fn update_price_data_from_api(
+    rest_api: &Arc<CoinGeckoRestAPI>,
+    cache: &Arc<Cache<PriceData>>,
+    page: usize,
+    page_size: usize,
+) {
+    let keys = cache.keys().await;
+    let ids = keys.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
+    if let Ok(markets) = rest_api
+        .get_coins_market(ids.as_slice(), page_size, page)
+        .await
+    {
+        for (id, market) in ids.iter().zip(markets.iter()) {
+            if let Some(m) = market {
+                process_market_data(m, cache).await;
+            } else {
+                warn!("id {} is missing market data", id);
+            }
+        }
+    } else {
+        warn!("failed to get market data");
+    }
+}
+
+async fn update_coin_list(
+    rest_api: &Arc<CoinGeckoRestAPI>,
+    coin_list: &Arc<RwLock<HashSet<String>>>,
+) {
     if let Ok(new_coin_list) = rest_api.get_coins_list().await {
         let new_coin_set = HashSet::<String>::from_iter(new_coin_list.into_iter().map(|x| x.id));
         let mut locked = coin_list.write().await;
@@ -159,10 +205,10 @@ mod test {
 
     use super::*;
 
-    fn setup() -> (CoinGeckoRestAPI, Arc<Cache<PriceData>>, ServerGuard) {
+    fn setup() -> (Arc<CoinGeckoRestAPI>, Arc<Cache<PriceData>>, ServerGuard) {
         let cache = Arc::new(Cache::<PriceData>::new(None));
         let (server, rest_api) = api_setup();
-        (rest_api, cache, server)
+        (Arc::new(rest_api), cache, server)
     }
 
     #[tokio::test]
@@ -178,10 +224,10 @@ mod test {
         server.set_successful_coins_market(&["bitcoin"], &coin_market);
         cache.set_batch_pending(vec!["bitcoin".to_string()]).await;
 
-        update_price_data(&rest_api, &cache).await;
+        update_price_data(&rest_api, &cache, 250, None).await;
         let result = cache.get("bitcoin").await;
         let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
-        assert_eq!(result.unwrap(), expected);
+        assert_eq!(result, Ok(expected));
     }
 
     #[tokio::test]
