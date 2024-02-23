@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use tracing_subscriber::fmt::init;
 
-use bothan_coin_gecko::CoinGeckoServiceBuilder;
+use bothan_coingecko::CoinGeckoServiceBuilder;
 use bothan_core::service::Service;
 
 #[tokio::main]
