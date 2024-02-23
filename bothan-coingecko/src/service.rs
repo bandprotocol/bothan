@@ -11,7 +11,7 @@ use tracing::warn;
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
-use futures::stream::{FuturesUnordered, StreamExt};
+use futures::stream::FuturesUnordered;
 
 use crate::api::types::Market;
 use crate::api::CoinGeckoRestAPI;
