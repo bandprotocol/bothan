@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::{Mutex, MutexGuard};
 use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
 
@@ -11,7 +12,7 @@ use bothan_core::types::PriceData;
 
 use crate::api::error::Error as BinanceError;
 use crate::api::types::{BinanceResponse, Data, DEFAULT_URL};
-use crate::api::websocket::BinanceWebSocketConnector;
+use crate::api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::error::Error;
 use crate::types::{Command, DEFAULT_CHANNEL_SIZE, DEFAULT_TIMEOUT};
 
@@ -41,8 +42,16 @@ impl BinanceServiceBuilder {
     }
 
     pub async fn build(self) -> Result<BinanceService, Error> {
-        let wsc = BinanceWebSocketConnector::new(self.url);
-        BinanceService::new(wsc, self.cmd_ch_size, self.rem_id_ch_size).await
+        let connector = BinanceWebSocketConnector::new(self.url);
+        let connection = connector.connect().await?;
+        let service = BinanceService::new(
+            Arc::new(connector),
+            Arc::new(Mutex::new(connection)),
+            self.cmd_ch_size,
+            self.rem_id_ch_size,
+        )
+        .await;
+        Ok(service)
     }
 }
 
@@ -53,12 +62,11 @@ pub struct BinanceService {
 
 impl BinanceService {
     async fn new(
-        mut wsc: Arc<BinanceWebSocketConnector>,
+        connector: Arc<BinanceWebSocketConnector>,
+        connection: Arc<Mutex<BinanceWebSocketConnection>>,
         cmd_ch_size: usize,
         rem_id_ch_size: usize,
-    ) -> Result<Self, Error> {
-        wsc.connect().await?;
-
+    ) -> Self {
         let (command_tx, command_rx) = channel::<Command>(cmd_ch_size);
         let (removed_ids_tx, removed_ids_rx) = channel::<Vec<String>>(rem_id_ch_size);
 
@@ -67,14 +75,15 @@ impl BinanceService {
         let cache = Arc::new(Cache::new(Some(removed_ids_tx)));
 
         start_service(
-            wsc,
+            connector,
+            connection,
             command_rx,
             removed_ids_rx,
             cache.clone(),
             cmd_tx.clone(),
         );
 
-        Ok(Self { cache, cmd_tx })
+        Self { cache, cmd_tx }
     }
 }
 
@@ -110,7 +119,8 @@ impl Service for BinanceService {
 }
 
 fn start_service(
-    connector: BinanceWebSocketConnector,
+    connector: Arc<BinanceWebSocketConnector>,
+    mut connection: Arc<Mutex<BinanceWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
     cache: Arc<Cache<PriceData>>,
@@ -120,16 +130,19 @@ fn start_service(
         loop {
             select! {
                 Some(cmd) = command_rx.recv() => {
-                    process_command(&cmd, &mut ws, &cache).await;
+                    process_command(&cmd, &mut connection, &cache).await;
                 },
-                result = timeout(DEFAULT_TIMEOUT, ws.next()) => {
+                result = {
+                    let cloned = connection.clone();
+                    timeout(DEFAULT_TIMEOUT, async move { cloned.lock().await.next().await })
+                } => {
                     match &result {
                         Ok(Ok(result)) => {
                             process_response(result, &cache).await;
                         },
                         Ok(Err(BinanceError::ChannelClosed)) | Err(_) => {
                             // Attempt to reconnect on timeout or on channel close
-                            handle_reconnect(&mut ws, &cache, &command_tx).await;
+                            handle_reconnect(connector.clone(), connection.clone(), &cache, &command_tx).await;
                         }
                         Ok(Err(e)) => {
                             error!("unexpected error: {}", e);
@@ -138,7 +151,7 @@ fn start_service(
                 },
                 Some(ids) = removed_ids_rx.recv() => {
                     let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-                    if ws.unsubscribe(vec_ids.as_slice()).await.is_err() {
+                    if connection.lock().await.unsubscribe(vec_ids.as_slice()).await.is_err() {
                         warn!("failed to unsubscribe to ids: {:?}", ids);
                     }
                 }
@@ -147,13 +160,18 @@ fn start_service(
     });
 }
 
-async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<Cache<PriceData>>) {
+async fn process_command(
+    cmd: &Command,
+    ws: &mut Arc<Mutex<BinanceWebSocketConnection>>,
+    cache: &Arc<Cache<PriceData>>,
+) {
     match cmd {
         Command::Subscribe(ids) => {
             cache.set_batch_pending(ids.clone()).await;
 
             let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-            if ws.subscribe(vec_ids.as_slice()).await.is_err() {
+            let mut locked = ws.lock().await;
+            if locked.subscribe(vec_ids.as_slice()).await.is_err() {
                 warn!("Failed to subscribe to ids: {:?}", ids);
             }
         }
@@ -161,20 +179,20 @@ async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<C
 }
 
 async fn handle_reconnect(
-    ws: &mut BinanceWebsocket,
+    connector: Arc<BinanceWebSocketConnector>,
+    connection: Arc<Mutex<BinanceWebSocketConnection>>,
     cache: &Arc<Cache<PriceData>>,
     command_tx: &Sender<Command>,
 ) {
+    // TODO: Handle reconnection failure
+    let mut locked = connection.lock().await;
     warn!("attempting to reconnect to binance");
     // reconnect
-    _ = ws.disconnect().await;
-
-    // TODO: handle this if reconnect attempt fails
-    let result = ws.connect().await;
-    if result.is_err() {
-        error!("failed to reconnect to binance");
+    if let Ok(new_connection) = connector.connect().await {
+        *locked = new_connection;
     } else {
-        info!("reconnected to binance")
+        warn!("failed to reconnect to binance");
+        return;
     }
 
     //  resubscribe to all ids
