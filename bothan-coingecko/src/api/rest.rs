@@ -82,7 +82,7 @@ pub(crate) mod test {
         (server, api)
     }
 
-    pub(crate) trait MockGecko {
+    pub(crate) trait MockCoinGecko {
         fn set_successful_coin_list(&mut self, coin_list: &[Coin]) -> Mock;
         fn set_failed_coin_list(&mut self) -> Mock;
         fn set_successful_coins_market(&mut self, ids: &[&str], market: &[Market]) -> Vec<Mock>;
@@ -94,7 +94,7 @@ pub(crate) mod test {
         fn set_failed_coins_market(&mut self, ids: &[&str]) -> Mock;
     }
 
-    impl MockGecko for ServerGuard {
+    impl MockCoinGecko for ServerGuard {
         fn set_successful_coin_list(&mut self, coin_list: &[Coin]) -> Mock {
             self.mock("GET", "/coins/list")
                 .with_status(200)
