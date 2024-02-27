@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bothan-core = { path = "../bothan-core" }
 bothan-binance = { path = "../bothan-binance" }
+bothan-coingecko = { path = "../bothan-coingecko" }
 tracing = { version = "0.1.40", features = [] }
 tokio = { version = "1.36.0", features = ["full"] }
 tracing-subscriber = "0.3.17"
