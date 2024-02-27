@@ -3,15 +3,15 @@ use std::sync::Arc;
 
 use chrono::NaiveDateTime;
 use futures::future::join_all;
+use futures::stream::FuturesUnordered;
 use tokio::select;
 use tokio::sync::RwLock;
 use tokio::time::{interval, Duration, Interval};
-use tracing::warn;
+use tracing::{info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
-use futures::stream::FuturesUnordered;
 
 use crate::api::types::Market;
 use crate::api::CoinGeckoRestAPI;
@@ -73,7 +73,7 @@ impl Service for CoinGeckoService {
                     }
                 }
                 Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
-                Err(_) => Err(ServiceError::Pending),
+                Err(e) => panic!("unexpected error: {}", e), // This should never happen
             })
             .collect();
 
@@ -172,7 +172,7 @@ async fn update_coin_list(
         let mut locked = coin_list.write().await;
         *locked = new_coin_set;
     } else {
-        warn!("Failed to get coin list");
+        warn!("failed to get coin list");
     }
 }
 
@@ -180,10 +180,12 @@ async fn process_market_data(market: &Market, cache: &Arc<Cache<PriceData>>) {
     if let Ok(price_data) = parse_market(market) {
         let id = price_data.id.clone();
         if cache.set_data(id.clone(), price_data).await.is_err() {
-            warn!("Unexpected request to set data for id: {}", id);
+            warn!("unexpected request to set data for id: {}", id);
+        } else {
+            info!("set price for id {}", id);
         }
     } else {
-        warn!("Failed to parse date time");
+        warn!("failed to parse date time");
     }
 }
 
@@ -205,7 +207,7 @@ fn parse_market(market: &Market) -> Result<PriceData, Error> {
 mod test {
     use mockito::ServerGuard;
 
-    use crate::api::rest::test::{setup as api_setup, MockGecko};
+    use crate::api::rest::test::{setup as api_setup, MockCoinGecko};
     use crate::api::types::Coin;
 
     use super::*;
