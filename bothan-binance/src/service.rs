@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
 
@@ -11,49 +11,9 @@ use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
 
 use crate::api::error::Error as BinanceError;
-use crate::api::types::{BinanceResponse, Data, DEFAULT_URL};
+use crate::api::types::{BinanceResponse, Data};
 use crate::api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
-use crate::error::Error;
-use crate::types::{Command, DEFAULT_CHANNEL_SIZE, DEFAULT_TIMEOUT};
-
-pub struct BinanceServiceBuilder {
-    url: String,
-    cmd_ch_size: usize,
-    rem_id_ch_size: usize,
-}
-
-impl BinanceServiceBuilder {
-    pub fn new() -> Self {
-        Self {
-            url: DEFAULT_URL.to_string(),
-            cmd_ch_size: DEFAULT_CHANNEL_SIZE,
-            rem_id_ch_size: DEFAULT_CHANNEL_SIZE,
-        }
-    }
-
-    pub fn with_cmd_ch_size(mut self, size: usize) -> Self {
-        self.cmd_ch_size = size;
-        self
-    }
-
-    pub fn with_rem_id_ch_size(mut self, size: usize) -> Self {
-        self.rem_id_ch_size = size;
-        self
-    }
-
-    pub async fn build(self) -> Result<BinanceService, Error> {
-        let connector = BinanceWebSocketConnector::new(self.url);
-        let connection = connector.connect().await?;
-        let service = BinanceService::new(
-            Arc::new(connector),
-            Arc::new(Mutex::new(connection)),
-            self.cmd_ch_size,
-            self.rem_id_ch_size,
-        )
-        .await;
-        Ok(service)
-    }
-}
+use crate::types::{Command, DEFAULT_TIMEOUT};
 
 pub struct BinanceService {
     cache: Arc<Cache<PriceData>>,
@@ -61,7 +21,7 @@ pub struct BinanceService {
 }
 
 impl BinanceService {
-    async fn new(
+    pub(crate) async fn new(
         connector: Arc<BinanceWebSocketConnector>,
         connection: Arc<Mutex<BinanceWebSocketConnection>>,
         cmd_ch_size: usize,

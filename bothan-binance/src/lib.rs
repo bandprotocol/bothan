@@ -1,4 +1,5 @@
 pub use api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
+pub use builder::BinanceServiceBuilder;
 pub use service::BinanceService;
 
 pub mod api;
