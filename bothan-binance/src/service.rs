@@ -179,19 +179,15 @@ async fn save_datum(data: &Data, cache: &Arc<Cache<PriceData>>) {
                 timestamp: ticker.event_time,
             };
             info!("received prices: {:?}", price_data);
-            match cache.set_data(ticker.symbol.clone(), price_data).await {
-                Ok(_) => {
-                    info!("successfully set {} in cache", ticker.symbol);
-                }
-                Err(CacheError::PendingNotSet) => {
-                    warn!(
-                        "received data for id that was not pending: {}",
-                        ticker.symbol
-                    );
-                }
-                Err(e) => {
-                    error!("error setting data in cache: {:?}", e)
-                }
+            let id = price_data.id.clone();
+            if cache
+                .set_data(ticker.symbol.clone(), price_data)
+                .await
+                .is_err()
+            {
+                warn!("unexpected request to set data for id: {}", id);
+            } else {
+                info!("set price for id {}", id);
             }
         }
     }
