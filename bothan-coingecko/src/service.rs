@@ -207,7 +207,7 @@ fn parse_market(market: &Market) -> Result<PriceData, Error> {
 mod test {
     use mockito::ServerGuard;
 
-    use crate::api::rest::test::{setup as api_setup, MockGecko};
+    use crate::api::rest::test::{setup as api_setup, MockCoinGecko};
     use crate::api::types::Coin;
 
     use super::*;
