@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package price;
+option go_package = "bothan-api/price";
 
 service PriceService {
   rpc GetPriceData(PriceDataRequest) returns (PriceDataResponse) {}
