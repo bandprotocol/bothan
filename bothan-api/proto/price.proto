@@ -3,8 +3,12 @@ syntax = "proto3";
 package price;
 option go_package = "bothan-api/price";
 
+import "google/api/annotations.proto";
+
 service PriceService {
-  rpc GetPriceData(PriceDataRequest) returns (PriceDataResponse) {}
+  rpc GetPriceData(PriceDataRequest) returns (PriceDataResponse) {
+    option (google.api.http).get = "/price/get_price/{id}";
+  }
 }
 
 message PriceDataRequest { string id = 1; }

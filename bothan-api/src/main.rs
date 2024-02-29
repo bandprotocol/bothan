@@ -6,11 +6,16 @@ use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tonic::{transport::Server, Request, Response, Status};
 
-pub mod price {
-    tonic::include_proto!("price"); // Include the generated code.
-}
+// pub mod price {
+//     tonic::include_proto!("price"); // Include the generated code.
+// }
 
-use price::price_service_server::{PriceService, PriceServiceServer}; // Import the generated server module.
+// use price::price_service_server::{PriceService, PriceServiceServer}; // Import the generated server module.
+
+pub mod price;
+
+use crate::price::price::price_service_server::{PriceService, PriceServiceServer};
+use crate::price::price::{PriceData, PriceDataRequest, PriceDataResponse};
 
 pub struct PriceServiceImpl {
     binance_service: Arc<Mutex<Binance>>,
@@ -30,8 +35,8 @@ impl PriceServiceImpl {
 impl PriceService for PriceServiceImpl {
     async fn get_price_data(
         &self, // Change to accept mutable reference
-        request: Request<price::PriceDataRequest>,
-    ) -> Result<Response<price::PriceDataResponse>, Status> {
+        request: Request<PriceDataRequest>,
+    ) -> Result<Response<PriceDataResponse>, Status> {
         let id = request.into_inner().id;
 
         // Here you can call your `get_price_data` function with the received `id`.
@@ -54,10 +59,10 @@ impl PriceService for PriceServiceImpl {
             .get_price_data(&[coingecko_map.get(id.as_str()).unwrap()])
             .await;
 
-        let mut price_data_list: Vec<price::PriceData> = Vec::new();
+        let mut price_data_list: Vec<PriceData> = Vec::new();
         for data in binance_data_list {
             let price_data = data.unwrap();
-            let price_data = price::PriceData {
+            let price_data = PriceData {
                 id: price_data.id,
                 price: price_data.price,
                 timestamp: price_data.timestamp,
@@ -67,7 +72,7 @@ impl PriceService for PriceServiceImpl {
 
         for data in coingecko_data_list {
             let price_data = data.unwrap();
-            let price_data = price::PriceData {
+            let price_data = PriceData {
                 id: price_data.id,
                 price: price_data.price,
                 timestamp: price_data.timestamp,
@@ -75,7 +80,7 @@ impl PriceService for PriceServiceImpl {
             price_data_list.push(price_data.clone())
         }
 
-        let response = price::PriceDataResponse { price_data_list };
+        let response = PriceDataResponse { price_data_list };
 
         // Simulating some response data
 

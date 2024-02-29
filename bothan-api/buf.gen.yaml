@@ -1,6 +1,8 @@
 version: v1
 plugins:
-  - name: rust
+  - plugin: prost
+    out: src/price
+  - name: tonic
     out: src/price
   - plugin: go
     out: price

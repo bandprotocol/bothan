@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 
-	gw "bothan-api/price"
+	gw "bothan-api/price/proto"
 )
 
 var (

@@ -37,12 +37,22 @@ func request_PriceService_GetPriceData_0(ctx context.Context, marshaler runtime.
 	var protoReq PriceDataRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.Id, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
 	msg, err := client.GetPriceData(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -54,12 +64,22 @@ func local_request_PriceService_GetPriceData_0(ctx context.Context, marshaler ru
 	var protoReq PriceDataRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.Id, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
 	msg, err := server.GetPriceData(ctx, &protoReq)
@@ -73,7 +93,7 @@ func local_request_PriceService_GetPriceData_0(ctx context.Context, marshaler ru
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterPriceServiceHandlerFromEndpoint instead.
 func RegisterPriceServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server PriceServiceServer) error {
 
-	mux.Handle("POST", pattern_PriceService_GetPriceData_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PriceService_GetPriceData_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -137,7 +157,7 @@ func RegisterPriceServiceHandler(ctx context.Context, mux *runtime.ServeMux, con
 // "PriceServiceClient" to call the correct interceptors.
 func RegisterPriceServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client PriceServiceClient) error {
 
-	mux.Handle("POST", pattern_PriceService_GetPriceData_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PriceService_GetPriceData_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -161,7 +181,7 @@ func RegisterPriceServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 }
 
 var (
-	pattern_PriceService_GetPriceData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"price.PriceService", "GetPriceData"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_PriceService_GetPriceData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"price", "get_price", "id"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
