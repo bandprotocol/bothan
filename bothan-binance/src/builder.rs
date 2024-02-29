@@ -14,6 +14,11 @@ pub struct BinanceServiceBuilder {
 }
 
 impl BinanceServiceBuilder {
+    pub fn with_url(mut self, url: String) -> Self {
+        self.url = url;
+        self
+    }
+
     pub fn with_cmd_ch_size(mut self, size: usize) -> Self {
         self.cmd_ch_size = size;
         self
