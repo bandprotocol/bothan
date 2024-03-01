@@ -39,6 +39,7 @@ impl<T: Send + Clone + 'static> Cache<T> {
         Self { store, token }
     }
 
+    // TBD: Why to_ascii_lowercase?
     pub async fn set_pending(&self, id: String) {
         self.store
             .lock()
