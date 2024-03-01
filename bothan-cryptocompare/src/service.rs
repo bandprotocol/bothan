@@ -40,8 +40,6 @@ impl Service for CryptoCompareService {
             .map(|(idx, x)| match x {
                 Ok(v) => Ok(v),
                 Err(CacheError::DoesNotExist) => {
-                    println!("{} does not exist", ids[idx].to_string());
-
                     to_set_pending.push(ids[idx].to_string());
                     Err(ServiceError::Pending)
                 }
