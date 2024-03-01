@@ -52,30 +52,3 @@ async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error
 async fn parse_response<T: serde::de::DeserializeOwned>(response: Response) -> Result<T, Error> {
     Ok(response.json::<T>().await?)
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::api::CryptoCompareRestAPIBuilder;
-
-    use super::*;
-
-    #[tokio::test]
-    async fn test_get_coins_market() {
-        let url = Url::parse("https://min-api.cryptocompare.com").unwrap();
-        let client = Client::new();
-        let api = CryptoCompareRestAPI::new(url, client);
-
-        let ids = vec!["BTC", "ETH"];
-        let result = api.get_coins_market(&ids).await.unwrap();
-        println!("{:?}", result);
-    }
-
-    #[tokio::test]
-    async fn test_builder() {
-        let builder = CryptoCompareRestAPIBuilder::default();
-        let api = builder.build().unwrap();
-        let ids = vec!["BTC", "ETH"];
-        let result = api.get_coins_market(&ids).await.unwrap();
-        println!("{:?}", result);
-    }
-}
