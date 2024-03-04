@@ -6,13 +6,8 @@ use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tonic::{transport::Server, Request, Response, Status};
 
-// pub mod price {
-//     tonic::include_proto!("price"); // Include the generated code.
-// }
-
-// use price::price_service_server::{PriceService, PriceServiceServer}; // Import the generated server module.
-
-pub mod price;
+mod config;
+mod price;
 
 use crate::price::price::price_service_server::{PriceService, PriceServiceServer};
 use crate::price::price::{PriceData, PricesRequest, PricesResponse};
@@ -119,23 +114,28 @@ impl PriceService for PriceServiceImpl {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:50051".parse().unwrap();
-    let service_result = CoinGeckoServiceBuilder::default()
+    // Load the configuration
+    let app_config = config::AppConfig::new().expect("Failed to load configuration");
+    println!("{:?}", app_config);
+
+    let addr = app_config.grpc.addr.parse().unwrap();
+
+    let coingecko_service = CoinGeckoServiceBuilder::default()
         .set_update_supported_assets_interval(Duration::from_secs(600))
         .build()
-        .await;
+        .await
+        .unwrap();
 
-    if let Ok(service) = Binance::default().await {
-        if let Ok(coingecko_service) = service_result {
-            let price_data_impl = PriceServiceImpl::new(service, coingecko_service); // Change to mutable binding
+    let binance_service = Binance::default().await.unwrap();
 
-            println!("Server running on {}", addr);
+    let price_data_impl = PriceServiceImpl::new(binance_service, coingecko_service); // Change to mutable binding
 
-            Server::builder()
-                .add_service(PriceServiceServer::new(price_data_impl))
-                .serve(addr)
-                .await?;
-        }
-    }
+    println!("Server running on {}", addr);
+
+    Server::builder()
+        .add_service(PriceServiceServer::new(price_data_impl))
+        .serve(addr)
+        .await?;
+
     Ok(())
 }

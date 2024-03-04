@@ -1,0 +1,15 @@
+[grpc]
+addr = "127.0.0.1:50051"
+
+[source.binance]
+interval = 60
+api_key = "your_api_key_1"
+
+[source.coingecko]
+url = "testurl"
+api_key = "your_api_key_1"
+interval = 60
+
+[registry]
+source = ""
+version = "1.0"

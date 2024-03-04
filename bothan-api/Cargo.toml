@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+config = "0.14.0"
+serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
 bothan-core = { path = "../bothan-core" }
 bothan-binance = { path = "../bothan-binance" }
 bothan-coingecko = { path = "../bothan-coingecko" }
