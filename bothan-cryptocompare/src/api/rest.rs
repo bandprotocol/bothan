@@ -25,13 +25,11 @@ impl CryptoCompareRestAPI {
         let market_data = parse_response::<HashMap<String, Price>>(response).await?;
         Ok(ids
             .iter()
-            .filter_map(|id| {
-                market_data.get(*id).map(|price| {
-                    Some(Market {
-                        id: (*id).to_string(),
-                        current_price: price.usd,
-                        timestamp: Utc::now().timestamp() as u64,
-                    })
+            .map(|id| {
+                market_data.get(*id).map(|price| Market {
+                    id: (*id).to_string(),
+                    current_price: price.usd,
+                    timestamp: Utc::now().timestamp() as u64,
                 })
             })
             .collect())
