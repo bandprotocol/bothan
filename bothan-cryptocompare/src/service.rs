@@ -81,6 +81,7 @@ async fn update_price_data(rest_api: &Arc<CryptoCompareRestAPI>, cache: &Arc<Cac
         .map(|x| x.as_str())
         .collect::<Vec<&str>>();
     if let Ok(markets) = rest_api.get_coins_market(ids.as_slice()).await {
+        println!("{:?}", markets);
         for (id, market) in ids.iter().zip(markets.iter()) {
             if let Some(m) = market {
                 process_market_data(m, cache).await;
@@ -112,4 +113,98 @@ fn parse_market(market: &Market) -> Result<PriceData, Error> {
         market.current_price.to_string(),
         market.timestamp,
     ))
+}
+
+#[cfg(test)]
+mod test {
+    use mockito::ServerGuard;
+
+    use crate::api::rest::test::{setup as api_setup, MockCryptoCompare};
+    use crate::api::types::Market;
+    use chrono::Utc;
+
+    use super::*;
+
+    async fn setup() -> (
+        Arc<CryptoCompareRestAPI>,
+        Arc<Cache<PriceData>>,
+        ServerGuard,
+    ) {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let (server, rest_api) = api_setup().await;
+        (Arc::new(rest_api), cache, server)
+    }
+
+    #[tokio::test]
+    async fn test_update_price_data() {
+        let (rest_api, cache, mut server) = setup().await;
+        let coin_market = vec![Market {
+            id: "BTC".to_string(),
+            current_price: 42000.69,
+            timestamp: Utc::now().timestamp() as u64,
+        }];
+        server.set_successful_coins_market(&["BTC"], &coin_market);
+        cache.set_pending("btc".to_string()).await;
+        update_price_data(&rest_api, &cache).await;
+        let result = cache.get("btc").await;
+
+        let expected = PriceData::new(
+            "BTC".to_string(),
+            "42000.69".to_string(),
+            Utc::now().timestamp() as u64,
+        );
+        assert_eq!(result, Ok(expected));
+    }
+
+    #[tokio::test]
+    async fn test_process_market_data() {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let market = Market {
+            id: "BTC".to_string(),
+            current_price: 42000.69,
+            timestamp: Utc::now().timestamp() as u64,
+        };
+
+        cache.set_batch_pending(vec!["btc".to_string()]).await;
+        process_market_data(&market, &cache).await;
+        let result = cache.get("btc").await;
+
+        let expected = PriceData::new(
+            "BTC".to_string(),
+            "42000.69".to_string(),
+            Utc::now().timestamp() as u64,
+        );
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[tokio::test]
+    async fn test_process_market_data_without_set_pending() {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let market = Market {
+            id: "BTC".to_string(),
+            current_price: 42000.69,
+            timestamp: Utc::now().timestamp() as u64,
+        };
+
+        process_market_data(&market, &cache).await;
+        let result = cache.get("btc").await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_market() {
+        let market = Market {
+            id: "BTC".to_string(),
+            current_price: 42000.69,
+            timestamp: Utc::now().timestamp() as u64,
+        };
+
+        let result = parse_market(&market);
+        let expected = PriceData::new(
+            "BTC".to_string(),
+            "42000.69".to_string(),
+            Utc::now().timestamp() as u64,
+        );
+        assert_eq!(result.unwrap(), expected);
+    }
 }
