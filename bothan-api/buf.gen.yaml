@@ -5,15 +5,15 @@ plugins:
   - name: tonic
     out: src/price
   - plugin: go
-    out: price
+    out: go
     opt:
       - paths=source_relative
   - plugin: go-grpc
-    out: price
+    out: go
     opt:
       - paths=source_relative
   - plugin: grpc-gateway
-    out: price
+    out: go
     opt:
       - paths=source_relative
       - generate_unbound_methods=true

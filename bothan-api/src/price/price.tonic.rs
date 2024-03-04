@@ -84,13 +84,10 @@ pub mod price_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn get_price_data(
+        pub async fn get_prices(
             &mut self,
-            request: impl tonic::IntoRequest<super::PriceDataRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::PriceDataResponse>,
-            tonic::Status,
-        > {
+            request: impl tonic::IntoRequest<super::PricesRequest>,
+        ) -> std::result::Result<tonic::Response<super::PricesResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -102,11 +99,11 @@ pub mod price_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/price.PriceService/GetPriceData",
+                "/price.PriceService/GetPrices",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("price.PriceService", "GetPriceData"));
+                .insert(GrpcMethod::new("price.PriceService", "GetPrices"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -118,13 +115,10 @@ pub mod price_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with PriceServiceServer.
     #[async_trait]
     pub trait PriceService: Send + Sync + 'static {
-        async fn get_price_data(
+        async fn get_prices(
             &self,
-            request: tonic::Request<super::PriceDataRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::PriceDataResponse>,
-            tonic::Status,
-        >;
+            request: tonic::Request<super::PricesRequest>,
+        ) -> std::result::Result<tonic::Response<super::PricesResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct PriceServiceServer<T: PriceService> {
@@ -205,25 +199,25 @@ pub mod price_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/price.PriceService/GetPriceData" => {
+                "/price.PriceService/GetPrices" => {
                     #[allow(non_camel_case_types)]
-                    struct GetPriceDataSvc<T: PriceService>(pub Arc<T>);
+                    struct GetPricesSvc<T: PriceService>(pub Arc<T>);
                     impl<
                         T: PriceService,
-                    > tonic::server::UnaryService<super::PriceDataRequest>
-                    for GetPriceDataSvc<T> {
-                        type Response = super::PriceDataResponse;
+                    > tonic::server::UnaryService<super::PricesRequest>
+                    for GetPricesSvc<T> {
+                        type Response = super::PricesResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::PriceDataRequest>,
+                            request: tonic::Request<super::PricesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as PriceService>::get_price_data(&inner, request).await
+                                <T as PriceService>::get_prices(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -235,7 +229,7 @@ pub mod price_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = GetPriceDataSvc(inner);
+                        let method = GetPricesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

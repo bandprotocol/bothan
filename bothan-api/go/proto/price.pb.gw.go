@@ -33,8 +33,8 @@ var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
 var _ = metadata.Join
 
-func request_PriceService_GetPriceData_0(ctx context.Context, marshaler runtime.Marshaler, client PriceServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PriceDataRequest
+func request_PriceService_GetPrices_0(ctx context.Context, marshaler runtime.Marshaler, client PriceServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PricesRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -44,24 +44,24 @@ func request_PriceService_GetPriceData_0(ctx context.Context, marshaler runtime.
 		_   = err
 	)
 
-	val, ok = pathParams["id"]
+	val, ok = pathParams["symbols"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "symbols")
 	}
 
-	protoReq.Id, err = runtime.String(val)
+	protoReq.Symbols, err = runtime.StringSlice(val, ",")
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "symbols", err)
 	}
 
-	msg, err := client.GetPriceData(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetPrices(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_PriceService_GetPriceData_0(ctx context.Context, marshaler runtime.Marshaler, server PriceServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PriceDataRequest
+func local_request_PriceService_GetPrices_0(ctx context.Context, marshaler runtime.Marshaler, server PriceServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PricesRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -71,18 +71,18 @@ func local_request_PriceService_GetPriceData_0(ctx context.Context, marshaler ru
 		_   = err
 	)
 
-	val, ok = pathParams["id"]
+	val, ok = pathParams["symbols"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "symbols")
 	}
 
-	protoReq.Id, err = runtime.String(val)
+	protoReq.Symbols, err = runtime.StringSlice(val, ",")
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "symbols", err)
 	}
 
-	msg, err := server.GetPriceData(ctx, &protoReq)
+	msg, err := server.GetPrices(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -93,7 +93,7 @@ func local_request_PriceService_GetPriceData_0(ctx context.Context, marshaler ru
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterPriceServiceHandlerFromEndpoint instead.
 func RegisterPriceServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server PriceServiceServer) error {
 
-	mux.Handle("GET", pattern_PriceService_GetPriceData_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PriceService_GetPrices_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -104,7 +104,7 @@ func RegisterPriceServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_PriceService_GetPriceData_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_PriceService_GetPrices_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -112,7 +112,7 @@ func RegisterPriceServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_PriceService_GetPriceData_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_PriceService_GetPrices_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -157,7 +157,7 @@ func RegisterPriceServiceHandler(ctx context.Context, mux *runtime.ServeMux, con
 // "PriceServiceClient" to call the correct interceptors.
 func RegisterPriceServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client PriceServiceClient) error {
 
-	mux.Handle("GET", pattern_PriceService_GetPriceData_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PriceService_GetPrices_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -166,14 +166,14 @@ func RegisterPriceServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PriceService_GetPriceData_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_PriceService_GetPrices_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PriceService_GetPriceData_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_PriceService_GetPrices_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -181,9 +181,9 @@ func RegisterPriceServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 }
 
 var (
-	pattern_PriceService_GetPriceData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"price", "get_price", "id"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_PriceService_GetPrices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"get_prices", "symbols"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
-	forward_PriceService_GetPriceData_0 = runtime.ForwardResponseMessage
+	forward_PriceService_GetPrices_0 = runtime.ForwardResponseMessage
 )

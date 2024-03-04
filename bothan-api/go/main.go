@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -10,7 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 
-	gw "bothan-api/price/proto"
+	gw "bothan-api/proto"
 )
 
 var (
@@ -32,6 +33,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("Server running on localhost:8081")
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	return http.ListenAndServe(":8081", mux)

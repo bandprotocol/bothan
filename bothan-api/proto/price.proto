@@ -6,17 +6,17 @@ option go_package = "bothan-api/price";
 import "google/api/annotations.proto";
 
 service PriceService {
-  rpc GetPriceData(PriceDataRequest) returns (PriceDataResponse) {
-    option (google.api.http).get = "/price/get_price/{id}";
+  rpc GetPrices(PricesRequest) returns (PricesResponse) {
+    option (google.api.http).get = "/get_prices/{symbols}";
   }
 }
 
-message PriceDataRequest { string id = 1; }
+message PricesRequest { repeated string symbols = 1; }
 
-message PriceDataResponse { repeated PriceData price_data_list = 1; }
+message PricesResponse { repeated PriceData prices = 1; }
 
 message PriceData {
-  string id = 1;
+  string symbol = 1;
   string price = 2;
-  uint64 timestamp = 3;
+  string error = 3;
 }
