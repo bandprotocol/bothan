@@ -120,13 +120,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = app_config.grpc.addr.parse().unwrap();
 
-    let coingecko_service = CoinGeckoServiceBuilder::default()
-        .set_update_supported_assets_interval(Duration::from_secs(600))
-        .build()
-        .await
-        .unwrap();
+    let mut coingecko_builder = CoinGeckoServiceBuilder::default();
 
-    let binance_service = Binance::default().await.unwrap();
+    let coingecko_config = app_config.source.coingecko;
+
+    if let Some(url) = &coingecko_config.url {
+        coingecko_builder = coingecko_builder.set_url(&url);
+    }
+    if let Some(api_key) = &coingecko_config.api_key {
+        coingecko_builder = coingecko_builder.set_api_key(&api_key);
+    }
+    if let Some(user_agent) = &coingecko_config.user_agent {
+        coingecko_builder = coingecko_builder.set_user_agent(&user_agent);
+    }
+    if let Some(update_interval) = &coingecko_config.update_interval {
+        coingecko_builder = coingecko_builder.set_update_interval(*update_interval);
+    }
+    if let Some(update_supported_assets_interval) =
+        &coingecko_config.update_supported_assets_interval
+    {
+        coingecko_builder = coingecko_builder
+            .set_update_supported_assets_interval(*update_supported_assets_interval);
+    }
+    if let Some(page_size) = &coingecko_config.page_size {
+        coingecko_builder = coingecko_builder.set_page_size(*page_size);
+    }
+    if let Some(page_query_delay) = &coingecko_config.page_query_delay {
+        coingecko_builder = coingecko_builder.set_page_query_delay(*page_query_delay);
+    }
+
+    let coingecko_service = coingecko_builder.build().await?;
+
+    let binance_service = Binance::default().await?;
 
     let price_data_impl = PriceServiceImpl::new(binance_service, coingecko_service); // Change to mutable binding
 

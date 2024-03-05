@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 config = "0.14.0"
 serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
+humantime-serde = "1.1.1"
 bothan-core = { path = "../bothan-core" }
 bothan-binance = { path = "../bothan-binance" }
 bothan-coingecko = { path = "../bothan-coingecko" }
