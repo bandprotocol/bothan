@@ -1,11 +1,5 @@
 use std::sync::Arc;
 
-#[cfg(not(test))]
-use chrono::Utc;
-
-#[cfg(test)]
-use crate::mock::mock_utc as Utc;
-
 use tokio::select;
 use tokio::time::{interval, Duration, Interval};
 use tracing::{info, warn};
