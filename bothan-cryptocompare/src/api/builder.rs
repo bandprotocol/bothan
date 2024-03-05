@@ -7,14 +7,14 @@ use crate::api::types::{DEFAULT_URL, DEFAULT_USER_AGENT};
 use crate::api::CryptoCompareRestAPI;
 
 pub struct CryptoCompareRestAPIBuilder {
-    url: Option<String>,
+    url: String,
     api_key: Option<String>,
     user_agent: String,
 }
 
 impl CryptoCompareRestAPIBuilder {
     pub fn set_url(&mut self, url: &str) -> &Self {
-        self.url = Some(url.into());
+        self.url = url.into();
         self
     }
 
@@ -32,11 +32,7 @@ impl CryptoCompareRestAPIBuilder {
         let mut headers = HeaderMap::new();
         headers.insert("User-Agent", HeaderValue::from_str(&self.user_agent)?);
 
-        let url = match self.url {
-            Some(url) => url,
-            None => DEFAULT_URL.to_string(),
-        };
-        let parsed_url = Url::parse(&url)?;
+        let parsed_url = Url::parse(&self.url)?;
 
         if let Some(key) = &self.api_key {
             let mut val = HeaderValue::from_str(format!("Apikey {}", key).as_str())?;
@@ -53,7 +49,7 @@ impl CryptoCompareRestAPIBuilder {
 impl Default for CryptoCompareRestAPIBuilder {
     fn default() -> Self {
         CryptoCompareRestAPIBuilder {
-            url: None,
+            url: DEFAULT_URL.to_string(),
             api_key: None,
             user_agent: DEFAULT_USER_AGENT.into(),
         }
