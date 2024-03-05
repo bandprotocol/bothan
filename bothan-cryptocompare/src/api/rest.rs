@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
+#[cfg(not(test))]
 use chrono::Utc;
+
+#[cfg(test)]
+use crate::mock::mock_utc as Utc;
+
 use reqwest::{Client, RequestBuilder, Response, Url};
 
 use crate::api::error::Error;
@@ -56,6 +61,7 @@ pub(crate) mod test {
     use mockito::{Matcher, Mock, Server, ServerGuard};
 
     use crate::api::CryptoCompareRestAPIBuilder;
+    use crate::mock::mock_utc;
 
     use super::*;
 
@@ -131,18 +137,24 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_successful_get_coin_market() {
+        // Set the timestamp to a fixed value for testing
+        let timestamp_millis = 1694615225000;
+        mock_utc::set_timestamp_millis(timestamp_millis);
+
+        let now = mock_utc::now().timestamp() as u64;
+
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
         let coin_markets = vec![
             Market {
                 id: "btc".to_string(),
                 current_price: 42000.69,
-                timestamp: Utc::now().timestamp() as u64,
+                timestamp: now,
             },
             Market {
                 id: "eth".to_string(),
                 current_price: 2000.0,
-                timestamp: Utc::now().timestamp() as u64,
+                timestamp: now,
             },
         ];
         let mock = server.set_successful_coins_market(ids, &coin_markets);
@@ -157,12 +169,18 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_get_coin_market_with_missing_data() {
+        // Set the timestamp to a fixed value for testing
+        let timestamp_millis = 1694615225000;
+        mock_utc::set_timestamp_millis(timestamp_millis);
+
+        let now = mock_utc::now().timestamp() as u64;
+
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
         let coin_markets = vec![Market {
             id: "btc".to_string(),
             current_price: 42000.69,
-            timestamp: Utc::now().timestamp() as u64,
+            timestamp: now,
         }];
         let mock = server.set_successful_coins_market(ids, &coin_markets);
 
@@ -170,7 +188,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_result = vec![Some(coin_markets[0].clone()), None];
+        let expected_result: Vec<Option<Market>> = vec![Some(coin_markets[0].clone()), None];
         assert_eq!(result, Ok(expected_result));
     }
 
