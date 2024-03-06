@@ -2,15 +2,15 @@ use bothan_binance::Binance;
 use bothan_coingecko::{CoinGeckoService, CoinGeckoServiceBuilder};
 use bothan_core::service::Service;
 use std::collections::HashMap;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{transport::Server, Request, Response, Status};
 
 mod config;
-mod price;
+mod proto;
 
-use crate::price::price::price_service_server::{PriceService, PriceServiceServer};
-use crate::price::price::{PriceData, PricesRequest, PricesResponse};
+use crate::proto::query::query::query_server::{Query, QueryServer};
+use crate::proto::query::query::{PriceData, PriceOption, QueryPricesRequest, QueryPricesResponse};
 
 pub struct PriceServiceImpl {
     binance_service: Arc<Mutex<Binance>>,
@@ -27,11 +27,11 @@ impl PriceServiceImpl {
 }
 
 #[tonic::async_trait]
-impl PriceService for PriceServiceImpl {
-    async fn get_prices(
+impl Query for PriceServiceImpl {
+    async fn prices(
         &self, // Change to accept mutable reference
-        request: Request<PricesRequest>,
-    ) -> Result<Response<PricesResponse>, Status> {
+        request: Request<QueryPricesRequest>,
+    ) -> Result<Response<QueryPricesResponse>, Status> {
         let symbols = request.into_inner().symbols;
 
         println!("Received symbols: {:?}", symbols);
@@ -47,10 +47,12 @@ impl PriceService for PriceServiceImpl {
         coingecko_map.insert("BTC", "bitcoin");
         coingecko_map.insert("ETH", "ethereum");
 
-        binance_map_reverse.insert("btcusdt", "BTC");
-        binance_map_reverse.insert("ethusdt", "ETH");
+        binance_map_reverse.insert("BTCUSDT", "BTC");
+        binance_map_reverse.insert("ETHUSDT", "ETH");
         coingecko_map_reverse.insert("bitcoin", "BTC");
         coingecko_map_reverse.insert("ethereum", "ETH");
+
+        // TODO: check symbols are not supported before
 
         let binance_list: &[&str] = &symbols
             .iter()
@@ -75,15 +77,18 @@ impl PriceService for PriceServiceImpl {
             let price_data = match data_result {
                 Ok(data) => PriceData {
                     // TODO: symbol has to be the symbol from chain side not id
-                    symbol: data.id,
+                    symbol: binance_map_reverse
+                        .get(data.id.as_str())
+                        .unwrap()
+                        .to_string(),
                     price: data.price,
-                    error: "".to_string(),
+                    price_option: PriceOption::Available.into(),
                 },
                 Err(e) => PriceData {
                     // TODO: logic has to know which symbol is corresponding to the error
                     symbol: e.to_string(),
                     price: "".to_string(),
-                    error: e.to_string(),
+                    price_option: PriceOption::Unavailable.into(),
                 },
             };
 
@@ -93,20 +98,23 @@ impl PriceService for PriceServiceImpl {
         for data_result in coingecko_data_list {
             let price_data = match data_result {
                 Ok(data) => PriceData {
-                    symbol: data.id,
+                    symbol: coingecko_map_reverse
+                        .get(data.id.as_str())
+                        .unwrap()
+                        .to_string(),
                     price: data.price,
-                    error: "".to_string(),
+                    price_option: PriceOption::Available.into(),
                 },
                 Err(e) => PriceData {
                     symbol: e.to_string(),
                     price: "".to_string(),
-                    error: e.to_string(),
+                    price_option: PriceOption::Unavailable.into(),
                 },
             };
             prices.push(price_data.clone())
         }
 
-        let response = PricesResponse { prices };
+        let response = QueryPricesResponse { prices };
 
         Ok(Response::new(response))
     }
@@ -158,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Server running on {}", addr);
 
     Server::builder()
-        .add_service(PriceServiceServer::new(price_data_impl))
+        .add_service(QueryServer::new(price_data_impl))
         .serve(addr)
         .await?;
 

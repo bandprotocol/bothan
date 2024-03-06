@@ -1,9 +1,9 @@
 version: v1
 plugins:
   - plugin: prost
-    out: src/price
+    out: src/query
   - name: tonic
-    out: src/price
+    out: src/query
   - plugin: go
     out: go
     opt:

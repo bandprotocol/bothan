@@ -1,14 +1,14 @@
 // @generated
 /// Generated client implementations.
-pub mod price_service_client {
+pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct PriceServiceClient<T> {
+    pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl PriceServiceClient<tonic::transport::Channel> {
+    impl QueryClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -19,7 +19,7 @@ pub mod price_service_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> PriceServiceClient<T>
+    impl<T> QueryClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -37,7 +37,7 @@ pub mod price_service_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> PriceServiceClient<InterceptedService<T, F>>
+        ) -> QueryClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -51,7 +51,7 @@ pub mod price_service_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            PriceServiceClient::new(InterceptedService::new(inner, interceptor))
+            QueryClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -84,10 +84,13 @@ pub mod price_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn get_prices(
+        pub async fn prices(
             &mut self,
-            request: impl tonic::IntoRequest<super::PricesRequest>,
-        ) -> std::result::Result<tonic::Response<super::PricesResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::QueryPricesRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryPricesResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -98,30 +101,30 @@ pub mod price_service_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/price.PriceService/GetPrices",
-            );
+            let path = http::uri::PathAndQuery::from_static("/query.Query/Prices");
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("price.PriceService", "GetPrices"));
+            req.extensions_mut().insert(GrpcMethod::new("query.Query", "Prices"));
             self.inner.unary(req, path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod price_service_server {
+pub mod query_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with PriceServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with QueryServer.
     #[async_trait]
-    pub trait PriceService: Send + Sync + 'static {
-        async fn get_prices(
+    pub trait Query: Send + Sync + 'static {
+        async fn prices(
             &self,
-            request: tonic::Request<super::PricesRequest>,
-        ) -> std::result::Result<tonic::Response<super::PricesResponse>, tonic::Status>;
+            request: tonic::Request<super::QueryPricesRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryPricesResponse>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
-    pub struct PriceServiceServer<T: PriceService> {
+    pub struct QueryServer<T: Query> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
@@ -129,7 +132,7 @@ pub mod price_service_server {
         max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: PriceService> PriceServiceServer<T> {
+    impl<T: Query> QueryServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -181,9 +184,9 @@ pub mod price_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for PriceServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for QueryServer<T>
     where
-        T: PriceService,
+        T: Query,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -199,25 +202,23 @@ pub mod price_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/price.PriceService/GetPrices" => {
+                "/query.Query/Prices" => {
                     #[allow(non_camel_case_types)]
-                    struct GetPricesSvc<T: PriceService>(pub Arc<T>);
-                    impl<
-                        T: PriceService,
-                    > tonic::server::UnaryService<super::PricesRequest>
-                    for GetPricesSvc<T> {
-                        type Response = super::PricesResponse;
+                    struct PricesSvc<T: Query>(pub Arc<T>);
+                    impl<T: Query> tonic::server::UnaryService<super::QueryPricesRequest>
+                    for PricesSvc<T> {
+                        type Response = super::QueryPricesResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::PricesRequest>,
+                            request: tonic::Request<super::QueryPricesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as PriceService>::get_prices(&inner, request).await
+                                <T as Query>::prices(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -229,7 +230,7 @@ pub mod price_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = GetPricesSvc(inner);
+                        let method = PricesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -260,7 +261,7 @@ pub mod price_service_server {
             }
         }
     }
-    impl<T: PriceService> Clone for PriceServiceServer<T> {
+    impl<T: Query> Clone for QueryServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -272,7 +273,7 @@ pub mod price_service_server {
             }
         }
     }
-    impl<T: PriceService> Clone for _Inner<T> {
+    impl<T: Query> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(Arc::clone(&self.0))
         }
@@ -282,7 +283,7 @@ pub mod price_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: PriceService> tonic::server::NamedService for PriceServiceServer<T> {
-        const NAME: &'static str = "price.PriceService";
+    impl<T: Query> tonic::server::NamedService for QueryServer<T> {
+        const NAME: &'static str = "query.Query";
     }
 }

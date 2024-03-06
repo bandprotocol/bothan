@@ -1,3 +1,3 @@
 // @generated
 
-pub mod price;
+pub mod query;
