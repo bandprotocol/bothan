@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 
-	gw "bothan-api/proto"
+	gw "go-proxy/proto"
 )
 
 type GrpcConfig struct {

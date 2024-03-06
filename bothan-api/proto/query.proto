@@ -16,11 +16,15 @@ service Query {
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesRequest { repeated string symbols = 1; }
+message QueryPricesRequest {
+  repeated string symbols = 1 [ (gogoproto.nullable) = false ];
+}
 
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesResponse { repeated PriceData prices = 1; }
+message QueryPricesResponse {
+  repeated PriceData prices = 1 [ (gogoproto.nullable) = false ];
+}
 
 // PriceData defines the data of a symbol price.
 message PriceData {

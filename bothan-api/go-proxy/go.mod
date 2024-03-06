@@ -1,4 +1,4 @@
-module bothan-api
+module go-proxy
 
 go 1.21
 
