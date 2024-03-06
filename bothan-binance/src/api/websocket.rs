@@ -10,52 +10,40 @@ use tracing::warn;
 use crate::api::error::Error;
 use crate::api::types::BinanceResponse;
 
-const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
-
-pub struct BinanceWebsocket {
+pub struct BinanceWebSocketConnector {
     url: String,
-    sender: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
-    receiver: Option<SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
 }
 
-impl BinanceWebsocket {
+impl BinanceWebSocketConnector {
     pub fn new(url: impl Into<String>) -> Self {
-        Self {
-            url: url.into(),
-            sender: None,
-            receiver: None,
-        }
+        Self { url: url.into() }
     }
 
-    pub async fn connect(&mut self) -> Result<(), Error> {
-        let (socket, response) = connect_async(&self.url).await?;
+    pub async fn connect(&self) -> Result<BinanceWebSocketConnection, Error> {
+        let (wss, resp) = connect_async(self.url.clone()).await?;
 
-        let status = response.status();
+        let status = resp.status();
         if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
-            return Err(Error::ConnectionFailure(status));
+            warn!("Failed to connect with response code {}", resp.status());
+            return Err(Error::ConnectionFailure(resp.status()));
         }
 
-        let (sender, receiver) = socket.split();
-        self.sender = Some(sender);
-        self.receiver = Some(receiver);
-
-        Ok(())
+        Ok(BinanceWebSocketConnection::new(wss))
     }
+}
 
-    pub async fn disconnect(&mut self) -> Result<(), Error> {
-        let mut sender = self.sender.take().ok_or(Error::NotConnected())?;
-        // Ignore result as we just want to send a close message
-        if sender.send(Message::Close(None)).await.is_err() {
-            warn!("unable to send close frame")
-        }
+pub struct BinanceWebSocketConnection {
+    sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
+    receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+}
 
-        self.receiver = None;
-        Ok(())
+impl BinanceWebSocketConnection {
+    pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
+        let (sender, receiver) = web_socket_stream.split();
+        Self { sender, receiver }
     }
 
     pub async fn subscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
-        let sender = self.sender.as_mut().ok_or(Error::NotConnected())?;
-
         let stream_ids = ids
             .iter()
             .map(|id| format!("{}@miniTicker", id))
@@ -68,12 +56,10 @@ impl BinanceWebsocket {
         });
 
         let message = Message::Text(payload.to_string());
-        Ok(sender.send(message).await?)
+        Ok(self.sender.send(message).await?)
     }
 
     pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
-        let sender = self.sender.as_mut().ok_or(Error::NotConnected())?;
-
         let stream_ids = ids
             .iter()
             .map(|id| format!("{}@miniTicker", id))
@@ -86,13 +72,11 @@ impl BinanceWebsocket {
         });
 
         let message = Message::Text(payload.to_string());
-        Ok(sender.send(message).await?)
+        Ok(self.sender.send(message).await?)
     }
 
     pub async fn next(&mut self) -> Result<BinanceResponse, Error> {
-        let receiver = self.receiver.as_mut().ok_or(Error::NotConnected())?;
-
-        if let Some(result_msg) = receiver.next().await {
+        if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {
                 Ok(Message::Text(msg)) => Ok(serde_json::from_str::<BinanceResponse>(&msg)?),
                 Ok(Message::Ping(_)) => Ok(BinanceResponse::Ping),
@@ -102,11 +86,5 @@ impl BinanceWebsocket {
         }
 
         Err(Error::ChannelClosed)
-    }
-}
-
-impl Default for BinanceWebsocket {
-    fn default() -> Self {
-        Self::new(DEFAULT_URL)
     }
 }
