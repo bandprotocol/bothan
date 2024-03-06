@@ -10,7 +10,7 @@ use crate::{BinanceService, BinanceWebSocketConnector};
 pub struct BinanceServiceBuilder {
     url: String,
     cmd_ch_size: usize,
-    rem_id_ch_size: usize,
+    remove_id_ch_size: usize,
 }
 
 impl BinanceServiceBuilder {
@@ -25,7 +25,7 @@ impl BinanceServiceBuilder {
     }
 
     pub fn with_rem_id_ch_size(mut self, size: usize) -> Self {
-        self.rem_id_ch_size = size;
+        self.remove_id_ch_size = size;
         self
     }
 
@@ -36,7 +36,7 @@ impl BinanceServiceBuilder {
             Arc::new(connector),
             Arc::new(Mutex::new(connection)),
             self.cmd_ch_size,
-            self.rem_id_ch_size,
+            self.remove_id_ch_size,
         )
         .await;
         Ok(service)
@@ -48,7 +48,7 @@ impl Default for BinanceServiceBuilder {
         Self {
             url: DEFAULT_URL.to_string(),
             cmd_ch_size: DEFAULT_CHANNEL_SIZE,
-            rem_id_ch_size: DEFAULT_CHANNEL_SIZE,
+            remove_id_ch_size: DEFAULT_CHANNEL_SIZE,
         }
     }
 }
