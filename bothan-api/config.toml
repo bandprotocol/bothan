@@ -11,3 +11,6 @@ update_supported_assets_interval = "600s"
 [registry]
 source = ""
 version = "1.0"
+
+[go-proxy]
+addr = "127.0.0.1:8081"
