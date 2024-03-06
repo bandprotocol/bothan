@@ -212,15 +212,15 @@ mod test {
 
     use super::*;
 
-    fn setup() -> (Arc<CoinGeckoRestAPI>, Arc<Cache<PriceData>>, ServerGuard) {
+    async fn setup() -> (Arc<CoinGeckoRestAPI>, Arc<Cache<PriceData>>, ServerGuard) {
         let cache = Arc::new(Cache::<PriceData>::new(None));
-        let (server, rest_api) = api_setup();
+        let (server, rest_api) = api_setup().await;
         (Arc::new(rest_api), cache, server)
     }
 
     #[tokio::test]
     async fn test_update_price_data() {
-        let (rest_api, cache, mut server) = setup();
+        let (rest_api, cache, mut server) = setup().await;
         let coin_market = vec![Market {
             id: "bitcoin".to_string(),
             symbol: "BTC".to_string(),
@@ -239,7 +239,7 @@ mod test {
 
     #[tokio::test]
     async fn test_update_coin_list() {
-        let (rest_api, _, mut server) = setup();
+        let (rest_api, _, mut server) = setup().await;
         let coin_list_store = Arc::new(RwLock::new(HashSet::<String>::new()));
         let coin_list = vec![Coin {
             id: "bitcoin".to_string(),
