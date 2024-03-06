@@ -5,15 +5,15 @@ plugins:
   - name: tonic
     out: src/query
   - plugin: go
-    out: go
+    out: go-proxy
     opt:
       - paths=source_relative
   - plugin: go-grpc
-    out: go
+    out: go-proxy
     opt:
       - paths=source_relative
   - plugin: grpc-gateway
-    out: go
+    out: go-proxy
     opt:
       - paths=source_relative
       - generate_unbound_methods=true
