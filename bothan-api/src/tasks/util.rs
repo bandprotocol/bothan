@@ -5,7 +5,7 @@ use petgraph::graphmap::DiGraphMap;
 use petgraph::Direction;
 
 use crate::config::registry::Registry;
-use crate::task::error::Error;
+use crate::tasks::error::Error;
 
 pub type SignalIDs = Vec<String>;
 pub type SourceTasks = HashMap<String, HashSet<String>>;

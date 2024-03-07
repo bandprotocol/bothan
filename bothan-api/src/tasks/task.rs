@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use crate::config::registry::Registry;
-use crate::task::error::Error;
-use crate::task::util::get_batched_tasks;
+use crate::tasks::error::Error;
+use crate::tasks::util::get_batched_tasks;
 
 pub struct Task {
     signal_ids: Vec<String>,
