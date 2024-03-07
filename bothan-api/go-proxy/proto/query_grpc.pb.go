@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// RPC method that returns all prices of requested symbols.
+	// RPC method that returns all prices of requested signal ids.
 	Prices(ctx context.Context, in *QueryPricesRequest, opts ...grpc.CallOption) (*QueryPricesResponse, error)
 }
 
@@ -47,7 +47,7 @@ func (c *queryClient) Prices(ctx context.Context, in *QueryPricesRequest, opts .
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// RPC method that returns all prices of requested symbols.
+	// RPC method that returns all prices of requested signal ids.
 	Prices(context.Context, *QueryPricesRequest) (*QueryPricesResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

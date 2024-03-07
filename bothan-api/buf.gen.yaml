@@ -1,9 +1,9 @@
 version: v1
 plugins:
   - plugin: prost
-    out: src/query
+    out: src/proto/query
   - name: tonic
-    out: src/query
+    out: src/proto/query
   - plugin: go
     out: go-proxy
     opt:

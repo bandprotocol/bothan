@@ -5,7 +5,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryPricesRequest {
     #[prost(string, repeated, tag="1")]
-    pub symbols: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    pub signal_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 /// method.
@@ -21,7 +21,7 @@ pub struct QueryPricesResponse {
 pub struct PriceData {
     /// The symbol of the price.
     #[prost(string, tag="1")]
-    pub symbol: ::prost::alloc::string::String,
+    pub signal_id: ::prost::alloc::string::String,
     /// The price of the symbol.
     #[prost(string, tag="2")]
     pub price: ::prost::alloc::string::String,

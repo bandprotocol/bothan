@@ -8,16 +8,16 @@ import "google/api/annotations.proto";
 
 // Query defines the gRPC service.
 service Query {
-  // RPC method that returns all prices of requested symbols.
+  // RPC method that returns all prices of requested signal ids.
   rpc Prices(QueryPricesRequest) returns (QueryPricesResponse) {
-    option (google.api.http).get = "/prices/{symbols}";
+    option (google.api.http).get = "/prices/{signal_ids}";
   }
 }
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
 // method.
 message QueryPricesRequest {
-  repeated string symbols = 1 [ (gogoproto.nullable) = false ];
+  repeated string signal_ids = 1 [ (gogoproto.nullable) = false ];
 }
 
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
@@ -29,7 +29,7 @@ message QueryPricesResponse {
 // PriceData defines the data of a symbol price.
 message PriceData {
   // The symbol of the price.
-  string symbol = 1;
+  string signal_id = 1;
   // The price of the symbol.
   string price = 2;
   // PriceOption defines the price option of a symbol.

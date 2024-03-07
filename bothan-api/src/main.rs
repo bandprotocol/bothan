@@ -32,9 +32,9 @@ impl Query for PriceServiceImpl {
         &self, // Change to accept mutable reference
         request: Request<QueryPricesRequest>,
     ) -> Result<Response<QueryPricesResponse>, Status> {
-        let symbols = request.into_inner().symbols;
+        let signal_ids = request.into_inner().signal_ids;
 
-        println!("Received symbols: {:?}", symbols);
+        println!("Received signal_ids: {:?}", signal_ids);
 
         let mut binance_map: HashMap<&str, &str> = HashMap::new();
         let mut coingecko_map: HashMap<&str, &str> = HashMap::new();
@@ -52,15 +52,15 @@ impl Query for PriceServiceImpl {
         coingecko_map_reverse.insert("bitcoin", "BTC");
         coingecko_map_reverse.insert("ethereum", "ETH");
 
-        // TODO: check symbols are not supported before
+        // TODO: check signal_ids are not supported before
 
-        let binance_list: &[&str] = &symbols
+        let binance_list: &[&str] = &signal_ids
             .iter()
             .map(|symbol| binance_map.get(symbol.as_str()).unwrap())
             .copied()
             .collect::<Vec<&str>>();
 
-        let coingecko_list: &[&str] = &symbols
+        let coingecko_list: &[&str] = &signal_ids
             .iter()
             .map(|symbol| coingecko_map.get(symbol.as_str()).unwrap())
             .copied()
@@ -77,7 +77,7 @@ impl Query for PriceServiceImpl {
             let price_data = match data_result {
                 Ok(data) => PriceData {
                     // TODO: symbol has to be the symbol from chain side not id
-                    symbol: binance_map_reverse
+                    signal_id: binance_map_reverse
                         .get(data.id.as_str())
                         .unwrap()
                         .to_string(),
@@ -86,7 +86,7 @@ impl Query for PriceServiceImpl {
                 },
                 Err(e) => PriceData {
                     // TODO: logic has to know which symbol is corresponding to the error
-                    symbol: e.to_string(),
+                    signal_id: e.to_string(),
                     price: "".to_string(),
                     price_option: PriceOption::Unavailable.into(),
                 },
@@ -98,7 +98,7 @@ impl Query for PriceServiceImpl {
         for data_result in coingecko_data_list {
             let price_data = match data_result {
                 Ok(data) => PriceData {
-                    symbol: coingecko_map_reverse
+                    signal_id: coingecko_map_reverse
                         .get(data.id.as_str())
                         .unwrap()
                         .to_string(),
@@ -106,7 +106,7 @@ impl Query for PriceServiceImpl {
                     price_option: PriceOption::Available.into(),
                 },
                 Err(e) => PriceData {
-                    symbol: e.to_string(),
+                    signal_id: e.to_string(),
                     price: "".to_string(),
                     price_option: PriceOption::Unavailable.into(),
                 },
