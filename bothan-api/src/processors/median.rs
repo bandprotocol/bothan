@@ -1,6 +1,7 @@
-use num_traits::{Float, NumCast};
 use std::cmp::Ordering;
 use std::str::FromStr;
+
+use num_traits::{Float, NumCast};
 
 use bothan_core::service::ServiceResult;
 use bothan_core::types::PriceData as SourcePriceData;
@@ -31,7 +32,7 @@ impl Processor<Error> for MedianProcessor {
             .into_iter()
             .filter_map(|r| {
                 r.ok()
-                    .and_then::<String, _>(|pd| Some(pd.price))
+                    .map(|pd| pd.price)
                     .and_then(|price| f64::from_str(price.as_str()).ok())
             })
             .collect::<Vec<f64>>();
