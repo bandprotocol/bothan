@@ -3,7 +3,7 @@ mod config;
 mod post_processor;
 mod processor;
 mod proto;
-mod task;
+mod tasks;
 
 #[tokio::main]
 async fn main() {
