@@ -1,5 +1,3 @@
-use num_traits::Float;
-
 use crate::post_processors::PostProcessor;
 
 const TICK: f64 = 1.0001;
@@ -24,7 +22,7 @@ impl PostProcessor<Error> for TickPostProcessor {
 
 fn to_tick(price: f64) -> Option<f64> {
     let tick = (price.log10() / TICK.log10()) + MID_TICK;
-    if tick < MIN_TICK || tick > MAX_TICK {
+    if !(MIN_TICK..=MAX_TICK).contains(&tick) {
         return None;
     }
 
