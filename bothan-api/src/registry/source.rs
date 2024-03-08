@@ -1,58 +1,26 @@
-use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-#[enum_dispatch]
-pub trait Operator {
-    fn operate(&self, a: f64, b: f64) -> f64;
-}
-
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Add {}
-
-impl Operator for Add {
-    fn operate(&self, a: f64, b: f64) -> f64 {
-        a + b
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Subtract {}
-
-impl Operator for Subtract {
-    fn operate(&self, a: f64, b: f64) -> f64 {
-        a - b
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Multiply {}
-
-impl Operator for Multiply {
-    fn operate(&self, a: f64, b: f64) -> f64 {
-        a * b
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Divide {}
-
-impl Operator for Divide {
-    fn operate(&self, a: f64, b: f64) -> f64 {
-        a / b
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-#[enum_dispatch(Operator)]
 pub enum Operation {
     #[serde(rename = "+")]
-    Add(Add),
+    Add,
     #[serde(rename = "-")]
-    Subtract(Subtract),
+    Subtract,
     #[serde(rename = "*")]
-    Multiply(Multiply),
+    Multiply,
     #[serde(rename = "/")]
-    Divide(Divide),
+    Divide,
+}
+
+impl Operation {
+    pub fn execute(&self, a: f64, b: f64) -> f64 {
+        match self {
+            Operation::Add => a + b,
+            Operation::Subtract => a - b,
+            Operation::Multiply => a * b,
+            Operation::Divide => a / b,
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
