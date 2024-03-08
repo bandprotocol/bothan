@@ -2,7 +2,7 @@
 
 use std::ops::Deref;
 
-use crate::config::registry::Registry;
+use crate::registry::Registry;
 use crate::tasks::error::Error;
 use crate::tasks::task::Task;
 use crate::tasks::util::get_batched_tasks;
@@ -29,7 +29,7 @@ impl Tasks {
                     .map(|id| {
                         let prerequisite_ids = registry
                             .get(id)
-                            .and_then(|v| v.prerequisites.clone())
+                            .map(|v| v.prerequisites.clone())
                             .unwrap_or_default();
                         (id.clone(), prerequisite_ids)
                     })

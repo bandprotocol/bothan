@@ -4,7 +4,7 @@ use petgraph::algo::toposort;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::Direction;
 
-use crate::config::registry::Registry;
+use crate::registry::Registry;
 use crate::tasks::error::Error;
 
 pub type SignalIDs = Vec<String>;
@@ -24,14 +24,12 @@ fn build_graph(registry: &Registry) -> DiGraphMap<&str, ()> {
             graph.add_node(k);
         }
 
-        if let Some(pre_req) = &v.prerequisites {
-            for id in pre_req {
-                if id != k && !graph.contains_edge(k, id) {
-                    if !graph.contains_node(id) {
-                        graph.add_node(id);
-                    }
-                    graph.add_edge(id, k, ());
+        for id in &v.prerequisites {
+            if id != k && !graph.contains_edge(k, id) {
+                if !graph.contains_node(id) {
+                    graph.add_node(id);
                 }
+                graph.add_edge(id, k, ());
             }
         }
     }
@@ -68,16 +66,14 @@ fn build_batches<'a>(
             let mut tasks = HashMap::new();
             for id in batch {
                 if let Some(signal) = registry.get(id) {
-                    if let Some(sources) = &signal.sources {
-                        for source in sources {
-                            let source_id = source.source_id.clone();
-                            let id = source.id.clone();
-                            let tup: (String, String) = (source_id.clone(), id.clone());
-                            if !seen.contains(&tup) {
-                                let entry = tasks.entry(source_id).or_insert(HashSet::new());
-                                entry.insert(id);
-                                seen.insert(tup);
-                            }
+                    for source in &signal.sources {
+                        let source_id = source.source_id.clone();
+                        let id = source.id.clone();
+                        let tup: (String, String) = (source_id.clone(), id.clone());
+                        if !seen.contains(&tup) {
+                            let entry = tasks.entry(source_id).or_insert(HashSet::new());
+                            entry.insert(id);
+                            seen.insert(tup);
                         }
                     }
                 }
