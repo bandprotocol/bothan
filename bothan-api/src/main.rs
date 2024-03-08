@@ -3,6 +3,7 @@ mod config;
 mod post_processor;
 mod processor;
 mod proto;
+mod registry;
 mod tasks;
 
 #[tokio::main]
