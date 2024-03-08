@@ -193,8 +193,8 @@ fn parse_market(market: &Market) -> Result<PriceData, Error> {
     let last_updated = market.last_updated.as_str();
     let naive_date_time = NaiveDateTime::parse_from_str(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ")
         .map_err(|_| Error::InvalidTimestamp)?;
-    let timestamp =
-        u64::try_from(naive_date_time.timestamp()).map_err(|_| Error::InvalidTimestamp)?;
+    let timestamp = u64::try_from(naive_date_time.and_utc().timestamp())
+        .map_err(|_| Error::InvalidTimestamp)?;
 
     Ok(PriceData::new(
         market.id.clone(),
