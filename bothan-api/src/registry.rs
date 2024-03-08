@@ -1,9 +1,10 @@
-#[allow(unused_imports)]
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 
-use crate::registry::post_processor::PostProcessor;
 use serde::{Deserialize, Serialize};
 
+use crate::registry::post_processor::PostProcessor;
 use crate::registry::processor::Processor;
 use crate::registry::source::Source;
 
