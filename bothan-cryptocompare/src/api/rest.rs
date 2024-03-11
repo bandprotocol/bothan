@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use chrono::Utc;
-use reqwest::{Client, RequestBuilder, Response, Url};
+use reqwest::{Client, Response, Url};
+
+use bothan_core::api::{parse_response, send_request};
 
 use crate::api::error::Error;
 use crate::api::types::{Price, SymbolPrice};
@@ -16,7 +18,10 @@ impl CryptoCompareRestAPI {
         Self { url, client }
     }
 
-    pub async fn get_coins_market(&self, ids: &[&str]) -> Result<Vec<Option<SymbolPrice>>, Error> {
+    pub async fn get_multi_symbol_price(
+        &self,
+        ids: &[&str],
+    ) -> Result<Vec<Option<SymbolPrice>>, Error> {
         let url = format!("{}data/pricemulti", self.url);
         let params = vec![("fsyms", ids.join(",")), ("tsyms", "usd".to_string())];
 
@@ -34,19 +39,4 @@ impl CryptoCompareRestAPI {
             })
             .collect())
     }
-}
-
-async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error> {
-    let response = request_builder.send().await?;
-
-    let status = response.status();
-    if status.is_client_error() || status.is_server_error() {
-        return Err(Error::Http(status));
-    }
-
-    Ok(response)
-}
-
-async fn parse_response<T: serde::de::DeserializeOwned>(response: Response) -> Result<T, Error> {
-    Ok(response.json::<T>().await?)
 }

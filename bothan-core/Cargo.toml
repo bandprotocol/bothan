@@ -7,6 +7,8 @@ license.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+url = "2.5.0"
+
 thiserror = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
@@ -15,3 +17,4 @@ tracing = { workspace = true }
 serde = { workspace = true }
 derive_more = { workspace = true }
 async-trait = { workspace = true }
+reqwest = { workspace = true }

@@ -76,7 +76,7 @@ async fn update_price_data(rest_api: &Arc<CryptoCompareRestAPI>, cache: &Arc<Cac
         .iter()
         .map(|x| x.as_str())
         .collect::<Vec<&str>>();
-    if let Ok(markets) = rest_api.get_coins_market(ids.as_slice()).await {
+    if let Ok(markets) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
         for (id, symbol_price) in ids.iter().zip(markets.iter()) {
             if let Some(m) = symbol_price {
                 process_symbol_price(m, cache).await;

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use reqwest::{Client, RequestBuilder, Response, Url};
+use reqwest::{Client, Url};
+
+use bothan_core::api::{parse_response, send_request};
 
 use crate::api::error::Error;
 use crate::api::types::{Coin, Market};
@@ -47,21 +49,6 @@ impl CoinGeckoRestAPI {
             .map(|id| market_data_map.remove(&id.to_string()))
             .collect())
     }
-}
-
-async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error> {
-    let response = request_builder.send().await?;
-
-    let status = response.status();
-    if status.is_client_error() || status.is_server_error() {
-        return Err(Error::Http(status));
-    }
-
-    Ok(response)
-}
-
-async fn parse_response<T: serde::de::DeserializeOwned>(response: Response) -> Result<T, Error> {
-    Ok(response.json::<T>().await?)
 }
 
 #[cfg(test)]
