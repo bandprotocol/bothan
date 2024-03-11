@@ -59,8 +59,8 @@ pub(crate) mod test {
 
     use super::*;
 
-    pub(crate) fn setup() -> (ServerGuard, CoinGeckoRestAPI) {
-        let server = Server::new();
+    pub(crate) async fn setup() -> (ServerGuard, CoinGeckoRestAPI) {
+        let server = Server::new_async().await;
 
         let mut builder = CoinGeckoRestAPIBuilder::default();
         builder.set_url(&server.url());
@@ -144,7 +144,7 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_successful_get_coin_list() {
-        let (mut server, client) = setup();
+        let (mut server, client) = setup().await;
 
         let coin_list = vec![Coin {
             id: "bitcoin".to_string(),
@@ -160,7 +160,7 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_unsuccessful_get_coin_list() {
-        let (mut server, client) = setup();
+        let (mut server, client) = setup().await;
 
         let mock = server.set_failed_coin_list();
 
@@ -171,7 +171,7 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_successful_get_coin_market() {
-        let (mut server, client) = setup();
+        let (mut server, client) = setup().await;
 
         let coin_markets = vec![Market {
             id: "bitcoin".to_string(),
@@ -190,7 +190,7 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_get_coin_market_with_missing_data() {
-        let (mut server, client) = setup();
+        let (mut server, client) = setup().await;
 
         let coin_markets = vec![Market {
             id: "bitcoin".to_string(),
@@ -211,7 +211,7 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_get_coin_market_with_unparseable_data() {
-        let (mut server, client) = setup();
+        let (mut server, client) = setup().await;
 
         let ids = &["apple_pie"];
         let mock = server.set_arbitrary_coins_market(ids, "abc");
@@ -228,7 +228,7 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_failed_get_coin_market() {
-        let (mut server, client) = setup();
+        let (mut server, client) = setup().await;
         let mock = server.set_failed_coins_market(&["bitcoin"]);
 
         let result = client.get_coins_market(&["bitcoin"], 250, 1).await;
