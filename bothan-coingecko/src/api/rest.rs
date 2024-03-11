@@ -220,9 +220,9 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = Error::Reqwest(
+        let expected_err = Error::CoreApi(bothan_core::api::Error::Reqwest(
             "error decoding response body: expected value at line 1 column 1".to_string(),
-        );
+        ));
         assert_eq!(result, Err(expected_err));
     }
 
