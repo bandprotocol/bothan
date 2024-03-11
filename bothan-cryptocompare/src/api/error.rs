@@ -11,12 +11,6 @@ pub enum Error {
 
     #[error("http error: {0}")]
     Http(reqwest::StatusCode),
-
-    #[error("invalid id")]
-    InvalidID,
-
-    #[error("failed to parse")]
-    Parse,
 }
 
 impl From<reqwest::Error> for Error {
