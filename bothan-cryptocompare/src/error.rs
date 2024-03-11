@@ -7,12 +7,6 @@ pub enum Error {
     #[error("pending result")]
     Pending,
 
-    #[error("invalid symbol")]
-    InvalidSymbol,
-
-    #[error("invalid timestamp")]
-    InvalidTimestamp,
-
     #[error("api error: {0}")]
     Api(#[from] crate::api::error::Error),
 }

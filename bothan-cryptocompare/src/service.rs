@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use tokio::select;
 use tokio::time::{interval, Duration, Interval};
 use tracing::{info, warn};
 
@@ -8,7 +7,7 @@ use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
 
-use crate::api::types::Market;
+use crate::api::types::SymbolPrice;
 use crate::api::CryptoCompareRestAPI;
 use crate::error::Error;
 
@@ -63,11 +62,8 @@ pub async fn start_service(
 ) {
     tokio::spawn(async move {
         loop {
-            select! {
-                _ = update_price_interval.tick() => {
-                    update_price_data(&rest_api, &cache).await;
-                },
-            }
+            update_price_interval.tick().await;
+            update_price_data(&rest_api, &cache).await;
         }
     });
 }
@@ -81,20 +77,20 @@ async fn update_price_data(rest_api: &Arc<CryptoCompareRestAPI>, cache: &Arc<Cac
         .map(|x| x.as_str())
         .collect::<Vec<&str>>();
     if let Ok(markets) = rest_api.get_coins_market(ids.as_slice()).await {
-        for (id, market) in ids.iter().zip(markets.iter()) {
-            if let Some(m) = market {
-                process_market_data(m, cache).await;
+        for (id, symbol_price) in ids.iter().zip(markets.iter()) {
+            if let Some(m) = symbol_price {
+                process_symbol_price(m, cache).await;
             } else {
-                warn!("id {} is missing market data", id);
+                warn!("id {} is missing symbol price data", id);
             }
         }
     } else {
-        warn!("failed to get market data");
+        warn!("failed to get symbol price");
     }
 }
 
-async fn process_market_data(market: &Market, cache: &Arc<Cache<PriceData>>) {
-    if let Ok(price_data) = parse_market(market) {
+async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Arc<Cache<PriceData>>) {
+    if let Ok(price_data) = parse_symbol_price(symbol_price) {
         let id = price_data.id.clone();
         if cache.set_data(id.clone(), price_data).await.is_err() {
             warn!("unexpected request to set data for id: {}", id);
@@ -102,11 +98,11 @@ async fn process_market_data(market: &Market, cache: &Arc<Cache<PriceData>>) {
             info!("set price for id {}", id);
         }
     } else {
-        warn!("failed to parse market data");
+        warn!("failed to parse symbol price");
     }
 }
 
-fn parse_market(market: &Market) -> Result<PriceData, Error> {
+fn parse_symbol_price(market: &SymbolPrice) -> Result<PriceData, Error> {
     Ok(PriceData::new(
         market.id.clone(),
         market.current_price.to_string(),

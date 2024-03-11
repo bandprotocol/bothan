@@ -3,13 +3,12 @@ use reqwest::ClientBuilder;
 use url::Url;
 
 use crate::api::error::Error;
-use crate::api::types::{DEFAULT_URL, DEFAULT_USER_AGENT};
+use crate::api::types::DEFAULT_URL;
 use crate::api::CryptoCompareRestAPI;
 
 pub struct CryptoCompareRestAPIBuilder {
     url: String,
     api_key: Option<String>,
-    user_agent: String,
 }
 
 impl CryptoCompareRestAPIBuilder {
@@ -23,14 +22,8 @@ impl CryptoCompareRestAPIBuilder {
         self
     }
 
-    pub fn set_user_agent(&mut self, user_agent: &str) -> &Self {
-        self.user_agent = user_agent.into();
-        self
-    }
-
     pub fn build(self) -> Result<CryptoCompareRestAPI, Error> {
         let mut headers = HeaderMap::new();
-        headers.insert("User-Agent", HeaderValue::from_str(&self.user_agent)?);
 
         let parsed_url = Url::parse(&self.url)?;
 
@@ -51,7 +44,6 @@ impl Default for CryptoCompareRestAPIBuilder {
         CryptoCompareRestAPIBuilder {
             url: DEFAULT_URL.to_string(),
             api_key: None,
-            user_agent: DEFAULT_USER_AGENT.into(),
         }
     }
 }
