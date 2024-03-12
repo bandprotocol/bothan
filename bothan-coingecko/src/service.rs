@@ -129,16 +129,19 @@ async fn update_price_data(
             interval.tick().await;
         }
 
-        let task = update_price_data_from_api(rest_api.clone(), cache.clone(), page, page_size);
-        tasks.push(tokio::spawn(task));
+        let cloned_api = rest_api.clone();
+        let cloned_cache = cache.clone();
+        tasks.push(tokio::spawn(async move {
+            update_price_data_from_api(&cloned_api, &cloned_cache, page, page_size).await
+        }));
     }
 
     join_all(tasks).await;
 }
 
 async fn update_price_data_from_api(
-    rest_api: Arc<CoinGeckoRestAPI>,
-    cache: Arc<Cache<PriceData>>,
+    rest_api: &CoinGeckoRestAPI,
+    cache: &Cache<PriceData>,
     page: usize,
     page_size: usize,
 ) {
