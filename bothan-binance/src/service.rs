@@ -133,7 +133,7 @@ fn start_service(
     });
 }
 
-async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<Cache<PriceData>>) {
+async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Cache<PriceData>) {
     match cmd {
         Command::Subscribe(ids) => {
             cache.set_batch_pending(ids.clone()).await;
@@ -148,7 +148,7 @@ async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Arc<C
 
 async fn handle_reconnect(
     ws: &mut BinanceWebsocket,
-    cache: &Arc<Cache<PriceData>>,
+    cache: &Cache<PriceData>,
     command_tx: &Sender<Command>,
 ) {
     warn!("attempting to reconnect to binance");
@@ -170,7 +170,7 @@ async fn handle_reconnect(
     };
 }
 
-async fn save_datum(data: &Data, cache: &Arc<Cache<PriceData>>) {
+async fn save_datum(data: &Data, cache: &Cache<PriceData>) {
     match data {
         Data::MiniTicker(ticker) => {
             let price_data = PriceData {
@@ -193,7 +193,7 @@ async fn save_datum(data: &Data, cache: &Arc<Cache<PriceData>>) {
     }
 }
 
-async fn process_response(resp: &BinanceResponse, cache: &Arc<Cache<PriceData>>) {
+async fn process_response(resp: &BinanceResponse, cache: &Cache<PriceData>) {
     match resp {
         BinanceResponse::Stream(resp) => save_datum(&resp.data, cache).await,
         BinanceResponse::Success(_) => {
