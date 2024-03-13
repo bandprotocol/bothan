@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::Mutex;
 use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
 
@@ -11,40 +12,21 @@ use bothan_core::types::PriceData;
 
 use crate::api::error::Error as BinanceError;
 use crate::api::types::{BinanceResponse, Data};
-use crate::api::websocket::BinanceWebsocket;
-use crate::error::Error;
-use crate::types::{Command, DEFAULT_CHANNEL_SIZE, DEFAULT_TIMEOUT};
+use crate::api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
+use crate::types::{Command, DEFAULT_TIMEOUT};
 
-pub struct Binance {
+pub struct BinanceService {
     cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
-impl Binance {
-    pub async fn new(
-        url: impl Into<String>,
+impl BinanceService {
+    pub fn new(
+        connector: Arc<BinanceWebSocketConnector>,
+        connection: Arc<Mutex<BinanceWebSocketConnection>>,
         cmd_ch_size: usize,
         rem_id_ch_size: usize,
-    ) -> Result<Self, Error> {
-        Self::_new(BinanceWebsocket::new(url), cmd_ch_size, rem_id_ch_size).await
-    }
-
-    pub async fn default() -> Result<Self, Error> {
-        Self::_new(
-            BinanceWebsocket::default(),
-            DEFAULT_CHANNEL_SIZE,
-            DEFAULT_CHANNEL_SIZE,
-        )
-        .await
-    }
-
-    async fn _new(
-        mut ws: BinanceWebsocket,
-        cmd_ch_size: usize,
-        rem_id_ch_size: usize,
-    ) -> Result<Self, Error> {
-        ws.connect().await?;
-
+    ) -> Self {
         let (command_tx, command_rx) = channel::<Command>(cmd_ch_size);
         let (removed_ids_tx, removed_ids_rx) = channel::<Vec<String>>(rem_id_ch_size);
 
@@ -53,19 +35,20 @@ impl Binance {
         let cache = Arc::new(Cache::new(Some(removed_ids_tx)));
 
         start_service(
-            ws,
+            connector,
+            connection,
             command_rx,
             removed_ids_rx,
             cache.clone(),
             cmd_tx.clone(),
         );
 
-        Ok(Self { cache, cmd_tx })
+        Self { cache, cmd_tx }
     }
 }
 
 #[async_trait::async_trait]
-impl Service for Binance {
+impl Service for BinanceService {
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut sub_ids = Vec::new();
 
@@ -96,26 +79,30 @@ impl Service for Binance {
 }
 
 fn start_service(
-    mut ws: BinanceWebsocket,
+    connector: Arc<BinanceWebSocketConnector>,
+    connection: Arc<Mutex<BinanceWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
     cache: Arc<Cache<PriceData>>,
-    arced_command_tx: Arc<Sender<Command>>,
+    command_tx: Arc<Sender<Command>>,
 ) {
     tokio::spawn(async move {
         loop {
             select! {
                 Some(cmd) = command_rx.recv() => {
-                    process_command(&cmd, &mut ws, &cache).await;
+                    process_command(&cmd, &connection, &cache).await;
                 },
-                result = timeout(DEFAULT_TIMEOUT, ws.next()) => {
+                result = {
+                    let cloned = connection.clone();
+                    timeout(DEFAULT_TIMEOUT, async move { cloned.lock().await.next().await })
+                } => {
                     match &result {
                         Ok(Ok(result)) => {
                             process_response(result, &cache).await;
                         },
                         Ok(Err(BinanceError::ChannelClosed)) | Err(_) => {
                             // Attempt to reconnect on timeout or on channel close
-                            handle_reconnect(&mut ws, &cache, &arced_command_tx).await;
+                            handle_reconnect(&connector, &connection, &cache, &command_tx).await;
                         }
                         Ok(Err(e)) => {
                             error!("unexpected error: {}", e);
@@ -124,7 +111,7 @@ fn start_service(
                 },
                 Some(ids) = removed_ids_rx.recv() => {
                     let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-                    if ws.unsubscribe(vec_ids.as_slice()).await.is_err() {
+                    if connection.lock().await.unsubscribe(vec_ids.as_slice()).await.is_err() {
                         warn!("failed to unsubscribe to ids: {:?}", ids);
                     }
                 }
@@ -133,13 +120,18 @@ fn start_service(
     });
 }
 
-async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Cache<PriceData>) {
+async fn process_command(
+    cmd: &Command,
+    ws: &Mutex<BinanceWebSocketConnection>,
+    cache: &Cache<PriceData>,
+) {
     match cmd {
         Command::Subscribe(ids) => {
             cache.set_batch_pending(ids.clone()).await;
 
             let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-            if ws.subscribe(vec_ids.as_slice()).await.is_err() {
+            let mut locked = ws.lock().await;
+            if locked.subscribe(vec_ids.as_slice()).await.is_err() {
                 warn!("Failed to subscribe to ids: {:?}", ids);
             }
         }
@@ -147,20 +139,20 @@ async fn process_command(cmd: &Command, ws: &mut BinanceWebsocket, cache: &Cache
 }
 
 async fn handle_reconnect(
-    ws: &mut BinanceWebsocket,
+    connector: &BinanceWebSocketConnector,
+    connection: &Mutex<BinanceWebSocketConnection>,
     cache: &Cache<PriceData>,
     command_tx: &Sender<Command>,
 ) {
+    // TODO: Handle reconnection failure
+    let mut locked = connection.lock().await;
     warn!("attempting to reconnect to binance");
     // reconnect
-    _ = ws.disconnect().await;
-
-    // TODO: handle this if reconnect attempt fails
-    let result = ws.connect().await;
-    if result.is_err() {
-        error!("failed to reconnect to binance");
+    if let Ok(new_connection) = connector.connect().await {
+        *locked = new_connection;
     } else {
-        info!("reconnected to binance")
+        warn!("failed to reconnect to binance");
+        return;
     }
 
     //  resubscribe to all ids
