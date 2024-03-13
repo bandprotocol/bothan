@@ -1,12 +1,6 @@
-use std::str::FromStr;
-
 use serde::{Deserialize, Serialize};
 
-use bothan_core::service::ServiceResult;
-use bothan_core::types::PriceData as SourcePriceData;
-
 use crate::processor::{Processing, ProcessingError};
-use crate::proto::query::query::PriceData;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct IdentityProcessor {}
