@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 use std::ops::Deref;
 
 use crate::registry::Registry;
@@ -24,23 +23,12 @@ impl Tasks {
         let tasks = get_batched_tasks(registry)?
             .into_iter()
             .map(|(signal_ids, source_tasks)| {
-                let prerequisites = signal_ids
-                    .iter()
-                    .map(|id| {
-                        let prerequisite_ids = registry
-                            .get(id)
-                            .map(|v| v.prerequisites.clone())
-                            .unwrap_or_default();
-                        (id.clone(), prerequisite_ids)
-                    })
-                    .collect();
-
                 let vectorized_source_task = source_tasks
                     .into_iter()
                     .map(|(k, v)| (k, v.into_iter().collect()))
                     .collect();
 
-                Task::new(signal_ids, vectorized_source_task, prerequisites)
+                Task::new(signal_ids, vectorized_source_task)
             })
             .collect();
 
@@ -53,5 +41,14 @@ impl Deref for Tasks {
 
     fn deref(&self) -> &Self::Target {
         &self.tasks
+    }
+}
+
+impl IntoIterator for Tasks {
+    type Item = Task;
+    type IntoIter = std::vec::IntoIter<Task>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.tasks.into_iter()
     }
 }
