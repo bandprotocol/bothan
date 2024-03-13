@@ -78,7 +78,7 @@ fn build_batches(
     }
 
     let mut seen = HashSet::new();
-    let tasks = batches
+    let source_tasks = batches
         .iter()
         .map(|batch| {
             let mut tasks = HashMap::new();
@@ -100,7 +100,7 @@ fn build_batches(
         })
         .collect::<Vec<HashMap<String, HashSet<String>>>>();
 
-    Ok(batches.into_iter().zip(tasks).collect())
+    Ok(batches.into_iter().zip(source_tasks).collect())
 }
 
 fn bfs_with_depth(
