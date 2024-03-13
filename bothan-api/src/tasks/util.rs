@@ -12,7 +12,7 @@ pub type SignalMap = HashMap<String, Signal>;
 pub type SourceTasks = HashMap<String, HashSet<String>>;
 
 pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTasks)>, Error> {
-    let graph = build_graph(registry);
+    let graph = build_graph(registry)?;
     let batches = build_batches(&graph, registry)?;
     Ok(batches
         .into_iter()
@@ -28,28 +28,31 @@ pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTa
                 .collect();
             (signals, source_tasks)
         })
-        .collect::<Vec<(HashMap<String, Signal>, SourceTasks)>>())
+        .collect::<Vec<(SignalMap, SourceTasks)>>())
 }
 
-fn build_graph(registry: &Registry) -> DiGraphMap<&String, ()> {
+fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     let mut graph = DiGraphMap::<&String, ()>::new();
 
-    for (k, v) in registry.iter() {
-        if !graph.contains_node(k) {
-            graph.add_node(k);
+    for (id, signal) in registry.iter() {
+        if !graph.contains_node(id) {
+            graph.add_node(id);
         }
 
-        for id in &v.prerequisites {
-            if id != k && !graph.contains_edge(k, id) {
-                if !graph.contains_node(id) {
-                    graph.add_node(id);
+        for pid in &signal.prerequisites {
+            if pid == id {
+                return Err(Error::CycleDetected());
+            }
+            if !graph.contains_edge(id, pid) {
+                if !graph.contains_node(pid) {
+                    graph.add_node(pid);
                 }
-                graph.add_edge(id, k, ());
+                graph.add_edge(pid, id, ());
             }
         }
     }
 
-    graph
+    Ok(graph)
 }
 
 fn build_batches(
