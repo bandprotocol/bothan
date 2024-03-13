@@ -1,16 +1,13 @@
 #![allow(dead_code)]
-
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::registry::post_processor::PostProcessor;
-use crate::registry::processor::Processor;
+use crate::post_processor::PostProcessor;
+use crate::processor::Processor;
 use crate::registry::source::Source;
 
-mod post_processor;
-mod processor;
-mod source;
+pub mod source;
 
 pub type Registry = HashMap<String, Signal>;
 
@@ -18,6 +15,6 @@ pub type Registry = HashMap<String, Signal>;
 pub struct Signal {
     pub prerequisites: Vec<String>,
     pub sources: Vec<Source>,
-    pub processors: Processor,
+    pub processor: Processor,
     pub post_processors: Vec<PostProcessor>,
 }

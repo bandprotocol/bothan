@@ -33,5 +33,5 @@ pub struct Route {
 pub struct Source {
     pub source_id: String,
     pub id: String,
-    pub routes: Option<Vec<Route>>,
+    pub routes: Vec<Route>,
 }

@@ -4,20 +4,35 @@ use petgraph::algo::toposort;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::Direction;
 
-use crate::registry::Registry;
+use crate::registry::{Registry, Signal};
 use crate::tasks::error::Error;
 
 pub type SignalIDs = Vec<String>;
+pub type SignalMap = HashMap<String, Signal>;
 pub type SourceTasks = HashMap<String, HashSet<String>>;
 
-pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalIDs, SourceTasks)>, Error> {
+pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTasks)>, Error> {
     let graph = build_graph(registry);
     let batches = build_batches(&graph, registry)?;
-    Ok(batches)
+    Ok(batches
+        .into_iter()
+        .map(|(signal_ids, source_tasks)| {
+            let signals = signal_ids
+                .iter()
+                .map(|id| {
+                    // Unwrapped here since Registry is expected to contain ID
+                    // generated from batches
+                    let signal = registry.get(id).unwrap().clone();
+                    (id.clone(), signal)
+                })
+                .collect();
+            (signals, source_tasks)
+        })
+        .collect::<Vec<(HashMap<String, Signal>, SourceTasks)>>())
 }
 
-fn build_graph(registry: &Registry) -> DiGraphMap<&str, ()> {
-    let mut graph = DiGraphMap::<&str, ()>::new();
+fn build_graph(registry: &Registry) -> DiGraphMap<&String, ()> {
+    let mut graph = DiGraphMap::<&String, ()>::new();
 
     for (k, v) in registry.iter() {
         if !graph.contains_node(k) {
@@ -37,12 +52,12 @@ fn build_graph(registry: &Registry) -> DiGraphMap<&str, ()> {
     graph
 }
 
-fn build_batches<'a>(
-    graph: &'a DiGraphMap<&'a str, ()>,
+fn build_batches(
+    graph: &DiGraphMap<&String, ()>,
     registry: &Registry,
 ) -> Result<Vec<(SignalIDs, SourceTasks)>, Error> {
     let sorted_nodes = toposort(&graph, None)?;
-    let roots: Vec<&str> = sorted_nodes
+    let roots = sorted_nodes
         .iter()
         .filter(|n| {
             graph
@@ -51,7 +66,7 @@ fn build_batches<'a>(
                 .is_none()
         })
         .cloned()
-        .collect();
+        .collect::<Vec<&String>>();
 
     let (depths, max_depth) = bfs_with_depth(graph, &roots);
     let mut batches = vec![Vec::new(); max_depth + 1];
@@ -85,9 +100,9 @@ fn build_batches<'a>(
     Ok(batches.into_iter().zip(tasks).collect())
 }
 
-fn bfs_with_depth<'a>(
-    graph: &'a DiGraphMap<&'a str, ()>,
-    start_roots: &[&str],
+fn bfs_with_depth(
+    graph: &DiGraphMap<&String, ()>,
+    start_roots: &[&String],
 ) -> (HashMap<String, usize>, usize) {
     let mut depths = HashMap::new();
     let mut max_depth = 0;
@@ -100,7 +115,7 @@ fn bfs_with_depth<'a>(
 
         while let Some(node) = queue.pop_front() {
             let depth = depths[&node.to_string()];
-            for neighbor in graph.neighbors_directed(node.as_str(), Direction::Outgoing) {
+            for neighbor in graph.neighbors_directed(&node, Direction::Outgoing) {
                 if !depths.contains_key(&neighbor.to_string()) {
                     queue.push_back(neighbor.to_string());
                     depths.insert(neighbor.to_string(), depth + 1);
