@@ -1,11 +1,6 @@
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-use bothan_core::service::ServiceResult;
-use bothan_core::types::PriceData as SourcePriceData;
-
-use crate::proto::query::query::PriceData;
-
 pub mod identity;
 pub mod median;
 

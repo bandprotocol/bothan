@@ -1,7 +1,7 @@
 mod config;
 
-mod post_processors;
-mod processors;
+mod post_processor;
+mod processor;
 mod proto;
 
 #[tokio::main]
