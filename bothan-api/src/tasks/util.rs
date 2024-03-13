@@ -11,10 +11,11 @@ pub type SignalIDs = Vec<String>;
 pub type SignalMap = HashMap<String, Signal>;
 pub type SourceTasks = HashMap<String, HashSet<String>>;
 
+// Takes a registry and the sequential order of tasks to be executed
 pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTasks)>, Error> {
     let graph = build_graph(registry)?;
     let batches = build_batches(&graph, registry)?;
-    Ok(batches
+    let batched_tasks = batches
         .into_iter()
         .map(|(signal_ids, source_tasks)| {
             let signals = signal_ids
@@ -28,9 +29,11 @@ pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTa
                 .collect();
             (signals, source_tasks)
         })
-        .collect::<Vec<(SignalMap, SourceTasks)>>())
+        .collect::<Vec<(SignalMap, SourceTasks)>>();
+    Ok(batched_tasks)
 }
 
+// Builds a directed graph from the registry
 fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     let mut graph = DiGraphMap::<&String, ()>::new();
 
@@ -55,6 +58,7 @@ fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     Ok(graph)
 }
 
+// Builds a batch of tasks to be executed
 fn build_batches(
     graph: &DiGraphMap<&String, ()>,
     registry: &Registry,
@@ -72,11 +76,14 @@ fn build_batches(
         .collect::<Vec<&String>>();
 
     let (depths, max_depth) = bfs_with_depth(graph, &roots);
+
+    // Builds the sequential order of tasks which contains the signal ids to be executed
     let mut batches = vec![Vec::new(); max_depth + 1];
     for (k, v) in depths.into_iter() {
         batches[v].push(k);
     }
 
+    // Builds the source tasks for each batch
     let mut seen = HashSet::new();
     let source_tasks = batches
         .iter()
@@ -103,6 +110,7 @@ fn build_batches(
     Ok(batches.into_iter().zip(source_tasks).collect())
 }
 
+// Performs a breadth-first search on the graph, returning the depths of each node and the maximum depth
 fn bfs_with_depth(
     graph: &DiGraphMap<&String, ()>,
     start_roots: &[&String],
@@ -110,12 +118,14 @@ fn bfs_with_depth(
     let mut depths = HashMap::new();
     let mut max_depth = 0;
 
+    // Iterate over the roots and perform a BFS
     for root in start_roots {
         let mut queue = VecDeque::new();
 
         queue.push_back(root.to_string());
         depths.insert(root.to_string(), 0);
 
+        // Perform BFS
         while let Some(node) = queue.pop_front() {
             let depth = depths[&node.to_string()];
             for neighbor in graph.neighbors_directed(&node, Direction::Outgoing) {
@@ -138,5 +148,6 @@ fn bfs_with_depth(
         }
     }
 
+    // Return the depths and the maximum depth
     (depths, max_depth)
 }
