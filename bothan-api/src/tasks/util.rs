@@ -87,11 +87,11 @@ fn build_batches(
                     for source in &signal.sources {
                         let source_id = source.source_id.clone();
                         let id = source.id.clone();
-                        let tup: (String, String) = (source_id.clone(), id.clone());
-                        if !seen.contains(&tup) {
+                        let uid = format!("{}{}", source_id, id);
+                        if !seen.contains(&uid) {
                             let entry = tasks.entry(source_id).or_insert(HashSet::new());
                             entry.insert(id);
-                            seen.insert(tup);
+                            seen.insert(uid);
                         }
                     }
                 }
