@@ -23,6 +23,7 @@ serde_json = "1.0.114"
 num-traits = "0.2.18"
 itertools = "0.12.1"
 protoc-gen-tonic = "0.4.0"
+enum_dispatch = "0.3.12"
 thiserror = { workspace = true }
 
 [build-dependencies]
