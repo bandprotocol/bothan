@@ -11,7 +11,7 @@ pub type SignalIDs = Vec<String>;
 pub type SignalMap = HashMap<String, Signal>;
 pub type SourceTasks = HashMap<String, HashSet<String>>;
 
-// Takes a registry and the sequential order of tasks to be executed
+// Takes a registry and returns the sequential order of tasks to be executed
 pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTasks)>, Error> {
     let graph = build_graph(registry)?;
     let batches = build_batches(&graph, registry)?;
