@@ -6,15 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bothan-core = { workspace = true }
+bothan-binance = { workspace = true }
+bothan-coingecko = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
 config = "0.14.0"
-serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
 humantime-serde = "1.1.1"
-bothan-core = { path = "../bothan-core" }
-bothan-binance = { path = "../bothan-binance" }
-bothan-coingecko = { path = "../bothan-coingecko" }
-tracing = { version = "0.1.40", features = [] }
-tokio = { version = "1.36.0", features = ["full"] }
-tracing-subscriber = "0.3.17"
 tonic = "0.11"
 prost = "0.12"
 protoc-gen-prost = "0.3.1"
@@ -24,7 +26,6 @@ num-traits = "0.2.18"
 itertools = "0.12.1"
 protoc-gen-tonic = "0.4.0"
 enum_dispatch = "0.3.12"
-thiserror = { workspace = true }
 
 [build-dependencies]
 tonic-build = "0.11"
