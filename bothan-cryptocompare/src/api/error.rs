@@ -9,8 +9,8 @@ pub enum Error {
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
 
-    #[error("core api error: {0}")]
-    CoreApi(#[from] bothan_core::api::error::Error),
+    #[error("helpers error: {0}")]
+    Helpers(#[from] bothan_core::helpers::error::Error),
 }
 
 impl From<reqwest::Error> for Error {

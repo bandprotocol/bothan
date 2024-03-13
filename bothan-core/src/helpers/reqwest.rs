@@ -1,6 +1,6 @@
 use reqwest::{RequestBuilder, Response};
 
-use crate::api::error::Error;
+use crate::helpers::Error;
 
 pub async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error> {
     let response = request_builder.send().await?;

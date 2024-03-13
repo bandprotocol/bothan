@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use chrono::Utc;
 use reqwest::{Client, Response, Url};
 
-use bothan_core::api::{parse_response, send_request};
+use bothan_core::helpers::{parse_response, send_request};
 
 use crate::api::error::Error;
 use crate::api::types::{Price, SymbolPrice};
@@ -28,7 +28,7 @@ impl CryptoCompareRestAPI {
         let builder_with_query = self.client.get(&url).query(&params);
         let response: Response = send_request(builder_with_query).await?;
         let symbol_prices = parse_response::<HashMap<String, Price>>(response).await?;
-        Ok(ids
+        let results = ids
             .iter()
             .map(|id| {
                 symbol_prices.get(*id).map(|price| SymbolPrice {
@@ -37,6 +37,7 @@ impl CryptoCompareRestAPI {
                     timestamp: Utc::now().timestamp() as u64,
                 })
             })
-            .collect())
+            .collect();
+        Ok(results)
     }
 }

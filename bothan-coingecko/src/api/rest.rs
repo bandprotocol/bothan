@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Url};
 
-use bothan_core::api::{parse_response, send_request};
+use bothan_core::helpers::{parse_response, send_request};
 
 use crate::api::error::Error;
 use crate::api::types::{Coin, Market};
@@ -220,7 +220,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = Error::CoreApi(bothan_core::api::Error::Reqwest(
+        let expected_err = Error::Helpers(bothan_core::helpers::Error::Reqwest(
             "error decoding response body: expected value at line 1 column 1".to_string(),
         ));
         assert_eq!(result, Err(expected_err));

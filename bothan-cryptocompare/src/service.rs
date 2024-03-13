@@ -68,7 +68,7 @@ pub async fn start_service(
     });
 }
 
-async fn update_price_data(rest_api: &Arc<CryptoCompareRestAPI>, cache: &Arc<Cache<PriceData>>) {
+async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceData>) {
     let keys = cache.keys().await;
     let uppercase_keys: Vec<String> = keys.into_iter().map(|key| key.to_uppercase()).collect();
 
@@ -89,7 +89,7 @@ async fn update_price_data(rest_api: &Arc<CryptoCompareRestAPI>, cache: &Arc<Cac
     }
 }
 
-async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Arc<Cache<PriceData>>) {
+async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceData>) {
     if let Ok(price_data) = parse_symbol_price(symbol_price) {
         let id = price_data.id.clone();
         if cache.set_data(id.clone(), price_data).await.is_err() {
