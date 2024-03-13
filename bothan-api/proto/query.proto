@@ -9,7 +9,7 @@ import "google/api/annotations.proto";
 service Query {
   // RPC method that returns all prices of requested signal ids.
   rpc Prices(QueryPricesRequest) returns (QueryPricesResponse) {
-    option (google.api.http).get = "/prices";
+    option (google.api.http).get = "/prices/{signal_ids}";
   }
 }
 
