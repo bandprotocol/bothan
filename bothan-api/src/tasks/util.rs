@@ -77,10 +77,10 @@ fn build_batches(
 
     let (depths, max_depth) = bfs_with_depth(graph, &roots);
 
-    // Builds the sequential order of tasks which contains the signal ids to be executed
+    // Builds the sequential order of batches which contains the signal ids to be executed
     let mut batches = vec![Vec::new(); max_depth + 1];
-    for (k, v) in depths.into_iter() {
-        batches[v].push(k);
+    for (signal_id, depth) in depths.into_iter() {
+        batches[depth].push(signal_id);
     }
 
     // Builds the source tasks for each batch
