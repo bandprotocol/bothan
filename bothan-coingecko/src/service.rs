@@ -153,7 +153,7 @@ async fn update_price_data_from_api(
     {
         for (id, market) in ids.iter().zip(markets.iter()) {
             if let Some(m) = market {
-                process_market_data(m, &cache).await;
+                process_market_data(m, cache).await;
             } else {
                 warn!("id {} is missing market data", id);
             }
