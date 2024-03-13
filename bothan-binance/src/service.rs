@@ -21,7 +21,7 @@ pub struct BinanceService {
 }
 
 impl BinanceService {
-    pub(crate) async fn new(
+    pub fn new(
         connector: Arc<BinanceWebSocketConnector>,
         connection: Arc<Mutex<BinanceWebSocketConnection>>,
         cmd_ch_size: usize,
