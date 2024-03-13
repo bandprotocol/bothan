@@ -82,8 +82,8 @@ fn build_batches(
         .iter()
         .map(|batch| {
             let mut tasks = HashMap::new();
-            for id in batch {
-                if let Some(signal) = registry.get(id) {
+            for signal_id in batch {
+                if let Some(signal) = registry.get(signal_id) {
                     for source in &signal.sources {
                         let source_id = source.source_id.clone();
                         let id = source.id.clone();
