@@ -80,7 +80,7 @@ impl Service for BinanceService {
 
 fn start_service(
     connector: Arc<BinanceWebSocketConnector>,
-    mut connection: Arc<Mutex<BinanceWebSocketConnection>>,
+    connection: Arc<Mutex<BinanceWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
     cache: Arc<Cache<PriceData>>,
@@ -90,7 +90,7 @@ fn start_service(
         loop {
             select! {
                 Some(cmd) = command_rx.recv() => {
-                    process_command(&cmd, &mut connection, &cache).await;
+                    process_command(&cmd, &connection, &cache).await;
                 },
                 result = {
                     let cloned = connection.clone();
@@ -102,7 +102,7 @@ fn start_service(
                         },
                         Ok(Err(BinanceError::ChannelClosed)) | Err(_) => {
                             // Attempt to reconnect on timeout or on channel close
-                            handle_reconnect(connector.clone(), connection.clone(), &cache, &command_tx).await;
+                            handle_reconnect(&connector, &connection, &cache, &command_tx).await;
                         }
                         Ok(Err(e)) => {
                             error!("unexpected error: {}", e);
@@ -122,8 +122,8 @@ fn start_service(
 
 async fn process_command(
     cmd: &Command,
-    ws: &mut Arc<Mutex<BinanceWebSocketConnection>>,
-    cache: &Arc<Cache<PriceData>>,
+    ws: &Mutex<BinanceWebSocketConnection>,
+    cache: &Cache<PriceData>,
 ) {
     match cmd {
         Command::Subscribe(ids) => {
@@ -139,9 +139,9 @@ async fn process_command(
 }
 
 async fn handle_reconnect(
-    connector: Arc<BinanceWebSocketConnector>,
-    connection: Arc<Mutex<BinanceWebSocketConnection>>,
-    cache: &Arc<Cache<PriceData>>,
+    connector: &BinanceWebSocketConnector,
+    connection: &Mutex<BinanceWebSocketConnection>,
+    cache: &Cache<PriceData>,
     command_tx: &Sender<Command>,
 ) {
     // TODO: Handle reconnection failure
@@ -162,7 +162,7 @@ async fn handle_reconnect(
     };
 }
 
-async fn save_datum(data: &Data, cache: &Arc<Cache<PriceData>>) {
+async fn save_datum(data: &Data, cache: &Cache<PriceData>) {
     match data {
         Data::MiniTicker(ticker) => {
             let price_data = PriceData {
@@ -185,7 +185,7 @@ async fn save_datum(data: &Data, cache: &Arc<Cache<PriceData>>) {
     }
 }
 
-async fn process_response(resp: &BinanceResponse, cache: &Arc<Cache<PriceData>>) {
+async fn process_response(resp: &BinanceResponse, cache: &Cache<PriceData>) {
     match resp {
         BinanceResponse::Stream(resp) => save_datum(&resp.data, cache).await,
         BinanceResponse::Success(_) => {
