@@ -100,7 +100,7 @@ pub async fn start_service(
         loop {
             select! {
                 _ = update_price_interval.tick() => {
-                    update_price_data(&rest_api, &cache, page_size, page_query_delay).await;
+                    update_price_data(rest_api.clone(), cache.clone(), page_size, page_query_delay).await;
                 },
                 _ = update_supported_assets_interval.tick() => {
                     update_coin_list(&rest_api, &coin_list).await;
@@ -111,8 +111,8 @@ pub async fn start_service(
 }
 
 async fn update_price_data(
-    rest_api: &Arc<CoinGeckoRestAPI>,
-    cache: &Arc<Cache<PriceData>>,
+    rest_api: Arc<CoinGeckoRestAPI>,
+    cache: Arc<Cache<PriceData>>,
     page_size: usize,
     page_query_delay: Option<Duration>,
 ) {
@@ -132,7 +132,7 @@ async fn update_price_data(
         let cloned_api = rest_api.clone();
         let cloned_cache = cache.clone();
         tasks.push(tokio::spawn(async move {
-            update_price_data_from_api(&cloned_api, &cloned_cache, page, page_size).await;
+            update_price_data_from_api(&cloned_api, &cloned_cache, page, page_size).await
         }));
     }
 
@@ -140,8 +140,8 @@ async fn update_price_data(
 }
 
 async fn update_price_data_from_api(
-    rest_api: &Arc<CoinGeckoRestAPI>,
-    cache: &Arc<Cache<PriceData>>,
+    rest_api: &CoinGeckoRestAPI,
+    cache: &Cache<PriceData>,
     page: usize,
     page_size: usize,
 ) {
@@ -163,10 +163,7 @@ async fn update_price_data_from_api(
     }
 }
 
-async fn update_coin_list(
-    rest_api: &Arc<CoinGeckoRestAPI>,
-    coin_list: &Arc<RwLock<HashSet<String>>>,
-) {
+async fn update_coin_list(rest_api: &CoinGeckoRestAPI, coin_list: &RwLock<HashSet<String>>) {
     if let Ok(new_coin_list) = rest_api.get_coins_list().await {
         let new_coin_set = HashSet::<String>::from_iter(new_coin_list.into_iter().map(|x| x.id));
         let mut locked = coin_list.write().await;
@@ -176,7 +173,7 @@ async fn update_coin_list(
     }
 }
 
-async fn process_market_data(market: &Market, cache: &Arc<Cache<PriceData>>) {
+async fn process_market_data(market: &Market, cache: &Cache<PriceData>) {
     if let Ok(price_data) = parse_market(market) {
         let id = price_data.id.clone();
         if cache.set_data(id.clone(), price_data).await.is_err() {
@@ -231,7 +228,7 @@ mod test {
         server.set_successful_coins_market(&["bitcoin"], &coin_market);
         cache.set_batch_pending(vec!["bitcoin".to_string()]).await;
 
-        update_price_data(&rest_api, &cache, 250, None).await;
+        update_price_data(rest_api, cache.clone(), 250, None).await;
         let result = cache.get("bitcoin").await;
         let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
         assert_eq!(result, Ok(expected));
