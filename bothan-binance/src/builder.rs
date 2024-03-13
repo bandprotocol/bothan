@@ -37,8 +37,7 @@ impl BinanceServiceBuilder {
             Arc::new(Mutex::new(connection)),
             self.cmd_ch_size,
             self.remove_id_ch_size,
-        )
-        .await;
+        );
         Ok(service)
     }
 }
