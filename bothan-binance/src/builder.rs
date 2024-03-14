@@ -1,11 +1,19 @@
 use std::sync::Arc;
 
+use serde::Deserialize;
 use tokio::sync::Mutex;
 
 use crate::api::types::DEFAULT_URL;
 use crate::error::Error;
 use crate::types::DEFAULT_CHANNEL_SIZE;
 use crate::{BinanceService, BinanceWebSocketConnector};
+
+#[derive(Debug, Deserialize)]
+pub struct BinanceServiceBuilderOpts {
+    pub url: Option<String>,
+    pub cmd_ch_size: Option<usize>,
+    pub rem_id_ch_size: Option<usize>,
+}
 
 pub struct BinanceServiceBuilder {
     url: String,
@@ -27,6 +35,14 @@ impl BinanceServiceBuilder {
     pub fn with_rem_id_ch_size(mut self, size: usize) -> Self {
         self.remove_id_ch_size = size;
         self
+    }
+
+    pub fn new(opts: BinanceServiceBuilderOpts) -> Self {
+        Self {
+            url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
+            cmd_ch_size: opts.cmd_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
+            remove_id_ch_size: opts.rem_id_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
+        }
     }
 
     pub async fn build(self) -> Result<BinanceService, Error> {

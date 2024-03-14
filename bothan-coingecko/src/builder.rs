@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use tokio::time::Duration;
 
 use crate::api::types::DEFAULT_USER_AGENT;
@@ -7,6 +8,23 @@ use crate::types::{
     DEFAULT_PAGE_SIZE, DEFAULT_UPDATE_INTERVAL, DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL,
 };
 use crate::CoinGeckoService;
+
+#[derive(Debug, Deserialize)]
+pub struct CoinGeckoServiceBuilderOpts {
+    pub url: Option<String>,
+    pub api_key: Option<String>,
+    pub user_agent: Option<String>,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_interval: Option<Duration>,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_supported_assets_interval: Option<Duration>,
+    pub page_size: Option<usize>,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub page_query_delay: Option<Duration>,
+}
 
 pub struct CoinGeckoServiceBuilder {
     url: Option<String>,

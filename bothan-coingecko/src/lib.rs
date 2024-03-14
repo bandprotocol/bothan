@@ -1,4 +1,4 @@
-pub use builder::CoinGeckoServiceBuilder;
+pub use builder::{CoinGeckoServiceBuilder, CoinGeckoServiceBuilderOpts};
 pub use service::CoinGeckoService;
 
 pub mod api;

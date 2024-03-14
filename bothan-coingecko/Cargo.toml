@@ -10,6 +10,7 @@ license.workspace = true
 url = "2.5.0"
 chrono = "0.4.34"
 futures = "0.3.30"
+humantime-serde = "1.1.1"
 
 bothan-core = { workspace = true }
 async-trait = { workspace = true }
