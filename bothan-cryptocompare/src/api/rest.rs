@@ -80,24 +80,32 @@ pub(crate) mod test {
     }
 
     pub(crate) trait MockCryptoCompare {
-        fn set_successful_coins_market(&mut self, ids: &[&str], coins_market: &[Market]) -> Mock;
-        fn set_arbitrary_coins_market<StrOrBytes: AsRef<[u8]>>(
+        fn set_successful_multi_symbol_price(
+            &mut self,
+            ids: &[&str],
+            symbol_prices: &[SymbolPrice],
+        ) -> Mock;
+        fn set_arbitrary_multi_symbol_price<StrOrBytes: AsRef<[u8]>>(
             &mut self,
             ids: &[&str],
             data: StrOrBytes,
         ) -> Mock;
-        fn set_failed_coins_market(&mut self, ids: &[&str]) -> Mock;
+        fn set_failed_multi_symbol_price(&mut self, ids: &[&str]) -> Mock;
     }
 
     impl MockCryptoCompare for ServerGuard {
-        fn set_successful_coins_market(&mut self, ids: &[&str], coins_market: &[Market]) -> Mock {
-            let price_map = coins_market
+        fn set_successful_multi_symbol_price(
+            &mut self,
+            ids: &[&str],
+            symbol_prices: &[SymbolPrice],
+        ) -> Mock {
+            let price_map = symbol_prices
                 .iter()
-                .map(|market| {
+                .map(|symbol_price| {
                     (
-                        market.id.clone(),
+                        symbol_price.id.clone(),
                         Price {
-                            usd: market.current_price,
+                            usd: symbol_price.current_price,
                         },
                     )
                 })
@@ -113,7 +121,7 @@ pub(crate) mod test {
                 .create()
         }
 
-        fn set_arbitrary_coins_market<StrOrBytes: AsRef<[u8]>>(
+        fn set_arbitrary_multi_symbol_price<StrOrBytes: AsRef<[u8]>>(
             &mut self,
             ids: &[&str],
             data: StrOrBytes,
@@ -128,7 +136,7 @@ pub(crate) mod test {
                 .create()
         }
 
-        fn set_failed_coins_market(&mut self, ids: &[&str]) -> Mock {
+        fn set_failed_multi_symbol_price(&mut self, ids: &[&str]) -> Mock {
             self.mock("GET", "/data/pricemulti")
                 .match_query(Matcher::AllOf(vec![
                     Matcher::UrlEncoded("fsyms".into(), ids.join(",")),
@@ -149,25 +157,25 @@ pub(crate) mod test {
 
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
-        let coin_markets = vec![
-            Market {
+        let symbol_prices = vec![
+            SymbolPrice {
                 id: "btc".to_string(),
                 current_price: 42000.69,
                 timestamp: now,
             },
-            Market {
+            SymbolPrice {
                 id: "eth".to_string(),
                 current_price: 2000.0,
                 timestamp: now,
             },
         ];
-        let mock = server.set_successful_coins_market(ids, &coin_markets);
+        let mock = server.set_successful_multi_symbol_price(ids, &symbol_prices);
 
-        let result = client.get_coins_market(ids).await;
+        let result = client.get_multi_symbol_price(ids).await;
 
         mock.assert();
 
-        let expected_result = coin_markets.into_iter().map(Some).collect();
+        let expected_result = symbol_prices.into_iter().map(Some).collect();
         assert_eq!(result, Ok(expected_result));
     }
 
@@ -181,18 +189,18 @@ pub(crate) mod test {
 
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
-        let coin_markets = vec![Market {
+        let symbol_prices = vec![SymbolPrice {
             id: "btc".to_string(),
             current_price: 42000.69,
             timestamp: now,
         }];
-        let mock = server.set_successful_coins_market(ids, &coin_markets);
+        let mock = server.set_successful_multi_symbol_price(ids, &symbol_prices);
 
-        let result = client.get_coins_market(ids).await;
+        let result = client.get_multi_symbol_price(ids).await;
 
         mock.assert();
 
-        let expected_result: Vec<Option<Market>> = vec![Some(coin_markets[0].clone()), None];
+        let expected_result: Vec<Option<SymbolPrice>> = vec![Some(symbol_prices[0].clone()), None];
         assert_eq!(result, Ok(expected_result));
     }
 
@@ -200,9 +208,9 @@ pub(crate) mod test {
     async fn test_get_coin_market_with_unparseable_data() {
         let (mut server, client) = setup().await;
         let ids = &["apple_pie"];
-        let mock = server.set_arbitrary_coins_market(ids, "abc");
+        let mock = server.set_arbitrary_multi_symbol_price(ids, "abc");
 
-        let result = client.get_coins_market(ids).await;
+        let result = client.get_multi_symbol_price(ids).await;
 
         mock.assert();
 
@@ -216,9 +224,9 @@ pub(crate) mod test {
     async fn test_failed_get_coin_market() {
         let (mut server, client) = setup().await;
         let ids = &["btc"];
-        let mock = server.set_failed_coins_market(ids);
+        let mock = server.set_failed_multi_symbol_price(ids);
 
-        let result = client.get_coins_market(ids).await;
+        let result = client.get_multi_symbol_price(ids).await;
 
         mock.assert();
 

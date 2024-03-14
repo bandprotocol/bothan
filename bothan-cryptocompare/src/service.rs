@@ -76,8 +76,8 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
         .iter()
         .map(|x| x.as_str())
         .collect::<Vec<&str>>();
-    if let Ok(markets) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
-        for (id, symbol_price) in ids.iter().zip(markets.iter()) {
+    if let Ok(symbol_prices) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
+        for (id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
             if let Some(m) = symbol_price {
                 process_symbol_price(m, cache).await;
             } else {
@@ -102,11 +102,11 @@ async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceDat
     }
 }
 
-fn parse_symbol_price(market: &SymbolPrice) -> Result<PriceData, Error> {
+fn parse_symbol_price(symbol_price: &SymbolPrice) -> Result<PriceData, Error> {
     Ok(PriceData::new(
-        market.id.clone(),
-        market.current_price.to_string(),
-        market.timestamp,
+        symbol_price.id.clone(),
+        symbol_price.current_price.to_string(),
+        symbol_price.timestamp,
     ))
 }
 
@@ -115,7 +115,7 @@ mod test {
     use mockito::ServerGuard;
 
     use crate::api::rest::test::{setup as api_setup, MockCryptoCompare};
-    use crate::api::types::Market;
+    use crate::api::types::SymbolPrice;
     use crate::mock::mock_utc;
 
     use super::*;
@@ -139,12 +139,12 @@ mod test {
         let now = mock_utc::now().timestamp() as u64;
 
         let (rest_api, cache, mut server) = setup().await;
-        let coin_market = vec![Market {
+        let symbol_prices = vec![SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
             timestamp: now,
         }];
-        server.set_successful_coins_market(&["BTC"], &coin_market);
+        server.set_successful_multi_symbol_price(&["BTC"], &symbol_prices);
         cache.set_pending("btc".to_string()).await;
         update_price_data(&rest_api, &cache).await;
         let result = cache.get("btc").await;
@@ -154,7 +154,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_process_market_data() {
+    async fn test_process_symbol_price() {
         // Set the timestamp to a fixed value for testing
         let timestamp_millis = 1694615225000;
         mock_utc::set_timestamp_millis(timestamp_millis);
@@ -162,14 +162,14 @@ mod test {
         let now = mock_utc::now().timestamp() as u64;
 
         let cache = Arc::new(Cache::<PriceData>::new(None));
-        let market = Market {
+        let symbol_price = SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
             timestamp: now,
         };
 
         cache.set_batch_pending(vec!["btc".to_string()]).await;
-        process_market_data(&market, &cache).await;
+        process_symbol_price(&symbol_price, &cache).await;
         let result = cache.get("btc").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
@@ -177,7 +177,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_process_market_data_without_set_pending() {
+    async fn test_process_symbol_price_without_set_pending() {
         // Set the timestamp to a fixed value for testing
         let timestamp_millis = 1694615225000;
         mock_utc::set_timestamp_millis(timestamp_millis);
@@ -185,32 +185,32 @@ mod test {
         let now = mock_utc::now().timestamp() as u64;
 
         let cache = Arc::new(Cache::<PriceData>::new(None));
-        let market = Market {
+        let symbol_price = SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
             timestamp: now,
         };
 
-        process_market_data(&market, &cache).await;
+        process_symbol_price(&symbol_price, &cache).await;
         let result = cache.get("btc").await;
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_parse_market() {
+    fn test_parse_symbol_price() {
         // Set the timestamp to a fixed value for testing
         let timestamp_millis = 1694615225000;
         mock_utc::set_timestamp_millis(timestamp_millis);
 
         let now = mock_utc::now().timestamp() as u64;
 
-        let market = Market {
+        let symbol_price = SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
             timestamp: now,
         };
 
-        let result = parse_market(&market);
+        let result = parse_symbol_price(&symbol_price);
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_eq!(result.unwrap(), expected);
     }
