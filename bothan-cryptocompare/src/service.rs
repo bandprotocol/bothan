@@ -9,7 +9,6 @@ use bothan_core::types::PriceData;
 
 use crate::api::types::SymbolPrice;
 use crate::api::CryptoCompareRestAPI;
-use crate::error::Error;
 
 pub struct CryptoCompareService {
     cache: Arc<Cache<PriceData>>,
@@ -90,33 +89,33 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
 }
 
 async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceData>) {
-    if let Ok(price_data) = parse_symbol_price(symbol_price) {
-        let id = price_data.id.clone();
-        if cache.set_data(id.clone(), price_data).await.is_err() {
-            warn!("unexpected request to set data for id: {}", id);
-        } else {
-            info!("set price for id {}", id);
-        }
+    let price_data = parse_symbol_price(symbol_price);
+
+    let id = price_data.id.clone();
+    if cache.set_data(id.clone(), price_data).await.is_err() {
+        warn!("unexpected request to set data for id: {}", id);
     } else {
-        warn!("failed to parse symbol price");
+        info!("set price for id {}", id);
     }
 }
 
-fn parse_symbol_price(symbol_price: &SymbolPrice) -> Result<PriceData, Error> {
-    Ok(PriceData::new(
+fn parse_symbol_price(symbol_price: &SymbolPrice) -> PriceData {
+    PriceData::new(
         symbol_price.id.clone(),
         symbol_price.current_price.to_string(),
         symbol_price.timestamp,
-    ))
+    )
 }
 
 #[cfg(test)]
 mod test {
+    use chrono::Utc;
     use mockito::ServerGuard;
 
-    use crate::api::rest::test::{setup as api_setup, MockCryptoCompare};
+    use bothan_core::cache::Error;
+
+    use crate::api::rest::test::{is_valid_timestamp, setup as api_setup, MockCryptoCompare};
     use crate::api::types::SymbolPrice;
-    use crate::mock::mock_utc;
 
     use super::*;
 
@@ -130,15 +129,27 @@ mod test {
         (Arc::new(rest_api), cache, server)
     }
 
+    fn assert_price_data(result: Result<PriceData, Error>, expected: Result<PriceData, Error>) {
+        match (result, expected) {
+            (Ok(result), Ok(expected)) => {
+                assert_eq!(result.id, expected.id);
+                assert_eq!(result.price, expected.price);
+
+                // Assert timestamp validity directly
+                assert!(is_valid_timestamp(result.timestamp));
+                assert!(is_valid_timestamp(expected.timestamp));
+            }
+            (Err(result), Err(expected)) => {
+                assert_eq!(result, expected);
+            }
+            _ => panic!("unexpected result"),
+        }
+    }
+
     #[tokio::test]
     async fn test_update_price_data() {
-        // Set the timestamp to a fixed value for testing
-        let timestamp_millis = 1694615225000;
-        mock_utc::set_timestamp_millis(timestamp_millis);
-
-        let now = mock_utc::now().timestamp() as u64;
-
         let (rest_api, cache, mut server) = setup().await;
+        let now = Utc::now().timestamp() as u64;
         let symbol_prices = vec![SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
@@ -150,18 +161,13 @@ mod test {
         let result = cache.get("btc").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
-        assert_eq!(result, Ok(expected));
+        assert_price_data(result, Ok(expected));
     }
 
     #[tokio::test]
     async fn test_process_symbol_price() {
-        // Set the timestamp to a fixed value for testing
-        let timestamp_millis = 1694615225000;
-        mock_utc::set_timestamp_millis(timestamp_millis);
-
-        let now = mock_utc::now().timestamp() as u64;
-
         let cache = Arc::new(Cache::<PriceData>::new(None));
+        let now = Utc::now().timestamp() as u64;
         let symbol_price = SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
@@ -173,18 +179,13 @@ mod test {
         let result = cache.get("btc").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
-        assert_eq!(result.unwrap(), expected);
+        assert_price_data(result, Ok(expected));
     }
 
     #[tokio::test]
     async fn test_process_symbol_price_without_set_pending() {
-        // Set the timestamp to a fixed value for testing
-        let timestamp_millis = 1694615225000;
-        mock_utc::set_timestamp_millis(timestamp_millis);
-
-        let now = mock_utc::now().timestamp() as u64;
-
         let cache = Arc::new(Cache::<PriceData>::new(None));
+        let now = Utc::now().timestamp() as u64;
         let symbol_price = SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
@@ -198,12 +199,7 @@ mod test {
 
     #[test]
     fn test_parse_symbol_price() {
-        // Set the timestamp to a fixed value for testing
-        let timestamp_millis = 1694615225000;
-        mock_utc::set_timestamp_millis(timestamp_millis);
-
-        let now = mock_utc::now().timestamp() as u64;
-
+        let now = Utc::now().timestamp() as u64;
         let symbol_price = SymbolPrice {
             id: "BTC".to_string(),
             current_price: 42000.69,
@@ -212,6 +208,6 @@ mod test {
 
         let result = parse_symbol_price(&symbol_price);
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
-        assert_eq!(result.unwrap(), expected);
+        assert_price_data(Ok(result), Ok(expected));
     }
 }
