@@ -75,6 +75,20 @@ impl CoinGeckoServiceBuilder {
         self
     }
 
+    pub fn new(opts: CoinGeckoServiceBuilderOpts) -> Self {
+        Self {
+            url: opts.url,
+            api_key: opts.api_key,
+            user_agent: opts.user_agent.unwrap_or(DEFAULT_USER_AGENT.into()),
+            update_interval: opts.update_interval.unwrap_or(DEFAULT_UPDATE_INTERVAL),
+            update_supported_assets_interval: opts
+                .update_supported_assets_interval
+                .unwrap_or(DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL),
+            page_size: opts.page_size.unwrap_or(DEFAULT_PAGE_SIZE),
+            page_query_delay: opts.page_query_delay,
+        }
+    }
+
     pub async fn build(self) -> Result<CoinGeckoService, Error> {
         let mut api_builder = CoinGeckoRestAPIBuilder::default();
         if let Some(url) = &self.url {
