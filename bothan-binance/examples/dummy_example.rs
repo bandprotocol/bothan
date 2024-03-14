@@ -1,12 +1,14 @@
-use bothan_binance::Binance;
-use bothan_core::service::Service;
 use tracing_subscriber::fmt::init;
+
+use bothan_binance::BinanceServiceBuilder;
+use bothan_core::service::Service;
 
 #[tokio::main]
 async fn main() {
     init();
 
-    if let Ok(mut service) = Binance::default().await {
+    let service = BinanceServiceBuilder::default().build().await;
+    if let Ok(mut service) = service {
         loop {
             let data = service.get_price_data(&["btcusdt", "ethusdt"]).await;
             println!("{:?}", data);

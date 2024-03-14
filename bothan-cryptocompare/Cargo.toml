@@ -7,10 +7,10 @@ license.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-url = "2.5.0"
 chrono = "0.4.34"
 futures = "0.3.30"
 
+url = { workspace = true }
 bothan-core = { workspace = true }
 async-trait = { workspace = true }
 reqwest = { workspace = true }

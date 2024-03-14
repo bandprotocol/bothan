@@ -1,7 +1,9 @@
-pub use api::websocket::BinanceWebsocket;
-pub use service::Binance;
+pub use api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
+pub use builder::BinanceServiceBuilder;
+pub use service::BinanceService;
 
-mod api;
-mod error;
-mod service;
-mod types;
+pub mod api;
+pub mod builder;
+pub mod error;
+pub mod service;
+pub mod types;

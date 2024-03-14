@@ -8,6 +8,7 @@ members = ["bothan-binance", "bothan-coingecko", "bothan-cryptocompare", "bothan
 resolver = "2"
 
 [workspace.dependencies]
+url = "2.5.0"
 futures = "0.3.30"
 async-trait = "0.1.77"
 reqwest = { version = "0.11.24", features = ["json"] }
