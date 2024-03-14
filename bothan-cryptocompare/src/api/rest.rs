@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use chrono::Utc;
-use reqwest::{Client, Response, Url};
-
-use bothan_core::helpers::{parse_response, send_request};
+use reqwest::{Client, RequestBuilder, Response, Url};
 
 use crate::api::error::Error;
 use crate::api::types::{Price, SymbolPrice};
@@ -40,4 +38,19 @@ impl CryptoCompareRestAPI {
             .collect();
         Ok(results)
     }
+}
+
+async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error> {
+    let response = request_builder.send().await?;
+
+    let status = response.status();
+    if status.is_client_error() || status.is_server_error() {
+        return Err(Error::Http(status));
+    }
+
+    Ok(response)
+}
+
+async fn parse_response<T: serde::de::DeserializeOwned>(response: Response) -> Result<T, Error> {
+    Ok(response.json::<T>().await?)
 }

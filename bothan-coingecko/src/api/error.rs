@@ -9,8 +9,14 @@ pub enum Error {
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
 
-    #[error("helpers error: {0}")]
-    Helpers(#[from] bothan_core::helpers::error::Error),
+    #[error("http error: {0}")]
+    Http(reqwest::StatusCode),
+
+    #[error("invalid id")]
+    InvalidID,
+
+    #[error("failed to parse")]
+    Parse,
 }
 
 impl From<reqwest::Error> for Error {
