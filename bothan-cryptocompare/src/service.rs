@@ -9,7 +9,6 @@ use bothan_core::types::PriceData;
 
 use crate::api::types::SymbolPrice;
 use crate::api::CryptoCompareRestAPI;
-use crate::error::Error;
 
 pub struct CryptoCompareService {
     cache: Arc<Cache<PriceData>>,
@@ -76,8 +75,8 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
         .iter()
         .map(|x| x.as_str())
         .collect::<Vec<&str>>();
-    if let Ok(markets) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
-        for (id, symbol_price) in ids.iter().zip(markets.iter()) {
+    if let Ok(symbol_prices) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
+        for (id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
             if let Some(m) = symbol_price {
                 process_symbol_price(m, cache).await;
             } else {
@@ -90,22 +89,20 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
 }
 
 async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceData>) {
-    if let Ok(price_data) = parse_symbol_price(symbol_price) {
-        let id = price_data.id.clone();
-        if cache.set_data(id.clone(), price_data).await.is_err() {
-            warn!("unexpected request to set data for id: {}", id);
-        } else {
-            info!("set price for id {}", id);
-        }
+    let price_data = parse_symbol_price(symbol_price);
+
+    let id = price_data.id.clone();
+    if cache.set_data(id.clone(), price_data).await.is_err() {
+        warn!("unexpected request to set data for id: {}", id);
     } else {
-        warn!("failed to parse symbol price");
+        info!("set price for id {}", id);
     }
 }
 
-fn parse_symbol_price(market: &SymbolPrice) -> Result<PriceData, Error> {
-    Ok(PriceData::new(
-        market.id.clone(),
-        market.current_price.to_string(),
-        market.timestamp,
-    ))
+fn parse_symbol_price(symbol_price: &SymbolPrice) -> PriceData {
+    PriceData::new(
+        symbol_price.id.clone(),
+        symbol_price.current_price.to_string(),
+        symbol_price.timestamp,
+    )
 }
