@@ -26,13 +26,14 @@ impl CryptoCompareRestAPI {
         let builder_with_query = self.client.get(&url).query(&params);
         let response: Response = send_request(builder_with_query).await?;
         let symbol_prices = parse_response::<HashMap<String, Price>>(response).await?;
+        let now = Utc::now().timestamp() as u64;
         let results = ids
             .iter()
             .map(|id| {
                 symbol_prices.get(*id).map(|price| SymbolPrice {
                     id: (*id).to_string(),
                     current_price: price.usd,
-                    timestamp: Utc::now().timestamp() as u64,
+                    timestamp: now,
                 })
             })
             .collect();
