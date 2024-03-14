@@ -101,23 +101,23 @@ impl<'a> PriceServiceManager<'a> {
                 signal_results_store
                     .get_batched(ids)
                     .await
-                    .iter()
+                    .into_iter()
                     .zip(ids)
                     .map(|(r, id)| match r {
                         Some(Ok(v)) => PriceData {
                             signal_id: id.to_string(),
                             price: v.to_string(),
-                            price_option: 3,
+                            price_option: PriceOption::Available.into(),
                         },
                         Some(Err(e)) => PriceData {
                             signal_id: id.to_string(),
                             price: "".to_string(),
-                            price_option: *e as i32,
+                            price_option: e.into(),
                         },
                         None => PriceData {
                             signal_id: id.to_string(),
                             price: "".to_string(),
-                            price_option: 1,
+                            price_option: PriceOption::Unsupported.into(),
                         },
                     })
                     .collect()
@@ -163,17 +163,17 @@ async fn results_for_invalid_tasks(ids: &[&str], store: Arc<SignalResultsStore>)
             Some(Ok(price)) => PriceData {
                 signal_id: k.to_string(),
                 price: price.to_string(),
-                price_option: 3,
+                price_option: PriceOption::Available.into(),
             },
             Some(Err(e)) => PriceData {
                 signal_id: k.to_string(),
                 price: "".to_string(),
-                price_option: e as i32,
+                price_option: e.into(),
             },
             None => PriceData {
                 signal_id: k.to_string(),
                 price: "".to_string(),
-                price_option: 1,
+                price_option: PriceOption::Unsupported.into(),
             },
         })
         .collect()
