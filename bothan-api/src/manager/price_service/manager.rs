@@ -66,7 +66,7 @@ impl PriceServiceManager {
 
         // If unable to generate tasks, return results
         match tasks_result {
-            Err(_) => results_for_invalid_tasks(ids, signal_results_store.clone()).await,
+            Err(_) => get_result_from_store(ids, signal_results_store.clone()).await,
             Ok(tasks) => {
                 for task in tasks.iter() {
                     // process the source requirements for the task and saves the data
@@ -97,30 +97,7 @@ impl PriceServiceManager {
 
                     while join_set.join_next().await.is_some() {}
                 }
-
-                signal_results_store
-                    .get_batched(ids)
-                    .await
-                    .into_iter()
-                    .zip(ids)
-                    .map(|(r, id)| match r {
-                        Some(Ok(v)) => PriceData {
-                            signal_id: id.to_string(),
-                            price: v.to_string(),
-                            price_option: PriceOption::Available.into(),
-                        },
-                        Some(Err(e)) => PriceData {
-                            signal_id: id.to_string(),
-                            price: "".to_string(),
-                            price_option: e.into(),
-                        },
-                        None => PriceData {
-                            signal_id: id.to_string(),
-                            price: "".to_string(),
-                            price_option: PriceOption::Unsupported.into(),
-                        },
-                    })
-                    .collect()
+                get_result_from_store(ids, signal_results_store.clone()).await
             }
         }
     }
@@ -174,7 +151,7 @@ async fn set_unsupported_results(
     store.set_batched(results).await;
 }
 
-async fn results_for_invalid_tasks(ids: &[&str], store: Arc<SignalResultsStore>) -> Vec<PriceData> {
+async fn get_result_from_store(ids: &[&str], store: Arc<SignalResultsStore>) -> Vec<PriceData> {
     store
         .get_batched(ids)
         .await
