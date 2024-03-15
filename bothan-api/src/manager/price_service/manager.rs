@@ -19,16 +19,16 @@ use crate::tasks::task::Task;
 use crate::tasks::Tasks;
 use crate::util::arc_mutex;
 
-pub struct PriceServiceManager<'a> {
+pub struct PriceServiceManager {
     service_map: Arc<Mutex<HashMap<String, Arc<Mutex<Service>>>>>,
-    registry: &'a Registry,
+    registry: Arc<Mutex<Registry>>,
 }
 
-impl<'a> PriceServiceManager<'a> {
-    pub fn new(registry: &'a Registry) -> Self {
+impl PriceServiceManager {
+    pub fn new(registry: Registry) -> Self {
         PriceServiceManager {
             service_map: arc_mutex!(HashMap::new()),
-            registry,
+            registry: arc_mutex!(registry),
         }
     }
 
@@ -40,7 +40,7 @@ impl<'a> PriceServiceManager<'a> {
     }
 
     pub async fn get_prices(&mut self, ids: &[&str]) -> Vec<PriceData> {
-        let registry = self.registry.clone();
+        let registry = self.registry.lock().await.clone().clone();
 
         // remove duplicates
         let signal_ids = ids
