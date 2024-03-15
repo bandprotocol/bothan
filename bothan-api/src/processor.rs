@@ -5,7 +5,7 @@ pub mod identity;
 pub mod median;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ProcessingError {
+pub enum ProcessorError {
     #[error("invalid prerequisites amount")]
     InvalidPrerequisitesAmount,
 
@@ -17,14 +17,14 @@ pub enum ProcessingError {
 }
 
 #[enum_dispatch]
-pub trait Processing {
-    fn process(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Result<f64, ProcessingError>;
+pub trait Processor {
+    fn process(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Result<f64, ProcessorError>;
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
-#[enum_dispatch(Processing)]
-pub enum Processor {
+#[enum_dispatch(Processor)]
+pub enum Process {
     Median(median::MedianProcessor),
     Identity(identity::IdentityProcessor),
 }
@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn test_process() {
-        let median = Processor::Median(median::MedianProcessor {
+        let median = Process::Median(median::MedianProcessor {
             min_source_count: 0,
         });
 

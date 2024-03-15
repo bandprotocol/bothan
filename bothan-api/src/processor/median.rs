@@ -3,17 +3,17 @@ use std::cmp::Ordering;
 use num_traits::{Float, NumCast};
 use serde::{Deserialize, Serialize};
 
-use crate::processor::{Processing, ProcessingError};
+use crate::processor::{Processor, ProcessorError};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct MedianProcessor {
     pub min_source_count: usize,
 }
 
-impl Processing for MedianProcessor {
-    fn process(&self, data: Vec<f64>, _: Vec<f64>) -> Result<f64, ProcessingError> {
+impl Processor for MedianProcessor {
+    fn process(&self, data: Vec<f64>, _: Vec<f64>) -> Result<f64, ProcessorError> {
         if data.len() < self.min_source_count {
-            return Err(ProcessingError::NotEnoughSources);
+            return Err(ProcessorError::NotEnoughSources);
         }
 
         Ok(median(data))
