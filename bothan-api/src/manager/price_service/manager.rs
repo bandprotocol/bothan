@@ -21,14 +21,14 @@ use crate::util::arc_mutex;
 
 pub struct PriceServiceManager {
     service_map: Arc<Mutex<HashMap<String, Arc<Mutex<Service>>>>>,
-    registry: Arc<Mutex<Registry>>,
+    registry: Arc<Registry>,
 }
 
 impl PriceServiceManager {
-    pub fn new(registry: Registry) -> Self {
+    pub fn new(registry: Arc<Registry>) -> Self {
         PriceServiceManager {
             service_map: arc_mutex!(HashMap::new()),
-            registry: arc_mutex!(registry),
+            registry,
         }
     }
 
@@ -40,7 +40,7 @@ impl PriceServiceManager {
     }
 
     pub async fn get_prices(&mut self, ids: &[&str]) -> Vec<PriceData> {
-        let registry = self.registry.lock().await.clone().clone();
+        let registry = self.registry.clone();
 
         // remove duplicates
         let signal_ids = ids
@@ -56,7 +56,7 @@ impl PriceServiceManager {
 
         // Split the signals into those that exist and those that do not
         let (filtered_registry, unsupported_signal_ids) =
-            partition_signals(signal_ids.as_slice(), registry);
+            partition_signals(signal_ids.as_slice(), &registry);
 
         // load results into cache for the signals that do not exist
         set_unsupported_results(unsupported_signal_ids, signal_results_store.clone()).await;
@@ -126,20 +126,41 @@ impl PriceServiceManager {
     }
 }
 
-fn partition_signals(signal_ids: &[&str], mut registry: Registry) -> (Registry, Vec<String>) {
-    // Check registry if the signal_ids are present
-    let (exists, dne): (Vec<(String, Signal)>, Vec<String>) =
-        signal_ids.iter().partition_map(|r| {
-            let id = r.to_string();
-            match registry.remove(&id) {
-                Some(signal) => Either::Left((id, signal)),
-                None => Either::Right(id),
+fn partition_signals(signal_ids: &[&str], registry: &Registry) -> (Registry, Vec<String>) {
+    let mut exists = HashMap::new();
+    let mut dne = HashSet::new();
+    signal_ids.iter().for_each(|id| {
+        let signal_id = id.to_string();
+        match registry.get(&signal_id) {
+            Some(signal) => {
+                let all_prerequisite_signals = signal
+                    .prerequisites
+                    .iter()
+                    .map(|id| registry.get(id).map(|signal| (id.clone(), signal.clone())))
+                    .collect::<Option<Vec<(String, Signal)>>>();
+                match all_prerequisite_signals {
+                    Some(pre_req_signals) => {
+                        // Add the original symbol to the set
+                        exists.entry(signal_id).or_insert(signal.clone());
+                        // Add the prerequisites to the set
+                        pre_req_signals
+                            .into_iter()
+                            .for_each(|(pid, pre_req_signal)| {
+                                exists.entry(pid).or_insert(pre_req_signal.clone());
+                            })
+                    }
+                    None => {
+                        dne.insert(signal_id.to_string());
+                    }
+                }
             }
-        });
+            None => {
+                dne.insert(signal_id.to_string());
+            }
+        }
+    });
 
-    // build registry for the signals that do exist
-    let registry = exists.into_iter().collect::<HashMap<String, Signal>>();
-    (registry, dne)
+    (exists, dne.into_iter().collect())
 }
 
 async fn set_unsupported_results(
