@@ -6,6 +6,9 @@ pub mod median;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProcessorError {
+    #[error("invalid parameter: {0}")]
+    InvalidParameterValue(String),
+
     #[error("invalid prerequisites amount")]
     InvalidPrerequisitesAmount,
 

@@ -12,6 +12,12 @@ pub struct MedianProcessor {
 
 impl Processor for MedianProcessor {
     fn process(&self, data: Vec<f64>, _: Vec<f64>) -> Result<f64, ProcessorError> {
+        if self.min_source_count == 0 {
+            return Err(ProcessorError::InvalidParameterValue(
+                "min_source_count".to_string(),
+            ));
+        }
+
         if data.len() < self.min_source_count {
             return Err(ProcessorError::NotEnoughSources);
         }
