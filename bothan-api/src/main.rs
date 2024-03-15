@@ -62,7 +62,7 @@ async fn main() {
     let config = config::AppConfig::new().expect("Failed to load configuration");
 
     let file = File::open(config.registry.source).unwrap();
-    let registry: Registry = serde_json::from_reader(file).unwrap();
+    let registry = Arc::new(serde_json::from_reader::<_, Registry>(file).unwrap());
     let mut manager = PriceServiceManager::new(registry);
 
     let binance = BinanceServiceBuilder::new(config.source.binance)
