@@ -37,13 +37,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_process() {
+    fn test_process_median() {
+        let median = Process::Median(median::MedianProcessor {
+            min_source_count: 1,
+        });
+
+        let res = median.process(vec![10.0, 20.0, 30.0, 40.0, 50.0], vec![]);
+
+        assert_eq!(res.unwrap(), 30.0);
+    }
+
+    #[test]
+    fn test_process_median_with_invalid_parameter() {
         let median = Process::Median(median::MedianProcessor {
             min_source_count: 0,
         });
 
         let res = median.process(vec![10.0, 20.0, 30.0, 40.0, 50.0], vec![]);
 
-        assert_eq!(res.unwrap(), 30.0);
+        assert!(res.is_err());
     }
 }
