@@ -23,7 +23,7 @@
         "processor": {
             "function": "median",
             "params": {
-                "min_source_count": 0
+                "min_source_count": 1
             }
         },
         "post_processors": []
@@ -58,7 +58,7 @@
         "processor": {
             "function": "median",
             "params": {
-                "min_source_count": 0
+                "min_source_count": 1
             }
         },
         "post_processors": []
