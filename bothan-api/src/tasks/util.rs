@@ -119,37 +119,36 @@ fn bfs_with_depth(
     let mut depths = HashMap::new();
     let mut max_depth = 0;
 
-    // Iterate over the roots and perform a BFS
+    // Initialize the queue with the source nodes and their depths
     for root in start_roots {
-        let mut queue = VecDeque::new();
-
-        queue.push_back(root.to_string());
         depths.insert(root.to_string(), 0);
+    }
 
-        // Perform BFS
-        while let Some(node) = queue.pop_front() {
+    let mut queue: VecDeque<_> = start_roots.iter().copied().collect::<VecDeque<&String>>();
+
+    // Perform Multi-Source BFS
+    while let Some(node) = queue.pop_front() {
+        for neighbor in graph.neighbors_directed(&node, Direction::Outgoing) {
             let depth = depths[&node.to_string()];
-            for neighbor in graph.neighbors_directed(&node, Direction::Outgoing) {
-                match depths.entry(neighbor.to_string()) {
-                    Entry::Occupied(o) => {
-                        // If node depth is already set, check if the current depth is less than the
-                        // new depth. If the new depth is larger, override the current depth with the
-                        // new depth.
-                        let new_depth = depth + 1;
-                        if new_depth > *o.get() {
-                            queue.push_back(neighbor.to_string());
-                            depths.insert(neighbor.to_string(), new_depth);
-                        }
-                        if new_depth > max_depth {
-                            max_depth = new_depth;
-                        }
+            match depths.entry(neighbor.clone()) {
+                Entry::Occupied(o) => {
+                    // If node depth is already set, check if the current depth is less than the
+                    // new depth. If the new depth is larger, override the current depth with the
+                    // new depth.
+                    let new_depth = depth + 1;
+                    if new_depth > *o.get() {
+                        queue.push_back(neighbor);
+                        depths.insert(neighbor.to_string(), new_depth);
                     }
-                    Entry::Vacant(v) => {
-                        queue.push_back(neighbor.to_string());
-                        v.insert(depth + 1);
-                        if depth + 1 > max_depth {
-                            max_depth = depth + 1;
-                        }
+                    if new_depth > max_depth {
+                        max_depth = new_depth;
+                    }
+                }
+                Entry::Vacant(v) => {
+                    queue.push_back(neighbor);
+                    v.insert(depth + 1);
+                    if depth + 1 > max_depth {
+                        max_depth = depth + 1;
                     }
                 }
             }
@@ -188,7 +187,7 @@ mod tests {
 
         // Call bfs_with_depth with the graph and a known set of root nodes
         let roots = vec![&nodes[0].0];
-        let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
+        let (depths, max_depth) = bfs_with_depth_1(&graph, roots.as_slice());
         println!("{:?}", depths);
 
         // Assert that the returned depths match the expected values
@@ -218,7 +217,7 @@ mod tests {
 
         // Call bfs_with_depth with the graph and a known set of root nodes
         let roots = vec![&nodes[0].0, &nodes[2].0, &nodes[4].0];
-        let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
+        let (depths, max_depth) = bfs_with_depth_1(&graph, roots.as_slice());
 
         // Assert that the returned depths match the expected values
         assert_eq!(depths[&"F".to_string()], 0);
