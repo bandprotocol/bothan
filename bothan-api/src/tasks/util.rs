@@ -188,7 +188,6 @@ mod tests {
         // Call bfs_with_depth with the graph and a known set of root nodes
         let roots = vec![&nodes[0].0];
         let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
-        println!("{:?}", depths);
 
         // Assert that the returned depths match the expected values
         assert_eq!(depths[&"A".to_string()], 0);
@@ -213,7 +212,6 @@ mod tests {
             ("B".to_string(), "A".to_string()),
         ];
         let graph = mock_graph(&nodes);
-        println!("{:?}", graph);
 
         // Call bfs_with_depth with the graph and a known set of root nodes
         let roots = vec![&nodes[0].0, &nodes[2].0, &nodes[4].0];
@@ -229,5 +227,35 @@ mod tests {
 
         // Assert that the returned maximum depth matches the expected value
         assert_eq!(max_depth, 3);
+    }
+    #[test]
+    fn test_bfs_with_depth_with_isolated_node_and_multiple_roots() {
+        // Create a new graph
+        let nodes = vec![
+            ("A".to_string(), "D".to_string()),
+            ("B".to_string(), "D".to_string()),
+            ("B".to_string(), "F".to_string()),
+            ("C".to_string(), "E".to_string()),
+            ("E".to_string(), "F".to_string()),
+        ];
+        let mut graph = mock_graph(&nodes);
+        let sole_node = "G".to_string();
+        graph.add_node(&sole_node);
+
+        // Call bfs_with_depth with the graph and a known set of root nodes
+        let roots = vec![&nodes[0].0, &nodes[1].0, &nodes[3].0, &sole_node];
+        let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
+
+        // Assert that the returned depths match the expected values
+        assert_eq!(depths[&"A".to_string()], 0);
+        assert_eq!(depths[&"B".to_string()], 0);
+        assert_eq!(depths[&"C".to_string()], 0);
+        assert_eq!(depths[&"G".to_string()], 0);
+        assert_eq!(depths[&"D".to_string()], 1);
+        assert_eq!(depths[&"E".to_string()], 1);
+        assert_eq!(depths[&"F".to_string()], 2);
+
+        // Assert that the returned maximum depth matches the expected value
+        assert_eq!(max_depth, 2);
     }
 }
