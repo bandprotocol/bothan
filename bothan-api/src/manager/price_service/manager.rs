@@ -10,8 +10,8 @@ use tracing::warn;
 pub use crate::manager::price_service::service::Service;
 use crate::manager::price_service::types::{ResultsStore, SignalResultsStore, SourceResultsStore};
 use crate::manager::price_service::utils::into_key;
-use crate::post_processor::{PostProcessing, PostProcessor};
-use crate::processor::{Processing, Processor};
+use crate::post_processor::{PostProcess, PostProcessor};
+use crate::processor::{Process, Processor};
 use crate::proto::query::query::{PriceData, PriceOption};
 use crate::registry::source::Route;
 use crate::registry::{Registry, Signal};
@@ -237,10 +237,7 @@ async fn process_task_and_store_source_data(
     while join_set.join_next().await.is_some() {}
 }
 
-fn post_process(
-    processed_price: f64,
-    post_processors: &[PostProcessor],
-) -> Result<f64, PriceOption> {
+fn post_process(processed_price: f64, post_processors: &[PostProcess]) -> Result<f64, PriceOption> {
     let result: Option<f64> = post_processors
         .iter()
         .try_fold(processed_price, |acc, post| post.process(acc).ok());
@@ -272,8 +269,8 @@ async fn process_source_routes(
 async fn process_signal_id_result(
     data: Vec<f64>,
     prerequisities: &[String],
-    processor: &Processor,
-    post_processor: &[PostProcessor],
+    processor: &Process,
+    post_processor: &[PostProcess],
     signal_results_cache: &ResultsStore<Result<f64, PriceOption>>,
 ) -> Result<f64, PriceOption> {
     let prerequisites_data = signal_results_cache
