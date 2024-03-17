@@ -128,7 +128,7 @@ fn bfs_with_depth(
 
     // Perform Multi-Source BFS
     while let Some(node) = queue.pop_front() {
-        for neighbor in graph.neighbors_directed(&node, Direction::Outgoing) {
+        for neighbor in graph.neighbors_directed(node, Direction::Outgoing) {
             let depth = depths[&node.to_string()];
             match depths.entry(neighbor.clone()) {
                 Entry::Occupied(o) => {
@@ -187,7 +187,7 @@ mod tests {
 
         // Call bfs_with_depth with the graph and a known set of root nodes
         let roots = vec![&nodes[0].0];
-        let (depths, max_depth) = bfs_with_depth_1(&graph, roots.as_slice());
+        let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
         println!("{:?}", depths);
 
         // Assert that the returned depths match the expected values
@@ -217,7 +217,7 @@ mod tests {
 
         // Call bfs_with_depth with the graph and a known set of root nodes
         let roots = vec![&nodes[0].0, &nodes[2].0, &nodes[4].0];
-        let (depths, max_depth) = bfs_with_depth_1(&graph, roots.as_slice());
+        let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
 
         // Assert that the returned depths match the expected values
         assert_eq!(depths[&"F".to_string()], 0);
