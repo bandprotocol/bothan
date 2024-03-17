@@ -1,3 +1,4 @@
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use petgraph::algo::toposort;
@@ -94,7 +95,7 @@ fn build_batches(
                     for source in &signal.sources {
                         let source_id = source.source_id.clone();
                         let id = source.id.clone();
-                        let uid = format!("{}{}", source_id, id);
+                        let uid = format!("{}-{}", source_id, id);
                         if !seen.contains(&uid) {
                             let entry = tasks.entry(source_id).or_insert(HashSet::new());
                             entry.insert(id);
@@ -118,30 +119,36 @@ fn bfs_with_depth(
     let mut depths = HashMap::new();
     let mut max_depth = 0;
 
-    // Iterate over the roots and perform a BFS
+    // Initialize the queue with the source nodes and their depths
     for root in start_roots {
-        let mut queue = VecDeque::new();
-
-        queue.push_back(root.to_string());
         depths.insert(root.to_string(), 0);
+    }
 
-        // Perform BFS
-        while let Some(node) = queue.pop_front() {
+    let mut queue: VecDeque<_> = start_roots.iter().copied().collect::<VecDeque<&String>>();
+
+    // Perform Multi-Source BFS
+    while let Some(node) = queue.pop_front() {
+        for neighbor in graph.neighbors_directed(node, Direction::Outgoing) {
             let depth = depths[&node.to_string()];
-            for neighbor in graph.neighbors_directed(&node, Direction::Outgoing) {
-                if !depths.contains_key(&neighbor.to_string()) {
-                    queue.push_back(neighbor.to_string());
-                    depths.insert(neighbor.to_string(), depth + 1);
+            match depths.entry(neighbor.clone()) {
+                Entry::Occupied(o) => {
+                    // If node depth is already set, check if the current depth is less than the
+                    // new depth. If the new depth is larger, override the current depth with the
+                    // new depth.
+                    let new_depth = depth + 1;
+                    if new_depth > *o.get() {
+                        queue.push_back(neighbor);
+                        depths.insert(neighbor.to_string(), new_depth);
+                    }
+                    if new_depth > max_depth {
+                        max_depth = new_depth;
+                    }
+                }
+                Entry::Vacant(v) => {
+                    queue.push_back(neighbor);
+                    v.insert(depth + 1);
                     if depth + 1 > max_depth {
                         max_depth = depth + 1;
-                    }
-                } else if let Some(current_depth) = depths.get(&neighbor.to_string()) {
-                    if depth + 1 < *current_depth {
-                        queue.push_back(neighbor.to_string());
-                        depths.insert(neighbor.to_string(), depth + 1);
-                        if depth + 1 > max_depth {
-                            max_depth = depth + 1;
-                        }
                     }
                 }
             }
@@ -150,4 +157,77 @@ fn bfs_with_depth(
 
     // Return the depths and the maximum depth
     (depths, max_depth)
+}
+
+#[cfg(test)]
+mod tests {
+    use petgraph::graphmap::DiGraphMap;
+
+    use super::*;
+
+    fn mock_graph(node_pairs: &Vec<(String, String)>) -> DiGraphMap<&String, ()> {
+        let mut graph = DiGraphMap::<&String, ()>::new();
+        for (n1, n2) in node_pairs {
+            graph.add_edge(n1, n2, ());
+        }
+        graph
+    }
+
+    #[test]
+    fn test_bfs_with_depth() {
+        // Create a new graph
+        let nodes = vec![
+            ("A".to_string(), "B".to_string()),
+            ("A".to_string(), "C".to_string()),
+            ("C".to_string(), "D".to_string()),
+            ("C".to_string(), "E".to_string()),
+            ("E".to_string(), "F".to_string()),
+        ];
+        let graph = mock_graph(&nodes);
+
+        // Call bfs_with_depth with the graph and a known set of root nodes
+        let roots = vec![&nodes[0].0];
+        let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
+        println!("{:?}", depths);
+
+        // Assert that the returned depths match the expected values
+        assert_eq!(depths[&"A".to_string()], 0);
+        assert_eq!(depths[&"B".to_string()], 1);
+        assert_eq!(depths[&"C".to_string()], 1);
+        assert_eq!(depths[&"D".to_string()], 2);
+        assert_eq!(depths[&"E".to_string()], 2);
+        assert_eq!(depths[&"F".to_string()], 3);
+
+        // Assert that the returned maximum depth matches the expected value
+        assert_eq!(max_depth, 3);
+    }
+
+    #[test]
+    fn test_bfs_with_depth_with_multiple_roots() {
+        // Create a new graph
+        let nodes = vec![
+            ("F".to_string(), "E".to_string()),
+            ("E".to_string(), "C".to_string()),
+            ("D".to_string(), "C".to_string()),
+            ("C".to_string(), "A".to_string()),
+            ("B".to_string(), "A".to_string()),
+        ];
+        let graph = mock_graph(&nodes);
+        println!("{:?}", graph);
+
+        // Call bfs_with_depth with the graph and a known set of root nodes
+        let roots = vec![&nodes[0].0, &nodes[2].0, &nodes[4].0];
+        let (depths, max_depth) = bfs_with_depth(&graph, roots.as_slice());
+
+        // Assert that the returned depths match the expected values
+        assert_eq!(depths[&"F".to_string()], 0);
+        assert_eq!(depths[&"D".to_string()], 0);
+        assert_eq!(depths[&"B".to_string()], 0);
+        assert_eq!(depths[&"E".to_string()], 1);
+        assert_eq!(depths[&"C".to_string()], 2);
+        assert_eq!(depths[&"A".to_string()], 3);
+
+        // Assert that the returned maximum depth matches the expected value
+        assert_eq!(max_depth, 3);
+    }
 }
