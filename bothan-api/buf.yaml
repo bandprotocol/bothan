@@ -1,0 +1,4 @@
+version: v1
+name: buf.build/bandprotocol/bothan-api
+deps:
+  - buf.build/googleapis/googleapis

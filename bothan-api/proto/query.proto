@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package query;
+option go_package = "bothan-api/query";
+
+import "google/api/annotations.proto";
+
+// Query defines the gRPC service.
+service Query {
+  // RPC method that returns all prices of requested signal ids.
+  rpc Prices(QueryPricesRequest) returns (QueryPricesResponse) {
+    option (google.api.http).get = "/prices/{signal_ids}";
+  }
+}
+
+// QueryPricesRequest is the request type for the PriceService/GetPrices RPC
+// method.
+message QueryPricesRequest { repeated string signal_ids = 1; }
+
+// QueryPricesResponse is the response type for the PriceService/GetPrices RPC
+// method.
+message QueryPricesResponse { repeated PriceData prices = 1; }
+
+// PriceData defines the data of a symbol price.
+message PriceData {
+  // The symbol of the price.
+  string signal_id = 1;
+  // The price of the symbol.
+  string price = 2;
+  // PriceOption defines the price option of a symbol.
+  PriceOption price_option = 3;
+}
+
+// PriceOption defines the price option of a price.
+enum PriceOption {
+  // PRICE_OPTION_UNSPECIFIED defines an unspecified price option.
+  PRICE_OPTION_UNSPECIFIED = 0;
+  // PRICE_OPTION_UNSUPPORTED defines an unsupported price option.
+  PRICE_OPTION_UNSUPPORTED = 1;
+  // PRICE_OPTION_UNAVAILABLE defines an unavailable price option.
+  PRICE_OPTION_UNAVAILABLE = 2;
+  // PRICE_OPTION_AVAILABLE defines an available price option.
+  PRICE_OPTION_AVAILABLE = 3;
+}

@@ -1,0 +1,19 @@
+version: v1
+plugins:
+  - plugin: prost
+    out: src/proto/query
+  - name: tonic
+    out: src/proto/query
+  - plugin: go
+    out: go-proxy
+    opt:
+      - paths=source_relative
+  - plugin: go-grpc
+    out: go-proxy
+    opt:
+      - paths=source_relative
+  - plugin: grpc-gateway
+    out: go-proxy
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true

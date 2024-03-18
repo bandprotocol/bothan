@@ -1,0 +1,24 @@
+[package]
+name = "bothan-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bothan-core = { workspace = true }
+bothan-binance = { workspace = true }
+bothan-coingecko = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+
+config = "0.14.0"
+humantime-serde = "1.1.1"
+prost = "0.12"
+protoc-gen-prost = "0.3.1"
+tonic = "0.11"
+
+[build-dependencies]
+tonic-build = "0.11"
