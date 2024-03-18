@@ -4,8 +4,8 @@ pub enum Error {
     CycleDetected(),
 }
 
-impl<N> From<petgraph::algo::Cycle<N>> for Error {
-    fn from(_: petgraph::algo::Cycle<N>) -> Self {
-        Error::CycleDetected()
-    }
-}
+// impl<N> From<petgraph::algo::Cycle<N>> for Error {
+//     fn from(_: petgraph::algo::Cycle<N>) -> Self {
+//         Error::CycleDetected()
+//     }
+// }
