@@ -45,12 +45,7 @@ fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
             if pid == id {
                 return Err(Error::CycleDetected());
             }
-            if !graph.contains_edge(id, pid) {
-                if !graph.contains_node(pid) {
-                    graph.add_node(pid);
-                }
-                graph.add_edge(pid, id, ());
-            }
+            graph.add_edge(pid, id, ());
         }
     }
 
@@ -135,6 +130,9 @@ fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>
 
 #[cfg(test)]
 mod tests {
+    use crate::post_processor::PostProcess;
+    use crate::processor::median::MedianProcessor;
+    use crate::processor::{Process, Processor};
     use petgraph::graphmap::DiGraphMap;
 
     use super::*;
