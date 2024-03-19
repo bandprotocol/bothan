@@ -1,4 +1,5 @@
 mod config;
+mod manager;
 mod post_processor;
 mod processor;
 mod proto;
