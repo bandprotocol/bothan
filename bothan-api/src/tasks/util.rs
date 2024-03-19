@@ -130,9 +130,6 @@ fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>
 
 #[cfg(test)]
 mod tests {
-    use crate::post_processor::PostProcess;
-    use crate::processor::median::MedianProcessor;
-    use crate::processor::{Process, Processor};
     use petgraph::graphmap::DiGraphMap;
 
     use super::*;
