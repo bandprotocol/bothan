@@ -8,8 +8,11 @@ use tokio::task::JoinSet;
 use tonic::codegen::tokio_stream::StreamExt;
 use tracing::warn;
 
-pub use crate::manager::price_service::service::Service;
-use crate::manager::price_service::types::{ResultsStore, SignalResultsStore, SourceResultsStore};
+use bothan_core::service::Service as CoreService;
+
+use crate::manager::price_service::types::{
+    ResultsStore, ServiceMap, SignalResultsStore, SourceResultsStore,
+};
 use crate::manager::price_service::utils::into_key;
 use crate::post_processor::{PostProcess, PostProcessor};
 use crate::processor::{Process, Processor};
@@ -20,12 +23,15 @@ use crate::tasks::task::Task;
 use crate::tasks::Tasks;
 use crate::util::arc_mutex;
 
-pub struct PriceServiceManager {
-    service_map: Arc<Mutex<HashMap<String, Arc<Mutex<Service>>>>>,
+pub struct PriceServiceManager<T>
+where
+    T: CoreService,
+{
+    service_map: Arc<Mutex<ServiceMap<T>>>,
     registry: Arc<Registry>,
 }
 
-impl PriceServiceManager {
+impl<T: CoreService> PriceServiceManager<T> {
     pub fn new(registry: Arc<Registry>) -> Self {
         PriceServiceManager {
             service_map: arc_mutex!(HashMap::new()),
@@ -33,7 +39,7 @@ impl PriceServiceManager {
         }
     }
 
-    pub async fn add_service(&mut self, name: String, service: Service) {
+    pub async fn add_service(&mut self, name: String, service: T) {
         self.service_map
             .lock()
             .await
@@ -119,9 +125,9 @@ async fn set_result_err(ids: Vec<String>, store: Arc<SignalResultsStore>, error:
     store.set_batched(results).await;
 }
 
-async fn handle_tasks(
+async fn handle_tasks<T: CoreService>(
     tasks: Tasks,
-    service_map: &Mutex<HashMap<String, Arc<Mutex<Service>>>>,
+    service_map: &Mutex<ServiceMap<T>>,
     source_results_store: Arc<SourceResultsStore>,
     signal_results_store: Arc<SignalResultsStore>,
 ) {
@@ -180,11 +186,11 @@ async fn get_result_from_store(ids: &[&str], store: Arc<SignalResultsStore>) -> 
         .collect()
 }
 
-async fn get_and_store_source_data(
-    service: &Mutex<Service>,
+async fn get_and_store_source_data<T: CoreService>(
+    service: Arc<Mutex<T>>,
     service_name: String,
     ids: Vec<String>,
-    source_results_store: &SourceResultsStore,
+    source_results_store: Arc<SourceResultsStore>,
 ) {
     let str_ids = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
     let mut locked = service.lock().await;
@@ -207,15 +213,15 @@ async fn get_and_store_source_data(
     source_results_store.set_batched(results).await;
 }
 
-async fn process_task_and_store_source_data(
+async fn process_task_and_store_source_data<T: CoreService>(
     task: &Task,
-    service_map: &Mutex<HashMap<String, Arc<Mutex<Service>>>>,
+    service_map: &Mutex<ServiceMap<T>>,
     source_results_store: Arc<SourceResultsStore>,
 ) {
     let mut join_set = JoinSet::new();
     for (service_name, ids) in task.get_source_tasks() {
-        let mut locked = service_map.lock().await;
-        let service = locked.get_mut(service_name);
+        let locked = service_map.lock().await;
+        let service = locked.get(service_name);
 
         if let Some(service) = service {
             let cloned_service = service.clone();
@@ -225,10 +231,10 @@ async fn process_task_and_store_source_data(
 
             join_set.spawn(async move {
                 get_and_store_source_data(
-                    &cloned_service,
+                    cloned_service,
                     cloned_service_name,
                     cloned_ids,
-                    &cloned_store,
+                    cloned_store,
                 )
                 .await
             });

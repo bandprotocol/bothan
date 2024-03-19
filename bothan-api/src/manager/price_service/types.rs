@@ -1,11 +1,15 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
+
+use bothan_core::service::Service as CoreService;
 
 use crate::proto::query::query::PriceOption;
 
 pub(crate) type SourceResultsStore = ResultsStore<f64>;
 pub(crate) type SignalResultsStore = ResultsStore<Result<f64, PriceOption>>;
+pub(crate) type ServiceMap<T> = HashMap<String, Arc<Mutex<T>>>;
 
 pub(crate) struct ResultsStore<T: Clone> {
     store: RwLock<HashMap<String, T>>,
