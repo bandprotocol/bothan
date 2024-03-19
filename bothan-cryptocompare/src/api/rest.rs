@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use chrono::Utc;
 use reqwest::{Client, RequestBuilder, Response, Url};
 
 use crate::api::error::Error;
-use crate::api::types::{Price, SymbolPrice};
+use crate::api::types::Price;
 
 pub struct CryptoCompareRestAPI {
     url: Url,
@@ -16,27 +15,18 @@ impl CryptoCompareRestAPI {
         Self { url, client }
     }
 
-    pub async fn get_multi_symbol_price(
-        &self,
-        ids: &[&str],
-    ) -> Result<Vec<Option<SymbolPrice>>, Error> {
+    pub async fn get_multi_symbol_price(&self, ids: &[&str]) -> Result<Vec<Option<f64>>, Error> {
         let url = format!("{}data/pricemulti", self.url);
         let params = vec![("fsyms", ids.join(",")), ("tsyms", "usd".to_string())];
 
         let builder_with_query = self.client.get(&url).query(&params);
         let response: Response = send_request(builder_with_query).await?;
         let symbol_prices = parse_response::<HashMap<String, Price>>(response).await?;
-        let now = Utc::now().timestamp() as u64;
+
         let results = ids
             .iter()
-            .map(|id| {
-                symbol_prices.get(*id).map(|price| SymbolPrice {
-                    id: (*id).to_string(),
-                    current_price: price.usd,
-                    timestamp: now,
-                })
-            })
-            .collect();
+            .map(|id| symbol_prices.get(*id).map_or(None, |p| Some(p.usd)))
+            .collect::<Vec<Option<f64>>>();
         Ok(results)
     }
 }

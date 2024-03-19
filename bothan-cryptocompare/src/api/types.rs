@@ -7,10 +7,3 @@ pub struct Price {
     #[serde(rename = "USD")]
     pub usd: f64,
 }
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SymbolPrice {
-    pub id: String,
-    pub current_price: f64,
-    pub timestamp: u64,
-}

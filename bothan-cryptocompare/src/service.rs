@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use chrono::Utc;
 use tokio::time::{interval, Duration, Interval};
 use tracing::{info, warn};
 
@@ -7,7 +8,6 @@ use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
 
-use crate::api::types::SymbolPrice;
 use crate::api::CryptoCompareRestAPI;
 
 pub struct CryptoCompareService {
@@ -71,14 +71,16 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
     let keys = cache.keys().await;
     let uppercase_keys: Vec<String> = keys.into_iter().map(|key| key.to_uppercase()).collect();
 
+    let now = Utc::now().timestamp() as u64;
+
     let ids = uppercase_keys
         .iter()
         .map(|x| x.as_str())
         .collect::<Vec<&str>>();
     if let Ok(symbol_prices) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
-        for (id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
+        for (&id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
             if let Some(m) = symbol_price {
-                process_symbol_price(m, cache).await;
+                process_symbol_price(id, m, &now, cache).await;
             } else {
                 warn!("id {} is missing symbol price data", id);
             }
@@ -88,8 +90,13 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
     }
 }
 
-async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceData>) {
-    let price_data = parse_symbol_price(symbol_price);
+async fn process_symbol_price(
+    id: &str,
+    symbol_price: &f64,
+    timestamp: &u64,
+    cache: &Cache<PriceData>,
+) {
+    let price_data = parse_symbol_price(id, symbol_price, timestamp);
 
     let id = price_data.id.clone();
     if cache.set_data(id.clone(), price_data).await.is_err() {
@@ -99,10 +106,10 @@ async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceDat
     }
 }
 
-fn parse_symbol_price(symbol_price: &SymbolPrice) -> PriceData {
+fn parse_symbol_price(id: &str, symbol_price: &f64, timestamp: &u64) -> PriceData {
     PriceData::new(
-        symbol_price.id.clone(),
-        symbol_price.current_price.to_string(),
-        symbol_price.timestamp,
+        id.to_owned(),
+        symbol_price.to_string(),
+        timestamp.to_owned(),
     )
 }
