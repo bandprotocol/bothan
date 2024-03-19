@@ -196,7 +196,7 @@ mod test {
         let id = "BTC";
         let symbol_price = 42000.69;
 
-        let result = parse_symbol_price(&id, &symbol_price, &now);
+        let result = parse_symbol_price(id, &symbol_price, &now);
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_price_data(Ok(result), Ok(expected));
     }

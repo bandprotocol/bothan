@@ -181,7 +181,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_result: Vec<Option<f64>> = vec![Some(symbol_prices[0].clone()), None];
+        let expected_result: Vec<Option<f64>> = vec![Some(symbol_prices[0]), None];
         assert_symbol_prices_eq(result, Ok(expected_result));
     }
 
