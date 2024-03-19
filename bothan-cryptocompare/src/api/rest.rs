@@ -25,7 +25,7 @@ impl CryptoCompareRestAPI {
 
         let results = ids
             .iter()
-            .map(|id| symbol_prices.get(*id).map_or(None, |p| Some(p.usd)))
+            .map(|id| symbol_prices.get(*id).map(|p| p.usd))
             .collect::<Vec<Option<f64>>>();
         Ok(results)
     }
