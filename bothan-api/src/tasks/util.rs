@@ -35,22 +35,20 @@ pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTa
 // Builds a directed graph from the registry
 fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     let mut graph = DiGraphMap::<&String, ()>::new();
+    let mut queue: VecDeque<&String> = VecDeque::new();
+    let mut seen = HashSet::new();
 
-    for (id, signal) in registry.iter() {
-        if !graph.contains_node(id) {
-            graph.add_node(id);
-        }
-
-        for pid in &signal.prerequisites {
-            if pid == id {
-                return Err(Error::CycleDetected());
-            }
-            if !graph.contains_edge(id, pid) {
-                if !graph.contains_node(pid) {
-                    graph.add_node(pid);
+    while let Some(signal_id) = queue.pop_front() {
+        if let Some(signal) = registry.get(signal_id) {
+            for pid in &signal.prerequisites {
+                graph.add_edge(pid, signal_id, ());
+                if !seen.contains(pid) {
+                    queue.push_back(pid);
+                    seen.insert(pid);
                 }
-                graph.add_edge(pid, id, ());
             }
+        } else {
+            return Err(Error::MissingNode());
         }
     }
 
