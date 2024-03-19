@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use chrono::Utc;
 use tokio::time::{interval, Duration, Interval};
 use tracing::{info, warn};
 
@@ -7,7 +8,6 @@ use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
 
-use crate::api::types::SymbolPrice;
 use crate::api::CryptoCompareRestAPI;
 
 pub struct CryptoCompareService {
@@ -71,14 +71,16 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
     let keys = cache.keys().await;
     let uppercase_keys: Vec<String> = keys.into_iter().map(|key| key.to_uppercase()).collect();
 
+    let now = Utc::now().timestamp() as u64;
+
     let ids = uppercase_keys
         .iter()
         .map(|x| x.as_str())
         .collect::<Vec<&str>>();
     if let Ok(symbol_prices) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
-        for (id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
+        for (&id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
             if let Some(m) = symbol_price {
-                process_symbol_price(m, cache).await;
+                process_symbol_price(id, m, &now, cache).await;
             } else {
                 warn!("id {} is missing symbol price data", id);
             }
@@ -88,8 +90,13 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
     }
 }
 
-async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceData>) {
-    let price_data = parse_symbol_price(symbol_price);
+async fn process_symbol_price(
+    id: &str,
+    symbol_price: &f64,
+    timestamp: &u64,
+    cache: &Cache<PriceData>,
+) {
+    let price_data = parse_symbol_price(id, symbol_price, timestamp);
 
     let id = price_data.id.clone();
     if cache.set_data(id.clone(), price_data).await.is_err() {
@@ -99,11 +106,11 @@ async fn process_symbol_price(symbol_price: &SymbolPrice, cache: &Cache<PriceDat
     }
 }
 
-fn parse_symbol_price(symbol_price: &SymbolPrice) -> PriceData {
+fn parse_symbol_price(id: &str, symbol_price: &f64, timestamp: &u64) -> PriceData {
     PriceData::new(
-        symbol_price.id.clone(),
-        symbol_price.current_price.to_string(),
-        symbol_price.timestamp,
+        id.to_owned(),
+        symbol_price.to_string(),
+        timestamp.to_owned(),
     )
 }
 
@@ -114,8 +121,7 @@ mod test {
 
     use bothan_core::cache::Error;
 
-    use crate::api::rest::test::{is_valid_timestamp, setup as api_setup, MockCryptoCompare};
-    use crate::api::types::SymbolPrice;
+    use crate::api::rest::test::{setup as api_setup, MockCryptoCompare};
 
     use super::*;
 
@@ -134,10 +140,6 @@ mod test {
             (Ok(result), Ok(expected)) => {
                 assert_eq!(result.id, expected.id);
                 assert_eq!(result.price, expected.price);
-
-                // Assert timestamp validity directly
-                assert!(is_valid_timestamp(result.timestamp));
-                assert!(is_valid_timestamp(expected.timestamp));
             }
             (Err(result), Err(expected)) => {
                 assert_eq!(result, expected);
@@ -150,11 +152,8 @@ mod test {
     async fn test_update_price_data() {
         let (rest_api, cache, mut server) = setup().await;
         let now = Utc::now().timestamp() as u64;
-        let symbol_prices = vec![SymbolPrice {
-            id: "BTC".to_string(),
-            current_price: 42000.69,
-            timestamp: now,
-        }];
+        let symbol_prices = vec![42000.69];
+
         server.set_successful_multi_symbol_price(&["BTC"], &symbol_prices);
         cache.set_pending("btc".to_string()).await;
         update_price_data(&rest_api, &cache).await;
@@ -168,14 +167,11 @@ mod test {
     async fn test_process_symbol_price() {
         let cache = Arc::new(Cache::<PriceData>::new(None));
         let now = Utc::now().timestamp() as u64;
-        let symbol_price = SymbolPrice {
-            id: "BTC".to_string(),
-            current_price: 42000.69,
-            timestamp: now,
-        };
+        let id = "BTC";
+        let symbol_price = 42000.69;
 
         cache.set_batch_pending(vec!["btc".to_string()]).await;
-        process_symbol_price(&symbol_price, &cache).await;
+        process_symbol_price(id, &symbol_price, &now, &cache).await;
         let result = cache.get("btc").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
@@ -186,13 +182,10 @@ mod test {
     async fn test_process_symbol_price_without_set_pending() {
         let cache = Arc::new(Cache::<PriceData>::new(None));
         let now = Utc::now().timestamp() as u64;
-        let symbol_price = SymbolPrice {
-            id: "BTC".to_string(),
-            current_price: 42000.69,
-            timestamp: now,
-        };
+        let id = "BTC";
+        let symbol_price = 42000.69;
 
-        process_symbol_price(&symbol_price, &cache).await;
+        process_symbol_price(id, &symbol_price, &now, &cache).await;
         let result = cache.get("btc").await;
         assert!(result.is_err());
     }
@@ -200,13 +193,10 @@ mod test {
     #[test]
     fn test_parse_symbol_price() {
         let now = Utc::now().timestamp() as u64;
-        let symbol_price = SymbolPrice {
-            id: "BTC".to_string(),
-            current_price: 42000.69,
-            timestamp: now,
-        };
+        let id = "BTC";
+        let symbol_price = 42000.69;
 
-        let result = parse_symbol_price(&symbol_price);
+        let result = parse_symbol_price(&id, &symbol_price, &now);
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_price_data(Ok(result), Ok(expected));
     }

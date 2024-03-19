@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use chrono::Utc;
 use reqwest::{Client, RequestBuilder, Response, Url};
 
 use crate::api::error::Error;
-use crate::api::types::{Price, SymbolPrice};
+use crate::api::types::Price;
 
 pub struct CryptoCompareRestAPI {
     url: Url,
@@ -16,28 +15,18 @@ impl CryptoCompareRestAPI {
         Self { url, client }
     }
 
-    pub async fn get_multi_symbol_price(
-        &self,
-        ids: &[&str],
-    ) -> Result<Vec<Option<SymbolPrice>>, Error> {
+    pub async fn get_multi_symbol_price(&self, ids: &[&str]) -> Result<Vec<Option<f64>>, Error> {
         let url = format!("{}data/pricemulti", self.url);
         let params = vec![("fsyms", ids.join(",")), ("tsyms", "usd".to_string())];
 
         let builder_with_query = self.client.get(&url).query(&params);
         let response: Response = send_request(builder_with_query).await?;
         let symbol_prices = parse_response::<HashMap<String, Price>>(response).await?;
-        let now = Utc::now().timestamp() as u64;
 
         let results = ids
             .iter()
-            .map(|id| {
-                symbol_prices.get(*id).map(|price| SymbolPrice {
-                    id: (*id).to_string(),
-                    current_price: price.usd,
-                    timestamp: now,
-                })
-            })
-            .collect();
+            .map(|id| symbol_prices.get(*id).map_or(None, |p| Some(p.usd)))
+            .collect::<Vec<Option<f64>>>();
         Ok(results)
     }
 }
@@ -65,8 +54,6 @@ pub(crate) mod test {
 
     use super::*;
 
-    const UNIX_EPOCH: u64 = 0; // Unix epoch starts at 0 seconds
-
     pub(crate) async fn setup() -> (ServerGuard, CryptoCompareRestAPI) {
         let server = Server::new_async().await;
 
@@ -77,35 +64,15 @@ pub(crate) mod test {
         (server, api)
     }
 
-    pub(crate) fn is_valid_timestamp(timestamp: u64) -> bool {
-        // Assuming a reasonable upper bound for current time
-        let current_time = chrono::Utc::now().timestamp() as u64;
-
-        // Assuming timestamps must be within a certain range (e.g., the last 10 years)
-        let min_valid_timestamp = UNIX_EPOCH;
-        let max_valid_timestamp = current_time + (10 * 365 * 24 * 60 * 60); // 10 years in seconds
-
-        timestamp >= min_valid_timestamp && timestamp <= max_valid_timestamp
-    }
-
     pub(crate) fn assert_symbol_prices_eq(
-        symbol_prices: Result<Vec<Option<SymbolPrice>>, Error>,
-        expected: Result<Vec<Option<SymbolPrice>>, Error>,
+        symbol_prices: Result<Vec<Option<f64>>, Error>,
+        expected: Result<Vec<Option<f64>>, Error>,
     ) {
         match (symbol_prices, expected) {
             (Ok(symbol_prices), Ok(expected)) => {
                 assert_eq!(symbol_prices.len(), expected.len());
                 for (symbol_price, expected) in symbol_prices.iter().zip(expected.iter()) {
-                    if let (Some(symbol_price), Some(expected)) = (symbol_price, expected) {
-                        assert_eq!(symbol_price.id, expected.id);
-                        assert_eq!(symbol_price.current_price, expected.current_price);
-
-                        // Assert timestamp validity directly
-                        assert!(is_valid_timestamp(symbol_price.timestamp));
-                        assert!(is_valid_timestamp(expected.timestamp));
-                    } else {
-                        assert_eq!(symbol_price, expected);
-                    }
+                    assert_eq!(symbol_price, expected);
                 }
             }
             (Err(symbol_prices), Err(expected)) => {
@@ -119,7 +86,7 @@ pub(crate) mod test {
         fn set_successful_multi_symbol_price(
             &mut self,
             ids: &[&str],
-            symbol_prices: &[SymbolPrice],
+            symbol_prices: &[f64],
         ) -> Mock;
         fn set_arbitrary_multi_symbol_price<StrOrBytes: AsRef<[u8]>>(
             &mut self,
@@ -133,15 +100,16 @@ pub(crate) mod test {
         fn set_successful_multi_symbol_price(
             &mut self,
             ids: &[&str],
-            symbol_prices: &[SymbolPrice],
+            symbol_prices: &[f64],
         ) -> Mock {
-            let price_map = symbol_prices
+            let price_map = ids
                 .iter()
-                .map(|symbol_price| {
+                .zip(symbol_prices.iter())
+                .map(|(&id, &symbol_price)| {
                     (
-                        symbol_price.id.clone(),
+                        id,
                         Price {
-                            usd: symbol_price.current_price,
+                            usd: symbol_price.to_owned(),
                         },
                     )
                 })
@@ -188,20 +156,7 @@ pub(crate) mod test {
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
 
-        let now = Utc::now().timestamp() as u64;
-
-        let symbol_prices = vec![
-            SymbolPrice {
-                id: "btc".to_string(),
-                current_price: 42000.69,
-                timestamp: now,
-            },
-            SymbolPrice {
-                id: "eth".to_string(),
-                current_price: 2000.0,
-                timestamp: now,
-            },
-        ];
+        let symbol_prices = vec![42000.69, 2000.0];
 
         let mock = server.set_successful_multi_symbol_price(ids, &symbol_prices);
 
@@ -217,20 +172,16 @@ pub(crate) mod test {
     async fn test_get_coin_market_with_missing_data() {
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
-        let now = Utc::now().timestamp() as u64;
 
-        let symbol_prices = vec![SymbolPrice {
-            id: "btc".to_string(),
-            current_price: 42000.69,
-            timestamp: now,
-        }];
+        let symbol_prices = vec![42000.69];
+
         let mock = server.set_successful_multi_symbol_price(ids, &symbol_prices);
 
         let result = client.get_multi_symbol_price(ids).await;
 
         mock.assert();
 
-        let expected_result: Vec<Option<SymbolPrice>> = vec![Some(symbol_prices[0].clone()), None];
+        let expected_result: Vec<Option<f64>> = vec![Some(symbol_prices[0].clone()), None];
         assert_symbol_prices_eq(result, Ok(expected_result));
     }
 
