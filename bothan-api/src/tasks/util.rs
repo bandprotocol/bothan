@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use petgraph::algo::toposort;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::Direction;
 
@@ -36,22 +35,20 @@ pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTa
 // Builds a directed graph from the registry
 fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     let mut graph = DiGraphMap::<&String, ()>::new();
+    let mut queue: VecDeque<&String> = VecDeque::new();
+    let mut seen = HashSet::new();
 
-    for (id, signal) in registry.iter() {
-        if !graph.contains_node(id) {
-            graph.add_node(id);
-        }
-
-        for pid in &signal.prerequisites {
-            if pid == id {
-                return Err(Error::CycleDetected());
-            }
-            if !graph.contains_edge(id, pid) {
-                if !graph.contains_node(pid) {
-                    graph.add_node(pid);
+    while let Some(signal_id) = queue.pop_front() {
+        if let Some(signal) = registry.get(signal_id) {
+            for pid in &signal.prerequisites {
+                graph.add_edge(pid, signal_id, ());
+                if !seen.contains(pid) {
+                    queue.push_back(pid);
+                    seen.insert(pid);
                 }
-                graph.add_edge(pid, id, ());
             }
+        } else {
+            return Err(Error::MissingNode());
         }
     }
 
@@ -63,25 +60,8 @@ fn build_batches(
     graph: &DiGraphMap<&String, ()>,
     registry: &Registry,
 ) -> Result<Vec<(SignalIDs, SourceTasks)>, Error> {
-    let sorted_nodes = toposort(&graph, None)?;
-    let roots = sorted_nodes
-        .iter()
-        .filter(|n| {
-            graph
-                .neighbors_directed(n, Direction::Incoming)
-                .next()
-                .is_none()
-        })
-        .cloned()
-        .collect::<Vec<&String>>();
-
-    let (depths, max_depth) = bfs_with_depth(graph, &roots);
-
     // Builds the sequential order of batches which contains the signal ids to be executed
-    let mut batches = vec![Vec::new(); max_depth + 1];
-    for (signal_id, depth) in depths.into_iter() {
-        batches[depth].push(signal_id);
-    }
+    let batches = batching_toposort(graph)?;
 
     // Builds the source tasks for each batch
     let mut seen = HashSet::new();
@@ -94,7 +74,7 @@ fn build_batches(
                     for source in &signal.sources {
                         let source_id = source.source_id.clone();
                         let id = source.id.clone();
-                        let uid = format!("{}{}", source_id, id);
+                        let uid = format!("{}-{}", source_id, id);
                         if !seen.contains(&uid) {
                             let entry = tasks.entry(source_id).or_insert(HashSet::new());
                             entry.insert(id);
@@ -110,44 +90,129 @@ fn build_batches(
     Ok(batches.into_iter().zip(source_tasks).collect())
 }
 
-// Performs a breadth-first search on the graph, returning the depths of each node and the maximum depth
-fn bfs_with_depth(
-    graph: &DiGraphMap<&String, ()>,
-    start_roots: &[&String],
-) -> (HashMap<String, usize>, usize) {
-    let mut depths = HashMap::new();
-    let mut max_depth = 0;
+fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>, Error> {
+    let mut in_degree_counts = HashMap::new();
+    let mut result = Vec::new();
+    let mut roots = VecDeque::new();
 
-    // Iterate over the roots and perform a BFS
-    for root in start_roots {
-        let mut queue = VecDeque::new();
-
-        queue.push_back(root.to_string());
-        depths.insert(root.to_string(), 0);
-
-        // Perform BFS
-        while let Some(node) = queue.pop_front() {
-            let depth = depths[&node.to_string()];
-            for neighbor in graph.neighbors_directed(&node, Direction::Outgoing) {
-                if !depths.contains_key(&neighbor.to_string()) {
-                    queue.push_back(neighbor.to_string());
-                    depths.insert(neighbor.to_string(), depth + 1);
-                    if depth + 1 > max_depth {
-                        max_depth = depth + 1;
-                    }
-                } else if let Some(current_depth) = depths.get(&neighbor.to_string()) {
-                    if depth + 1 < *current_depth {
-                        queue.push_back(neighbor.to_string());
-                        depths.insert(neighbor.to_string(), depth + 1);
-                        if depth + 1 > max_depth {
-                            max_depth = depth + 1;
-                        }
-                    }
-                }
-            }
+    graph.nodes().for_each(|n| {
+        let in_degree_count = graph.neighbors_directed(n, Direction::Incoming).count();
+        in_degree_counts.insert(n.clone(), in_degree_count);
+        if graph.neighbors_directed(n, Direction::Incoming).count() == 0 {
+            roots.push_back(n.clone());
         }
+    });
+
+    while !roots.is_empty() {
+        result.push(Vec::from(roots.clone()));
+
+        let mut new_roots = VecDeque::new();
+        roots.iter().for_each(|root| {
+            graph
+                .neighbors_directed(root, Direction::Outgoing)
+                .for_each(|dep| {
+                    // Unwrap here as map is must contain this value
+                    // If not, function is not working as expected
+                    let count = in_degree_counts.get_mut(dep).unwrap();
+                    *count -= 1;
+                    if *count == 0 {
+                        new_roots.push_back(dep.clone());
+                    }
+                })
+        });
+
+        roots = new_roots;
     }
 
-    // Return the depths and the maximum depth
-    (depths, max_depth)
+    if in_degree_counts.values().any(|&v| v > 0) {
+        return Err(Error::CycleDetected());
+    }
+
+    Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use petgraph::graphmap::DiGraphMap;
+
+    use super::*;
+
+    fn mock_graph(node_pairs: &Vec<(String, String)>) -> DiGraphMap<&String, ()> {
+        let mut graph = DiGraphMap::<&String, ()>::new();
+        for (n1, n2) in node_pairs {
+            graph.add_edge(n1, n2, ());
+        }
+        graph
+    }
+
+    #[test]
+    fn test_batching_toposort() {
+        let nodes = vec![
+            ("A".to_string(), "B".to_string()),
+            ("A".to_string(), "C".to_string()),
+            ("C".to_string(), "D".to_string()),
+            ("C".to_string(), "E".to_string()),
+            ("E".to_string(), "F".to_string()),
+        ];
+        let graph = mock_graph(&nodes);
+
+        let batches = batching_toposort(&graph);
+        let expected = vec![
+            vec!["A".to_string()],
+            vec!["B".to_string(), "C".to_string()],
+            vec!["D".to_string(), "E".to_string()],
+            vec!["F".to_string()],
+        ];
+        // Assert that the returned depths match the expected values
+        assert_eq!(batches.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_bfs_with_depth_with_multiple_roots() {
+        // Create a new graph
+        let nodes = vec![
+            ("F".to_string(), "E".to_string()),
+            ("E".to_string(), "C".to_string()),
+            ("D".to_string(), "C".to_string()),
+            ("C".to_string(), "A".to_string()),
+            ("B".to_string(), "A".to_string()),
+        ];
+        let graph = mock_graph(&nodes);
+
+        let batches = batching_toposort(&graph);
+        let expected = vec![
+            vec!["F".to_string(), "D".to_string(), "B".to_string()],
+            vec!["E".to_string()],
+            vec!["C".to_string()],
+            vec!["A".to_string()],
+        ];
+        assert_eq!(batches.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_bfs_with_depth_with_isolated_node_and_multiple_roots() {
+        let nodes = vec![
+            ("A".to_string(), "D".to_string()),
+            ("B".to_string(), "D".to_string()),
+            ("B".to_string(), "F".to_string()),
+            ("C".to_string(), "E".to_string()),
+            ("E".to_string(), "F".to_string()),
+        ];
+        let mut graph = mock_graph(&nodes);
+        let sole_node = "G".to_string();
+        graph.add_node(&sole_node);
+
+        let batches = batching_toposort(&graph);
+        let expected = vec![
+            vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C".to_string(),
+                "G".to_string(),
+            ],
+            vec!["D".to_string(), "E".to_string()],
+            vec!["F".to_string()],
+        ];
+        assert_eq!(batches.unwrap(), expected);
+    }
 }

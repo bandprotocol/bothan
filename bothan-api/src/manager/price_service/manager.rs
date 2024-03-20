@@ -1,17 +1,21 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::str::FromStr;
 use std::sync::Arc;
 
 use itertools::{Either, Itertools};
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
+use tonic::codegen::tokio_stream::StreamExt;
 use tracing::warn;
 
-pub use crate::manager::price_service::service::Service;
-use crate::manager::price_service::types::{ResultsStore, SignalResultsStore, SourceResultsStore};
+use bothan_core::service::Service as CoreService;
+
+use crate::manager::price_service::types::{
+    ResultsStore, ServiceMap, SignalResultsStore, SourceResultsStore,
+};
 use crate::manager::price_service::utils::into_key;
-use crate::post_processor::{PostProcessing, PostProcessor};
-use crate::processor::{Processing, Processor};
+use crate::post_processor::{PostProcess, PostProcessor};
+use crate::processor::{Process, Processor};
 use crate::proto::query::query::{PriceData, PriceOption};
 use crate::registry::source::Route;
 use crate::registry::{Registry, Signal};
@@ -19,12 +23,15 @@ use crate::tasks::task::Task;
 use crate::tasks::Tasks;
 use crate::util::arc_mutex;
 
-pub struct PriceServiceManager {
-    service_map: Arc<Mutex<HashMap<String, Arc<Mutex<Service>>>>>,
+pub struct PriceServiceManager<T>
+where
+    T: CoreService,
+{
+    service_map: Arc<Mutex<ServiceMap<T>>>,
     registry: Arc<Registry>,
 }
 
-impl PriceServiceManager {
+impl<T: CoreService> PriceServiceManager<T> {
     pub fn new(registry: Arc<Registry>) -> Self {
         PriceServiceManager {
             service_map: arc_mutex!(HashMap::new()),
@@ -32,7 +39,7 @@ impl PriceServiceManager {
         }
     }
 
-    pub async fn add_service(&mut self, name: String, service: Service) {
+    pub async fn add_service(&mut self, name: String, service: T) {
         self.service_map
             .lock()
             .await
@@ -55,126 +62,105 @@ impl PriceServiceManager {
         let signal_results_store = Arc::new(ResultsStore::new());
 
         // Split the signals into those that exist and those that do not
-        let (filtered_registry, unsupported_signal_ids) =
-            partition_signals(signal_ids.as_slice(), &registry);
+        let available = filter_available_ids(signal_ids.as_slice(), &registry);
 
-        // load results into cache for the signals that do not exist
-        set_unsupported_results(unsupported_signal_ids, signal_results_store.clone()).await;
-
-        // Generate tasks for signals that exists
-        let tasks_result = Tasks::from_registry(&filtered_registry);
-
-        // If unable to generate tasks, return results
-        match tasks_result {
-            Err(_) => results_for_invalid_tasks(ids, signal_results_store.clone()).await,
-            Ok(tasks) => {
-                for task in tasks.iter() {
-                    // process the source requirements for the task and saves the data
-                    process_task_and_store_source_data(
-                        task,
-                        &self.service_map,
-                        source_results_store.clone(),
-                    )
-                    .await;
-
-                    // process the retrieved data
-                    let mut join_set = JoinSet::new();
-                    for (signal_id, signal) in task.get_signals() {
-                        let cloned_id = signal_id.clone();
-                        let cloned_signal = signal.clone();
-                        let cloned_source_store = source_results_store.clone();
-                        let cloned_signal_store = signal_results_store.clone();
-                        join_set.spawn(async move {
-                            get_and_store_signal_id_result(
-                                cloned_id,
-                                &cloned_signal,
-                                cloned_source_store,
-                                cloned_signal_store,
-                            )
-                            .await
-                        });
-                    }
-
-                    while join_set.join_next().await.is_some() {}
+        match get_filtered_registry(available.as_slice(), &registry) {
+            Some(filtered_registry) => match Tasks::from_registry(&filtered_registry) {
+                Ok(tasks) => {
+                    let map = &self.service_map;
+                    let src_store = source_results_store.clone();
+                    let sig_store = signal_results_store.clone();
+                    handle_tasks(tasks, map, src_store, sig_store).await
                 }
-
-                signal_results_store
-                    .get_batched(ids)
-                    .await
-                    .into_iter()
-                    .zip(ids)
-                    .map(|(r, id)| match r {
-                        Some(Ok(v)) => PriceData {
-                            signal_id: id.to_string(),
-                            price: v.to_string(),
-                            price_option: PriceOption::Available.into(),
-                        },
-                        Some(Err(e)) => PriceData {
-                            signal_id: id.to_string(),
-                            price: "".to_string(),
-                            price_option: e.into(),
-                        },
-                        None => PriceData {
-                            signal_id: id.to_string(),
-                            price: "".to_string(),
-                            price_option: PriceOption::Unsupported.into(),
-                        },
-                    })
-                    .collect()
+                Err(_) => {
+                    let err = PriceOption::Unavailable;
+                    set_result_err(available, signal_results_store.clone(), err).await
+                }
+            },
+            None => {
+                let err = PriceOption::Unavailable;
+                set_result_err(available, signal_results_store.clone(), err).await
             }
-        }
+        };
+
+        get_result_from_store(ids, signal_results_store.clone()).await
     }
 }
 
-fn partition_signals(signal_ids: &[&str], registry: &Registry) -> (Registry, Vec<String>) {
-    let mut exists = HashMap::new();
-    let mut dne = HashSet::new();
-    signal_ids.iter().for_each(|id| {
-        let signal_id = id.to_string();
-        match registry.get(&signal_id) {
-            Some(signal) => {
-                let all_prerequisite_signals = signal
-                    .prerequisites
-                    .iter()
-                    .map(|id| registry.get(id).map(|signal| (id.clone(), signal.clone())))
-                    .collect::<Option<Vec<(String, Signal)>>>();
-                match all_prerequisite_signals {
-                    Some(pre_req_signals) => {
-                        // Add the original symbol to the set
-                        exists.entry(signal_id).or_insert(signal.clone());
-                        // Add the prerequisites to the set
-                        pre_req_signals
-                            .into_iter()
-                            .for_each(|(pid, pre_req_signal)| {
-                                exists.entry(pid).or_insert(pre_req_signal.clone());
-                            })
-                    }
-                    None => {
-                        dne.insert(signal_id.to_string());
-                    }
-                }
+fn filter_available_ids(signal_ids: &[&str], registry: &Registry) -> Vec<String> {
+    signal_ids
+        .iter()
+        .filter_map(|id| {
+            if registry.contains_key(*id) {
+                Some(id.to_string())
+            } else {
+                None
             }
-            None => {
-                dne.insert(signal_id.to_string());
-            }
-        }
-    });
-
-    (exists, dne.into_iter().collect())
+        })
+        .collect()
 }
 
-async fn set_unsupported_results(
-    unsupported_signal_ids: Vec<String>,
-    store: Arc<SignalResultsStore>,
-) {
-    let results = unsupported_signal_ids
-        .into_iter()
-        .map(|id| (id, Err(PriceOption::Unsupported)))
-        .collect();
+fn get_filtered_registry(signal_ids: &[String], registry: &Registry) -> Option<Registry> {
+    let mut queue = VecDeque::from_iter(signal_ids.iter().map(|s| s.to_string()));
+    let mut seen = HashMap::new();
+
+    while let Some(signal_id) = queue.pop_front() {
+        if let Some(signal) = registry.get(&signal_id) {
+            seen.insert(signal_id, signal.clone());
+            for pid in &signal.prerequisites {
+                if !seen.contains_key(pid) {
+                    queue.push_back(pid.clone());
+                }
+            }
+        } else {
+            return None;
+        }
+    }
+
+    Some(seen.into_iter().collect())
+}
+
+async fn set_result_err(ids: Vec<String>, store: Arc<SignalResultsStore>, error: PriceOption) {
+    let results = ids.into_iter().map(|id| (id, Err(error))).collect();
     store.set_batched(results).await;
 }
 
-async fn results_for_invalid_tasks(ids: &[&str], store: Arc<SignalResultsStore>) -> Vec<PriceData> {
+async fn handle_tasks<T: CoreService>(
+    tasks: Tasks,
+    service_map: &Mutex<ServiceMap<T>>,
+    source_results_store: Arc<SourceResultsStore>,
+    signal_results_store: Arc<SignalResultsStore>,
+) {
+    // Generate tasks for signals that exists
+
+    // If unable to generate tasks, return results
+    for task in tasks.iter() {
+        // process the source requirements for the task and saves the data
+        process_task_and_store_source_data(task, service_map, source_results_store.clone()).await;
+
+        // process the retrieved data
+        let mut join_set = JoinSet::new();
+        for (signal_id, signal) in task.get_signals() {
+            let cloned_id = signal_id.clone();
+            let cloned_signal = signal.clone();
+            let cloned_source_store = source_results_store.clone();
+            let cloned_signal_store = signal_results_store.clone();
+            join_set.spawn(async move {
+                get_and_store_signal_id_result(
+                    cloned_id,
+                    &cloned_signal,
+                    &cloned_source_store,
+                    &cloned_signal_store,
+                )
+                .await
+            });
+        }
+
+        while join_set.join_next().await.is_some() {}
+    }
+}
+
+async fn get_result_from_store(ids: &[&str], store: Arc<SignalResultsStore>) -> Vec<PriceData> {
     store
         .get_batched(ids)
         .await
@@ -200,8 +186,8 @@ async fn results_for_invalid_tasks(ids: &[&str], store: Arc<SignalResultsStore>)
         .collect()
 }
 
-async fn get_and_store_source_data(
-    service: &Mutex<Service>,
+async fn get_and_store_source_data<T: CoreService>(
+    service: Arc<Mutex<T>>,
     service_name: String,
     ids: Vec<String>,
     source_results_store: Arc<SourceResultsStore>,
@@ -227,15 +213,15 @@ async fn get_and_store_source_data(
     source_results_store.set_batched(results).await;
 }
 
-async fn process_task_and_store_source_data(
+async fn process_task_and_store_source_data<T: CoreService>(
     task: &Task,
-    service_map: &Mutex<HashMap<String, Arc<Mutex<Service>>>>,
+    service_map: &Mutex<ServiceMap<T>>,
     source_results_store: Arc<SourceResultsStore>,
 ) {
     let mut join_set = JoinSet::new();
     for (service_name, ids) in task.get_source_tasks() {
-        let mut locked = service_map.lock().await;
-        let service = locked.get_mut(service_name);
+        let locked = service_map.lock().await;
+        let service = locked.get(service_name);
 
         if let Some(service) = service {
             let cloned_service = service.clone();
@@ -245,7 +231,7 @@ async fn process_task_and_store_source_data(
 
             join_set.spawn(async move {
                 get_and_store_source_data(
-                    &cloned_service,
+                    cloned_service,
                     cloned_service_name,
                     cloned_ids,
                     cloned_store,
@@ -260,10 +246,7 @@ async fn process_task_and_store_source_data(
     while join_set.join_next().await.is_some() {}
 }
 
-fn post_process(
-    processed_price: f64,
-    post_processors: &[PostProcessor],
-) -> Result<f64, PriceOption> {
+fn post_process(processed_price: f64, post_processors: &[PostProcess]) -> Result<f64, PriceOption> {
     let result: Option<f64> = post_processors
         .iter()
         .try_fold(processed_price, |acc, post| post.process(acc).ok());
@@ -274,7 +257,7 @@ fn post_process(
 async fn process_source_routes(
     start: f64,
     routes: &Vec<Route>,
-    signal_result_store: Arc<SignalResultsStore>,
+    signal_result_store: &SignalResultsStore,
 ) -> Option<f64> {
     // Pre-store and compute the fold values
     let mut signal_values = HashMap::new();
@@ -295,8 +278,8 @@ async fn process_source_routes(
 async fn process_signal_id_result(
     data: Vec<f64>,
     prerequisities: &[String],
-    processor: &Processor,
-    post_processor: &[PostProcessor],
+    processor: &Process,
+    post_processor: &[PostProcess],
     signal_results_cache: &ResultsStore<Result<f64, PriceOption>>,
 ) -> Result<f64, PriceOption> {
     let prerequisites_data = signal_results_cache
@@ -318,8 +301,8 @@ async fn process_signal_id_result(
 async fn get_and_store_signal_id_result(
     signal_id: String,
     signal: &Signal,
-    source_results_store: Arc<SourceResultsStore>,
-    signal_results_store: Arc<SignalResultsStore>,
+    source_results_store: &SourceResultsStore,
+    signal_results_store: &SignalResultsStore,
 ) {
     // Get source data for processing
     let mut data = Vec::new();
@@ -328,7 +311,7 @@ async fn get_and_store_signal_id_result(
         let saved = source_results_store.get(&key).await;
         if let Some(start) = saved {
             if let Some(price) =
-                process_source_routes(start, &source.routes, signal_results_store.clone()).await
+                process_source_routes(start, &source.routes, signal_results_store).await
             {
                 data.push(price);
             }
@@ -341,7 +324,7 @@ async fn get_and_store_signal_id_result(
         &signal.prerequisites,
         &signal.processor,
         &signal.post_processors,
-        &signal_results_store,
+        signal_results_store,
     )
     .await;
     signal_results_store.set(signal_id, price_data).await;
