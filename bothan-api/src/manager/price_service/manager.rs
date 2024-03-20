@@ -23,15 +23,12 @@ use crate::tasks::task::Task;
 use crate::tasks::Tasks;
 use crate::util::arc_mutex;
 
-pub struct PriceServiceManager<T>
-where
-    T: CoreService,
-{
-    service_map: Arc<Mutex<ServiceMap<T>>>,
+pub struct PriceServiceManager {
+    service_map: Arc<Mutex<ServiceMap<Box<dyn CoreService>>>>,
     registry: Arc<Registry>,
 }
 
-impl<T: CoreService> PriceServiceManager<T> {
+impl PriceServiceManager {
     pub fn new(registry: Arc<Registry>) -> Self {
         PriceServiceManager {
             service_map: arc_mutex!(HashMap::new()),
@@ -39,7 +36,7 @@ impl<T: CoreService> PriceServiceManager<T> {
         }
     }
 
-    pub async fn add_service(&mut self, name: String, service: T) {
+    pub async fn add_service(&mut self, name: String, service: Box<dyn CoreService>) {
         self.service_map
             .lock()
             .await
@@ -125,9 +122,9 @@ async fn set_result_err(ids: Vec<String>, store: Arc<SignalResultsStore>, error:
     store.set_batched(results).await;
 }
 
-async fn handle_tasks<T: CoreService>(
+async fn handle_tasks(
     tasks: Tasks,
-    service_map: &Mutex<ServiceMap<T>>,
+    service_map: &Mutex<ServiceMap<Box<dyn CoreService>>>,
     source_results_store: Arc<SourceResultsStore>,
     signal_results_store: Arc<SignalResultsStore>,
 ) {
@@ -186,8 +183,8 @@ async fn get_result_from_store(ids: &[&str], store: Arc<SignalResultsStore>) -> 
         .collect()
 }
 
-async fn get_and_store_source_data<T: CoreService>(
-    service: Arc<Mutex<T>>,
+async fn get_and_store_source_data(
+    service: Arc<Mutex<Box<dyn CoreService>>>,
     service_name: String,
     ids: Vec<String>,
     source_results_store: Arc<SourceResultsStore>,
@@ -213,9 +210,9 @@ async fn get_and_store_source_data<T: CoreService>(
     source_results_store.set_batched(results).await;
 }
 
-async fn process_task_and_store_source_data<T: CoreService>(
+async fn process_task_and_store_source_data(
     task: &Task,
-    service_map: &Mutex<ServiceMap<T>>,
+    service_map: &Mutex<ServiceMap<Box<dyn CoreService>>>,
     source_results_store: Arc<SourceResultsStore>,
 ) {
     let mut join_set = JoinSet::new();

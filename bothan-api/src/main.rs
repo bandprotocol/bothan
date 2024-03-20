@@ -12,7 +12,7 @@ use crate::proto::query::query::query_server::{Query, QueryServer};
 use crate::proto::query::query::{QueryPricesRequest, QueryPricesResponse};
 use crate::registry::Registry;
 use crate::util::arc_mutex;
-use bothan_core::service::Service as CoreService;
+use bothan_core::service::{Service as CoreService, Service};
 
 mod config;
 mod manager;
@@ -23,12 +23,12 @@ mod registry;
 mod tasks;
 mod util;
 
-pub struct PriceServiceImpl<T: CoreService> {
-    manager: Arc<Mutex<PriceServiceManager<T>>>,
+pub struct PriceServiceImpl {
+    manager: Arc<Mutex<PriceServiceManager>>,
 }
 
-impl<T: CoreService> PriceServiceImpl<T> {
-    fn new(manager: PriceServiceManager<T>) -> Self {
+impl PriceServiceImpl {
+    fn new(manager: PriceServiceManager) -> Self {
         PriceServiceImpl {
             manager: arc_mutex!(manager),
         }
@@ -36,7 +36,7 @@ impl<T: CoreService> PriceServiceImpl<T> {
 }
 
 #[tonic::async_trait]
-impl<T: CoreService> Query for PriceServiceImpl<T> {
+impl Query for PriceServiceImpl {
     async fn prices(
         &self, // Change to accept mutable reference
         request: Request<QueryPricesRequest>,
@@ -69,14 +69,16 @@ async fn main() {
         .build()
         .await
         .unwrap();
-    manager.add_service("binance".to_string(), binance).await;
+    manager
+        .add_service("binance".to_string(), Box::new(binance))
+        .await;
 
     let coingecko = CoinGeckoServiceBuilder::new(config.source.coingecko)
         .build()
         .await
         .unwrap();
     manager
-        .add_service("coingecko".to_string(), coingecko)
+        .add_service("coingecko".to_string(), Box::new(coingecko))
         .await;
 
     let price_data_impl = PriceServiceImpl::new(manager);
