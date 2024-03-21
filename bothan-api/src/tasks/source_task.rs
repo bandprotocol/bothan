@@ -4,8 +4,8 @@ use bothan_core::service::{Service, ServiceResult};
 use bothan_core::types::PriceData;
 
 pub struct SourceTask {
-    pub source_name: String,
-    pub source_ids: HashSet<String>,
+    source_name: String,
+    source_ids: HashSet<String>,
 }
 
 impl SourceTask {

@@ -3,8 +3,8 @@ use crate::processor::Processor;
 use crate::registry::Signal;
 
 pub struct SignalTask {
-    pub signal_id: String,
-    pub signal: Signal,
+    signal_id: String,
+    signal: Signal,
 }
 
 impl SignalTask {

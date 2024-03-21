@@ -11,8 +11,8 @@ pub mod source_task;
 pub(crate) mod utils;
 
 pub struct Tasks {
-    pub source_tasks: Vec<SourceTask>,
-    pub batched_signal_tasks: Vec<Vec<SignalTask>>,
+    source_tasks: Vec<SourceTask>,
+    batched_signal_tasks: Vec<Vec<SignalTask>>,
 }
 
 impl Tasks {
