@@ -35,7 +35,7 @@ pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTa
 // Builds a directed graph from the registry
 fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     let mut graph = DiGraphMap::<&String, ()>::new();
-    let mut queue: VecDeque<&String> = VecDeque::new();
+    let mut queue = VecDeque::from_iter(registry.keys());
     let mut seen = HashSet::new();
 
     while let Some(signal_id) = queue.pop_front() {
@@ -93,20 +93,20 @@ fn build_batches(
 fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>, Error> {
     let mut in_degree_counts = HashMap::new();
     let mut result = Vec::new();
-    let mut roots = VecDeque::new();
+    let mut roots = Vec::new();
 
     graph.nodes().for_each(|n| {
         let in_degree_count = graph.neighbors_directed(n, Direction::Incoming).count();
         in_degree_counts.insert(n.clone(), in_degree_count);
-        if graph.neighbors_directed(n, Direction::Incoming).count() == 0 {
-            roots.push_back(n.clone());
+        if in_degree_count == 0 {
+            roots.push(n.clone());
         }
     });
 
     while !roots.is_empty() {
-        result.push(Vec::from(roots.clone()));
+        result.push(roots.clone());
 
-        let mut new_roots = VecDeque::new();
+        let mut new_roots = Vec::new();
         roots.iter().for_each(|root| {
             graph
                 .neighbors_directed(root, Direction::Outgoing)
@@ -116,7 +116,7 @@ fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>
                     let count = in_degree_counts.get_mut(dep).unwrap();
                     *count -= 1;
                     if *count == 0 {
-                        new_roots.push_back(dep.clone());
+                        new_roots.push(dep.clone());
                     }
                 })
         });
