@@ -96,6 +96,7 @@ fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>
     let mut result = Vec::new();
     let mut roots = Vec::new();
 
+    // Create a map of incoming edges for each node
     graph.nodes().for_each(|n| {
         let in_degree_count = graph.neighbors_directed(n, Direction::Incoming).count();
         in_degree_counts.insert(n.clone(), in_degree_count);
@@ -104,6 +105,7 @@ fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>
         }
     });
 
+    // Perform a Kahn's algorithm to find the topological order
     while !roots.is_empty() {
         result.push(roots.clone());
 
