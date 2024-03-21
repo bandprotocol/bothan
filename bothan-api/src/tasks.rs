@@ -1,54 +1,38 @@
 #![allow(dead_code)]
-use std::ops::Deref;
-
 use crate::registry::Registry;
 use crate::tasks::error::Error;
-use crate::tasks::task::Task;
-use crate::tasks::util::get_batched_tasks;
+use crate::tasks::signal_task::SignalTask;
+use crate::tasks::source_task::SourceTask;
+use crate::tasks::utils::get_tasks;
 
 pub mod error;
-pub mod task;
-pub(crate) mod util;
+pub mod signal_task;
+pub mod source_task;
+pub(crate) mod utils;
 
 pub struct Tasks {
-    pub tasks: Vec<Task>,
+    pub source_tasks: Vec<SourceTask>,
+    pub batched_signal_tasks: Vec<Vec<SignalTask>>,
 }
 
 impl Tasks {
-    pub fn new(tasks: Vec<Task>) -> Self {
-        Tasks { tasks }
+    pub fn new(source_tasks: Vec<SourceTask>, batched_signal_tasks: Vec<Vec<SignalTask>>) -> Self {
+        Tasks {
+            source_tasks,
+            batched_signal_tasks,
+        }
     }
 
     pub fn from_registry(registry: &Registry) -> Result<Self, Error> {
-        let tasks = get_batched_tasks(registry)?
-            .into_iter()
-            .map(|(signal_ids, source_tasks)| {
-                let vectorized_source_task = source_tasks
-                    .into_iter()
-                    .map(|(k, v)| (k, v.into_iter().collect()))
-                    .collect();
-
-                Task::new(signal_ids, vectorized_source_task)
-            })
-            .collect();
-
-        Ok(Tasks::new(tasks))
+        let (batched_signal_tasks, source_tasks) = get_tasks(registry)?;
+        Ok(Tasks::new(source_tasks, batched_signal_tasks))
     }
-}
 
-impl Deref for Tasks {
-    type Target = Vec<Task>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.tasks
+    pub fn source_tasks(&self) -> &Vec<SourceTask> {
+        &self.source_tasks
     }
-}
 
-impl IntoIterator for Tasks {
-    type Item = Task;
-    type IntoIter = std::vec::IntoIter<Task>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.tasks.into_iter()
+    pub fn batched_signal_tasks(&self) -> &Vec<Vec<SignalTask>> {
+        &self.batched_signal_tasks
     }
 }

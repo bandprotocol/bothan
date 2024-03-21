@@ -1,35 +1,37 @@
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use petgraph::graphmap::DiGraphMap;
 use petgraph::Direction;
 
-use crate::registry::{Registry, Signal};
+use crate::registry::Registry;
 use crate::tasks::error::Error;
+use crate::tasks::signal_task::SignalTask;
+use crate::tasks::source_task::SourceTask;
 
 pub type SignalIDs = Vec<String>;
-pub type SignalMap = HashMap<String, Signal>;
-pub type SourceTasks = HashMap<String, HashSet<String>>;
+pub type SourceMap = HashMap<String, HashSet<String>>;
 
 // Takes a registry and returns the sequential order of tasks to be executed
-pub fn get_batched_tasks(registry: &Registry) -> Result<Vec<(SignalMap, SourceTasks)>, Error> {
+pub fn get_tasks(registry: &Registry) -> Result<(Vec<Vec<SignalTask>>, Vec<SourceTask>), Error> {
     let graph = build_graph(registry)?;
-    let batches = build_batches(&graph, registry)?;
-    let batched_tasks = batches
+    let source_tasks = get_source_tasks(registry)?;
+    let batched_signal_ids = batching_toposort(&graph)?;
+    let batched_signal_tasks = batched_signal_ids
         .into_iter()
-        .map(|(signal_ids, source_tasks)| {
-            let signals = signal_ids
-                .iter()
-                .map(|id| {
-                    // Unwrapped here since Registry is expected to contain ID
-                    // generated from batches
-                    let signal = registry.get(id).unwrap().clone();
-                    (id.clone(), signal)
+        .map(|batch| {
+            batch
+                .into_iter()
+                .map(|signal_id| {
+                    registry
+                        .get(&signal_id)
+                        .map(|signal| SignalTask::new(signal_id, signal.clone()))
                 })
-                .collect();
-            (signals, source_tasks)
+                .collect::<Option<Vec<SignalTask>>>()
         })
-        .collect::<Vec<(SignalMap, SourceTasks)>>();
-    Ok(batched_tasks)
+        .collect::<Option<Vec<Vec<SignalTask>>>>()
+        .ok_or(Error::MissingNode())?;
+    Ok((batched_signal_tasks, source_tasks))
 }
 
 // Builds a directed graph from the registry
@@ -56,39 +58,34 @@ fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     Ok(graph)
 }
 
-// Builds a batch of tasks to be executed
-fn build_batches(
-    graph: &DiGraphMap<&String, ()>,
-    registry: &Registry,
-) -> Result<Vec<(SignalIDs, SourceTasks)>, Error> {
-    // Builds the sequential order of batches which contains the signal ids to be executed
-    let batches = batching_toposort(graph)?;
+// Get all grouped source ids by source from a registry
+fn get_source_tasks(registry: &Registry) -> Result<Vec<SourceTask>, Error> {
+    let mut source_map: SourceMap = HashMap::new();
 
-    // Builds the source tasks for each batch
-    let mut seen = HashSet::new();
-    let source_tasks = batches
-        .iter()
-        .map(|batch| {
-            let mut tasks = HashMap::new();
-            for signal_id in batch {
-                if let Some(signal) = registry.get(signal_id) {
-                    for source in &signal.sources {
-                        let source_id = source.source_id.clone();
-                        let id = source.id.clone();
-                        let uid = format!("{}-{}", source_id, id);
-                        if !seen.contains(&uid) {
-                            let entry = tasks.entry(source_id).or_insert(HashSet::new());
-                            entry.insert(id);
-                            seen.insert(uid);
-                        }
+    for signal_id in registry.keys() {
+        if let Some(signal) = registry.get(signal_id) {
+            for source in &signal.sources {
+                match source_map.entry(source.source_id.clone()) {
+                    Entry::Occupied(mut entry) => {
+                        entry.get_mut().insert(source.id.clone());
+                    }
+                    Entry::Vacant(entry) => {
+                        let set = HashSet::from([source.id.clone()]);
+                        entry.insert(set);
                     }
                 }
             }
-            tasks
-        })
-        .collect::<Vec<HashMap<String, HashSet<String>>>>();
+        } else {
+            return Err(Error::MissingNode());
+        }
+    }
 
-    Ok(batches.into_iter().zip(source_tasks).collect())
+    let source_tasks = source_map
+        .into_iter()
+        .map(|(source, ids)| SourceTask::new(source, ids))
+        .collect();
+
+    Ok(source_tasks)
 }
 
 fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>, Error> {
