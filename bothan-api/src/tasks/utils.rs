@@ -9,7 +9,6 @@ use crate::tasks::error::Error;
 use crate::tasks::signal_task::SignalTask;
 use crate::tasks::source_task::SourceTask;
 
-pub type SignalIDs = Vec<String>;
 pub type SourceMap = HashMap<String, HashSet<String>>;
 
 // Takes a registry and returns the sequential order of tasks to be executed
