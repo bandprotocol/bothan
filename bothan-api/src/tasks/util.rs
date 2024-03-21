@@ -105,7 +105,7 @@ fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>
         }
     });
 
-    // Perform a Kahn's algorithm to find the topological order
+    // Perform Kahn's algorithm to find the topological order
     while !roots.is_empty() {
         result.push(roots.clone());
 
