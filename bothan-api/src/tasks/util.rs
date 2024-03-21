@@ -40,6 +40,7 @@ fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
 
     while let Some(signal_id) = queue.pop_front() {
         if let Some(signal) = registry.get(signal_id) {
+            graph.add_node(signal_id);
             for pid in &signal.prerequisites {
                 graph.add_edge(pid, signal_id, ());
                 if !seen.contains(pid) {
