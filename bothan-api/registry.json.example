@@ -1,0 +1,66 @@
+{
+    "crypto_price.ethusd": {
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
+        "sources": [
+            {
+                "source_id": "binance",
+                "id": "ethusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "coingecko",
+                "id": "ethereum",
+                "routes": []
+            }
+        ],
+        "processor": {
+            "function": "median",
+            "params": {
+                "min_source_count": 1
+            }
+        },
+        "post_processors": []
+    },
+    "crypto_tick.ethusd": {
+        "prerequisites": [
+            "crypto_price.ethusd"
+        ],
+        "sources": [],
+        "processor": {
+            "function": "identity",
+            "params": {
+                "key": "crypto_price.ethusd"
+            }
+        },
+        "post_processors": [
+            {
+                "function": "tick_convertor",
+                "params": {}
+            }
+        ]
+    },
+    "crypto_price.usdtusd": {
+        "prerequisites": [],
+        "sources": [
+            {
+                "source_id": "coingecko",
+                "id": "tether",
+                "routes": []
+            }
+        ],
+        "processor": {
+            "function": "median",
+            "params": {
+                "min_source_count": 1
+            }
+        },
+        "post_processors": []
+    }
+}
