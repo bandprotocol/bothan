@@ -5,6 +5,7 @@ mod processor;
 mod proto;
 mod registry;
 mod tasks;
+mod utils;
 
 #[tokio::main]
 async fn main() {

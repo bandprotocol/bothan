@@ -21,8 +21,8 @@ impl SourceTask {
         &self.source_name
     }
 
-    pub fn source_ids(&self) -> Vec<&String> {
-        Vec::from_iter(self.source_ids.iter())
+    pub fn source_ids(&self) -> Vec<&str> {
+        self.source_ids.iter().map(|s| s.as_str()).collect()
     }
 
     pub async fn get_prices(

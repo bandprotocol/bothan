@@ -18,7 +18,7 @@ use crate::registry::source::Route;
 use crate::registry::Registry;
 use crate::tasks::signal_task::SignalTask;
 use crate::tasks::Tasks;
-use crate::util::arc_mutex;
+use crate::utils::arc_mutex;
 
 pub struct PriceServiceManager {
     service_map: Arc<Mutex<ServiceMap<Box<dyn CoreService>>>>,
@@ -56,7 +56,7 @@ impl PriceServiceManager {
         let signal_results_store = Arc::new(ResultsStore::new());
 
         // Split the signals into those that exist and those that do not
-        let available = filter_available_ids(signal_ids.as_slice(), &registry);
+        let available = filter_available_ids(signal_ids, &registry);
 
         match get_filtered_registry(available.as_slice(), &registry) {
             Some(filtered_registry) => match Tasks::from_registry(&filtered_registry) {
@@ -68,12 +68,12 @@ impl PriceServiceManager {
                 }
                 Err(_) => {
                     let err = PriceOption::Unavailable;
-                    set_result_err(available, signal_results_store.clone(), err).await
+                    set_result_err(available.as_slice(), signal_results_store.clone(), err).await
                 }
             },
             None => {
                 let err = PriceOption::Unavailable;
-                set_result_err(available, signal_results_store.clone(), err).await
+                set_result_err(available.as_slice(), signal_results_store.clone(), err).await
             }
         };
 
@@ -81,20 +81,14 @@ impl PriceServiceManager {
     }
 }
 
-fn filter_available_ids(signal_ids: &[&str], registry: &Registry) -> Vec<String> {
+fn filter_available_ids<'a>(signal_ids: Vec<&'a str>, registry: &Registry) -> Vec<&'a str> {
     signal_ids
-        .iter()
-        .filter_map(|id| {
-            if registry.contains_key(*id) {
-                Some(id.to_string())
-            } else {
-                None
-            }
-        })
+        .into_iter()
+        .filter(|id| registry.contains_key(&id.to_string()))
         .collect()
 }
 
-fn get_filtered_registry(signal_ids: &[String], registry: &Registry) -> Option<Registry> {
+fn get_filtered_registry(signal_ids: &[&str], registry: &Registry) -> Option<Registry> {
     let mut queue = VecDeque::from_iter(signal_ids.iter().map(|s| s.to_string()));
     let mut seen = HashMap::new();
 
@@ -116,7 +110,7 @@ fn get_filtered_registry(signal_ids: &[String], registry: &Registry) -> Option<R
 
 async fn store_source_data(
     service_name: &str,
-    ids: &[&String],
+    ids: &[&str],
     service_results: Vec<ServiceResult<CorePriceData>>,
     store: Arc<SourceResultsStore>,
 ) {
@@ -245,8 +239,8 @@ async fn handle_tasks(
     }
 }
 
-async fn set_result_err(ids: Vec<String>, store: Arc<SignalResultsStore>, error: PriceOption) {
-    let results = ids.into_iter().map(|id| (id, Err(error))).collect();
+async fn set_result_err(ids: &[&str], store: Arc<SignalResultsStore>, error: PriceOption) {
+    let results = ids.iter().map(|id| (*id, Err(error))).collect();
     store.set_batched(results).await;
 }
 
