@@ -2,6 +2,7 @@ use crate::post_processor::PostProcessor;
 use crate::processor::Processor;
 use crate::registry::Signal;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct SignalTask {
     signal_id: String,
     signal: Signal,
@@ -10,6 +11,14 @@ pub struct SignalTask {
 impl SignalTask {
     pub fn new(signal_id: String, signal: Signal) -> Self {
         SignalTask { signal_id, signal }
+    }
+
+    pub fn signal_id(&self) -> &str {
+        &self.signal_id
+    }
+
+    pub fn signal(&self) -> &Signal {
+        &self.signal
     }
 
     pub fn execute(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Option<f64> {

@@ -12,7 +12,7 @@ pub mod source;
 
 pub type Registry = HashMap<String, Signal>;
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Signal {
     pub prerequisites: Vec<String>,
     pub sources: Vec<Source>,
