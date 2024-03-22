@@ -1,11 +1,11 @@
 use config::Config;
 use serde::Deserialize;
 
-mod binance;
-mod coingecko;
-
 use crate::config::binance::BinanceServiceConfig;
 use crate::config::coingecko::CoingeckoServiceConfig;
+
+mod binance;
+mod coingecko;
 
 #[derive(Debug, Deserialize)]
 pub struct GrpcConfig {
