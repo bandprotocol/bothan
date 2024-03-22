@@ -165,12 +165,11 @@ async fn process_signal_task(
     let mut data = Vec::new();
     for source in &signal_task.signal().sources {
         let key = into_key(&source.source_id, &source.id);
-        let saved = source_results_store.get(&key).await;
-        if let Some(start) = saved {
-            let processed_price_opt =
-                process_source_routes(start, &source.routes, signal_results_store).await;
-            if let Some(price) = processed_price_opt {
-                data.push(price);
+        let saved_price = source_results_store.get(&key).await;
+        if let Some(price) = saved_price {
+            let routed = process_source_routes(price, &source.routes, signal_results_store).await;
+            if let Some(routed_price) = routed {
+                data.push(routed_price);
             }
         }
     }
