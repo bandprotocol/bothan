@@ -11,8 +11,7 @@ use crate::manager::price_service::manager::PriceServiceManager;
 use crate::proto::query::query::query_server::{Query, QueryServer};
 use crate::proto::query::query::{QueryPricesRequest, QueryPricesResponse};
 use crate::registry::Registry;
-use crate::util::arc_mutex;
-use bothan_core::service::{Service as CoreService, Service};
+use crate::utils::arc_mutex;
 
 mod config;
 mod manager;
@@ -21,7 +20,7 @@ mod processor;
 mod proto;
 mod registry;
 mod tasks;
-mod util;
+mod utils;
 
 pub struct PriceServiceImpl {
     manager: Arc<Mutex<PriceServiceManager>>,
