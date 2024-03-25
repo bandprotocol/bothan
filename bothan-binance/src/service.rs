@@ -236,6 +236,7 @@ mod test {
     #[tokio::test]
     async fn test_save_datum() {
         let cache = Arc::new(Cache::new(None));
+        cache.set_pending("btcusdt".to_string()).await;
 
         let ticker = MiniTickerInfo {
             event_time: 1628794647025,
@@ -265,6 +266,7 @@ mod test {
     #[tokio::test]
     async fn test_process_response() {
         let cache = Arc::new(Cache::new(None));
+        cache.set_pending("btcusdt".to_string()).await;
 
         let ticker = MiniTickerInfo {
             event_time: 1628794647025,
