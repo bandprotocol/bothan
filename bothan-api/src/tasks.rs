@@ -10,6 +10,7 @@ pub mod signal_task;
 pub mod source_task;
 pub(crate) mod utils;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Tasks {
     source_tasks: Vec<SourceTask>,
     batched_signal_tasks: Vec<Vec<SignalTask>>,
