@@ -12,7 +12,7 @@ use crate::{BinanceService, BinanceWebSocketConnector};
 pub struct BinanceServiceBuilderOpts {
     pub url: Option<String>,
     pub cmd_ch_size: Option<usize>,
-    pub rem_id_ch_size: Option<usize>,
+    pub remove_id_ch_size: Option<usize>,
 }
 
 pub struct BinanceServiceBuilder {
@@ -41,7 +41,7 @@ impl BinanceServiceBuilder {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
             cmd_ch_size: opts.cmd_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
-            remove_id_ch_size: opts.rem_id_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
+            remove_id_ch_size: opts.remove_id_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
         }
     }
 

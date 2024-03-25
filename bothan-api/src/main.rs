@@ -80,12 +80,12 @@ async fn main() {
         .add_service("coingecko".to_string(), Box::new(coingecko))
         .await;
 
-    let price_data_impl = PriceServiceImpl::new(manager);
+    let price_service_impl = PriceServiceImpl::new(manager);
     let addr = config.grpc.addr.parse().unwrap();
     println!("Server running on {}", addr);
 
     let _ = Server::builder()
-        .add_service(QueryServer::new(price_data_impl))
+        .add_service(QueryServer::new(price_service_impl))
         .serve(addr)
         .await;
 }
