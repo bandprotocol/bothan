@@ -47,7 +47,7 @@ pub(crate) mod test {
         let server = Server::new_async().await;
 
         let mut builder = HtxRestAPIBuilder::default();
-        builder.set_url(&server.url());
+        builder.with_url(&server.url());
         let api = builder.build().unwrap();
 
         (server, api)
