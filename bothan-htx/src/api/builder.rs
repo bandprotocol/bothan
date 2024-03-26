@@ -10,7 +10,7 @@ pub struct HtxRestAPIBuilder {
 }
 
 impl HtxRestAPIBuilder {
-    pub fn set_url(&mut self, url: &str) -> &Self {
+    pub fn with_url(&mut self, url: &str) -> &Self {
         self.url = url.into();
         self
     }
