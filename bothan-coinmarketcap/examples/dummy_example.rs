@@ -9,7 +9,7 @@ use bothan_core::service::Service;
 async fn main() {
     init();
     let service_result = CoinMarketCapServiceBuilder::default()
-        .set_api_key("API_KEY_HERE")
+        .with_api_key("API_KEY_HERE")
         .build()
         .await;
 
