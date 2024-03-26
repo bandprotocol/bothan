@@ -13,12 +13,12 @@ pub struct HtxServiceBuilder {
 }
 
 impl HtxServiceBuilder {
-    pub fn set_url(mut self, url: &str) -> Self {
+    pub fn with_url(mut self, url: &str) -> Self {
         self.url = url.into();
         self
     }
 
-    pub fn set_update_interval(mut self, update_interval: Duration) -> Self {
+    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
         self.update_interval = update_interval;
         self
     }
