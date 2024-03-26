@@ -21,6 +21,6 @@ pub enum Error {
 pub type ServiceResult<T> = Result<T, Error>;
 
 #[async_trait::async_trait]
-pub trait Service {
+pub trait Service: Send + Sync + 'static {
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>>;
 }
