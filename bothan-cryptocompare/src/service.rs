@@ -19,7 +19,7 @@ impl CryptoCompareService {
         let cache = Arc::new(Cache::new(None));
         let update_price_interval = interval(update_interval);
 
-        start_service(Arc::new(rest_api), cache.clone(), update_price_interval).await;
+        start_service(Arc::new(rest_api), cache.clone(), update_price_interval);
 
         Self { cache }
     }
@@ -54,7 +54,7 @@ impl Service for CryptoCompareService {
     }
 }
 
-pub async fn start_service(
+pub fn start_service(
     rest_api: Arc<CryptoCompareRestAPI>,
     cache: Arc<Cache<PriceData>>,
     mut update_price_interval: Interval,
