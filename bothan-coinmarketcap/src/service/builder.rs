@@ -15,21 +15,21 @@ pub struct CoinMarketCapServiceBuilder {
 }
 
 impl CoinMarketCapServiceBuilder {
-    pub fn set_url(mut self, url: &str) -> Self {
+    pub fn with_url(mut self, url: &str) -> Self {
         self.url = Some(url.into());
         self
     }
 
-    pub fn set_api_key(mut self, api_key: &str) -> Self {
+    pub fn with_api_key(mut self, api_key: &str) -> Self {
         self.api_key = Some(api_key.into());
         self
     }
-    pub fn set_update_interval(mut self, update_interval: Duration) -> Self {
+    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
         self.update_interval = update_interval;
         self
     }
 
-    pub fn set_update_supported_assets_interval(
+    pub fn with_update_supported_assets_interval(
         mut self,
         update_supported_assets_interval: Duration,
     ) -> Self {
@@ -40,10 +40,10 @@ impl CoinMarketCapServiceBuilder {
     pub async fn build(self) -> Result<CoinMarketCapService, BuilderError> {
         let mut api_builder = CoinMarketCapRestAPIBuilder::default();
         if let Some(url) = &self.url {
-            api_builder.set_url(url);
+            api_builder.with_url(url);
         };
         if let Some(api_key) = &self.api_key {
-            api_builder.set_api_key(api_key);
+            api_builder.with_api_key(api_key);
         };
         let api = api_builder.build()?;
 

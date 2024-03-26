@@ -60,8 +60,8 @@ pub(crate) mod test {
         let server = Server::new_async().await;
 
         let mut builder = CoinMarketCapRestAPIBuilder::default();
-        builder.set_url(&server.url());
-        builder.set_api_key("test");
+        builder.with_url(&server.url());
+        builder.with_api_key("test");
         let api = builder.build().unwrap();
 
         (server, api)

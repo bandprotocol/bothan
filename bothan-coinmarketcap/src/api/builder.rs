@@ -12,12 +12,12 @@ pub struct CoinMarketCapRestAPIBuilder {
 }
 
 impl CoinMarketCapRestAPIBuilder {
-    pub fn set_url(&mut self, url: &str) -> &Self {
+    pub fn with_url(&mut self, url: &str) -> &Self {
         self.url = url.into();
         self
     }
 
-    pub fn set_api_key(&mut self, api_key: &str) -> &Self {
+    pub fn with_api_key(&mut self, api_key: &str) -> &Self {
         self.api_key = Some(api_key.into());
         self
     }
