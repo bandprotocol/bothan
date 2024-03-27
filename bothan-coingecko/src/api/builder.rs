@@ -13,17 +13,17 @@ pub struct CoinGeckoRestAPIBuilder {
 }
 
 impl CoinGeckoRestAPIBuilder {
-    pub fn set_url(&mut self, url: &str) -> &Self {
+    pub fn with_url(&mut self, url: &str) -> &Self {
         self.url = Some(url.into());
         self
     }
 
-    pub fn set_api_key(&mut self, api_key: &str) -> &Self {
+    pub fn with_api_key(&mut self, api_key: &str) -> &Self {
         self.api_key = Some(api_key.into());
         self
     }
 
-    pub fn set_user_agent(&mut self, user_agent: &str) -> &Self {
+    pub fn with_user_agent(&mut self, user_agent: &str) -> &Self {
         self.user_agent = user_agent.into();
         self
     }

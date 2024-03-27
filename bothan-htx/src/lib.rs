@@ -1,4 +1,4 @@
-pub use service::builder::HtxServiceBuilder;
+pub use service::builder::{HtxServiceBuilder, HtxServiceBuilderOpts};
 pub use service::HtxService;
 
 pub mod api;

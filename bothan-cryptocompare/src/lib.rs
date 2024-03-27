@@ -1,4 +1,4 @@
-pub use builder::CryptoCompareServiceBuilder;
+pub use builder::{CryptoCompareServiceBuilder, CryptoCompareServiceBuilderOpts};
 pub use service::CryptoCompareService;
 
 pub mod api;

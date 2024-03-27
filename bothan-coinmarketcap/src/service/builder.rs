@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use tokio::time::Duration;
 
 use crate::api::error::BuilderError;
@@ -6,6 +7,18 @@ use crate::CoinMarketCapService;
 
 pub(crate) const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 pub(crate) const DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL: Duration = Duration::from_secs(86400);
+
+#[derive(Debug, Deserialize)]
+pub struct CoinMarketCapServiceBuilderOpts {
+    pub url: Option<String>,
+    pub api_key: String,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_interval: Option<Duration>,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_supported_assets_interval: Option<Duration>,
+}
 
 pub struct CoinMarketCapServiceBuilder {
     url: Option<String>,
@@ -35,6 +48,17 @@ impl CoinMarketCapServiceBuilder {
     ) -> Self {
         self.update_supported_assets_interval = update_supported_assets_interval;
         self
+    }
+
+    pub fn new(opts: CoinMarketCapServiceBuilderOpts) -> Self {
+        Self {
+            url: opts.url,
+            api_key: Some(opts.api_key),
+            update_interval: opts.update_interval.unwrap_or(DEFAULT_UPDATE_INTERVAL),
+            update_supported_assets_interval: opts
+                .update_supported_assets_interval
+                .unwrap_or(DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL),
+        }
     }
 
     pub async fn build(self) -> Result<CoinMarketCapService, BuilderError> {
