@@ -25,10 +25,10 @@ impl BinanceService {
         connector: Arc<BinanceWebSocketConnector>,
         connection: Arc<Mutex<BinanceWebSocketConnection>>,
         cmd_ch_size: usize,
-        rem_id_ch_size: usize,
+        remove_id_ch_size: usize,
     ) -> Self {
         let (command_tx, command_rx) = channel::<Command>(cmd_ch_size);
-        let (removed_ids_tx, removed_ids_rx) = channel::<Vec<String>>(rem_id_ch_size);
+        let (removed_ids_tx, removed_ids_rx) = channel::<Vec<String>>(remove_id_ch_size);
 
         let cmd_tx = Arc::new(command_tx);
 

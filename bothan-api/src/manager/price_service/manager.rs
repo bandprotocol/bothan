@@ -16,6 +16,7 @@ use crate::manager::price_service::utils::into_key;
 use crate::proto::query::query::{PriceData, PriceOption};
 use crate::registry::source::Route;
 use crate::registry::Registry;
+use crate::tasks::error::Error;
 use crate::tasks::signal_task::SignalTask;
 use crate::tasks::Tasks;
 use crate::utils::arc_mutex;
@@ -26,10 +27,13 @@ pub struct PriceServiceManager {
 }
 
 impl PriceServiceManager {
-    pub fn new(registry: Arc<Registry>) -> Self {
-        PriceServiceManager {
-            service_map: arc_mutex!(HashMap::new()),
-            registry,
+    pub fn new(registry: Arc<Registry>) -> Result<Self, Error> {
+        match Tasks::from_registry(&registry) {
+            Ok(_) => Ok(PriceServiceManager {
+                service_map: arc_mutex!(HashMap::new()),
+                registry,
+            }),
+            Err(e) => Err(e),
         }
     }
 

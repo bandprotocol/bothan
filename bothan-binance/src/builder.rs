@@ -32,7 +32,7 @@ impl BinanceServiceBuilder {
         self
     }
 
-    pub fn with_rem_id_ch_size(mut self, size: usize) -> Self {
+    pub fn with_remove_id_ch_size(mut self, size: usize) -> Self {
         self.remove_id_ch_size = size;
         self
     }

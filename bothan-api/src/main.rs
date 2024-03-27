@@ -65,7 +65,8 @@ async fn main() {
 
     let file = File::open(config.registry.source).unwrap();
     let registry = Arc::new(serde_json::from_reader::<_, Registry>(file).unwrap());
-    let mut manager = PriceServiceManager::new(registry);
+    let mut manager = PriceServiceManager::new(registry)
+        .expect("Cannot build Price Service Manager with Registry");
 
     let binance = BinanceServiceBuilder::new(config.source.binance)
         .build()
