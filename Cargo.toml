@@ -4,7 +4,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [workspace]
-members = ["bothan-api", "bothan-binance", "bothan-coingecko", "bothan-core", "bothan-cryptocompare", "bothan-htx"]
+members = ["bothan-api", "bothan-binance", "bothan-coingecko", "bothan-coinmarketcap", "bothan-core", "bothan-cryptocompare", "bothan-htx"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -23,3 +23,4 @@ derive_more = { version = "1.0.0-beta.6", features = ["full"] }
 bothan-core = { version = "0.1.0", path = "bothan-core" }
 bothan-binance = { version = "0.1.0", path = "bothan-binance" }
 bothan-coingecko = { version = "0.1.0", path = "bothan-coingecko" }
+bothan-coinmarketcap = { version = "0.1.0", path = "bothan-coinmarketcap" }
