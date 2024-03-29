@@ -25,7 +25,7 @@ impl HtxServiceBuilder {
 
     pub async fn build(self) -> Result<HtxService, BuilderError> {
         let mut api_builder = HtxRestAPIBuilder::default();
-        api_builder.set_url(&self.url);
+        api_builder.with_url(&self.url);
 
         let api = api_builder.build()?;
 
