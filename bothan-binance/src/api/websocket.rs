@@ -88,3 +88,89 @@ impl BinanceWebSocketConnection {
         Err(Error::ChannelClosed)
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test {
+    use crate::api::types::{Data, MiniTickerInfo, StreamResponse};
+    use tokio::sync::mpsc;
+    use ws_mock::ws_mock_server::{WsMock, WsMockServer};
+
+    use super::*;
+
+    pub(crate) async fn setup_mock_server() -> WsMockServer {
+        WsMockServer::start().await
+    }
+
+    #[tokio::test]
+    async fn test_recv_ticker() {
+        let server = setup_mock_server().await;
+        let connector = BinanceWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+        let mock_ticker = MiniTickerInfo {
+            event_time: 10000,
+            symbol: "BTC".to_string(),
+            close_price: "420000".to_string(),
+            open_price: "420001".to_string(),
+            high_price: "420003".to_string(),
+            low_price: "4200".to_string(),
+            base_volume: "1100000213".to_string(),
+            quote_volume: "1231".to_string(),
+        };
+        let mock_resp = StreamResponse {
+            stream: "btc@miniTicker".to_string(),
+            data: Data::MiniTicker(mock_ticker),
+        };
+
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send
+            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
+            .await
+            .unwrap();
+
+        let mut connection = connector.connect().await.unwrap();
+
+        let resp = connection.next().await.unwrap();
+        assert_eq!(resp, BinanceResponse::Stream(mock_resp));
+    }
+
+    #[tokio::test]
+    async fn test_recv_ping() {
+        let server = setup_mock_server().await;
+        let connector = BinanceWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+
+        mpsc_send.send(Message::Ping(vec![])).await.unwrap();
+
+        let mut connection = connector.connect().await.unwrap();
+
+        let resp = connection.next().await.unwrap();
+        assert_eq!(resp, BinanceResponse::Ping);
+    }
+
+    #[tokio::test]
+    async fn test_recv_close() {
+        let server = setup_mock_server().await;
+        let connector = BinanceWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+
+        mpsc_send.send(Message::Close(None)).await.unwrap();
+
+        let mut connection = connector.connect().await.unwrap();
+
+        let resp = connection.next().await;
+        assert!(resp.is_err());
+    }
+}
