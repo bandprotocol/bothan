@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::types::DEFAULT_UPDATE_INTERVAL;
 use crate::CryptoCompareService;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct CryptoCompareServiceBuilderOpts {
     pub url: Option<String>,
     pub api_key: String,

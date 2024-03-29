@@ -7,13 +7,13 @@ use bothan_coinmarketcap::CoinMarketCapServiceBuilderOpts;
 use bothan_cryptocompare::CryptoCompareServiceBuilderOpts;
 use bothan_htx::HtxServiceBuilderOpts;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct GrpcConfig {
     pub addr: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct SourceConfig {
+#[derive(Clone, Debug, Deserialize)]
+pub struct CryptoSourceConfig {
     pub binance: BinanceServiceBuilderOpts,
     pub coingecko: CoinGeckoServiceBuilderOpts,
     pub coinmarketcap: CoinMarketCapServiceBuilderOpts,
@@ -21,16 +21,16 @@ pub struct SourceConfig {
     pub htx: HtxServiceBuilderOpts,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct RegistryConfig {
     pub source: String,
     pub version: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
-    pub source: SourceConfig,
+    pub source: CryptoSourceConfig,
     pub registry: RegistryConfig,
 }
 

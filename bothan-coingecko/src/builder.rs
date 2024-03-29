@@ -9,7 +9,7 @@ use crate::types::{
 };
 use crate::CoinGeckoService;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct CoinGeckoServiceBuilderOpts {
     pub url: Option<String>,
     pub api_key: Option<String>,

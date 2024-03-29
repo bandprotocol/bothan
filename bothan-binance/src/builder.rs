@@ -8,7 +8,7 @@ use crate::error::Error;
 use crate::types::DEFAULT_CHANNEL_SIZE;
 use crate::{BinanceService, BinanceWebSocketConnector};
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct BinanceServiceBuilderOpts {
     pub url: Option<String>,
     pub cmd_ch_size: Option<usize>,

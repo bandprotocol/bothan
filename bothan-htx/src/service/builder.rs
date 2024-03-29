@@ -8,7 +8,7 @@ use crate::service::HtxService;
 
 pub(crate) const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct HtxServiceBuilderOpts {
     pub url: Option<String>,
     #[serde(default)]
