@@ -199,3 +199,103 @@ async fn process_response(resp: &BinanceResponse, cache: &Cache<PriceData>) {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use tokio_tungstenite::tungstenite::Message;
+    use ws_mock::ws_mock_server::WsMock;
+
+    use crate::api::types::{Data, MiniTickerInfo, StreamResponse};
+    use crate::api::websocket::test::setup_mock_server;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_process_command() {
+        let mock = setup_mock_server().await;
+
+        let connector = Arc::new(BinanceWebSocketConnector::new(mock.uri().await));
+        let connection = Arc::new(Mutex::new(connector.connect().await.unwrap()));
+
+        let cache = Arc::new(Cache::new(None));
+
+        let (_, msg_rx) = channel::<Message>(32);
+        WsMock::new()
+            .forward_from_channel(msg_rx)
+            .mount(&mock)
+            .await;
+
+        process_command(
+            &Command::Subscribe(vec!["btcusdt".to_string()]),
+            &connection,
+            &cache,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_save_datum() {
+        let cache = Arc::new(Cache::new(None));
+        cache.set_pending("btcusdt".to_string()).await;
+
+        let ticker = MiniTickerInfo {
+            event_time: 1628794647025,
+            symbol: "btcusdt".to_string(),
+            close_price: "45000.00".to_string(),
+            open_price: "44000.00".to_string(),
+            high_price: "46000.00".to_string(),
+            low_price: "43000.00".to_string(),
+            base_volume: "1000.00".to_string(),
+            quote_volume: "45000000.00".to_string(),
+        };
+
+        let data = Data::MiniTicker(ticker);
+        save_datum(&data, &cache).await;
+
+        let price_data = cache.get("btcusdt").await.unwrap();
+        assert_eq!(
+            price_data,
+            PriceData {
+                id: "btcusdt".to_string(),
+                price: "45000.00".to_string(),
+                timestamp: 1628794647025,
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn test_process_response() {
+        let cache = Arc::new(Cache::new(None));
+        cache.set_pending("btcusdt".to_string()).await;
+
+        let ticker = MiniTickerInfo {
+            event_time: 1628794647025,
+            symbol: "btcusdt".to_string(),
+            close_price: "45000.00".to_string(),
+            open_price: "44000.00".to_string(),
+            high_price: "46000.00".to_string(),
+            low_price: "43000.00".to_string(),
+            base_volume: "1000.00".to_string(),
+            quote_volume: "45000000.00".to_string(),
+        };
+
+        let data = Data::MiniTicker(ticker);
+        let stream_resp = StreamResponse {
+            stream: "btc@miniTicker".to_string(),
+            data,
+        };
+
+        let response = BinanceResponse::Stream(stream_resp);
+        process_response(&response, &cache).await;
+
+        let price_data = cache.get("btcusdt").await.unwrap();
+        assert_eq!(
+            price_data,
+            PriceData {
+                id: "btcusdt".to_string(),
+                price: "45000.00".to_string(),
+                timestamp: 1628794647025,
+            }
+        );
+    }
+}

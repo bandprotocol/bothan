@@ -4,7 +4,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [workspace]
-members = ["bothan-api", "bothan-binance", "bothan-coingecko", "bothan-coinmarketcap", "bothan-core", "bothan-cryptocompare", "bothan-htx", "price-adapter", "price-adapter-raw"]
+members = ["bothan-api", "bothan-binance", "bothan-coingecko", "bothan-coinmarketcap", "bothan-core", "bothan-cryptocompare", "bothan-htx"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -21,8 +21,6 @@ tokio = { version = "1.36.0", features = ["full"] }
 tokio-util = "0.7.10"
 derive_more = { version = "1.0.0-beta.6", features = ["full"] }
 
-price-adapter = { version = "0.1.8", path = "price-adapter" }
-price-adapter-raw = { version = "0.1.8", path = "price-adapter-raw" }
 bothan-core = { version = "0.1.0", path = "bothan-core" }
 bothan-binance = { version = "0.1.0", path = "bothan-binance" }
 bothan-coingecko = { version = "0.1.0", path = "bothan-coingecko" }
