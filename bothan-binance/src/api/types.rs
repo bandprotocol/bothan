@@ -2,27 +2,27 @@ use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct SuccessResponse {
     pub result: Option<String>,
     pub id: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ErrorResponse {
     pub code: u16,
     pub msg: String,
     pub id: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "e")]
 pub enum Data {
     #[serde(rename = "24hrMiniTicker")]
     MiniTicker(MiniTickerInfo),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct MiniTickerInfo {
     #[serde(rename = "E")]
     pub event_time: u64,
@@ -49,13 +49,13 @@ pub struct MiniTickerInfo {
     pub quote_volume: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct StreamResponse {
     pub stream: String,
     pub data: Data,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum BinanceResponse {
     Success(SuccessResponse),
