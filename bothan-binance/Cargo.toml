@@ -1,25 +1,24 @@
 [package]
 name = "bothan-binance"
 version = "0.1.0"
-edition.workspace = true
-license.workspace = true
-
+edition = { workspace = true }
+license = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_json = "1.0.114"
-tokio-tungstenite = { version = "0.21.0", features = ["native-tls"] }
-futures-util = { version = "0.3.29", features = ["sink", "std"] }
-rand = "0.8.4"
-
-bothan-core = { workspace = true }
 async-trait = { workspace = true }
+bothan-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-serde = { workspace = true }
-tokio = { workspace = true }
+
 futures-channel = "0.3.30"
+futures-util = { version = "0.3.29", features = ["sink", "std"] }
+rand = "0.8.5"
 
 [dev-dependencies]
-ws-mock = { git = "https://github.com/bandprotocol/ws-mock.git", branch = "master"}
+ws-mock = { git = "https://github.com/bandprotocol/ws-mock.git", branch = "master" }
