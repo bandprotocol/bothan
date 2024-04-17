@@ -15,7 +15,7 @@ mod post_processor;
 mod processor;
 mod proto;
 mod registry;
-mod service_builder;
+mod service_initializer;
 mod tasks;
 mod utils;
 
@@ -26,10 +26,10 @@ async fn main() {
     let file = File::open(config.registry.source.clone()).unwrap();
     let registry = Arc::new(serde_json::from_reader::<_, Registry>(file).unwrap());
     let mut manager = PriceServiceManager::new(registry)
-        .expect("Cannot build Price Service Manager with Registry");
+        .expect("cannot build Price Service Manager with Registry");
     let addr = config.grpc.addr.clone().parse().unwrap();
 
-    service_builder::build_services(config, &mut manager).await;
+    service_initializer::initialize_services(config, &mut manager).await;
     let api_service_impl = APIServiceImpl::new(manager);
     println!("Server running on {}", addr);
 

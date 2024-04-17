@@ -13,7 +13,7 @@ pub struct GrpcConfig {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct CryptoSourceConfig {
+pub struct SourceConfig {
     pub binance: BinanceServiceBuilderOpts,
     pub coingecko: CoinGeckoServiceBuilderOpts,
     pub coinmarketcap: CoinMarketCapServiceBuilderOpts,
@@ -30,7 +30,7 @@ pub struct RegistryConfig {
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
-    pub source: CryptoSourceConfig,
+    pub source: SourceConfig,
     pub registry: RegistryConfig,
 }
 
