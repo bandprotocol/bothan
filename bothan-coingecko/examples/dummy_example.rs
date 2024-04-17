@@ -9,7 +9,7 @@ use bothan_core::service::Service;
 async fn main() {
     init();
     let service_result = CoinGeckoServiceBuilder::default()
-        .set_update_supported_assets_interval(Duration::from_secs(600))
+        .with_update_supported_assets_interval(Duration::from_secs(600))
         .build()
         .await;
 

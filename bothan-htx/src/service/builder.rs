@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use tokio::time::Duration;
 
 use crate::api::error::BuilderError;
@@ -6,6 +7,14 @@ use crate::api::HtxRestAPIBuilder;
 use crate::service::HtxService;
 
 pub(crate) const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct HtxServiceBuilderOpts {
+    pub url: Option<String>,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_interval: Option<Duration>,
+}
 
 pub struct HtxServiceBuilder {
     url: String,
@@ -21,6 +30,13 @@ impl HtxServiceBuilder {
     pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
         self.update_interval = update_interval;
         self
+    }
+
+    pub fn new(opts: HtxServiceBuilderOpts) -> Self {
+        Self {
+            url: opts.url.unwrap_or(DEFAULT_URL.into()),
+            update_interval: opts.update_interval.unwrap_or(DEFAULT_UPDATE_INTERVAL),
+        }
     }
 
     pub async fn build(self) -> Result<HtxService, BuilderError> {

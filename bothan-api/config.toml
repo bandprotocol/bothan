@@ -2,11 +2,8 @@
 addr = "127.0.0.1:50051"
 
 [source.binance]
-interval = 60
-api_key = "your_api_key_1"
 
 [source.coingecko]
-update_supported_assets_interval = "600s"
 
 [registry]
 source = ""

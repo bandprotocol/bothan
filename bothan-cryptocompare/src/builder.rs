@@ -1,9 +1,19 @@
+use serde::Deserialize;
 use tokio::time::Duration;
 
 use crate::api::CryptoCompareRestAPIBuilder;
 use crate::error::Error;
 use crate::types::DEFAULT_UPDATE_INTERVAL;
 use crate::CryptoCompareService;
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct CryptoCompareServiceBuilderOpts {
+    pub url: Option<String>,
+    pub api_key: String,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_interval: Option<Duration>,
+}
 
 pub struct CryptoCompareServiceBuilder {
     url: Option<String>,
@@ -12,19 +22,27 @@ pub struct CryptoCompareServiceBuilder {
 }
 
 impl CryptoCompareServiceBuilder {
-    pub fn set_url(mut self, url: &str) -> Self {
+    pub fn with_url(mut self, url: &str) -> Self {
         self.url = Some(url.into());
         self
     }
 
-    pub fn set_api_key(mut self, api_key: &str) -> Self {
+    pub fn with_api_key(mut self, api_key: &str) -> Self {
         self.api_key = Some(api_key.into());
         self
     }
 
-    pub fn set_update_interval(mut self, update_interval: Duration) -> Self {
+    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
         self.update_interval = update_interval;
         self
+    }
+
+    pub fn new(opts: CryptoCompareServiceBuilderOpts) -> Self {
+        Self {
+            url: opts.url,
+            api_key: Some(opts.api_key),
+            update_interval: opts.update_interval.unwrap_or(DEFAULT_UPDATE_INTERVAL),
+        }
     }
 
     pub async fn build(self) -> Result<CryptoCompareService, Error> {
