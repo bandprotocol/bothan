@@ -11,6 +11,7 @@ async-trait = { workspace = true }
 bothan-core = { workspace = true }
 chrono = { workspace = true }
 futures = { workspace = true }
+humantime-serde = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
