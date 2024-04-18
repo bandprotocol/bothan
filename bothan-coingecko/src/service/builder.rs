@@ -1,9 +1,9 @@
 use serde::Deserialize;
 use tokio::time::Duration;
 
+use crate::api::error::BuilderError;
 use crate::api::types::DEFAULT_USER_AGENT;
 use crate::api::CoinGeckoRestAPIBuilder;
-use crate::error::Error;
 use crate::types::{
     DEFAULT_PAGE_SIZE, DEFAULT_UPDATE_INTERVAL, DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL,
 };
@@ -89,7 +89,7 @@ impl CoinGeckoServiceBuilder {
         }
     }
 
-    pub async fn build(self) -> Result<CoinGeckoService, Error> {
+    pub async fn build(self) -> Result<CoinGeckoService, BuilderError> {
         let mut api_builder = CoinGeckoRestAPIBuilder::default();
         if let Some(url) = &self.url {
             api_builder.with_url(url);

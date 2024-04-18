@@ -124,9 +124,7 @@ pub(crate) mod test {
         let result = client.get_latest_tickers().await;
 
         mock.assert();
-        let expected_err = Error::Reqwest(
-            "error decoding response body: expected value at line 1 column 1".to_string(),
-        );
+        let expected_err = Error::Reqwest("error decoding response body".to_string());
         assert_eq!(result, Err(expected_err));
     }
 

@@ -10,6 +10,8 @@ use bothan_core::types::PriceData;
 
 use crate::api::CryptoCompareRestAPI;
 
+pub mod builder;
+
 pub struct CryptoCompareService {
     cache: Arc<Cache<PriceData>>,
 }
