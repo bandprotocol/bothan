@@ -70,15 +70,9 @@ impl PriceServiceManager {
                     let sig_store = signal_results_store.clone();
                     handle_tasks(tasks, map, src_store, sig_store).await
                 }
-                Err(_) => {
-                    let err = PriceOption::Unavailable;
-                    set_result_err(available.as_slice(), signal_results_store.clone(), err).await
-                }
+                Err(_) => set_unavailable(available.as_slice(), signal_results_store.clone()).await,
             },
-            None => {
-                let err = PriceOption::Unavailable;
-                set_result_err(available.as_slice(), signal_results_store.clone(), err).await
-            }
+            None => set_unavailable(available.as_slice(), signal_results_store.clone()).await,
         };
 
         get_result_from_store(ids, signal_results_store.clone()).await
@@ -243,8 +237,11 @@ async fn handle_tasks(
     }
 }
 
-async fn set_result_err(ids: &[&str], store: Arc<SignalResultsStore>, error: PriceOption) {
-    let results = ids.iter().map(|id| (*id, Err(error))).collect();
+async fn set_unavailable(ids: &[&str], store: Arc<SignalResultsStore>) {
+    let results = ids
+        .iter()
+        .map(|id| (*id, Err(PriceOption::Unavailable)))
+        .collect();
     store.set_batched(results).await;
 }
 

@@ -62,8 +62,8 @@ impl Service for CoinGeckoService {
             .await
             .into_iter()
             .enumerate()
-            .map(|(idx, x)| match x {
-                Ok(v) => Ok(v),
+            .map(|(idx, result)| match result {
+                Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     if reader.contains(ids[idx]) {
                         to_set_pending.push(ids[idx].to_string());

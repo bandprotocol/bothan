@@ -50,7 +50,7 @@ impl BinanceService {
 #[async_trait::async_trait]
 impl Service for BinanceService {
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
-        let mut sub_ids = Vec::new();
+        let mut ids_to_sub = Vec::new();
 
         let result = self
             .cache
@@ -62,7 +62,7 @@ impl Service for BinanceService {
                 Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     // If the id is not in the cache, subscribe to it
-                    sub_ids.push(ids[idx].to_string());
+                    ids_to_sub.push(ids[idx].to_string());
                     Err(ServiceError::Pending)
                 }
                 Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
@@ -70,7 +70,9 @@ impl Service for BinanceService {
             })
             .collect();
 
-        if !sub_ids.is_empty() && self.cmd_tx.send(Command::Subscribe(sub_ids)).await.is_err() {
+        let is_empty = ids_to_sub.is_empty();
+        let sub_cmd = Command::Subscribe(ids_to_sub);
+        if !is_empty && self.cmd_tx.send(sub_cmd).await.is_err() {
             warn!("Failed to send subscribe command");
         }
 
