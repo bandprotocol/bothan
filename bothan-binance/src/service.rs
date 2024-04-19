@@ -96,6 +96,7 @@ fn start_service(
                 },
                 result = {
                     let cloned = connection.clone();
+                    // TODO: Need to find a better way to resolve this
                     timeout(DEFAULT_TIMEOUT, async move { cloned.lock().await.next().await })
                 } => {
                     match &result {
