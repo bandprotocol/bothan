@@ -113,7 +113,7 @@ pub(crate) mod test {
                         },
                     )
                 })
-                .collect::<HashMap<_, _>>();
+                .collect::<HashMap<&str, Price>>();
 
             self.mock("GET", "/data/pricemulti")
                 .match_query(Matcher::AllOf(vec![
