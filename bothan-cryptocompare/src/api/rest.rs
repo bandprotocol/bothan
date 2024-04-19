@@ -64,30 +64,8 @@ pub(crate) mod test {
         (server, api)
     }
 
-    pub(crate) fn assert_symbol_prices_eq(
-        symbol_prices: Result<Vec<Option<f64>>, Error>,
-        expected: Result<Vec<Option<f64>>, Error>,
-    ) {
-        match (symbol_prices, expected) {
-            (Ok(symbol_prices), Ok(expected)) => {
-                assert_eq!(symbol_prices.len(), expected.len());
-                for (symbol_price, expected) in symbol_prices.iter().zip(expected.iter()) {
-                    assert_eq!(symbol_price, expected);
-                }
-            }
-            (Err(symbol_prices), Err(expected)) => {
-                assert_eq!(symbol_prices, expected);
-            }
-            _ => panic!("unexpected result"),
-        }
-    }
-
     pub(crate) trait MockCryptoCompare {
-        fn set_successful_multi_symbol_price(
-            &mut self,
-            ids: &[&str],
-            symbol_prices: &[f64],
-        ) -> Mock;
+        fn set_successful_multi_symbol_price(&mut self, ids: &[&str], prices: &[f64]) -> Mock;
         fn set_arbitrary_multi_symbol_price<StrOrBytes: AsRef<[u8]>>(
             &mut self,
             ids: &[&str],
@@ -97,19 +75,15 @@ pub(crate) mod test {
     }
 
     impl MockCryptoCompare for ServerGuard {
-        fn set_successful_multi_symbol_price(
-            &mut self,
-            ids: &[&str],
-            symbol_prices: &[f64],
-        ) -> Mock {
+        fn set_successful_multi_symbol_price(&mut self, ids: &[&str], prices: &[f64]) -> Mock {
             let price_map = ids
                 .iter()
-                .zip(symbol_prices.iter())
-                .map(|(&id, &symbol_price)| {
+                .zip(prices.iter())
+                .map(|(&id, &price)| {
                     (
                         id,
                         Price {
-                            usd: symbol_price.to_owned(),
+                            usd: price.to_owned(),
                         },
                     )
                 })
@@ -156,16 +130,16 @@ pub(crate) mod test {
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
 
-        let symbol_prices = vec![42000.69, 2000.0];
+        let prices = vec![42000.69, 2000.0];
 
-        let mock = server.set_successful_multi_symbol_price(ids, &symbol_prices);
+        let mock = server.set_successful_multi_symbol_price(ids, &prices);
 
         let result = client.get_multi_symbol_price(ids).await;
 
         mock.assert();
 
-        let expected_result = symbol_prices.into_iter().map(Some).collect();
-        assert_symbol_prices_eq(result, Ok(expected_result));
+        let expected_result = prices.into_iter().map(Some).collect();
+        assert_eq!(result, Ok(expected_result));
     }
 
     #[tokio::test]
@@ -173,16 +147,16 @@ pub(crate) mod test {
         let (mut server, client) = setup().await;
         let ids = &["btc", "eth"];
 
-        let symbol_prices = vec![42000.69];
+        let prices = vec![42000.69];
 
-        let mock = server.set_successful_multi_symbol_price(ids, &symbol_prices);
+        let mock = server.set_successful_multi_symbol_price(ids, &prices);
 
         let result = client.get_multi_symbol_price(ids).await;
 
         mock.assert();
 
-        let expected_result: Vec<Option<f64>> = vec![Some(symbol_prices[0]), None];
-        assert_symbol_prices_eq(result, Ok(expected_result));
+        let expected_result: Vec<Option<f64>> = vec![Some(prices[0]), None];
+        assert_eq!(result, Ok(expected_result));
     }
 
     #[tokio::test]
@@ -198,7 +172,7 @@ pub(crate) mod test {
         let expected_err = Error::Reqwest(
             "error decoding response body: expected value at line 1 column 1".to_string(),
         );
-        assert_symbol_prices_eq(result, Err(expected_err));
+        assert_eq!(result, Err(expected_err));
     }
 
     #[tokio::test]
@@ -212,6 +186,6 @@ pub(crate) mod test {
         mock.assert();
 
         let expected_err = Error::Http(reqwest::StatusCode::INTERNAL_SERVER_ERROR);
-        assert_symbol_prices_eq(result, Err(expected_err));
+        assert_eq!(result, Err(expected_err));
     }
 }

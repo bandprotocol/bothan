@@ -119,8 +119,6 @@ mod test {
     use chrono::Utc;
     use mockito::ServerGuard;
 
-    use bothan_core::cache::Error;
-
     use crate::api::rest::test::{setup as api_setup, MockCryptoCompare};
 
     use super::*;
@@ -135,19 +133,6 @@ mod test {
         (Arc::new(rest_api), cache, server)
     }
 
-    fn assert_price_data(result: Result<PriceData, Error>, expected: Result<PriceData, Error>) {
-        match (result, expected) {
-            (Ok(result), Ok(expected)) => {
-                assert_eq!(result.id, expected.id);
-                assert_eq!(result.price, expected.price);
-            }
-            (Err(result), Err(expected)) => {
-                assert_eq!(result, expected);
-            }
-            _ => panic!("unexpected result"),
-        }
-    }
-
     #[tokio::test]
     async fn test_update_price_data() {
         let (rest_api, cache, mut server) = setup().await;
@@ -160,7 +145,7 @@ mod test {
         let result = cache.get("btc").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
-        assert_price_data(result, Ok(expected));
+        assert_eq!(result, Ok(expected));
     }
 
     #[tokio::test]
@@ -175,7 +160,7 @@ mod test {
         let result = cache.get("btc").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
-        assert_price_data(result, Ok(expected));
+        assert_eq!(result, Ok(expected));
     }
 
     #[tokio::test]
@@ -198,6 +183,6 @@ mod test {
 
         let result = parse_symbol_price(id, &symbol_price, &now);
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
-        assert_price_data(Ok(result), Ok(expected));
+        assert_eq!(result, expected);
     }
 }
