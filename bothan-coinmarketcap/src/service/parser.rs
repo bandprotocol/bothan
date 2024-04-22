@@ -22,13 +22,12 @@ pub fn parse_quote(quote: &Quote) -> Result<PriceData, QuoteParserError> {
     let last_updated = quote.price_quotes.usd.last_updated.as_str();
     let naive_date_time = NaiveDateTime::parse_from_str(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ")
         .map_err(|_| QuoteParserError::InvalidTimestamp)?;
-    let timestamp = u64::try_from(naive_date_time.and_utc().timestamp())
-        .map_err(|_| QuoteParserError::InvalidTimestamp)?;
+    let timestamp = naive_date_time.and_utc().timestamp();
 
     Ok(PriceData::new(
         quote.id.to_string(),
         price.to_string(),
-        timestamp,
+        timestamp as u64,
     ))
 }
 

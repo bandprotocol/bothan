@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, RequestBuilder, Response, Url};
 
-use crate::api::error::RestApiError;
+use crate::api::error::RestAPIError;
 use crate::api::types::{Coin, Market};
 
 pub struct CoinGeckoRestAPI {
@@ -15,7 +15,7 @@ impl CoinGeckoRestAPI {
         Self { url, client }
     }
 
-    pub async fn get_coins_list(&self) -> Result<Vec<Coin>, RestApiError> {
+    pub async fn get_coins_list(&self) -> Result<Vec<Coin>, RestAPIError> {
         let url = format!("{}coins/list", self.url);
         let builder = self.client.get(url);
         let response = send_request(builder).await?;
@@ -28,7 +28,7 @@ impl CoinGeckoRestAPI {
         ids: &[&str],
         page_size: usize,
         page: usize,
-    ) -> Result<Vec<Option<Market>>, RestApiError> {
+    ) -> Result<Vec<Option<Market>>, RestAPIError> {
         let url = format!("{}coins/markets", self.url);
         let params = vec![
             ("vs_currency", "usd".to_string()),
@@ -49,12 +49,12 @@ impl CoinGeckoRestAPI {
     }
 }
 
-async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestApiError> {
+async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
     let response = request_builder.send().await?;
 
     let status = response.status();
     if status.is_client_error() || status.is_server_error() {
-        return Err(RestApiError::Http(status));
+        return Err(RestAPIError::Http(status));
     }
 
     Ok(response)
@@ -62,7 +62,7 @@ async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestA
 
 async fn parse_response<T: serde::de::DeserializeOwned>(
     response: Response,
-) -> Result<T, RestApiError> {
+) -> Result<T, RestAPIError> {
     Ok(response.json::<T>().await?)
 }
 
@@ -235,7 +235,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = RestApiError::Reqwest("error decoding response body".to_string());
+        let expected_err = RestAPIError::Reqwest("error decoding response body".to_string());
         assert_eq!(result, Err(expected_err));
     }
 

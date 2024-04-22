@@ -23,7 +23,7 @@ impl From<reqwest::Error> for BuilderError {
 }
 
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum RestApiError {
+pub enum RestAPIError {
     #[error("reqwest error: {0}")]
     Reqwest(String),
 
@@ -37,8 +37,8 @@ pub enum RestApiError {
     Parse,
 }
 
-impl From<reqwest::Error> for RestApiError {
+impl From<reqwest::Error> for RestAPIError {
     fn from(e: reqwest::Error) -> Self {
-        RestApiError::Reqwest(e.to_string())
+        RestAPIError::Reqwest(e.to_string())
     }
 }
