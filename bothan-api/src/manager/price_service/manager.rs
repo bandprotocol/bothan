@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use tonic::codegen::tokio_stream::StreamExt;
 
 use bothan_core::service::{Service as CoreService, ServiceResult};
 use bothan_core::types::PriceData as CorePriceData;
