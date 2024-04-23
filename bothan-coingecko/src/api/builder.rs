@@ -2,7 +2,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::ClientBuilder;
 use url::Url;
 
-use crate::api::error::Error;
+use crate::api::error::BuilderError;
 use crate::api::types::{DEFAULT_PRO_URL, DEFAULT_URL, DEFAULT_USER_AGENT};
 use crate::api::CoinGeckoRestAPI;
 
@@ -28,7 +28,7 @@ impl CoinGeckoRestAPIBuilder {
         self
     }
 
-    pub fn build(self) -> Result<CoinGeckoRestAPI, Error> {
+    pub fn build(self) -> Result<CoinGeckoRestAPI, BuilderError> {
         let mut headers = HeaderMap::new();
         headers.insert("User-Agent", HeaderValue::from_str(&self.user_agent)?);
 

@@ -1,8 +1,8 @@
 use serde::Deserialize;
 use tokio::time::Duration;
 
+use crate::api::error::BuilderError;
 use crate::api::CryptoCompareRestAPIBuilder;
-use crate::error::Error;
 use crate::types::DEFAULT_UPDATE_INTERVAL;
 use crate::CryptoCompareService;
 
@@ -45,7 +45,7 @@ impl CryptoCompareServiceBuilder {
         }
     }
 
-    pub async fn build(self) -> Result<CryptoCompareService, Error> {
+    pub async fn build(self) -> Result<CryptoCompareService, BuilderError> {
         let mut api_builder = CryptoCompareRestAPIBuilder::default();
         if let Some(url) = &self.url {
             api_builder.set_url(url);

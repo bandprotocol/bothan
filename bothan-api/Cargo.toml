@@ -2,33 +2,33 @@
 name = "bothan-api"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bothan-core = { workspace = true }
 bothan-binance = { workspace = true }
 bothan-coingecko = { workspace = true }
 bothan-coinmarketcap = { workspace = true }
+bothan-core = { workspace = true }
 bothan-cryptocompare = { workspace = true }
 bothan-htx = { workspace = true }
-tracing = { workspace = true }
-tokio = { workspace = true }
-tracing-subscriber = { workspace = true }
+
+humantime-serde = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 config = "0.14.0"
-humantime-serde = "1.1.1"
-tonic = "0.11"
-prost = "0.12"
-protoc-gen-prost = "0.3.1"
-petgraph = "0.6.4"
-serde_json = "1.0.114"
+enum_dispatch = "0.3.13"
+
 num-traits = "0.2.18"
-itertools = "0.12.1"
+petgraph = "0.6.4"
+prost = "0.12.4"
+protoc-gen-prost = "0.3.1"
 protoc-gen-tonic = "0.4.0"
-enum_dispatch = "0.3.12"
+tonic = "0.11"
 
 [build-dependencies]
 tonic-build = "0.11"

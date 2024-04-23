@@ -41,8 +41,8 @@ impl Service for CoinMarketCapService {
             .await
             .into_iter()
             .enumerate()
-            .map(|(idx, pd)| match pd {
-                Ok(v) => Ok(v),
+            .map(|(idx, result)| match result {
+                Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     to_set_pending.push(ids[idx].to_string());
                     Err(ServiceError::Pending)

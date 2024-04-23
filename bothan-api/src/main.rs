@@ -28,7 +28,7 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    let config = config::AppConfig::new().expect("Failed to load configuration");
+    let config = AppConfig::new().expect("Failed to load configuration");
 
     let file = File::open(config.registry.source.clone()).unwrap();
     let registry = Arc::new(serde_json::from_reader::<_, Registry>(file).unwrap());

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use itertools::Itertools;
 use reqwest::{Client, RequestBuilder, Response, Url};
 
-use crate::api::error::RestApiError as Error;
+use crate::api::error::RestAPIError;
 use crate::api::types::{Quote, Response as CmcResponse};
 
 pub struct CoinMarketCapRestAPI {
@@ -16,7 +16,10 @@ impl CoinMarketCapRestAPI {
         Self { url, client }
     }
 
-    pub async fn get_latest_quotes(&self, ids: &[usize]) -> Result<Vec<Option<Quote>>, Error> {
+    pub async fn get_latest_quotes(
+        &self,
+        ids: &[usize],
+    ) -> Result<Vec<Option<Quote>>, RestAPIError> {
         let url = format!("{}v2/cryptocurrency/quotes/latest", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
         let params = vec![("id", ids_string)];
@@ -36,12 +39,12 @@ impl CoinMarketCapRestAPI {
     }
 }
 
-async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error> {
+async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
     let response = request_builder.send().await?;
 
     let status = response.status();
     if status.is_client_error() || status.is_server_error() {
-        return Err(Error::Http(status));
+        return Err(RestAPIError::Http(status));
     }
 
     Ok(response)
@@ -182,9 +185,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = Error::Reqwest(
-            "error decoding response body: expected value at line 1 column 1".to_string(),
-        );
+        let expected_err = RestAPIError::Reqwest("error decoding response body".to_string());
         assert_eq!(result, Err(expected_err));
     }
 

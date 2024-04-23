@@ -14,7 +14,7 @@ impl From<reqwest::Error> for BuilderError {
 }
 
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum RestApiError {
+pub enum RestAPIError {
     #[error("http error: {0}")]
     Http(reqwest::StatusCode),
 
@@ -23,8 +23,8 @@ pub enum RestApiError {
     Reqwest(String),
 }
 
-impl From<reqwest::Error> for RestApiError {
+impl From<reqwest::Error> for RestAPIError {
     fn from(e: reqwest::Error) -> Self {
-        RestApiError::Reqwest(e.to_string())
+        RestAPIError::Reqwest(e.to_string())
     }
 }
