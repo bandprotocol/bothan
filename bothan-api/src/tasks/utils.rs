@@ -9,10 +9,12 @@ use crate::tasks::error::Error;
 use crate::tasks::signal_task::SignalTask;
 use crate::tasks::source_task::SourceTask;
 
-pub type SourceMap = HashMap<String, HashSet<String>>;
+pub(crate) type SourceMap = HashMap<String, HashSet<String>>;
 
-// Takes a registry and returns the sequential order of tasks to be executed
-pub fn get_tasks(registry: &Registry) -> Result<(Vec<Vec<SignalTask>>, Vec<SourceTask>), Error> {
+/// Takes a registry and returns the sequential order of tasks to be executed
+pub(crate) fn get_tasks(
+    registry: &Registry,
+) -> Result<(Vec<Vec<SignalTask>>, Vec<SourceTask>), Error> {
     let graph = build_graph(registry)?;
     let source_tasks = get_source_tasks(registry)?;
     let batched_signal_ids = batching_toposort(&graph)?;
