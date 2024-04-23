@@ -189,7 +189,7 @@ async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, t
 async fn process_response(resp: &KrakenResponse, cache: &Cache<PriceData>, timestamp: u64) {
     match resp {
         KrakenResponse::ChannelResponse(resp) => match resp {
-            ChannelResponse::Ticker(tickers) => save_tickers(&tickers, cache, timestamp).await,
+            ChannelResponse::Ticker(tickers) => save_tickers(tickers, cache, timestamp).await,
             ChannelResponse::Heartbeat => {
                 debug!("received heartbeat from kraken");
             }
