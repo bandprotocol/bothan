@@ -167,9 +167,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = Error::Reqwest(
-            "error decoding response body: expected value at line 1 column 1".to_string(),
-        );
+        let expected_err = RestAPIError::Reqwest("error decoding response body".to_string());
         assert_eq!(result, Err(expected_err));
     }
 
@@ -183,7 +181,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = Error::Http(reqwest::StatusCode::INTERNAL_SERVER_ERROR);
+        let expected_err = RestAPIError::Http(reqwest::StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(result, Err(expected_err));
     }
 }
