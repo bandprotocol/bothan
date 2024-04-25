@@ -26,7 +26,7 @@ impl From<reqwest::Error> for BuilderError {
 }
 
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum RestApiError {
+pub enum RestAPIError {
     #[error("limit must be lower or equal to 5000")]
     LimitTooHigh(),
 
@@ -46,14 +46,14 @@ pub enum RestApiError {
     Reqwest(String),
 }
 
-impl From<serde_json::Error> for RestApiError {
+impl From<serde_json::Error> for RestAPIError {
     fn from(e: serde_json::Error) -> Self {
-        RestApiError::Serde(e.to_string())
+        RestAPIError::Serde(e.to_string())
     }
 }
 
-impl From<reqwest::Error> for RestApiError {
+impl From<reqwest::Error> for RestAPIError {
     fn from(e: reqwest::Error) -> Self {
-        RestApiError::Reqwest(e.to_string())
+        RestAPIError::Reqwest(e.to_string())
     }
 }

@@ -2,7 +2,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::ClientBuilder;
 use url::Url;
 
-use crate::api::error::Error;
+use crate::api::error::BuilderError;
 use crate::api::types::DEFAULT_URL;
 use crate::api::CryptoCompareRestAPI;
 
@@ -22,7 +22,7 @@ impl CryptoCompareRestAPIBuilder {
         self
     }
 
-    pub fn build(self) -> Result<CryptoCompareRestAPI, Error> {
+    pub fn build(self) -> Result<CryptoCompareRestAPI, BuilderError> {
         let mut headers = HeaderMap::new();
 
         let parsed_url = Url::parse(&self.url)?;

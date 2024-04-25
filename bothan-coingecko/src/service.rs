@@ -12,10 +12,13 @@ use tracing::{info, warn};
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
+use error::Error;
 
 use crate::api::types::Market;
 use crate::api::CoinGeckoRestAPI;
-use crate::error::Error;
+
+pub mod builder;
+pub mod error;
 
 pub struct CoinGeckoService {
     cache: Arc<Cache<PriceData>>,
@@ -62,8 +65,8 @@ impl Service for CoinGeckoService {
             .await
             .into_iter()
             .enumerate()
-            .map(|(idx, x)| match x {
-                Ok(v) => Ok(v),
+            .map(|(idx, result)| match result {
+                Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     if reader.contains(ids[idx]) {
                         to_set_pending.push(ids[idx].to_string());
@@ -190,13 +193,12 @@ fn parse_market(market: &Market) -> Result<PriceData, Error> {
     let last_updated = market.last_updated.as_str();
     let naive_date_time = NaiveDateTime::parse_from_str(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ")
         .map_err(|_| Error::InvalidTimestamp)?;
-    let timestamp = u64::try_from(naive_date_time.and_utc().timestamp())
-        .map_err(|_| Error::InvalidTimestamp)?;
+    let timestamp = naive_date_time.and_utc().timestamp();
 
     Ok(PriceData::new(
         market.id.clone(),
         market.current_price.to_string(),
-        timestamp,
+        timestamp as u64,
     ))
 }
 
@@ -246,7 +248,8 @@ mod test {
         server.set_successful_coin_list(&coin_list);
 
         update_coin_list(&rest_api, &coin_list_store).await;
-        assert!(coin_list_store.read().await.contains("bitcoin"));
+        let eq = coin_list_store.read().await.contains("bitcoin");
+        assert!(eq);
     }
 
     #[tokio::test]

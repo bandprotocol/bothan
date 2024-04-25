@@ -1,5 +1,5 @@
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum Error {
+pub enum BuilderError {
     #[error("reqwest error: {0}")]
     Reqwest(String),
 
@@ -8,6 +8,24 @@ pub enum Error {
 
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
+}
+
+impl From<reqwest::header::InvalidHeaderValue> for BuilderError {
+    fn from(e: reqwest::header::InvalidHeaderValue) -> Self {
+        BuilderError::InvalidHeaderValue(e.to_string())
+    }
+}
+
+impl From<reqwest::Error> for BuilderError {
+    fn from(e: reqwest::Error) -> Self {
+        BuilderError::Reqwest(e.to_string())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, thiserror::Error)]
+pub enum RestAPIError {
+    #[error("reqwest error: {0}")]
+    Reqwest(String),
 
     #[error("http error: {0}")]
     Http(reqwest::StatusCode),
@@ -19,14 +37,8 @@ pub enum Error {
     Parse,
 }
 
-impl From<reqwest::Error> for Error {
+impl From<reqwest::Error> for RestAPIError {
     fn from(e: reqwest::Error) -> Self {
-        Error::Reqwest(e.to_string())
-    }
-}
-
-impl From<reqwest::header::InvalidHeaderValue> for Error {
-    fn from(e: reqwest::header::InvalidHeaderValue) -> Self {
-        Error::InvalidHeaderValue(e.to_string())
+        RestAPIError::Reqwest(e.to_string())
     }
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, RequestBuilder, Response, Url};
 
-use crate::api::error::Error;
+use crate::api::error::RestAPIError;
 use crate::api::types::Price;
 
 pub struct CryptoCompareRestAPI {
@@ -15,7 +15,10 @@ impl CryptoCompareRestAPI {
         Self { url, client }
     }
 
-    pub async fn get_multi_symbol_price(&self, ids: &[&str]) -> Result<Vec<Option<f64>>, Error> {
+    pub async fn get_multi_symbol_price(
+        &self,
+        ids: &[&str],
+    ) -> Result<Vec<Option<f64>>, RestAPIError> {
         let url = format!("{}data/pricemulti", self.url);
         let params = vec![("fsyms", ids.join(",")), ("tsyms", "usd".to_string())];
 
@@ -31,18 +34,20 @@ impl CryptoCompareRestAPI {
     }
 }
 
-async fn send_request(request_builder: RequestBuilder) -> Result<Response, Error> {
+async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
     let response = request_builder.send().await?;
 
     let status = response.status();
     if status.is_client_error() || status.is_server_error() {
-        return Err(Error::Http(status));
+        return Err(RestAPIError::Http(status));
     }
 
     Ok(response)
 }
 
-async fn parse_response<T: serde::de::DeserializeOwned>(response: Response) -> Result<T, Error> {
+async fn parse_response<T: serde::de::DeserializeOwned>(
+    response: Response,
+) -> Result<T, RestAPIError> {
     Ok(response.json::<T>().await?)
 }
 

@@ -1,6 +1,6 @@
 use reqwest::{Client, RequestBuilder, Response as ReqwestResponse, Url};
 
-use crate::api::error::RestApiError as Error;
+use crate::api::error::RestAPIError;
 use crate::api::types::{Response, Ticker};
 
 pub struct HtxRestAPI {
@@ -13,7 +13,7 @@ impl HtxRestAPI {
         Self { url, client }
     }
 
-    pub async fn get_latest_tickers(&self) -> Result<Response<Vec<Ticker>>, Error> {
+    pub async fn get_latest_tickers(&self) -> Result<Response<Vec<Ticker>>, RestAPIError> {
         let url = format!("{}market/tickers", self.url);
 
         let request = self.client.get(&url);
@@ -23,12 +23,12 @@ impl HtxRestAPI {
     }
 }
 
-async fn send_request(request_builder: RequestBuilder) -> Result<ReqwestResponse, Error> {
+async fn send_request(request_builder: RequestBuilder) -> Result<ReqwestResponse, RestAPIError> {
     let response = request_builder.send().await?;
 
     let status = response.status();
     if status.is_client_error() || status.is_server_error() {
-        return Err(Error::Http(status));
+        return Err(RestAPIError::Http(status));
     }
 
     Ok(response)
@@ -124,9 +124,7 @@ pub(crate) mod test {
         let result = client.get_latest_tickers().await;
 
         mock.assert();
-        let expected_err = Error::Reqwest(
-            "error decoding response body: expected value at line 1 column 1".to_string(),
-        );
+        let expected_err = RestAPIError::Reqwest("error decoding response body".to_string());
         assert_eq!(result, Err(expected_err));
     }
 

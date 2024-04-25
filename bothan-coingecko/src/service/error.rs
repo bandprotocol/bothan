@@ -13,6 +13,6 @@ pub enum Error {
     #[error("invalid timestamp")]
     InvalidTimestamp,
 
-    #[error("api error: {0}")]
-    Api(#[from] crate::api::error::Error),
+    #[error("Api error: {0}")]
+    Api(#[from] crate::api::error::RestAPIError),
 }

@@ -3,8 +3,6 @@ use std::sync::Arc;
 
 use tokio::sync::{Mutex, RwLock};
 
-use bothan_core::service::Service as CoreService;
-
 use crate::proto::query::query::PriceOption;
 
 pub(crate) type SourceResultsStore = ResultsStore<f64>;

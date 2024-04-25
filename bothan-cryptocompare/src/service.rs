@@ -10,6 +10,8 @@ use bothan_core::types::PriceData;
 
 use crate::api::CryptoCompareRestAPI;
 
+pub mod builder;
+
 pub struct CryptoCompareService {
     cache: Arc<Cache<PriceData>>,
 }
@@ -35,8 +37,8 @@ impl Service for CryptoCompareService {
             .await
             .into_iter()
             .enumerate()
-            .map(|(idx, x)| match x {
-                Ok(v) => Ok(v),
+            .map(|(idx, result)| match result {
+                Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     to_set_pending.push(ids[idx].to_string());
                     Err(ServiceError::Pending)
