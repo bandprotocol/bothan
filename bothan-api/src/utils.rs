@@ -11,7 +11,7 @@ macro_rules! add_service {
             let parts: Vec<&str> = full_path.split('.').collect();
             *parts.last().unwrap_or(&"")
         };
-        let service = <$builder>::new($config)
+        let service = <$builder>::new($config.clone())
             .build()
             .await
             .expect(&format!("cannot build {} service", service_name));

@@ -8,20 +8,20 @@ use crate::proto::query::query::query_server::Query;
 use crate::proto::query::query::{QueryPricesRequest, QueryPricesResponse};
 use crate::utils::arc_mutex;
 
-pub struct APIServiceImpl {
+pub struct CryptoPriceQueryServer {
     manager: Arc<Mutex<PriceServiceManager>>,
 }
 
-impl APIServiceImpl {
+impl CryptoPriceQueryServer {
     pub fn new(manager: PriceServiceManager) -> Self {
-        APIServiceImpl {
+        CryptoPriceQueryServer {
             manager: arc_mutex!(manager),
         }
     }
 }
 
 #[tonic::async_trait]
-impl Query for APIServiceImpl {
+impl Query for CryptoPriceQueryServer {
     async fn prices(
         &self, // Change to accept mutable reference
         request: Request<QueryPricesRequest>,

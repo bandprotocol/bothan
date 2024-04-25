@@ -1,0 +1,22 @@
+[grpc]
+addr = "127.0.0.1:50051"
+
+[source.binance]
+
+[source.coingecko]
+api_key = ""
+
+[source.coinmarketcap]
+api_key = ""
+
+[source.cryptocompare]
+api_key = ""
+
+[source.htx]
+
+[registry.crypto_price]
+source = "registry/cryptoprices/json.example"
+version = "1.0"
+
+[go-proxy]
+addr = "127.0.0.1:8081"

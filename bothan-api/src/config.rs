@@ -22,9 +22,14 @@ pub struct SourceConfig {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct RegistryConfig {
+pub struct RegistrySource {
     pub source: String,
     pub version: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct RegistryConfig {
+    pub crypto_price: RegistrySource,
 }
 
 #[derive(Clone, Debug, Deserialize)]

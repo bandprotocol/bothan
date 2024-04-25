@@ -17,3 +17,5 @@ Cargo.lock
 .idea/
 
 .DS_Store
+
+/bothan-api/config.toml
