@@ -79,14 +79,7 @@ pub(crate) mod test {
             let price_map = ids
                 .iter()
                 .zip(prices.iter())
-                .map(|(&id, &price)| {
-                    (
-                        id,
-                        Price {
-                            usd: price.to_owned(),
-                        },
-                    )
-                })
+                .map(|(&id, &price)| (id, Price { usd: price }))
                 .collect::<HashMap<&str, Price>>();
 
             self.mock("GET", "/data/pricemulti")
