@@ -15,7 +15,7 @@ api_key = ""
 [source.htx]
 
 [registry.crypto_price]
-source = "registry/cryptoprices/json.example"
+source = "registry/crypto_prices.json.example"
 version = "1.0"
 
 [go-proxy]
