@@ -115,3 +115,76 @@ fn parse_symbol_price(id: &str, symbol_price: &f64, timestamp: &u64) -> PriceDat
         timestamp.to_owned(),
     )
 }
+
+#[cfg(test)]
+mod test {
+    use chrono::Utc;
+    use mockito::ServerGuard;
+
+    use crate::api::rest::test::{setup as api_setup, MockCryptoCompare};
+
+    use super::*;
+
+    async fn setup() -> (
+        Arc<CryptoCompareRestAPI>,
+        Arc<Cache<PriceData>>,
+        ServerGuard,
+    ) {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let (server, rest_api) = api_setup().await;
+        (Arc::new(rest_api), cache, server)
+    }
+
+    #[tokio::test]
+    async fn test_update_price_data() {
+        let (rest_api, cache, mut server) = setup().await;
+        let now = Utc::now().timestamp() as u64;
+        let symbol_prices = vec![42000.69];
+
+        server.set_successful_multi_symbol_price(&["BTC"], &symbol_prices);
+        cache.set_pending("btc".to_string()).await;
+        update_price_data(&rest_api, &cache).await;
+        let result = cache.get("btc").await;
+
+        let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
+        assert_eq!(result, Ok(expected));
+    }
+
+    #[tokio::test]
+    async fn test_process_symbol_price() {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let now = Utc::now().timestamp() as u64;
+        let id = "BTC";
+        let symbol_price = 42000.69;
+
+        cache.set_batch_pending(vec!["btc".to_string()]).await;
+        process_symbol_price(id, &symbol_price, &now, &cache).await;
+        let result = cache.get("btc").await;
+
+        let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
+        assert_eq!(result, Ok(expected));
+    }
+
+    #[tokio::test]
+    async fn test_process_symbol_price_without_set_pending() {
+        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let now = Utc::now().timestamp() as u64;
+        let id = "BTC";
+        let symbol_price = 42000.69;
+
+        process_symbol_price(id, &symbol_price, &now, &cache).await;
+        let result = cache.get("btc").await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_symbol_price() {
+        let now = Utc::now().timestamp() as u64;
+        let id = "BTC";
+        let symbol_price = 42000.69;
+
+        let result = parse_symbol_price(id, &symbol_price, &now);
+        let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
+        assert_eq!(result, expected);
+    }
+}
