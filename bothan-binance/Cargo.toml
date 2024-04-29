@@ -9,6 +9,7 @@ license = { workspace = true }
 async-trait = { workspace = true }
 bothan-core = { workspace = true }
 humantime-serde = { workspace = true }
+rand = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -19,7 +20,6 @@ tracing-subscriber = { workspace = true }
 
 futures-channel = "0.3.30"
 futures-util = { version = "0.3.29", features = ["sink", "std"] }
-rand = "0.8.5"
 
 [dev-dependencies]
 ws-mock = { git = "https://github.com/bandprotocol/ws-mock.git", branch = "master" }

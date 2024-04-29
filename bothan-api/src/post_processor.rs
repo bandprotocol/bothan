@@ -9,11 +9,13 @@ pub enum PostProcessorError {
     OutOfBound,
 }
 
+/// The PostProcessor trait defines the methods that a post-processor must implement.
 #[enum_dispatch]
 pub trait PostProcessor {
     fn process(&self, data: f64) -> Result<f64, PostProcessorError>;
 }
 
+/// The PostProcess enum represents the different types of post-processors that can be used.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
 #[enum_dispatch(PostProcessor)]
