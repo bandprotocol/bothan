@@ -8,11 +8,13 @@ use bothan_cryptocompare::CryptoCompareServiceBuilderOpts;
 use bothan_htx::HtxServiceBuilderOpts;
 use bothan_kraken::KrakenServiceBuilderOpts;
 
+/// The configuration for the gRPC server.
 #[derive(Clone, Debug, Deserialize)]
 pub struct GrpcConfig {
     pub addr: String,
 }
 
+/// The configuration for the data sources.
 #[derive(Clone, Debug, Deserialize)]
 pub struct SourceConfig {
     pub binance: BinanceServiceBuilderOpts,
@@ -23,12 +25,14 @@ pub struct SourceConfig {
     pub kraken: KrakenServiceBuilderOpts,
 }
 
+/// The configuration for the registry.
 #[derive(Clone, Debug, Deserialize)]
 pub struct RegistryConfig {
     pub source: String,
     pub version: String,
 }
 
+/// The main application configuration.
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
@@ -37,6 +41,7 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
+    /// Creates a new `AppConfig` using the configuration file.
     pub fn new() -> Result<Self, config::ConfigError> {
         let config = Config::builder()
             .add_source(config::File::with_name("config"))

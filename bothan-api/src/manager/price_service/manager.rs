@@ -20,12 +20,28 @@ use crate::tasks::signal_task::SignalTask;
 use crate::tasks::Tasks;
 use crate::utils::arc_mutex;
 
+/// PriceServiceManager is used to manage price services.
+///
+/// ## Example
+/// ```no_run
+/// use std::sync::Arc;
+/// use bothan_core::service::Service;
+///
+/// async fn main() {
+///     let registry = Arc::new(HashMap::new());
+///     let mut manager = PriceServiceManager::new(registry).unwrap();
+///     let service = Box::new(MockService::new());
+///     
+///     manager.add_service("mock".to_string(), service).await;
+/// }
+/// ```
 pub struct PriceServiceManager {
     service_map: Arc<Mutex<ServiceMap<Box<dyn CoreService>>>>,
     registry: Arc<Registry>,
 }
 
 impl PriceServiceManager {
+    /// Creates a new `PriceServiceManager` given a registry.
     pub fn new(registry: Arc<Registry>) -> Result<Self, Error> {
         match Tasks::from_registry(&registry) {
             Ok(_) => Ok(PriceServiceManager {
@@ -36,6 +52,7 @@ impl PriceServiceManager {
         }
     }
 
+    /// Add a service with an assigned name to the service map.
     pub async fn add_service(&mut self, name: String, service: Box<dyn CoreService>) {
         self.service_map
             .lock()
@@ -43,6 +60,7 @@ impl PriceServiceManager {
             .insert(name, arc_mutex!(service));
     }
 
+    /// Gets the [`PriceData`](crate::proto::query::query::PriceData) of the given signal ids.
     pub async fn get_prices(&mut self, ids: &[&str]) -> Vec<PriceData> {
         let registry = self.registry.clone();
 
@@ -60,7 +78,6 @@ impl PriceServiceManager {
 
         // Split the signals into those that exist and those that do not
         let available = filter_available_ids(signal_ids, &registry);
-
         match get_filtered_registry(available.as_slice(), &registry) {
             Some(filtered_registry) => match Tasks::from_registry(&filtered_registry) {
                 Ok(tasks) => {

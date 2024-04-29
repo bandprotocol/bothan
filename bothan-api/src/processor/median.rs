@@ -5,12 +5,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::processor::{Processor, ProcessorError};
 
+/// The `MedianProcessor` finds the median of a given data set. It also has a `min_source_count` which
+/// is the minimum number of sources required to calculate the median. If the given data set has less
+/// than `min_source_count` sources, it returns an error.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct MedianProcessor {
     pub min_source_count: usize,
 }
 
 impl Processor for MedianProcessor {
+    /// Processes the given data and returns the median. If there are not enough sources, it
+    /// returns an error.
     fn process(&self, data: Vec<f64>, _: Vec<f64>) -> Result<f64, ProcessorError> {
         if self.min_source_count == 0 {
             return Err(ProcessorError::InvalidParameterValue(
