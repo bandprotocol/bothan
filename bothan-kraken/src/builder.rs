@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use std::sync::Arc;
-use std::time::Duration;
 
 use tokio::sync::Mutex;
 
@@ -23,6 +22,14 @@ pub struct KrakenServiceBuilder {
 }
 
 impl KrakenServiceBuilder {
+    pub fn new(opts: KrakenServiceBuilderOpts) -> Self {
+        Self {
+            url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
+            cmd_ch_size: opts.cmd_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
+            remove_id_ch_size: opts.remove_id_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
+        }
+    }
+
     pub fn with_url(mut self, url: String) -> Self {
         self.url = url;
         self

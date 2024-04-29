@@ -1,4 +1,5 @@
 pub use api::websocket::{KrakenWebSocketConnection, KrakenWebSocketConnector};
+pub use builder::{KrakenServiceBuilder, KrakenServiceBuilderOpts};
 pub use service::KrakenService;
 
 pub mod api;

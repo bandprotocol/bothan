@@ -6,6 +6,7 @@ use bothan_coingecko::CoinGeckoServiceBuilderOpts;
 use bothan_coinmarketcap::CoinMarketCapServiceBuilderOpts;
 use bothan_cryptocompare::CryptoCompareServiceBuilderOpts;
 use bothan_htx::HtxServiceBuilderOpts;
+use bothan_kraken::KrakenServiceBuilderOpts;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct GrpcConfig {
@@ -19,6 +20,7 @@ pub struct SourceConfig {
     pub coinmarketcap: CoinMarketCapServiceBuilderOpts,
     pub cryptocompare: CryptoCompareServiceBuilderOpts,
     pub htx: HtxServiceBuilderOpts,
+    pub kraken: KrakenServiceBuilderOpts,
 }
 
 #[derive(Clone, Debug, Deserialize)]
