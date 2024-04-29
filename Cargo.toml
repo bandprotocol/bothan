@@ -4,7 +4,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [workspace]
-members = ["bothan-api", "bothan-binance", "bothan-coingecko", "bothan-core", "bothan-cryptocompare", "bothan-htx"]
+members = ["bothan-api", "bothan-binance", "bothan-coingecko", "bothan-coinmarketcap", "bothan-core", "bothan-cryptocompare", "bothan-htx", "bothan-kraken"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -15,6 +15,7 @@ futures = "0.3.30"
 humantime-serde = "1.1.1"
 itertools = "0.12.1"
 mockito = "1.4.0"
+rand = "0.8.5"
 reqwest = { version = "0.12.3", features = ["json"] }
 serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
 serde_json = "1.0.116"
@@ -32,3 +33,4 @@ bothan-coingecko = { version = "0.1.0", path = "bothan-coingecko" }
 bothan-coinmarketcap = { version = "0.1.0", path = "bothan-coinmarketcap" }
 bothan-cryptocompare = { version = "0.1.0", path = "bothan-cryptocompare" }
 bothan-htx = { version = "0.1.0", path = "bothan-htx" }
+bothan-kraken = { version = "0.1.0", path = "bothan-kraken" }
