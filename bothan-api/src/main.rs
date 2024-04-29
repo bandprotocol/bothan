@@ -46,12 +46,12 @@ async fn init_crypto_server(config: &AppConfig) -> CryptoQueryServer {
     let mut manager = PriceServiceManager::new(registry)
         .expect("cannot build price service manager with registry");
 
-    initialize_services(config, &mut manager).await;
+    init_crypto_services(config, &mut manager).await;
 
     CryptoQueryServer::new(manager)
 }
 
-async fn initialize_services(config: &AppConfig, manager: &mut PriceServiceManager) {
+async fn init_crypto_services(config: &AppConfig, manager: &mut PriceServiceManager) {
     add_service!(manager, BinanceServiceBuilder, config.source.binance);
     add_service!(manager, CoinGeckoServiceBuilder, config.source.coingecko);
     add_service!(
