@@ -10,7 +10,8 @@ async fn main() {
     let service = KrakenServiceBuilder::default().build().await;
     if let Ok(mut service) = service {
         loop {
-            let _ = service.get_price_data(&["BTC/USD", "ETH/USD"]).await;
+            let data = service.get_price_data(&["BTC/USD", "ETH/USD"]).await;
+            println!("{:?}", data);
             tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
         }
     }

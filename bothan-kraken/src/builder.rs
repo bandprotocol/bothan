@@ -1,4 +1,6 @@
+use serde::Deserialize;
 use std::sync::Arc;
+use std::time::Duration;
 
 use tokio::sync::Mutex;
 
@@ -6,6 +8,13 @@ use crate::api::types::DEFAULT_URL;
 use crate::error::Error;
 use crate::types::DEFAULT_CHANNEL_SIZE;
 use crate::{KrakenService, KrakenWebSocketConnector};
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct KrakenServiceBuilderOpts {
+    pub url: Option<String>,
+    pub cmd_ch_size: Option<usize>,
+    pub remove_id_ch_size: Option<usize>,
+}
 
 pub struct KrakenServiceBuilder {
     url: String,
