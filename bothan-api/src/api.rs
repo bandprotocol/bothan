@@ -8,11 +8,14 @@ use crate::proto::query::query::query_server::Query;
 use crate::proto::query::query::{QueryPricesRequest, QueryPricesResponse};
 use crate::utils::arc_mutex;
 
+/// `APIServiceImpl` is the implementation of the Query service to be used by the gRPC server to
+/// query prices.
 pub struct APIServiceImpl {
     manager: Arc<Mutex<PriceServiceManager>>,
 }
 
 impl APIServiceImpl {
+    /// Creates a new `APIServiceImpl` with the given `PriceServiceManager`.
     pub fn new(manager: PriceServiceManager) -> Self {
         APIServiceImpl {
             manager: arc_mutex!(manager),
@@ -22,6 +25,7 @@ impl APIServiceImpl {
 
 #[tonic::async_trait]
 impl Query for APIServiceImpl {
+    /// Queries and returns the price of the given signals
     async fn prices(
         &self, // Change to accept mutable reference
         request: Request<QueryPricesRequest>,
