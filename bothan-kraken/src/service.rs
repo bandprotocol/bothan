@@ -153,12 +153,12 @@ async fn handle_reconnect(
 ) {
     // TODO: Handle reconnection failure
     let mut locked = connection.lock().await;
-    warn!("attempting to reconnect to binance");
+    warn!("attempting to reconnect to kraken");
     // reconnect
     if let Ok(new_connection) = connector.connect().await {
         *locked = new_connection;
     } else {
-        warn!("failed to reconnect to binance");
+        warn!("failed to reconnect to kraken");
         return;
     }
 
