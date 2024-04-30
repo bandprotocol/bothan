@@ -2,10 +2,24 @@
 version = "0.1.8"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/bandprotocol/bothan"
+exclude = [".github/"]
+
 
 [workspace]
-members = ["bothan-api", "bothan-binance", "bothan-bybit", "bothan-coingecko", "bothan-coinmarketcap", "bothan-core", "bothan-cryptocompare", "bothan-htx", "bothan-kraken"]
+members = [
+    "bothan-api",
+    "bothan-binance",
+    "bothan-bybit",
+    "bothan-coingecko",
+    "bothan-coinmarketcap",
+    "bothan-core",
+    "bothan-cryptocompare",
+    "bothan-htx",
+    "bothan-kraken",
+]
 resolver = "2"
+
 
 [workspace.dependencies]
 async-trait = "0.1.77"
