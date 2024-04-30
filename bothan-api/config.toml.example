@@ -3,6 +3,8 @@ addr = "127.0.0.1:50051"
 
 [source.binance]
 
+[source.bybit]
+
 [source.coingecko]
 api_key = ""
 
@@ -13,6 +15,8 @@ api_key = ""
 api_key = ""
 
 [source.htx]
+
+[source.kraken]
 
 [registry.crypto_price]
 source = "registry/crypto_prices.json.example"

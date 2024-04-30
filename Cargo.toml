@@ -4,7 +4,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [workspace]
-members = ["bothan-api", "bothan-binance", "bothan-coingecko", "bothan-coinmarketcap", "bothan-core", "bothan-cryptocompare", "bothan-htx", "bothan-kraken"]
+members = ["bothan-api", "bothan-binance", "bothan-bybit", "bothan-coingecko", "bothan-coinmarketcap", "bothan-core", "bothan-cryptocompare", "bothan-htx", "bothan-kraken"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -29,6 +29,7 @@ url = "2.5.0"
 
 bothan-core = { version = "0.1.0", path = "bothan-core" }
 bothan-binance = { version = "0.1.0", path = "bothan-binance" }
+bothan-bybit = { version = "0.1.0", path = "bothan-bybit" }
 bothan-coingecko = { version = "0.1.0", path = "bothan-coingecko" }
 bothan-coinmarketcap = { version = "0.1.0", path = "bothan-coinmarketcap" }
 bothan-cryptocompare = { version = "0.1.0", path = "bothan-cryptocompare" }
