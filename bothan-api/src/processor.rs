@@ -19,11 +19,13 @@ pub enum ProcessorError {
     NotEnoughSources,
 }
 
+/// The Processor trait defines the methods that a processor must implement.
 #[enum_dispatch]
 pub trait Processor {
     fn process(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Result<f64, ProcessorError>;
 }
 
+/// The Process enum represents the different types of processors that can be used.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
 #[enum_dispatch(Processor)]

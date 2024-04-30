@@ -12,6 +12,7 @@ bothan-coinmarketcap = { workspace = true }
 bothan-core = { workspace = true }
 bothan-cryptocompare = { workspace = true }
 bothan-htx = { workspace = true }
+bothan-kraken = { workspace = true }
 
 humantime-serde = { workspace = true }
 serde = { workspace = true }
