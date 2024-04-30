@@ -11,7 +11,6 @@ and helping you finalize your pull requests.
 * [Getting Started](#getting-started)
     * [Issues](#issues)
     * [Pull Requests](#pull-requests)
-* [Getting Help](#getting-help)
 
 ## Getting Started
 
