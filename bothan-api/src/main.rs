@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tonic::transport::Server;
 
 use bothan_binance::BinanceServiceBuilder;
+use bothan_bybit::BybitServiceBuilder;
 use bothan_coingecko::CoinGeckoServiceBuilder;
 use bothan_coinmarketcap::CoinMarketCapServiceBuilder;
 use bothan_cryptocompare::CryptoCompareServiceBuilder;
@@ -48,6 +49,7 @@ async fn main() {
 
 async fn initialize_services(config: AppConfig, manager: &mut PriceServiceManager) {
     add_service!(manager, BinanceServiceBuilder, config.source.binance);
+    add_service!(manager, BybitServiceBuilder, config.source.bybit);
     add_service!(manager, CoinGeckoServiceBuilder, config.source.coingecko);
     add_service!(
         manager,

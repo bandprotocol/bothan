@@ -5,6 +5,8 @@ addr = "127.0.0.1:50051"
 
 [source.coingecko]
 
+[source.bybit]
+
 [registry]
 source = ""
 version = "1.0"

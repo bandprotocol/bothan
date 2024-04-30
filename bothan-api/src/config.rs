@@ -2,6 +2,7 @@ use config::Config;
 use serde::Deserialize;
 
 use bothan_binance::BinanceServiceBuilderOpts;
+use bothan_bybit::BybitServiceBuilderOpts;
 use bothan_coingecko::CoinGeckoServiceBuilderOpts;
 use bothan_coinmarketcap::CoinMarketCapServiceBuilderOpts;
 use bothan_cryptocompare::CryptoCompareServiceBuilderOpts;
@@ -15,6 +16,7 @@ pub struct GrpcConfig {
 #[derive(Clone, Debug, Deserialize)]
 pub struct SourceConfig {
     pub binance: BinanceServiceBuilderOpts,
+    pub bybit: BybitServiceBuilderOpts,
     pub coingecko: CoinGeckoServiceBuilderOpts,
     pub coinmarketcap: CoinMarketCapServiceBuilderOpts,
     pub cryptocompare: CryptoCompareServiceBuilderOpts,
