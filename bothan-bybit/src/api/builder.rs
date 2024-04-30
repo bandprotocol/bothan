@@ -17,8 +17,6 @@ impl BybitRestAPIBuilder {
 
     pub fn build(self) -> Result<BybitRestAPI, BuilderError> {
         let parsed_url = Url::parse(&self.url)?;
-        // let mut headers = HeaderMap::new();
-        // headers.insert("Host", HeaderValue::from_static("value"));
         let client = ClientBuilder::new().build()?;
 
         Ok(BybitRestAPI::new(parsed_url, client))
