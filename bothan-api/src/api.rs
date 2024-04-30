@@ -2,17 +2,20 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
+use tracing::info;
 
 use crate::manager::price_service::manager::PriceServiceManager;
 use crate::proto::query::query::query_server::Query;
 use crate::proto::query::query::{QueryPricesRequest, QueryPricesResponse};
 use crate::utils::arc_mutex;
 
+/// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
     manager: Arc<Mutex<PriceServiceManager>>,
 }
 
 impl CryptoQueryServer {
+    /// Creates a new `CryptoQueryServer` instance.
     pub fn new(manager: PriceServiceManager) -> Self {
         CryptoQueryServer {
             manager: arc_mutex!(manager),
@@ -27,7 +30,7 @@ impl Query for CryptoQueryServer {
         request: Request<QueryPricesRequest>,
     ) -> Result<Response<QueryPricesResponse>, Status> {
         let signal_ids = request.into_inner().signal_ids;
-        println!("Received signal_ids: {:?}", signal_ids);
+        info!("Received signal_ids: {:?}", signal_ids);
         let l = &signal_ids
             .iter()
             .map(|symbol| symbol.as_str())
