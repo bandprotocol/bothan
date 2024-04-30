@@ -14,7 +14,7 @@ pub struct GrpcConfig {
     pub addr: String,
 }
 
-/// The configuration for the data sources.
+/// The configuration for each data source
 #[derive(Clone, Debug, Deserialize)]
 pub struct SourceConfig {
     pub binance: BinanceServiceBuilderOpts,
@@ -27,17 +27,18 @@ pub struct SourceConfig {
 
 /// The configuration for the registry.
 #[derive(Clone, Debug, Deserialize)]
-pub struct RegistrySource {
+pub struct RegistrySourceConfig {
     pub source: String,
     pub version: String,
 }
 
-/// The main application configuration.
+/// The registry source configuration.
 #[derive(Clone, Debug, Deserialize)]
 pub struct RegistryConfig {
-    pub crypto_price: RegistrySource,
+    pub crypto_price: RegistrySourceConfig,
 }
 
+/// The main applciation configuration.
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
