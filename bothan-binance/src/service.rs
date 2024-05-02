@@ -63,7 +63,7 @@ impl Service for BinanceService {
                 Err(CacheError::DoesNotExist) => {
                     // If the id is not in the cache, subscribe to it
                     ids_to_sub.push(ids[idx].to_string());
-                    Err(ServiceError::Pending)
+                    Err(ServiceError::PendingResult)
                 }
                 Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
                 Err(e) => panic!("unexpected error: {}", e), // This should never happen

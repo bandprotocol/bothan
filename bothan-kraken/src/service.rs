@@ -65,7 +65,7 @@ impl Service for KrakenService {
                 Err(CacheError::DoesNotExist) => {
                     // If the id is not in the cache, subscribe to it
                     sub_ids.push(ids[idx].to_string());
-                    Err(ServiceError::Pending)
+                    Err(ServiceError::PendingResult)
                 }
                 Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
                 Err(e) => panic!("unexpected error: {}", e), // This should never happen

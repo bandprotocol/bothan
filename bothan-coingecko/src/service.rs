@@ -70,7 +70,7 @@ impl Service for CoinGeckoService {
                 Err(CacheError::DoesNotExist) => {
                     if reader.contains(ids[idx]) {
                         to_set_pending.push(ids[idx].to_string());
-                        Err(ServiceError::Pending)
+                        Err(ServiceError::PendingResult)
                     } else {
                         Err(ServiceError::InvalidSymbol)
                     }
