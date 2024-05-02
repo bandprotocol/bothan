@@ -7,7 +7,7 @@ use tokio::select;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio::time::{interval, Instant};
-use tokio_util::sync::CancellationToken;
+use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::info;
 
 use crate::cache::error::Error;
@@ -17,13 +17,7 @@ type Store<T> = HashMap<String, Option<Entry<T>>>;
 
 pub struct Cache<T> {
     store: Arc<Mutex<Store<T>>>,
-    token: CancellationToken,
-}
-
-impl<T> Drop for Cache<T> {
-    fn drop(&mut self) {
-        self.token.cancel()
-    }
+    _drop_guard: DropGuard,
 }
 
 // Naive implementation of a cache. Eviction is done on a separate task at a regular interval
@@ -36,7 +30,10 @@ impl<T: Send + Clone + 'static> Cache<T> {
 
         start_eviction_process(store.clone(), token.clone(), sender);
 
-        Self { store, token }
+        Self {
+            store,
+            _drop_guard: token.drop_guard(),
+        }
     }
 
     pub async fn set_pending(&self, id: String) {
