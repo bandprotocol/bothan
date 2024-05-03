@@ -71,24 +71,27 @@ pub fn start_service(
 
 async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceData>) {
     let keys = cache.keys().await;
-    let uppercase_keys: Vec<String> = keys.into_iter().map(|key| key.to_uppercase()).collect();
 
-    let now = Utc::now().timestamp() as u64;
+    if !keys.is_empty() {
+        let uppercase_keys: Vec<String> = keys.into_iter().map(|key| key.to_uppercase()).collect();
 
-    let ids = uppercase_keys
-        .iter()
-        .map(|x| x.as_str())
-        .collect::<Vec<&str>>();
-    if let Ok(symbol_prices) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
-        for (&id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
-            if let Some(m) = symbol_price {
-                process_symbol_price(id, m, &now, cache).await;
-            } else {
-                warn!("id {} is missing symbol price data", id);
+        let now = Utc::now().timestamp() as u64;
+
+        let ids = uppercase_keys
+            .iter()
+            .map(|x| x.as_str())
+            .collect::<Vec<&str>>();
+        if let Ok(symbol_prices) = rest_api.get_multi_symbol_price(ids.as_slice()).await {
+            for (&id, symbol_price) in ids.iter().zip(symbol_prices.iter()) {
+                if let Some(m) = symbol_price {
+                    process_symbol_price(id, m, &now, cache).await;
+                } else {
+                    warn!("id {} is missing symbol price data", id);
+                }
             }
+        } else {
+            warn!("failed to get symbol price");
         }
-    } else {
-        warn!("failed to get symbol price");
     }
 }
 

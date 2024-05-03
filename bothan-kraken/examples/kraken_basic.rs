@@ -12,7 +12,7 @@ async fn main() {
         loop {
             let data = service.get_price_data(&["BTC/USD", "ETH/USD"]).await;
             println!("{:?}", data);
-            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
     }
 }

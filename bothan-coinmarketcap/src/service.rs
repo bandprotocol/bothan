@@ -75,26 +75,29 @@ pub async fn start_service(
 
 async fn update_price_data(rest_api: Arc<CoinMarketCapRestAPI>, cache: Arc<Cache<PriceData>>) {
     let keys = cache.keys().await;
-    let parsed_ids = keys
-        .iter()
-        .filter_map(|s| s.parse().ok())
-        .collect::<Vec<usize>>();
 
-    if let Ok(quote) = rest_api.get_latest_quotes(parsed_ids.as_slice()).await {
-        let mut set = JoinSet::new();
-        for (id, quote) in parsed_ids.iter().zip(quote.into_iter()) {
-            if let Some(q) = quote {
-                let cloned_cache = cache.clone();
-                set.spawn(async move {
-                    process_price_quote(&q, &cloned_cache).await;
-                });
-            } else {
-                warn!("id {} is missing market data", id);
+    if !keys.is_empty() {
+        let parsed_ids = keys
+            .iter()
+            .filter_map(|s| s.parse().ok())
+            .collect::<Vec<usize>>();
+
+        if let Ok(quote) = rest_api.get_latest_quotes(parsed_ids.as_slice()).await {
+            let mut set = JoinSet::new();
+            for (id, quote) in parsed_ids.iter().zip(quote.into_iter()) {
+                if let Some(q) = quote {
+                    let cloned_cache = cache.clone();
+                    set.spawn(async move {
+                        process_price_quote(&q, &cloned_cache).await;
+                    });
+                } else {
+                    warn!("id {} is missing market data", id);
+                }
             }
+            while set.join_next().await.is_some() {}
+        } else {
+            warn!("failed to get market data");
         }
-        while set.join_next().await.is_some() {}
-    } else {
-        warn!("failed to get market data");
     }
 }
 
