@@ -45,7 +45,7 @@ impl Service for CoinMarketCapService {
                 Ok(price_data) => Ok(price_data),
                 Err(CacheError::DoesNotExist) => {
                     to_set_pending.push(ids[idx].to_string());
-                    Err(ServiceError::Pending)
+                    Err(ServiceError::PendingResult)
                 }
                 Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
                 Err(e) => panic!("unexpected error: {}", e), // This should never happen
