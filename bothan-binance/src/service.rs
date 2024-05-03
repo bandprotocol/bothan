@@ -15,12 +15,14 @@ use crate::api::types::{BinanceResponse, Data};
 use crate::api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::types::{Command, DEFAULT_TIMEOUT};
 
+/// A service for interacting with the Binance API to get the exchange's asset's price data.
 pub struct BinanceService {
     cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
 impl BinanceService {
+    /// Create a new Binance service.
     pub fn new(
         connector: Arc<BinanceWebSocketConnector>,
         connection: Arc<Mutex<BinanceWebSocketConnection>>,
@@ -49,6 +51,7 @@ impl BinanceService {
 
 #[async_trait::async_trait]
 impl Service for BinanceService {
+    /// Get price data for a list of ids.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut ids_to_sub = Vec::new();
 

@@ -10,15 +10,19 @@ use tracing::warn;
 use crate::api::error::Error;
 use crate::api::types::BinanceResponse;
 
+/// Binance WebSocket Connector
 pub struct BinanceWebSocketConnector {
     url: String,
 }
 
 impl BinanceWebSocketConnector {
+    /// Create a new BinanceWebSocketConnector
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
+    /// Creates a new connection to the Binance WebSocket while returning a `BinanceWebSocketConnection`.
+    /// If the connection fails, an `Error` is returned.
     pub async fn connect(&self) -> Result<BinanceWebSocketConnection, Error> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
@@ -32,17 +36,20 @@ impl BinanceWebSocketConnector {
     }
 }
 
+/// Binance WebSocket Connection
 pub struct BinanceWebSocketConnection {
     sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 }
 
 impl BinanceWebSocketConnection {
+    /// Create a new BinanceWebSocketConnection
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
     }
 
+    /// Subscribes to a list of symbols. If the subscription fails, an `Error` is returned.
     pub async fn subscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
         let stream_ids = ids
             .iter()
@@ -59,6 +66,7 @@ impl BinanceWebSocketConnection {
         Ok(self.sender.send(message).await?)
     }
 
+    /// Unsubscribes from a list of symbols. If unable to subscribe, an `Error` is returned.
     pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
         let stream_ids = ids
             .iter()
@@ -75,6 +83,8 @@ impl BinanceWebSocketConnection {
         Ok(self.sender.send(message).await?)
     }
 
+    /// Awaits and returns the next message from the WebSocket connection. If the message is
+    /// successfully received, a `BinanceResponse` is returned.
     pub async fn next(&mut self) -> Result<BinanceResponse, Error> {
         if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {
