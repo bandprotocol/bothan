@@ -1,5 +1,5 @@
 # Start from the latest Rust image
-FROM rust:bookworm as builder
+FROM rust:1.78-bookworm as builder
 
 # Create a new empty Rust project
 RUN USER=root cargo new --bin bothan-api
