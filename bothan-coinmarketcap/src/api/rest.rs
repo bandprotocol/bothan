@@ -6,16 +6,20 @@ use reqwest::{Client, RequestBuilder, Response, Url};
 use crate::api::error::RestAPIError;
 use crate::api::types::{Quote, Response as CmcResponse};
 
+/// CoinMarketCap REST API client.
 pub struct CoinMarketCapRestAPI {
     url: Url,
     client: Client,
 }
 
 impl CoinMarketCapRestAPI {
+    /// Creates a new CoinMarketCap REST API client.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
+    /// Fetches the latest quotes for the given cryptocurrency IDs.
+    /// Equivalent to the `/v2/cryptocurrency/quotes/latest` endpoint.
     pub async fn get_latest_quotes(
         &self,
         ids: &[usize],
@@ -62,9 +66,9 @@ pub(crate) mod test {
     pub(crate) async fn setup() -> (ServerGuard, CoinMarketCapRestAPI) {
         let server = Server::new_async().await;
 
-        let mut builder = CoinMarketCapRestAPIBuilder::default();
-        builder.with_url(&server.url());
-        builder.with_api_key("test");
+        let builder = CoinMarketCapRestAPIBuilder::default()
+            .with_url(&server.url())
+            .with_api_key("test");
         let api = builder.build().unwrap();
 
         (server, api)
