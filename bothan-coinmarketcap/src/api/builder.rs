@@ -8,7 +8,7 @@ use crate::api::CoinMarketCapRestAPI;
 
 /// Builds a CoinMarketCapRestAPI with custom parameters.
 /// Methods can be chained to set the parameters and the
-/// [`CoinMarketCapRestAPI`](CoinMarketCapRestAPI) is constructed
+/// `CoinMarketCapRestAPI` is constructed
 /// by calling the [`build`](CoinMarketCapRestAPIBuilder::build) method.
 /// # Example
 /// ```no_run rust
@@ -30,7 +30,7 @@ pub struct CoinMarketCapRestAPIBuilder {
 
 impl CoinMarketCapRestAPIBuilder {
     /// Sets the URL for the CoinMarketCap API.
-    /// The default URL is [`DEFAULT_URL`](DEFAULT_URL).
+    /// The default URL is `DEFAULT_URL`.
     pub fn with_url(mut self, url: &str) -> Self {
         self.url = url.into();
         self
@@ -43,7 +43,7 @@ impl CoinMarketCapRestAPIBuilder {
         self
     }
 
-    /// Creates the configured [`CoinMarketCapRestAPI`](CoinMarketCapRestAPI).
+    /// Creates the configured `CoinMarketCapRestAPI`.
     pub fn build(self) -> Result<CoinMarketCapRestAPI, Error> {
         let mut headers = HeaderMap::new();
 
@@ -65,7 +65,7 @@ impl CoinMarketCapRestAPIBuilder {
 }
 
 impl Default for CoinMarketCapRestAPIBuilder {
-    /// Creates a new [`CoinMarketCapRestAPIBuilder`](CoinMarketCapRestAPIBuilder) with the
+    /// Creates a new `CoinMarketCapRestAPIBuilder` with the
     /// default URL and no API key.
     fn default() -> Self {
         CoinMarketCapRestAPIBuilder {

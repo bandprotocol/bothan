@@ -8,7 +8,7 @@ use crate::CoinMarketCapService;
 pub(crate) const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 pub(crate) const DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL: Duration = Duration::from_secs(86400);
 
-/// Options for the [`CoinMarketCapServiceBuilder`](CoinMarketCapServiceBuilder).
+/// Options for the `CoinMarketCapServiceBuilder`.
 #[derive(Clone, Debug, Deserialize)]
 pub struct CoinMarketCapServiceBuilderOpts {
     pub url: Option<String>,
@@ -46,7 +46,7 @@ pub struct CoinMarketCapServiceBuilder {
 }
 
 impl CoinMarketCapServiceBuilder {
-    /// Returns a new CoinMarketCap service builder.
+    /// Returns a new `CoinMarketCapServiceBuilder`.
     pub fn new(opts: CoinMarketCapServiceBuilderOpts) -> Self {
         Self {
             url: opts.url,
@@ -59,7 +59,7 @@ impl CoinMarketCapServiceBuilder {
     }
 
     /// Sets the URL for the CoinMarketCap API.
-    /// The default URL is [`DEFAULT_URL`](DEFAULT_URL).
+    /// The default URL is `DEFAULT_URL`.
     pub fn with_url(mut self, url: &str) -> Self {
         self.url = Some(url.into());
         self
@@ -74,7 +74,7 @@ impl CoinMarketCapServiceBuilder {
 
     /// Sets the update interval for the CoinMarketCap service.
     /// The service will update the quotes for all tracked assets at this interval.
-    /// The default interval is [`DEFAULT_UPDATE_INTERVAL`](DEFAULT_UPDATE_INTERVAL).
+    /// The default interval is `DEFAULT_UPDATE_INTERVAL`.
     pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
         self.update_interval = update_interval;
         self
@@ -82,7 +82,7 @@ impl CoinMarketCapServiceBuilder {
 
     /// Sets the update interval for the supported assets list.
     /// The service will update the list of supported assets at this interval.
-    /// The default interval is [`DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL`](DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL).
+    /// The default interval is `DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL`.
     pub fn with_update_supported_assets_interval(
         mut self,
         update_supported_assets_interval: Duration,
@@ -91,7 +91,7 @@ impl CoinMarketCapServiceBuilder {
         self
     }
 
-    /// Creates the configured [`CoinMarketCapService`](CoinMarketCapService).
+    /// Creates the configured `CoinMarketCapService`.
     pub async fn build(self) -> Result<CoinMarketCapService, BuilderError> {
         let mut api_builder = CoinMarketCapRestAPIBuilder::default();
         if let Some(url) = &self.url {
@@ -109,7 +109,7 @@ impl CoinMarketCapServiceBuilder {
 }
 
 impl Default for CoinMarketCapServiceBuilder {
-    /// Creates a new [`CoinMarketCapServiceBuilder`](CoinMarketCapServiceBuilder) with the default
+    /// Creates a new `CoinMarketCapServiceBuilder` with the default
     /// values. The API key is not set by default.
     fn default() -> Self {
         CoinMarketCapServiceBuilder {
