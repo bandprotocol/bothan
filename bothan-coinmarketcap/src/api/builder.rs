@@ -11,9 +11,10 @@ use crate::api::CoinMarketCapRestAPI;
 /// `CoinMarketCapRestAPI` is constructed
 /// by calling the [`build`](CoinMarketCapRestAPIBuilder::build) method.
 /// # Example
-/// ```no_run rust
+/// ```no_run
 /// use bothan_coinmarketcap::api::builder::CoinMarketCapRestAPIBuilder;
 ///
+/// #[tokio::main]
 /// async fn main() {
 ///     let api = CoinMarketCapRestAPIBuilder::default()
 ///         .with_api_key("your_api_key")

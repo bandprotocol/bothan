@@ -25,9 +25,10 @@ pub struct CoinMarketCapServiceBuilderOpts {
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](CoinMarketCapServiceBuilder::build) method.
 /// # Example
-/// ```no_run rust
+/// ```no_run
 /// use bothan_coinmarketcap::CoinMarketCapServiceBuilder;
 ///
+/// #[tokio::main]
 /// async fn main() {
 ///     let service = CoinMarketCapServiceBuilder::default()
 ///         .with_api_key("your_api_key")
