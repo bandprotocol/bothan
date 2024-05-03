@@ -50,6 +50,7 @@ impl BinanceWebSocketConnection {
     }
 
     /// Subscribes to a list of symbols. If the subscription fails, an `Error` is returned.
+    /// Equivalent to subscribing to the `miniTicker` stream.
     pub async fn subscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
         let stream_ids = ids
             .iter()
@@ -67,6 +68,7 @@ impl BinanceWebSocketConnection {
     }
 
     /// Unsubscribes from a list of symbols. If unable to subscribe, an `Error` is returned.
+    /// Equivalent to unsubscribing from the `miniTicker` stream.
     pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
         let stream_ids = ids
             .iter()
