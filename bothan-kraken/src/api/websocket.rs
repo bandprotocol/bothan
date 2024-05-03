@@ -1,6 +1,7 @@
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
@@ -77,6 +78,11 @@ impl KrakenWebSocketConnection {
                 Ok(Message::Text(msg)) => serde_json::from_str::<KrakenResponse>(&msg)
                     .map_err(|_| Error::UnsupportedMessage),
                 Ok(Message::Close(_)) => Err(Error::ChannelClosed),
+                Err(err) => match err {
+                    TungsteniteError::Protocol(..) => Err(Error::ChannelClosed),
+                    TungsteniteError::ConnectionClosed => Err(Error::ChannelClosed),
+                    _ => Err(Error::UnsupportedMessage),
+                },
                 _ => Err(Error::UnsupportedMessage),
             };
         }

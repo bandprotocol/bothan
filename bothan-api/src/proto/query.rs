@@ -1,3 +1,1 @@
-// @generated
-
 pub mod query;

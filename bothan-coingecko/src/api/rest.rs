@@ -40,12 +40,14 @@ impl CoinGeckoRestAPI {
         let builder_with_query = self.client.get(&url).query(&params);
         let response = send_request(builder_with_query).await?;
         let market_data = parse_response::<Vec<Market>>(response).await?;
-        let mut market_data_map: HashMap<String, Market> =
+        let market_data_map: HashMap<String, Market> =
             HashMap::from_iter(market_data.into_iter().map(|m| (m.id.clone(), m)));
-        Ok(ids
+
+        let markets = ids
             .iter()
-            .map(|id| market_data_map.remove(&id.to_string()))
-            .collect())
+            .map(|id| market_data_map.get(*id).cloned())
+            .collect();
+        Ok(markets)
     }
 }
 

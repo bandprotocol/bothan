@@ -21,6 +21,3 @@ api_key = ""
 [registry.crypto_price]
 source = "registry/crypto_prices.json.example"
 version = "1.0"
-
-[go-proxy]
-addr = "127.0.0.1:8081"
