@@ -41,7 +41,7 @@ pub struct BinanceServiceBuilder {
 }
 
 impl BinanceServiceBuilder {
-    /// Returns a new Binance service builder.
+    /// Returns a new [`BinanceServiceBuilder`](BinanceServiceBuilder) with the given options.
     pub fn new(opts: BinanceServiceBuilderOpts) -> Self {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
@@ -58,16 +58,12 @@ impl BinanceServiceBuilder {
     }
 
     /// Set the internal command channel size for the Binance service.
-    /// The default size is [`100`](DEFAULT_CHANNEL_SIZE).
-    /// Set the internal command channel size for the Binance service.
     /// The default size is [`DEFAULT_CHANNEL_SIZE`](DEFAULT_CHANNEL_SIZE).
     pub fn with_cmd_ch_size(mut self, size: usize) -> Self {
         self.cmd_ch_size = size;
         self
     }
 
-    /// Set the internal remove ID channel size for the Binance service.
-    /// The default size is -[`100`](DEFAULT_CHANNEL_SIZE).
     /// Set the internal remove ID channel size for the Binance service.
     /// The default size is [`DEFAULT_CHANNEL_SIZE`](DEFAULT_CHANNEL_SIZE).
     pub fn with_remove_id_ch_size(mut self, size: usize) -> Self {
