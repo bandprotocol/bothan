@@ -8,6 +8,19 @@ use crate::CoinMarketCapService;
 pub(crate) const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 pub(crate) const DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL: Duration = Duration::from_secs(86400);
 
+/// Options for the [`CoinMarketCapServiceBuilder`](CoinMarketCapServiceBuilder).
+#[derive(Clone, Debug, Deserialize)]
+pub struct CoinMarketCapServiceBuilderOpts {
+    pub url: Option<String>,
+    pub api_key: String,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_interval: Option<Duration>,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub update_supported_assets_interval: Option<Duration>,
+}
+
 /// Builds a CoinMarketCap service with custom options.
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](CoinMarketCapServiceBuilder::build) method.
@@ -25,18 +38,6 @@ pub(crate) const DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL: Duration = Duration::
 ///     // use service ...
 /// }
 /// ```
-#[derive(Clone, Debug, Deserialize)]
-pub struct CoinMarketCapServiceBuilderOpts {
-    pub url: Option<String>,
-    pub api_key: String,
-    #[serde(default)]
-    #[serde(with = "humantime_serde")]
-    pub update_interval: Option<Duration>,
-    #[serde(default)]
-    #[serde(with = "humantime_serde")]
-    pub update_supported_assets_interval: Option<Duration>,
-}
-
 pub struct CoinMarketCapServiceBuilder {
     url: Option<String>,
     api_key: Option<String>,
