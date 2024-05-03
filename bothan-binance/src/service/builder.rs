@@ -20,9 +20,10 @@ pub struct BinanceServiceBuilderOpts {
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](BinanceServiceBuilder::build) method.
 /// # Example
-/// ```no_run rust
+/// ```no_run
 /// use bothan_binance::BinanceServiceBuilder;
 ///
+/// #[tokio::main]
 /// async fn main() {
 ///     let service = BinanceServiceBuilder::default()
 ///         .with_cmd_ch_size(100)
