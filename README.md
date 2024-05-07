@@ -1,25 +1,22 @@
-# Band Price Adapter
-`band-price-adapter` is a Rust library designed to facilitate the retrieval of price information for various cryptocurrencies and assets from diverse sources.
+# Bothan
 
-## Packages
-This project comprises two distinct packages:
+`Bothan` is a collection of libraries for querying and interacting with various cryptocurrency price data APIs.
 
-### price-adapter
-This package offers unified interfaces for seamless interaction with various sources. It includes utility functions that enhance the ease of integration into user applications.
+`Bothan` supports the following sources:
 
-For more details about this package, refer to the documentation [here](./price-adapter/README.md), and the changelog is accessible [here](./price-adapter/CHANGELOG.md).
-
-### price-adapter-raw
-This package serves as a wrapper for each data source, enabling direct querying of prices from the respective sources.
-
-For more details about this package, refer to the documentation [here](./price-adapter-raw/README.md), and the changelog is accessible [here](./price-adapter-raw/CHANGELOG.md).
+- [Binance](bothan-binance)
+- [Bybit](bothan-bybit)
+- [CoinGecko](bothan-coingecko)
+- [CoinMarketCap](bothan-coinmarketcap)
+- [CryptoCompare](bothan-cryptocompare)
+- [HTX](bothan-htx)
+- [Kraken](bothan-kraken)
 
 ## Contributing
-We welcome contributions from the community! Before submitting a pull request, please review our [contributing guidelines](CONTRIBUTING.md).
+
+We welcome contributions from the community! Before submitting a pull request, please review
+our [contributing guidelines](CONTRIBUTING.md).
 
 ## License
 
-Licensed under either of
-
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or http://apache.org/licenses/LICENSE-2.0)
