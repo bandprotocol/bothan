@@ -38,15 +38,17 @@ use crate::utils::arc_mutex;
 pub struct PriceServiceManager {
     service_map: Arc<Mutex<ServiceMap<Box<dyn CoreService>>>>,
     registry: Arc<Registry>,
+    stale_threshold: u64,
 }
 
 impl PriceServiceManager {
     /// Creates a new `PriceServiceManager` given a registry.
-    pub fn new(registry: Arc<Registry>) -> Result<Self, Error> {
+    pub fn new(registry: Arc<Registry>, stale_threshold: u64) -> Result<Self, Error> {
         match Tasks::from_registry(&registry) {
             Ok(_) => Ok(PriceServiceManager {
                 service_map: arc_mutex!(HashMap::new()),
                 registry,
+                stale_threshold,
             }),
             Err(e) => Err(e),
         }
@@ -62,6 +64,7 @@ impl PriceServiceManager {
 
     /// Gets the [`PriceData`](crate::proto::query::query::PriceData) of the given signal ids.
     pub async fn get_prices(&mut self, ids: &[&str]) -> Vec<PriceData> {
+        let current_time = chrono::Utc::now().timestamp() as u64;
         let registry = self.registry.clone();
 
         // remove duplicates
@@ -84,7 +87,15 @@ impl PriceServiceManager {
                     let map = &self.service_map;
                     let src_store = source_results_store.clone();
                     let sig_store = signal_results_store.clone();
-                    handle_tasks(tasks, map, src_store, sig_store).await
+                    handle_tasks(
+                        tasks,
+                        map,
+                        src_store,
+                        sig_store,
+                        current_time,
+                        self.stale_threshold,
+                    )
+                    .await
                 }
                 Err(_) => set_unavailable(available.as_slice(), signal_results_store.clone()).await,
             },
@@ -127,6 +138,8 @@ async fn store_source_data(
     ids: &[&str],
     service_results: Vec<ServiceResult<CorePriceData>>,
     store: Arc<SourceResultsStore>,
+    current_time: u64,
+    stale_threshold: u64,
 ) {
     let results: Vec<(String, f64)> = ids
         .iter()
@@ -134,9 +147,13 @@ async fn store_source_data(
         .filter_map(|(id, service)| {
             service.ok().and_then(|pd| {
                 let key = into_key(service_name, id);
-                f64::from_str(pd.price.as_str())
-                    .ok()
-                    .map(|price| (key, price))
+                if (current_time - pd.timestamp) < stale_threshold {
+                    f64::from_str(pd.price.as_str())
+                        .ok()
+                        .map(|price| (key, price))
+                } else {
+                    None
+                }
             })
         })
         .collect();
@@ -203,6 +220,8 @@ async fn handle_tasks(
     service_map: &Mutex<ServiceMap<Box<dyn CoreService>>>,
     source_results_store: Arc<SourceResultsStore>,
     signal_results_store: Arc<SignalResultsStore>,
+    current_time: u64,
+    stale_threshold: u64,
 ) {
     // Run all source tasks
     let mut task_set = JoinSet::new();
@@ -220,6 +239,8 @@ async fn handle_tasks(
                     cloned_task.source_ids().as_slice(),
                     results,
                     cloned_source_store,
+                    current_time,
+                    stale_threshold,
                 )
                 .await
             });
