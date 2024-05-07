@@ -5,14 +5,14 @@ FROM rust:1.78-bookworm as builder
 RUN USER=root cargo new --bin bothan-api
 
 # Copy the entire workspace
-COPY . .
+COPY .. .
 
 # Build the project
 WORKDIR /bothan-api
 RUN cargo build --release
 
 # Copy the source code
-COPY ./bothan-api/src ./src
+COPY ./bothan-api/server/src ./src
 
 # Rebuild the project
 RUN cargo build -p bothan-api --release
@@ -25,7 +25,7 @@ RUN ldconfig
 COPY --from=builder /target/release/bothan-api /usr/local/bin
 
 # Copy registry
-COPY --from=builder /bothan-api/registry /app/registry
+COPY --from=builder /bothan-api/server/registry /app/registry
 
 WORKDIR /app
 CMD ["bothan-api"]

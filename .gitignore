@@ -18,4 +18,5 @@ Cargo.lock
 
 .DS_Store
 
-/bothan-api/config.toml
+/bothan-api/server/config.toml
+/bothan-api-proxy/config.toml

@@ -3,7 +3,7 @@ services:
   bothan-api:
     build:
       context: .
-      dockerfile: ./bothan-api/Dockerfile
+      dockerfile: bothan-api/server/Dockerfile
     volumes:
       - ./bothan-api/config.toml:/app/config.toml
     ports:
