@@ -1,18 +1,18 @@
 version: v1
 plugins:
-  - plugin: prost
+  - plugin: buf.build/community/neoeinstein-prost:v0.3.1
     out: ../bothan-api/src/proto/query
-  - name: tonic
+  - plugin: buf.build/community/neoeinstein-tonic:v0.4.0
     out: ../bothan-api/src/proto/query
-  - plugin: go
+  - plugin: buf.build/protocolbuffers/go:v1.34.0
     out: ../bothan-api-proxy
     opt:
       - paths=source_relative
-  - plugin: go-grpc
+  - plugin: buf.build/grpc/go:v1.3.0
     out: ../bothan-api-proxy
     opt:
       - paths=source_relative
-  - plugin: grpc-gateway
+  - plugin: buf.build/grpc-ecosystem/gateway:v2.19.1
     out: ../bothan-api-proxy
     opt:
       - paths=source_relative

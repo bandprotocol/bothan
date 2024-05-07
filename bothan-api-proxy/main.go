@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pelletier/go-toml"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -43,7 +43,7 @@ func run(grpcConfig GrpcConfig, goProxyConfig GoProxyConfig) error {
 }
 
 func main() {
-	config, err := toml.LoadFile("../config.toml")
+	config, err := toml.LoadFile("./config.toml")
 	if err != nil {
 		fmt.Println("Error loading TOML file:", err)
 		return
