@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 
-	client "github.com/bandprotocol/bothan/bothan-api/client/proto"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/query"
 )
 
 type GrpcConfig struct {
@@ -31,7 +31,7 @@ func run(grpcConfig GrpcConfig, goProxyConfig GoProxyConfig) error {
 	// Note: Make sure the gRPC server is running properly and accessible
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := client.RegisterQueryHandlerFromEndpoint(ctx, mux, grpcConfig.Addr, opts)
+	err := query.RegisterQueryHandlerFromEndpoint(ctx, mux, grpcConfig.Addr, opts)
 	if err != nil {
 		return err
 	}

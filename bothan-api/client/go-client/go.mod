@@ -1,4 +1,4 @@
-module github.com/bandprotocol/bothan/bothan-api/client
+module github.com/bandprotocol/bothan/bothan-api/client/go-client
 
 go 1.22.0
 
