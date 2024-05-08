@@ -7,17 +7,7 @@ exclude = [".github/"]
 
 
 [workspace]
-members = [
-    "bothan-api/server",
-    "bothan-binance",
-    "bothan-bybit",
-    "bothan-coingecko",
-    "bothan-coinmarketcap",
-    "bothan-core",
-    "bothan-cryptocompare",
-    "bothan-htx",
-    "bothan-kraken",
-]
+members = ["bothan-api/server"]
 resolver = "2"
 
 
