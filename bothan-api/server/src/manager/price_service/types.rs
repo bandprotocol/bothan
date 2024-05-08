@@ -4,13 +4,13 @@ use std::sync::Arc;
 
 use tokio::sync::{Mutex, RwLock};
 
-use crate::proto::query::query::PriceOption;
+use crate::proto::query::query::PriceStatus;
 
 /// Type alias for a store of results from a source.
 pub(crate) type SourceResultsStore = ResultsStore<f64>;
 
 /// Type alias for a store of results from a signal.
-pub(crate) type SignalResultsStore = ResultsStore<Result<f64, PriceOption>>;
+pub(crate) type SignalResultsStore = ResultsStore<Result<f64, PriceStatus>>;
 
 /// Type alias for a map of services.
 pub(crate) type ServiceMap<T> = HashMap<String, Arc<Mutex<T>>>;
