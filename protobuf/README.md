@@ -1,10 +1,12 @@
 # Pre-requisites
 
-```bash
-cargo install protoc-gen-prost install protoc-gen-tonic
-```
+To generate the protobuf files, you need to have the following installed:
 
-# Generate protobuf files
+- [Buf](https://buf.build/docs/installation)
+
+# Generate
+
+To generate the protobuf files, run the following command:
 
 ```bash
 buf generate
