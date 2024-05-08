@@ -3,7 +3,7 @@ module go-proxy
 go 1.22.0
 
 require (
-	github.com/bandprotocol/bothan/bothan-api/client v0.0.1
+	github.com/bandprotocol/bothan/bothan-api/client/go-client v0.0.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/pelletier/go-toml v1.9.5
 	google.golang.org/grpc v1.63.2
@@ -18,4 +18,4 @@ require (
 	google.golang.org/protobuf v1.34.1 // indirect
 )
 
-replace github.com/bandprotocol/bothan/bothan-api/client => ../bothan-api/client/go-client
+replace github.com/bandprotocol/bothan/bothan-api/client/go-client => ../bothan-api/client/go-client
