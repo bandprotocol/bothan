@@ -25,7 +25,7 @@ pub struct PriceData {
     /// The price of the symbol.
     #[prost(string, tag = "2")]
     pub price: ::prost::alloc::string::String,
-    /// PriceStatus defines the price option of a symbol.
+    /// PriceStatus defines the price status of a symbol.
     #[prost(enumeration = "PriceStatus", tag = "3")]
     pub price_status: i32,
 }
@@ -33,13 +33,13 @@ pub struct PriceData {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PriceStatus {
-    /// PRICE_STATUS_UNSPECIFIED defines an unspecified price option.
+    /// PRICE_STATUS_UNSPECIFIED defines an unspecified price status.
     Unspecified = 0,
-    /// PRICE_STATUS_UNSUPPORTED defines an unsupported price option.
+    /// PRICE_STATUS_UNSUPPORTED defines an unsupported price status.
     Unsupported = 1,
-    /// PRICE_STATUS_UNAVAILABLE defines an unavailable price option.
+    /// PRICE_STATUS_UNAVAILABLE defines an unavailable price status.
     Unavailable = 2,
-    /// PRICE_STATUS_AVAILABLE defines an available price option.
+    /// PRICE_STATUS_AVAILABLE defines an available price status.
     Available = 3,
 }
 impl PriceStatus {

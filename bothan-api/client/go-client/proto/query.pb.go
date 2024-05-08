@@ -25,13 +25,13 @@ const (
 type PriceStatus int32
 
 const (
-	// PRICE_STATUS_UNSPECIFIED defines an unspecified price option.
+	// PRICE_STATUS_UNSPECIFIED defines an unspecified price status.
 	PriceStatus_PRICE_STATUS_UNSPECIFIED PriceStatus = 0
-	// PRICE_STATUS_UNSUPPORTED defines an unsupported price option.
+	// PRICE_STATUS_UNSUPPORTED defines an unsupported price status.
 	PriceStatus_PRICE_STATUS_UNSUPPORTED PriceStatus = 1
-	// PRICE_STATUS_UNAVAILABLE defines an unavailable price option.
+	// PRICE_STATUS_UNAVAILABLE defines an unavailable price status.
 	PriceStatus_PRICE_STATUS_UNAVAILABLE PriceStatus = 2
-	// PRICE_STATUS_AVAILABLE defines an available price option.
+	// PRICE_STATUS_AVAILABLE defines an available price status.
 	PriceStatus_PRICE_STATUS_AVAILABLE PriceStatus = 3
 )
 
@@ -186,7 +186,7 @@ type PriceData struct {
 	SignalId string `protobuf:"bytes,1,opt,name=signal_id,json=signalId,proto3" json:"signal_id,omitempty"`
 	// The price of the symbol.
 	Price string `protobuf:"bytes,2,opt,name=price,proto3" json:"price,omitempty"`
-	// PriceStatus defines the price option of a symbol.
+	// PriceStatus defines the price status of a symbol.
 	PriceStatus PriceStatus `protobuf:"varint,3,opt,name=price_status,json=priceStatus,proto3,enum=query.PriceStatus" json:"price_status,omitempty"`
 }
 
