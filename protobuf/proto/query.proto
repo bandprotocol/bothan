@@ -27,18 +27,18 @@ message PriceData {
   string signal_id = 1;
   // The price of the symbol.
   string price = 2;
-  // PriceOption defines the price option of a symbol.
-  PriceOption price_option = 3;
+  // PriceStatus defines the price status of a symbol.
+  PriceStatus price_status = 3;
 }
 
 // PriceOption defines the price option of a price.
-enum PriceOption {
-  // PRICE_OPTION_UNSPECIFIED defines an unspecified price option.
-  PRICE_OPTION_UNSPECIFIED = 0;
-  // PRICE_OPTION_UNSUPPORTED defines an unsupported price option.
-  PRICE_OPTION_UNSUPPORTED = 1;
-  // PRICE_OPTION_UNAVAILABLE defines an unavailable price option.
-  PRICE_OPTION_UNAVAILABLE = 2;
-  // PRICE_OPTION_AVAILABLE defines an available price option.
-  PRICE_OPTION_AVAILABLE = 3;
+enum PriceStatus {
+  // PRICE_STATUS_UNSPECIFIED defines an unspecified price status.
+  PRICE_STATUS_UNSPECIFIED = 0;
+  // PRICE_STATUS_UNSUPPORTED defines an unsupported price status.
+  PRICE_STATUS_UNSUPPORTED = 1;
+  // PRICE_STATUS_UNAVAILABLE defines an unavailable price status.
+  PRICE_STATUS_UNAVAILABLE = 2;
+  // PRICE_STATUS_AVAILABLE defines an available price status.
+  PRICE_STATUS_AVAILABLE = 3;
 }

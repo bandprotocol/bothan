@@ -12,7 +12,7 @@ use crate::manager::price_service::types::{
     ResultsStore, ServiceMap, SignalResultsStore, SourceResultsStore,
 };
 use crate::manager::price_service::utils::into_key;
-use crate::proto::query::query::{PriceData, PriceOption};
+use crate::proto::query::query::{PriceData, PriceStatus};
 use crate::registry::source::Route;
 use crate::registry::Registry;
 use crate::tasks::error::Error;
@@ -186,7 +186,7 @@ async fn process_signal_task(
     signal_task: &SignalTask,
     source_results_store: &SourceResultsStore,
     signal_results_store: &SignalResultsStore,
-) -> Result<f64, PriceOption> {
+) -> Result<f64, PriceStatus> {
     let mut data = Vec::new();
     for source in &signal_task.signal().sources {
         let key = into_key(&source.source_id, &source.id);
@@ -209,9 +209,9 @@ async fn process_signal_task(
     match prerequisites_data {
         Some(pre_req) => match signal_task.execute(data, pre_req) {
             Some(price) => Ok(price),
-            None => Err(PriceOption::Unavailable),
+            None => Err(PriceStatus::Unavailable),
         },
-        None => Err(PriceOption::Unavailable),
+        None => Err(PriceStatus::Unavailable),
     }
 }
 
@@ -277,7 +277,7 @@ async fn handle_tasks(
 async fn set_unavailable(ids: &[&str], store: Arc<SignalResultsStore>) {
     let results = ids
         .iter()
-        .map(|id| (*id, Err(PriceOption::Unavailable)))
+        .map(|id| (*id, Err(PriceStatus::Unavailable)))
         .collect();
     store.set_batched(results).await;
 }
@@ -292,17 +292,17 @@ async fn get_result_from_store(ids: &[&str], store: Arc<SignalResultsStore>) -> 
             Some(Ok(price)) => PriceData {
                 signal_id: k.to_string(),
                 price: price.to_string(),
-                price_option: PriceOption::Available.into(),
+                price_status: PriceStatus::Available.into(),
             },
             Some(Err(e)) => PriceData {
                 signal_id: k.to_string(),
                 price: "".to_string(),
-                price_option: e.into(),
+                price_status: e.into(),
             },
             None => PriceData {
                 signal_id: k.to_string(),
                 price: "".to_string(),
-                price_option: PriceOption::Unsupported.into(),
+                price_status: PriceStatus::Unsupported.into(),
             },
         })
         .collect()
