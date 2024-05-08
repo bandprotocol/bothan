@@ -23,8 +23,10 @@
 
 ### Usage
 
-To run the Bothan API stack, set the config.toml file in both the [bothan-api](bothan-api)
-and [bothan-api-proxy](bothan-api-proxy) directories then run the following command:
+To run the Bothan API stack, set the config.toml file in both the [bothan-api](bothan-api/server)
+and [bothan-api-proxy](bothan-api-proxy) directories. An example config
+for [bothan-api](bothan-api/server/config.toml.example) and [bothan-api-proxy](bothan-api-proxy/config.toml.example) is
+given. Once the config file is set, run the following command from the root directory.
 
 ```bash
 docker-compose up
