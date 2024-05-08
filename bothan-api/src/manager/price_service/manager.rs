@@ -64,7 +64,7 @@ impl PriceServiceManager {
 
     /// Gets the [`PriceData`](crate::proto::query::query::PriceData) of the given signal ids.
     pub async fn get_prices(&mut self, ids: &[&str]) -> Vec<PriceData> {
-        let current_time = chrono::Utc::now().timestamp() as u64;
+        let current_time = chrono::Utc::now().timestamp();
         let registry = self.registry.clone();
 
         // remove duplicates
@@ -138,7 +138,7 @@ async fn store_source_data(
     ids: &[&str],
     service_results: Vec<ServiceResult<CorePriceData>>,
     store: Arc<SourceResultsStore>,
-    current_time: u64,
+    current_time: i64,
     stale_threshold: u64,
 ) {
     let results: Vec<(String, f64)> = ids
@@ -147,7 +147,7 @@ async fn store_source_data(
         .filter_map(|(id, service)| {
             service.ok().and_then(|pd| {
                 let key = into_key(service_name, id);
-                if (current_time - pd.timestamp) < stale_threshold {
+                if (current_time - pd.timestamp as i64) < stale_threshold as i64 {
                     f64::from_str(pd.price.as_str())
                         .ok()
                         .map(|price| (key, price))
@@ -220,7 +220,7 @@ async fn handle_tasks(
     service_map: &Mutex<ServiceMap<Box<dyn CoreService>>>,
     source_results_store: Arc<SourceResultsStore>,
     signal_results_store: Arc<SignalResultsStore>,
-    current_time: u64,
+    current_time: i64,
     stale_threshold: u64,
 ) {
     // Run all source tasks
