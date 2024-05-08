@@ -14,6 +14,7 @@ bothan-cryptocompare = { workspace = true }
 bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
 
+chrono = { workspace = true }
 humantime-serde = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

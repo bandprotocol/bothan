@@ -47,7 +47,7 @@ async fn main() {
 async fn init_crypto_server(config: &AppConfig) -> CryptoQueryServer {
     let file = File::open(config.registry.crypto_price.source.clone()).unwrap();
     let registry = Arc::new(serde_json::from_reader::<_, Registry>(file).unwrap());
-    let mut manager = PriceServiceManager::new(registry)
+    let mut manager = PriceServiceManager::new(registry, config.manager.stale_threshold)
         .expect("cannot build price service manager with registry");
 
     init_crypto_services(config, &mut manager).await;

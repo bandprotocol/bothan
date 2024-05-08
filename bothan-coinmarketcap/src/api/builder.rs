@@ -6,22 +6,45 @@ use crate::api::error::BuilderError as Error;
 use crate::api::types::DEFAULT_URL;
 use crate::api::CoinMarketCapRestAPI;
 
+/// Builds a CoinMarketCapRestAPI with custom parameters.
+/// Methods can be chained to set the parameters and the
+/// `CoinMarketCapRestAPI` is constructed
+/// by calling the [`build`](CoinMarketCapRestAPIBuilder::build) method.
+/// # Example
+/// ```no_run
+/// use bothan_coinmarketcap::api::builder::CoinMarketCapRestAPIBuilder;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let api = CoinMarketCapRestAPIBuilder::default()
+///         .with_api_key("your_api_key")
+///         .build()
+///         .unwrap();
+///
+///     // use the api ...
+/// }
+/// ```
 pub struct CoinMarketCapRestAPIBuilder {
     url: String,
     api_key: Option<String>,
 }
 
 impl CoinMarketCapRestAPIBuilder {
-    pub fn with_url(&mut self, url: &str) -> &Self {
+    /// Sets the URL for the CoinMarketCap API.
+    /// The default URL is `DEFAULT_URL`.
+    pub fn with_url(mut self, url: &str) -> Self {
         self.url = url.into();
         self
     }
 
-    pub fn with_api_key(&mut self, api_key: &str) -> &Self {
+    /// sets the API key for the CoinMarketCap API.
+    /// The API key is required to access the API.
+    pub fn with_api_key(mut self, api_key: &str) -> Self {
         self.api_key = Some(api_key.into());
         self
     }
 
+    /// Creates the configured `CoinMarketCapRestAPI`.
     pub fn build(self) -> Result<CoinMarketCapRestAPI, Error> {
         let mut headers = HeaderMap::new();
 
@@ -43,6 +66,8 @@ impl CoinMarketCapRestAPIBuilder {
 }
 
 impl Default for CoinMarketCapRestAPIBuilder {
+    /// Creates a new `CoinMarketCapRestAPIBuilder` with the
+    /// default URL and no API key.
     fn default() -> Self {
         CoinMarketCapRestAPIBuilder {
             url: DEFAULT_URL.into(),

@@ -1,6 +1,9 @@
 [grpc]
 addr = "127.0.0.1:50051"
 
+[manager]
+stale_threshold = 300
+
 [source.binance]
 
 [source.bybit]

@@ -15,11 +15,13 @@ use crate::service::parser::{parse_quote, QuoteParserError};
 pub mod builder;
 mod parser;
 
+/// A service that fetches and caches cryptocurrency prices from CoinMarketCap.
 pub struct CoinMarketCapService {
     cache: Arc<Cache<PriceData>>,
 }
 
 impl CoinMarketCapService {
+    /// Creates a new CoinMarketCap service with the given REST API and update interval.
     pub async fn new(rest_api: CoinMarketCapRestAPI, update_interval: Duration) -> Self {
         let cache = Arc::new(Cache::new(None));
         let update_price_interval = interval(update_interval);
@@ -32,6 +34,7 @@ impl CoinMarketCapService {
 
 #[async_trait::async_trait]
 impl Service for CoinMarketCapService {
+    /// Fetches the price data for the given cryptocurrency IDs.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut to_set_pending = Vec::<String>::new();
 
@@ -60,7 +63,7 @@ impl Service for CoinMarketCapService {
     }
 }
 
-pub async fn start_service(
+async fn start_service(
     rest_api: Arc<CoinMarketCapRestAPI>,
     cache: Arc<Cache<PriceData>>,
     mut update_price_interval: Interval,

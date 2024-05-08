@@ -5,7 +5,7 @@ use bothan_core::types::PriceData;
 use crate::api::types::Quote;
 
 #[derive(Debug, thiserror::Error)]
-pub enum QuoteParserError {
+pub(crate) enum QuoteParserError {
     #[error("invalid timestamp")]
     InvalidTimestamp,
 
@@ -13,7 +13,7 @@ pub enum QuoteParserError {
     InvalidPrice,
 }
 
-pub fn parse_quote(quote: &Quote) -> Result<PriceData, QuoteParserError> {
+pub(crate) fn parse_quote(quote: &Quote) -> Result<PriceData, QuoteParserError> {
     let price = quote
         .price_quotes
         .usd

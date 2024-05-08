@@ -15,6 +15,12 @@ pub struct GrpcConfig {
     pub addr: String,
 }
 
+/// The configuration for the manager.
+#[derive(Clone, Debug, Deserialize)]
+pub struct ManagerConfig {
+    pub stale_threshold: u64,
+}
+
 /// The configuration for each data source
 #[derive(Clone, Debug, Deserialize)]
 pub struct SourceConfig {
@@ -40,10 +46,11 @@ pub struct RegistryConfig {
     pub crypto_price: RegistrySourceConfig,
 }
 
-/// The main applciation configuration.
+/// The main application configuration.
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
+    pub manager: ManagerConfig,
     pub source: SourceConfig,
     pub registry: RegistryConfig,
 }
