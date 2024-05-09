@@ -47,7 +47,14 @@ impl KrakenServiceBuilder {
 
     pub async fn build(self) -> Result<KrakenService, Error> {
         let connector = KrakenWebSocketConnector::new(self.url);
-        let connection = connector.connect().await?;
+        let mut connection = connector.connect().await?;
+
+        // Subscribe to a single symbol first to keep connection alive
+        // TODO: find a better solution
+        connection
+            .subscribe_ticker(&["XBT/USD"], None, None)
+            .await?;
+
         let service = KrakenService::new(
             Arc::new(connector),
             Arc::new(Mutex::new(connection)),

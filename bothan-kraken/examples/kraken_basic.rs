@@ -1,7 +1,7 @@
 use tracing_subscriber::fmt::init;
 
 use bothan_core::service::Service;
-use bothan_kraken::builder::KrakenServiceBuilder;
+use bothan_kraken::service::builder::KrakenServiceBuilder;
 
 #[tokio::main]
 async fn main() {
