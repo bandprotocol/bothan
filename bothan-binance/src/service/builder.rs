@@ -75,7 +75,12 @@ impl BinanceServiceBuilder {
     /// Creates the configured `BinanceService`.
     pub async fn build(self) -> Result<BinanceService, Error> {
         let connector = BinanceWebSocketConnector::new(self.url);
-        let connection = connector.connect().await?;
+        let mut connection = connector.connect().await?;
+
+        // Subscribe to a single symbol first to keep connection alive
+        // TODO: find a better solution
+        connection.subscribe(&["btcusdt"]).await?;
+
         let service = BinanceService::new(
             Arc::new(connector),
             Arc::new(Mutex::new(connection)),
