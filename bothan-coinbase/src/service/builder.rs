@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bothan_core::service::Service;
 use serde::Deserialize;
 use tokio::sync::Mutex;
 
@@ -48,20 +49,19 @@ impl CoinbaseServiceBuilder {
 
     pub async fn build(self) -> Result<CoinbaseService, Error> {
         let connector = CoinbaseWebSocketConnector::new(self.url);
-        let mut connection = connector.connect().await?;
+        let connection = connector.connect().await?;
 
-        // Subscribe to a single symbol first to keep connection alive
-        // TODO: find a better solution
-        connection
-            .subscribe(vec![Channel::Ticker], &["BTC-USD"])
-            .await?;
-
-        let service = CoinbaseService::new(
+        let mut service = CoinbaseService::new(
             Arc::new(connector),
             Arc::new(Mutex::new(connection)),
             self.cmd_ch_size,
             self.remove_id_ch_size,
         );
+
+        // Subscribe to a single symbol first to keep connection alive
+        // TODO: find a better solution
+        let _ = service.get_price_data(&["BTC-USD"]).await;
+
         Ok(service)
     }
 }
