@@ -1,5 +1,3 @@
-use tracing::debug;
-
 use crate::post_processor::PostProcessor;
 use crate::processor::Processor;
 use crate::registry::Signal;

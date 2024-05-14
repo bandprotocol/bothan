@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use tracing::{debug, instrument, span, Span};
+use tracing::debug;
 
 use bothan_core::service::{Service as CoreService, ServiceResult};
 use bothan_core::types::PriceData as CorePriceData;
