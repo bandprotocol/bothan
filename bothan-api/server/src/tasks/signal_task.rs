@@ -29,8 +29,13 @@ impl SignalTask {
 
     /// Executes and processes the signal task given the data and prerequisites and returns out
     /// output. If the processing fails, it returns `None`.
-    pub fn execute(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Option<f64> {
-        let processed: f64 = self.signal.processor.process(data, prerequisites).ok()?;
+    pub fn execute_processor(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Option<f64> {
+        self.signal.processor.process(data, prerequisites).ok()
+    }
+
+    /// Executes and post processes the signal task given the processed data and returns out
+    /// output. If the processing fails, it returns `None`.
+    pub fn execute_post_processors(&self, processed: f64) -> Option<f64> {
         self.signal
             .post_processors
             .iter()

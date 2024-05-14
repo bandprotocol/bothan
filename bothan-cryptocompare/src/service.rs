@@ -145,9 +145,9 @@ mod test {
         let symbol_prices = vec![42000.69];
 
         server.set_successful_multi_symbol_price(&["BTC"], &symbol_prices);
-        cache.set_pending("btc".to_string()).await;
+        cache.set_pending("BTC".to_string()).await;
         update_price_data(&rest_api, &cache).await;
-        let result = cache.get("btc").await;
+        let result = cache.get("BTC").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_eq!(result, Ok(expected));
@@ -160,9 +160,9 @@ mod test {
         let id = "BTC";
         let symbol_price = 42000.69;
 
-        cache.set_batch_pending(vec!["btc".to_string()]).await;
+        cache.set_batch_pending(vec!["BTC".to_string()]).await;
         process_symbol_price(id, &symbol_price, &now, &cache).await;
-        let result = cache.get("btc").await;
+        let result = cache.get("BTC").await;
 
         let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_eq!(result, Ok(expected));
@@ -176,7 +176,7 @@ mod test {
         let symbol_price = 42000.69;
 
         process_symbol_price(id, &symbol_price, &now, &cache).await;
-        let result = cache.get("btc").await;
+        let result = cache.get("BTC").await;
         assert!(result.is_err());
     }
 

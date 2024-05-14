@@ -46,6 +46,11 @@ pub struct RegistryConfig {
     pub crypto_price: RegistrySourceConfig,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+pub struct LoggingConfig {
+    pub level: String,
+}
+
 /// The main application configuration.
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
@@ -53,6 +58,7 @@ pub struct AppConfig {
     pub manager: ManagerConfig,
     pub source: SourceConfig,
     pub registry: RegistryConfig,
+    pub logging: LoggingConfig,
 }
 
 impl AppConfig {

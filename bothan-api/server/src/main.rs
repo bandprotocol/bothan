@@ -31,12 +31,15 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
     let config = AppConfig::new().expect("Failed to load configuration");
+    tracing_subscriber::fmt()
+        .with_env_filter(format!("bothan_api={}", config.logging.level))
+        .init();
 
     let crypto_query_server = init_crypto_server(&config).await;
 
     let addr = config.grpc.addr.clone().parse().unwrap();
+
     info!("Server running on {}", addr);
     let _ = Server::builder()
         .add_service(QueryServer::new(crypto_query_server))
