@@ -4,7 +4,6 @@ use bothan_core::service::Service;
 use serde::Deserialize;
 use tokio::sync::Mutex;
 
-use crate::api::types::channels::Channel;
 use crate::api::types::DEFAULT_URL;
 use crate::error::Error;
 use crate::types::DEFAULT_CHANNEL_SIZE;
