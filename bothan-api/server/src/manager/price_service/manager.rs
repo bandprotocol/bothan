@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
+use tracing::{debug, instrument, span, Span};
 
 use bothan_core::service::{Service as CoreService, ServiceResult};
 use bothan_core::types::PriceData as CorePriceData;
@@ -95,11 +96,17 @@ impl PriceServiceManager {
                         current_time,
                         self.stale_threshold,
                     )
-                    .await
+                    .await;
                 }
-                Err(_) => set_unavailable(available.as_slice(), signal_results_store.clone()).await,
+                Err(_) => {
+                    debug!("Unable to generate valid tasks from the registry");
+                    set_unavailable(available.as_slice(), signal_results_store.clone()).await;
+                }
             },
-            None => set_unavailable(available.as_slice(), signal_results_store.clone()).await,
+            None => {
+                debug!("Unable to generate valid tasks from the registry");
+                set_unavailable(available.as_slice(), signal_results_store.clone()).await;
+            }
         };
 
         get_result_from_store(ids, signal_results_store.clone()).await
@@ -191,11 +198,28 @@ async fn process_signal_task(
     for source in &signal_task.signal().sources {
         let key = into_key(&source.source_id, &source.id);
         let saved_price = source_results_store.get(&key).await;
+
         if let Some(price) = saved_price {
             let routed = process_source_routes(price, &source.routes, signal_results_store).await;
+
+            // TODO: Refactor logging packages into helper
+            debug!(
+                "{}::source::{}::price::{}",
+                signal_task.signal_id(),
+                source.source_id,
+                routed.map_or("None".to_string(), |v| v.to_string())
+            );
+
             if let Some(routed_price) = routed {
                 data.push(routed_price);
             }
+        } else {
+            // TODO: Refactor logging packages into helper
+            debug!(
+                "{}::source::{}::price::None",
+                signal_task.signal_id(),
+                source.source_id
+            );
         }
     }
 
@@ -206,12 +230,60 @@ async fn process_signal_task(
         .map(|v| v?.ok())
         .collect::<Option<Vec<f64>>>();
 
-    match prerequisites_data {
-        Some(pre_req) => match signal_task.execute(data, pre_req) {
-            Some(price) => Ok(price),
-            None => Err(PriceStatus::Unavailable),
+    // TODO: Refactor logging packages into helper
+    let vec_str = match &prerequisites_data {
+        None => "None".to_string(),
+        Some(data) => format!(
+            "[{}]",
+            data.iter()
+                .map(|f| f.to_string())
+                .collect::<Vec<String>>()
+                .join(", ")
+        ),
+    };
+    debug!(
+        "{}::prerequisites_data::{}",
+        signal_task.signal_id(),
+        vec_str,
+    );
+
+    let processed_price = match prerequisites_data {
+        Some(pre_req) => match signal_task.execute_processor(data, pre_req) {
+            Some(price) => {
+                debug!("{}::processed_price::{}", signal_task.signal_id(), price);
+                Ok(price)
+            }
+            None => {
+                debug!("{}::processed_price::None", signal_task.signal_id());
+                debug!("{}::post_processed_price::None", signal_task.signal_id());
+                Err(PriceStatus::Unavailable)
+            }
         },
-        None => Err(PriceStatus::Unavailable),
+        None => {
+            debug!("{}::processed_price::None", signal_task.signal_id());
+            Err(PriceStatus::Unavailable)
+        }
+    };
+
+    match processed_price {
+        Ok(processed_price) => match signal_task.execute_post_processors(processed_price) {
+            Some(post_processed_price) => {
+                debug!(
+                    "{}::post_processed_price::{}",
+                    signal_task.signal_id(),
+                    post_processed_price
+                );
+                Ok(post_processed_price)
+            }
+            None => {
+                debug!("{}::post_processed_price::None", signal_task.signal_id());
+                Err(PriceStatus::Unavailable)
+            }
+        },
+        Err(e) => {
+            debug!("{}::post_processed_price::None", signal_task.signal_id());
+            Err(e)
+        }
     }
 }
 

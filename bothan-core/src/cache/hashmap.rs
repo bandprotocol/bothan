@@ -37,11 +37,7 @@ impl<T: Send + Clone + 'static> Cache<T> {
     }
 
     pub async fn set_pending(&self, id: String) {
-        self.store
-            .lock()
-            .await
-            .entry(id.to_ascii_lowercase())
-            .or_insert(None);
+        self.store.lock().await.entry(id).or_insert(None);
     }
 
     pub async fn set_batch_pending(&self, ids: Vec<String>) {
@@ -50,7 +46,7 @@ impl<T: Send + Clone + 'static> Cache<T> {
     }
 
     pub async fn set_data(&self, id: String, data: T) -> Result<(), Error> {
-        match self.store.lock().await.entry(id.to_ascii_lowercase()) {
+        match self.store.lock().await.entry(id) {
             MapEntry::Occupied(mut entry) => {
                 match entry.get_mut() {
                     Some(stored) => {
@@ -143,7 +139,7 @@ fn get_value<T: Send + Clone + 'static>(
     id: &str,
     locked_map: &mut MutexGuard<Store<T>>,
 ) -> Result<T, Error> {
-    match locked_map.entry(id.to_ascii_lowercase()) {
+    match locked_map.entry(id.into()) {
         MapEntry::Occupied(mut entry) => match entry.get_mut() {
             Some(stored) => {
                 stored.bump_last_used();

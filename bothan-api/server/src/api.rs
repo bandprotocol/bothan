@@ -30,7 +30,7 @@ impl Query for CryptoQueryServer {
         request: Request<QueryPricesRequest>,
     ) -> Result<Response<QueryPricesResponse>, Status> {
         let signal_ids = request.into_inner().signal_ids;
-        info!("Received signal_ids: {:?}", signal_ids);
+        info!("crypto_price::received::{:?}", signal_ids);
         let l = &signal_ids
             .iter()
             .map(|symbol| symbol.as_str())
@@ -40,7 +40,7 @@ impl Query for CryptoQueryServer {
         let prices = manager.get_prices(l).await;
 
         let response = QueryPricesResponse { prices };
-
+        info!("crypto_price::response::{:?}", response);
         Ok(Response::new(response))
     }
 }

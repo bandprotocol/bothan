@@ -181,18 +181,14 @@ async fn handle_reconnect(
 async fn save_datum(data: &Data, cache: &Cache<PriceData>) {
     match data {
         Data::MiniTicker(ticker) => {
+            let id = ticker.symbol.clone().to_lowercase();
             let price_data = PriceData {
-                id: ticker.symbol.clone(),
+                id: id.clone(),
                 price: ticker.close_price.clone().to_string(),
                 timestamp: ticker.event_time,
             };
             info!("received prices: {:?}", price_data);
-            let id = price_data.id.clone();
-            if cache
-                .set_data(ticker.symbol.clone(), price_data)
-                .await
-                .is_err()
-            {
+            if cache.set_data(id.clone(), price_data).await.is_err() {
                 warn!("unexpected request to set data for id: {}", id);
             } else {
                 info!("set price for id {}", id);
@@ -256,7 +252,7 @@ mod test {
 
         let ticker = MiniTickerInfo {
             event_time: 1628794647025,
-            symbol: "btcusdt".to_string(),
+            symbol: "BTCUSDT".to_string(),
             close_price: "45000.00".to_string(),
             open_price: "44000.00".to_string(),
             high_price: "46000.00".to_string(),
@@ -286,7 +282,7 @@ mod test {
 
         let ticker = MiniTickerInfo {
             event_time: 1628794647025,
-            symbol: "btcusdt".to_string(),
+            symbol: "BTCUSDT".to_string(),
             close_price: "45000.00".to_string(),
             open_price: "44000.00".to_string(),
             high_price: "46000.00".to_string(),
@@ -297,7 +293,7 @@ mod test {
 
         let data = Data::MiniTicker(ticker);
         let stream_resp = StreamResponse {
-            stream: "btc@miniTicker".to_string(),
+            stream: "btcusdt@miniTicker".to_string(),
             data,
         };
 
