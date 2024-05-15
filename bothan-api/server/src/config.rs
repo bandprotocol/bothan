@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 use bothan_binance::BinanceServiceBuilderOpts;
 use bothan_bybit::BybitServiceBuilderOpts;
+use bothan_coinbase::CoinbaseServiceBuilderOpts;
 use bothan_coingecko::CoinGeckoServiceBuilderOpts;
 use bothan_coinmarketcap::CoinMarketCapServiceBuilderOpts;
 use bothan_cryptocompare::CryptoCompareServiceBuilderOpts;
@@ -26,6 +27,7 @@ pub struct ManagerConfig {
 pub struct SourceConfig {
     pub binance: BinanceServiceBuilderOpts,
     pub bybit: BybitServiceBuilderOpts,
+    pub coinbase: CoinbaseServiceBuilderOpts,
     pub coingecko: CoinGeckoServiceBuilderOpts,
     pub coinmarketcap: CoinMarketCapServiceBuilderOpts,
     pub cryptocompare: CryptoCompareServiceBuilderOpts,
