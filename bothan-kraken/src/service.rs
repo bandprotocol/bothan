@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::Mutex;
-use tokio::time::timeout;
+use tokio::time::{interval, timeout};
 use tracing::{debug, error, info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
@@ -14,7 +14,7 @@ use crate::api::error::Error as KrakenError;
 use crate::api::types::channel::ticker::TickerResponse;
 use crate::api::types::channel::ChannelResponse;
 use crate::api::types::KrakenResponse;
-use crate::types::{Command, DEFAULT_TIMEOUT};
+use crate::types::{Command, DEFAULT_TIMEOUT, KEEP_ALIVE_INTERVAL};
 use crate::{KrakenWebSocketConnection, KrakenWebSocketConnector};
 
 pub mod builder;
@@ -91,8 +91,16 @@ fn start_service(
     command_tx: Arc<Sender<Command>>,
 ) {
     tokio::spawn(async move {
+        let mut ping_interval = interval(KEEP_ALIVE_INTERVAL);
         loop {
             select! {
+                _ = ping_interval.tick() => {
+                    if connection.lock().await.ping().await.is_err() {
+                        warn!("failed to ping kraken");
+                    } else {
+                        debug!("sent ping to kraken");
+                    }
+                },
                 Some(cmd) = command_rx.recv() => {
                     process_command(&cmd, &connection, &cache).await;
                 },
@@ -169,25 +177,26 @@ async fn handle_reconnect(
 
     // If the keys are empty, subscribe to a single symbol to keep the connection alive
     // TODO: find a better solution
-    let cmd = match keys.is_empty() {
-        true => Command::Subscribe(vec!["XBT/USD".to_string()]),
-        false => Command::Subscribe(keys),
-    };
+    // let cmd = match keys.is_empty() {
+    //     true => Command::Subscribe(vec!["BTC/USD".to_string()]),
+    //     false => Command::Subscribe(keys),
+    // };
 
-    if command_tx.send(cmd).await.is_err() {
+    if !keys.is_empty() && command_tx.send(Command::Subscribe(keys)).await.is_err() {
         error!("Failed to send subscribe command");
     };
 }
 
 async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, timestamp: u64) {
     for ticker in tickers {
+        let id = ticker.symbol.clone();
         let price_data = PriceData {
-            id: ticker.symbol.clone(),
+            id: id.clone(),
             price: ticker.last.clone().to_string(),
             timestamp,
         };
+
         info!("received prices: {:?}", price_data);
-        let id = price_data.id.clone();
         if cache.set_data(id.clone(), price_data).await.is_err() {
             warn!("unexpected request to set data for id: {}", id);
         } else {
@@ -198,7 +207,7 @@ async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, t
 
 async fn process_response(resp: &KrakenResponse, cache: &Cache<PriceData>, timestamp: u64) {
     match resp {
-        KrakenResponse::ChannelResponse(resp) => match resp {
+        KrakenResponse::Channel(resp) => match resp {
             ChannelResponse::Ticker(tickers) => save_tickers(tickers, cache, timestamp).await,
             ChannelResponse::Heartbeat => {
                 debug!("received heartbeat from kraken");
@@ -207,8 +216,11 @@ async fn process_response(resp: &KrakenResponse, cache: &Cache<PriceData>, times
                 debug!("received status from kraken: {:?}", status);
             }
         },
-        KrakenResponse::PublicMessageResponse(resp) => {
+        KrakenResponse::PublicMessage(resp) => {
             debug!("received public message from kraken: {:?}", resp);
+        }
+        KrakenResponse::Pong => {
+            debug!("received pong from kraken");
         }
     }
 }

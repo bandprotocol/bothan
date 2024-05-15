@@ -1,7 +1,6 @@
-use serde::Deserialize;
 use std::sync::Arc;
 
-use bothan_core::service::Service;
+use serde::Deserialize;
 use tokio::sync::Mutex;
 
 use crate::api::types::DEFAULT_URL;
@@ -50,7 +49,7 @@ impl KrakenServiceBuilder {
         let connector = KrakenWebSocketConnector::new(self.url);
         let connection = connector.connect().await?;
 
-        let mut service = KrakenService::new(
+        let service = KrakenService::new(
             Arc::new(connector),
             Arc::new(Mutex::new(connection)),
             self.cmd_ch_size,
@@ -59,7 +58,7 @@ impl KrakenServiceBuilder {
 
         // Subscribe to a single symbol first to keep connection alive
         // TODO: find a better solution
-        let _ = service.get_price_data(&["XBT/USD"]).await;
+        // let _ = service.get_price_data(&["XBT/USD"]).await;
 
         Ok(service)
     }
