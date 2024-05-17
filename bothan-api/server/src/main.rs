@@ -16,7 +16,7 @@ use bothan_kraken::KrakenServiceBuilder;
 use crate::api::CryptoQueryServer;
 use crate::config::AppConfig;
 use crate::manager::price_service::manager::PriceServiceManager;
-use crate::proto::query::query::query_server::QueryServer;
+use crate::proto::query::query_server::QueryServer;
 use crate::registry::Registry;
 use crate::utils::add_service;
 
