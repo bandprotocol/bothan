@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 bothan-binance = { workspace = true }
 bothan-bybit = { workspace = true }
+bothan-coinbase = { workspace = true }
 bothan-coingecko = { workspace = true }
 bothan-coinmarketcap = { workspace = true }
 bothan-core = { workspace = true }

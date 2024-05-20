@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use tokio::sync::{Mutex, RwLock};
 
-use crate::proto::query::query::PriceStatus;
+use crate::proto::query::PriceStatus;
 
 /// Type alias for a store of results from a source.
 pub(crate) type SourceResultsStore = ResultsStore<f64>;
