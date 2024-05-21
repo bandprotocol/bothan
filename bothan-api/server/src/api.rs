@@ -5,8 +5,8 @@ use tonic::{Request, Response, Status};
 use tracing::info;
 
 use crate::manager::price_service::manager::PriceServiceManager;
-use crate::proto::query::query::query_server::Query;
-use crate::proto::query::query::{QueryPricesRequest, QueryPricesResponse};
+use crate::proto::query::query_server::Query;
+use crate::proto::query::{QueryPricesRequest, QueryPricesResponse};
 use crate::utils::arc_mutex;
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.

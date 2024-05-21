@@ -13,7 +13,7 @@ use crate::manager::price_service::types::{
     ResultsStore, ServiceMap, SignalResultsStore, SourceResultsStore,
 };
 use crate::manager::price_service::utils::into_key;
-use crate::proto::query::query::{PriceData, PriceStatus};
+use crate::proto::query::{PriceData, PriceStatus};
 use crate::registry::source::Route;
 use crate::registry::Registry;
 use crate::tasks::error::Error;

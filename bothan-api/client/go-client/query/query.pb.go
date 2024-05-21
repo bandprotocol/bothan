@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.0
 // 	protoc        (unknown)
-// source: proto/query.proto
+// source: query/query.proto
 
 package query
 
@@ -62,11 +62,11 @@ func (x PriceStatus) String() string {
 }
 
 func (PriceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_proto_query_proto_enumTypes[0].Descriptor()
+	return file_query_query_proto_enumTypes[0].Descriptor()
 }
 
 func (PriceStatus) Type() protoreflect.EnumType {
-	return &file_proto_query_proto_enumTypes[0]
+	return &file_query_query_proto_enumTypes[0]
 }
 
 func (x PriceStatus) Number() protoreflect.EnumNumber {
@@ -75,7 +75,7 @@ func (x PriceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PriceStatus.Descriptor instead.
 func (PriceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_proto_query_proto_rawDescGZIP(), []int{0}
+	return file_query_query_proto_rawDescGZIP(), []int{0}
 }
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
@@ -91,7 +91,7 @@ type QueryPricesRequest struct {
 func (x *QueryPricesRequest) Reset() {
 	*x = QueryPricesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_query_proto_msgTypes[0]
+		mi := &file_query_query_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -104,7 +104,7 @@ func (x *QueryPricesRequest) String() string {
 func (*QueryPricesRequest) ProtoMessage() {}
 
 func (x *QueryPricesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_query_proto_msgTypes[0]
+	mi := &file_query_query_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -117,7 +117,7 @@ func (x *QueryPricesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryPricesRequest.ProtoReflect.Descriptor instead.
 func (*QueryPricesRequest) Descriptor() ([]byte, []int) {
-	return file_proto_query_proto_rawDescGZIP(), []int{0}
+	return file_query_query_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *QueryPricesRequest) GetSignalIds() []string {
@@ -140,7 +140,7 @@ type QueryPricesResponse struct {
 func (x *QueryPricesResponse) Reset() {
 	*x = QueryPricesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_query_proto_msgTypes[1]
+		mi := &file_query_query_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -153,7 +153,7 @@ func (x *QueryPricesResponse) String() string {
 func (*QueryPricesResponse) ProtoMessage() {}
 
 func (x *QueryPricesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_query_proto_msgTypes[1]
+	mi := &file_query_query_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +166,7 @@ func (x *QueryPricesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryPricesResponse.ProtoReflect.Descriptor instead.
 func (*QueryPricesResponse) Descriptor() ([]byte, []int) {
-	return file_proto_query_proto_rawDescGZIP(), []int{1}
+	return file_query_query_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *QueryPricesResponse) GetPrices() []*PriceData {
@@ -193,7 +193,7 @@ type PriceData struct {
 func (x *PriceData) Reset() {
 	*x = PriceData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_query_proto_msgTypes[2]
+		mi := &file_query_query_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -206,7 +206,7 @@ func (x *PriceData) String() string {
 func (*PriceData) ProtoMessage() {}
 
 func (x *PriceData) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_query_proto_msgTypes[2]
+	mi := &file_query_query_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -219,7 +219,7 @@ func (x *PriceData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PriceData.ProtoReflect.Descriptor instead.
 func (*PriceData) Descriptor() ([]byte, []int) {
-	return file_proto_query_proto_rawDescGZIP(), []int{2}
+	return file_query_query_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PriceData) GetSignalId() string {
@@ -243,10 +243,10 @@ func (x *PriceData) GetPriceStatus() PriceStatus {
 	return PriceStatus_PRICE_STATUS_UNSPECIFIED
 }
 
-var File_proto_query_proto protoreflect.FileDescriptor
+var File_query_query_proto protoreflect.FileDescriptor
 
-var file_proto_query_proto_rawDesc = []byte{
-	0x0a, 0x11, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x70, 0x72,
+var file_query_query_proto_rawDesc = []byte{
+	0x0a, 0x11, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x12, 0x05, 0x71, 0x75, 0x65, 0x72, 0x79, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67,
 	0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f,
 	0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x33, 0x0a, 0x12, 0x51, 0x75, 0x65, 0x72,
@@ -284,26 +284,26 @@ var file_proto_query_proto_rawDesc = []byte{
 }
 
 var (
-	file_proto_query_proto_rawDescOnce sync.Once
-	file_proto_query_proto_rawDescData = file_proto_query_proto_rawDesc
+	file_query_query_proto_rawDescOnce sync.Once
+	file_query_query_proto_rawDescData = file_query_query_proto_rawDesc
 )
 
-func file_proto_query_proto_rawDescGZIP() []byte {
-	file_proto_query_proto_rawDescOnce.Do(func() {
-		file_proto_query_proto_rawDescData = protoimpl.X.CompressGZIP(file_proto_query_proto_rawDescData)
+func file_query_query_proto_rawDescGZIP() []byte {
+	file_query_query_proto_rawDescOnce.Do(func() {
+		file_query_query_proto_rawDescData = protoimpl.X.CompressGZIP(file_query_query_proto_rawDescData)
 	})
-	return file_proto_query_proto_rawDescData
+	return file_query_query_proto_rawDescData
 }
 
-var file_proto_query_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_query_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_proto_query_proto_goTypes = []interface{}{
+var file_query_query_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_query_query_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_query_query_proto_goTypes = []interface{}{
 	(PriceStatus)(0),            // 0: query.PriceStatus
 	(*QueryPricesRequest)(nil),  // 1: query.QueryPricesRequest
 	(*QueryPricesResponse)(nil), // 2: query.QueryPricesResponse
 	(*PriceData)(nil),           // 3: query.PriceData
 }
-var file_proto_query_proto_depIdxs = []int32{
+var file_query_query_proto_depIdxs = []int32{
 	3, // 0: query.QueryPricesResponse.prices:type_name -> query.PriceData
 	0, // 1: query.PriceData.price_status:type_name -> query.PriceStatus
 	1, // 2: query.Query.Prices:input_type -> query.QueryPricesRequest
@@ -315,13 +315,13 @@ var file_proto_query_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_proto_query_proto_init() }
-func file_proto_query_proto_init() {
-	if File_proto_query_proto != nil {
+func init() { file_query_query_proto_init() }
+func file_query_query_proto_init() {
+	if File_query_query_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_proto_query_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_query_query_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*QueryPricesRequest); i {
 			case 0:
 				return &v.state
@@ -333,7 +333,7 @@ func file_proto_query_proto_init() {
 				return nil
 			}
 		}
-		file_proto_query_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_query_query_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*QueryPricesResponse); i {
 			case 0:
 				return &v.state
@@ -345,7 +345,7 @@ func file_proto_query_proto_init() {
 				return nil
 			}
 		}
-		file_proto_query_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_query_query_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PriceData); i {
 			case 0:
 				return &v.state
@@ -362,19 +362,19 @@ func file_proto_query_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_proto_query_proto_rawDesc,
+			RawDescriptor: file_query_query_proto_rawDesc,
 			NumEnums:      1,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_query_proto_goTypes,
-		DependencyIndexes: file_proto_query_proto_depIdxs,
-		EnumInfos:         file_proto_query_proto_enumTypes,
-		MessageInfos:      file_proto_query_proto_msgTypes,
+		GoTypes:           file_query_query_proto_goTypes,
+		DependencyIndexes: file_query_query_proto_depIdxs,
+		EnumInfos:         file_query_query_proto_enumTypes,
+		MessageInfos:      file_query_query_proto_msgTypes,
 	}.Build()
-	File_proto_query_proto = out.File
-	file_proto_query_proto_rawDesc = nil
-	file_proto_query_proto_goTypes = nil
-	file_proto_query_proto_depIdxs = nil
+	File_query_query_proto = out.File
+	file_query_query_proto_rawDesc = nil
+	file_query_query_proto_goTypes = nil
+	file_query_query_proto_depIdxs = nil
 }

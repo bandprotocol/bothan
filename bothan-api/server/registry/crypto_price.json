@@ -40,6 +40,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "BTC-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "btcusdt",
                 "routes": [
@@ -51,7 +56,7 @@
             },
             {
                 "source_id": "kraken",
-                "id": "XBT/USD",
+                "id": "BTC/USD",
                 "routes": []
             }
         ],
@@ -104,6 +109,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ETH-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "ethusdt",
                 "routes": [
@@ -143,6 +153,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "USDT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "USDT-USD",
                 "routes": []
             },
             {
@@ -249,6 +264,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "SOL-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "solusdt",
                 "routes": [
@@ -273,7 +293,9 @@
         "post_processors": []
     },
     "crypto_price.stethusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -347,6 +369,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "XRP",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "XRP-USD",
                 "routes": []
             },
             {
@@ -468,6 +495,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ADA-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "adausdt",
                 "routes": [
@@ -532,6 +564,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "AVAX-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "avaxusdt",
                 "routes": [
@@ -586,6 +623,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "DOGE-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "dogeusdt",
                 "routes": [
@@ -635,6 +677,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "SHIB-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "shibusdt",
                 "routes": [
@@ -659,7 +706,9 @@
         "post_processors": []
     },
     "crypto_price.tonusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -723,6 +772,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "DOT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "DOT-USD",
                 "routes": []
             },
             {
@@ -844,6 +898,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "LINK-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "linkusdt",
                 "routes": [
@@ -905,6 +964,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "WBTC",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "WBTC-USD",
                 "routes": []
             },
             {
@@ -972,6 +1036,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "MATIC-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "maticusdt",
                 "routes": [
@@ -1023,6 +1092,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "UNI",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "UNI-USD",
                 "routes": []
             },
             {
@@ -1090,6 +1164,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "BCH-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "bchusdt",
                 "routes": [
@@ -1151,6 +1230,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "NEAR",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "NEAR-USD",
                 "routes": []
             },
             {
@@ -1218,6 +1302,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "LTC-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "ltcusdt",
                 "routes": [
@@ -1269,6 +1358,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "APT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "APT-USD",
                 "routes": []
             },
             {
@@ -1363,6 +1457,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ICP-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "icpusdt",
                 "routes": [
@@ -1387,7 +1486,9 @@
         "post_processors": []
     },
     "crypto_price.daiusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -1402,6 +1503,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "DAI",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "DAI-USD",
                 "routes": []
             },
             {
@@ -1469,6 +1575,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ARB-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "arbusdt",
                 "routes": [
@@ -1530,6 +1641,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "RNDR",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "RNDR-USD",
                 "routes": []
             },
             {
@@ -1597,6 +1713,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ATOM-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "atomusdt",
                 "routes": [
@@ -1651,6 +1772,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "STX-USD",
+                "routes": []
+            },
+            {
                 "source_id": "kraken",
                 "id": "STX/USD",
                 "routes": []
@@ -1702,6 +1828,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "FIL",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "FIL-USD",
                 "routes": []
             },
             {
@@ -1769,6 +1900,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ETC-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "etcusdt",
                 "routes": [
@@ -1793,7 +1929,9 @@
         "post_processors": []
     },
     "crypto_price.taousd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -1870,6 +2008,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "IMX-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "imxusdt",
                 "routes": [
@@ -1921,6 +2064,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "GRT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "GRT-USD",
                 "routes": []
             },
             {
@@ -1988,6 +2136,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "XLM-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "xlmusdt",
                 "routes": [
@@ -2049,6 +2202,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "HBAR",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "HBAR-USD",
                 "routes": []
             },
             {
@@ -2138,6 +2296,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "OP-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "opusdt",
                 "routes": [
@@ -2162,7 +2325,9 @@
         "post_processors": []
     },
     "crypto_price.crousd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -2177,6 +2342,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "CRO",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "CRO-USD",
                 "routes": []
             },
             {
@@ -2236,6 +2406,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "INJ",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "INJ-USD",
                 "routes": []
             },
             {
@@ -2384,6 +2559,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "VET-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "vetusdt",
                 "routes": [
@@ -2430,6 +2610,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "FET",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "FET-USD",
                 "routes": []
             },
             {
@@ -2494,6 +2679,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "MKR",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "MKR-USD",
                 "routes": []
             },
             {
@@ -2673,7 +2863,9 @@
         "post_processors": []
     },
     "crypto_price.mntusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -2705,7 +2897,9 @@
         "post_processors": []
     },
     "crypto_price.xmrusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -2774,6 +2968,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "TIA",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "TIA-USD",
                 "routes": []
             },
             {
@@ -2964,6 +3163,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "LDO-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "ldousdt",
                 "routes": [
@@ -3082,6 +3286,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "SEI-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "seiusdt",
                 "routes": [
@@ -3106,7 +3315,9 @@
         "post_processors": []
     },
     "crypto_price.rethusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -3237,6 +3448,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "SUI-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "suiusdt",
                 "routes": [
@@ -3298,6 +3514,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "ALGO",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "ALGO-USD",
                 "routes": []
             },
             {
@@ -3365,6 +3586,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "FLOW-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "flowusdt",
                 "routes": [
@@ -3389,7 +3615,9 @@
         "post_processors": []
     },
     "crypto_price.methusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -3480,7 +3708,9 @@
         "post_processors": []
     },
     "crypto_price.beamusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -3562,6 +3792,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "AAVE-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "aaveusdt",
                 "routes": [
@@ -3613,6 +3848,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "QNT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "QNT-USD",
                 "routes": []
             },
             {
@@ -3724,6 +3964,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "EGLD-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "egldusdt",
                 "routes": [
@@ -3832,6 +4077,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "STRK-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "strkusdt",
                 "routes": [
@@ -3896,6 +4146,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "BONK-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "bonkusdt",
                 "routes": [
@@ -3920,7 +4175,9 @@
         "post_processors": []
     },
     "crypto_price.bsvusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -4090,6 +4347,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "AXS-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "axsusdt",
                 "routes": [
@@ -4141,6 +4403,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "SAND",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "SAND-USD",
                 "routes": []
             },
             {
@@ -4373,6 +4640,11 @@
                 "source_id": "cryptocompare",
                 "id": "RBN",
                 "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "RBN-USD",
+                "routes": []
             }
         ],
         "processor": {
@@ -4384,7 +4656,9 @@
         "post_processors": []
     },
     "crypto_price.bttusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -4453,7 +4727,9 @@
         "post_processors": []
     },
     "crypto_price.aktusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -4468,6 +4744,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "AKT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "AKT-USD",
                 "routes": []
             },
             {
@@ -4535,6 +4816,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "MINA-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "minausdt",
                 "routes": [
@@ -4586,6 +4872,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "SNX",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "SNX-USD",
                 "routes": []
             },
             {
@@ -4684,7 +4975,9 @@
         "post_processors": []
     },
     "crypto_price.flrusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -4709,6 +5002,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "FLR",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "FLR-USD",
                 "routes": []
             },
             {
@@ -4803,6 +5101,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "XTZ-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "xtzusdt",
                 "routes": [
@@ -4827,7 +5130,9 @@
         "post_processors": []
     },
     "crypto_price.wbtusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -4899,6 +5204,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "APE-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "apeusdt",
                 "routes": [
@@ -4960,6 +5270,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "MANA",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "MANA-USD",
                 "routes": []
             },
             {
@@ -5027,6 +5342,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "CHZ-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "chzusdt",
                 "routes": [
@@ -5081,6 +5401,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "EOS-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "eosusdt",
                 "routes": [
@@ -5123,6 +5448,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "MSOL-USD",
+                "routes": []
+            },
+            {
                 "source_id": "kraken",
                 "id": "MSOL/USD",
                 "routes": []
@@ -5152,6 +5482,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "HNT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "HNT-USD",
                 "routes": []
             },
             {
@@ -5207,6 +5542,11 @@
                 "source_id": "cryptocompare",
                 "id": "AXL",
                 "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "AXL-USD",
+                "routes": []
             }
         ],
         "processor": {
@@ -5218,7 +5558,9 @@
         "post_processors": []
     },
     "crypto_price.ronusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -5299,7 +5641,9 @@
         "post_processors": []
     },
     "crypto_price.satsusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -5371,6 +5715,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ZRX-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "zrxusdt",
                 "routes": [
@@ -5395,7 +5744,9 @@
         "post_processors": []
     },
     "crypto_price.wemixusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -5501,6 +5852,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "KAVA",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "KAVA-USD",
                 "routes": []
             },
             {
@@ -5685,7 +6041,9 @@
         "post_processors": []
     },
     "crypto_price.gtusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -5722,7 +6080,9 @@
         "post_processors": []
     },
     "crypto_price.aiozusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -5747,6 +6107,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "AIOZ",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "AIOZ-USD",
                 "routes": []
             },
             {
@@ -5807,6 +6172,11 @@
                 "source_id": "cryptocompare",
                 "id": "ROSE",
                 "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "ROSE-USD",
+                "routes": []
             }
         ],
         "processor": {
@@ -5818,7 +6188,9 @@
         "post_processors": []
     },
     "crypto_price.primeusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -5843,6 +6215,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "PRIME",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "PRIME-USD",
                 "routes": []
             }
         ],
@@ -6035,6 +6412,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "JASMY-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "jasmyusdt",
                 "routes": [
@@ -6086,6 +6468,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "GNO",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "GNO-USD",
                 "routes": []
             },
             {
@@ -6211,7 +6598,9 @@
         "post_processors": []
     },
     "crypto_price.ondousd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -6236,6 +6625,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "ONDO",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "ONDO-USD",
                 "routes": []
             },
             {
@@ -6290,6 +6684,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "OSMO",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "OSMO-USD",
                 "routes": []
             },
             {
@@ -6349,6 +6748,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "BLUR",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "BLUR-USD",
                 "routes": []
             },
             {
@@ -6620,6 +7024,11 @@
                 "source_id": "cryptocompare",
                 "id": "ILV",
                 "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "ILV-USD",
+                "routes": []
             }
         ],
         "processor": {
@@ -6725,6 +7134,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "CRV-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "crvusdt",
                 "routes": [
@@ -6749,7 +7163,9 @@
         "post_processors": []
     },
     "crypto_price.usddusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -6786,7 +7202,9 @@
         "post_processors": []
     },
     "crypto_price.btgusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -7074,6 +7492,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ENJ-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "enjusdt",
                 "routes": [
@@ -7177,6 +7600,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "OCEAN-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "oceanusdt",
                 "routes": [
@@ -7216,6 +7644,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "CBETH",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "CBETH-USD",
                 "routes": []
             }
         ],
@@ -7307,6 +7740,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ENS-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "ensusdt",
                 "routes": [
@@ -7358,6 +7796,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "IOTX",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "IOTX-USD",
                 "routes": []
             },
             {
@@ -7474,6 +7917,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "1INCH-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "1inchusdt",
                 "routes": [
@@ -7498,7 +7946,9 @@
         "post_processors": []
     },
     "crypto_price.xdcusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -7572,6 +8022,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "AMP",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "AMP-USD",
                 "routes": []
             },
             {
@@ -7865,6 +8320,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "RPL-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "rplusdt",
                 "routes": [
@@ -8046,6 +8506,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "LPT",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "LPT-USD",
                 "routes": []
             },
             {
@@ -8245,6 +8710,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "SKL-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "sklusdt",
                 "routes": [
@@ -8313,7 +8783,9 @@
         "post_processors": []
     },
     "crypto_price.xautusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -8429,6 +8901,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "METIS-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "metisusdt",
                 "routes": [
@@ -8478,6 +8955,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "SUPER-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "superusdt",
                 "routes": [
@@ -8502,7 +8984,9 @@
         "post_processors": []
     },
     "crypto_price.nftusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -8579,6 +9063,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "ARKM-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "arkmusdt",
                 "routes": [
@@ -8628,6 +9117,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "GMT-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "gmtusdt",
                 "routes": [
@@ -8652,7 +9146,9 @@
         "post_processors": []
     },
     "crypto_price.coreusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -8832,6 +9328,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "COMP-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "compusdt",
                 "routes": [
@@ -8896,6 +9397,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "GAL-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "galusdt",
                 "routes": [
@@ -8920,7 +9426,9 @@
         "post_processors": []
     },
     "crypto_price.csprusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -8989,7 +9497,9 @@
         "post_processors": []
     },
     "crypto_price.zetausd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -9014,6 +9524,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "ZETA",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "ZETA-USD",
                 "routes": []
             },
             {
@@ -9105,6 +9620,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "GLM-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "glmusdt",
                 "routes": [
@@ -9164,6 +9684,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "LRC-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "lrcusdt",
                 "routes": [
@@ -9210,7 +9735,9 @@
         "post_processors": []
     },
     "crypto_price.tracusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -9225,6 +9752,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "TRAC",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "TRAC-USD",
                 "routes": []
             },
             {
@@ -9444,6 +9976,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "BAT-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "batusdt",
                 "routes": [
@@ -9532,7 +10069,9 @@
         "post_processors": []
     },
     "crypto_price.paalusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -9628,6 +10167,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "ANKR",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "ANKR-USD",
                 "routes": []
             },
             {
@@ -9808,6 +10352,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "MASK-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "maskusdt",
                 "routes": [
@@ -9948,6 +10497,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "DASH-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "dashusdt",
                 "routes": [
@@ -10026,6 +10580,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "ZEC",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "ZEC-USD",
                 "routes": []
             },
             {
@@ -10156,7 +10715,9 @@
         "post_processors": []
     },
     "crypto_price.xchusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -10331,6 +10892,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "KSM-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "ksmusdt",
                 "routes": [
@@ -10355,7 +10921,9 @@
         "post_processors": []
     },
     "crypto_price.daousd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -10392,7 +10960,9 @@
         "post_processors": []
     },
     "crypto_price.mxusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -10504,6 +11074,11 @@
                 "source_id": "cryptocompare",
                 "id": "MOBILE",
                 "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "MOBILE-USD",
+                "routes": []
             }
         ],
         "processor": {
@@ -10515,7 +11090,9 @@
         "post_processors": []
     },
     "crypto_price.ethwusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -10656,6 +11233,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "JTO-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "jtousdt",
                 "routes": [
@@ -10680,7 +11262,9 @@
         "post_processors": []
     },
     "crypto_price.slerfusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -10779,6 +11363,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "BICO-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "bicousdt",
                 "routes": [
@@ -10803,7 +11392,9 @@
         "post_processors": []
     },
     "crypto_price.azerousd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -10840,7 +11431,9 @@
         "post_processors": []
     },
     "crypto_price.antusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -10941,7 +11534,9 @@
         "post_processors": []
     },
     "crypto_price.babydogeusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -11020,7 +11615,9 @@
         "post_processors": []
     },
     "crypto_price.desousd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -11035,6 +11632,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "DESO",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "DESO-USD",
                 "routes": []
             },
             {
@@ -11084,6 +11686,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "API3",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "API3-USD",
                 "routes": []
             },
             {
@@ -11246,7 +11853,9 @@
         "post_processors": []
     },
     "crypto_price.lsdusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -11349,6 +11958,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "SUSHI",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "SUSHI-USD",
                 "routes": []
             },
             {
@@ -11455,6 +12069,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "T-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "tusdt",
                 "routes": [
@@ -11506,6 +12125,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "CVX",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "CVX-USD",
                 "routes": []
             },
             {
@@ -11629,6 +12253,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "AUDIO-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "audiousdt",
                 "routes": [
@@ -11653,7 +12282,9 @@
         "post_processors": []
     },
     "crypto_price.mogusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -11739,7 +12370,9 @@
         "post_processors": []
     },
     "crypto_price.rss3usd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -11867,7 +12500,9 @@
         "post_processors": []
     },
     "crypto_price.agiusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -11904,7 +12539,9 @@
         "post_processors": []
     },
     "crypto_price.poktusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -11941,7 +12578,9 @@
         "post_processors": []
     },
     "crypto_price.coqusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -12018,6 +12657,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "COTI-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "cotiusdt",
                 "routes": [
@@ -12069,6 +12713,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "UMA",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "UMA-USD",
                 "routes": []
             },
             {
@@ -12158,6 +12807,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "YFI-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "yfiusdt",
                 "routes": [
@@ -12209,6 +12863,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "VTHO",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "VTHO-USD",
                 "routes": []
             }
         ],
@@ -12324,7 +12983,9 @@
         "post_processors": []
     },
     "crypto_price.sfundusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -12487,6 +13148,11 @@
                 "source_id": "cryptocompare",
                 "id": "AERO",
                 "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "AERO-USD",
+                "routes": []
             }
         ],
         "processor": {
@@ -12574,6 +13240,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "BAND",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "BAND-USD",
                 "routes": []
             },
             {
@@ -12771,6 +13442,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "MAGIC-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "magicusdt",
                 "routes": [
@@ -12790,7 +13466,9 @@
         "post_processors": []
     },
     "crypto_price.borgusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -12916,6 +13594,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "RLC-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "rlcusdt",
                 "routes": [
@@ -12940,7 +13623,9 @@
         "post_processors": []
     },
     "crypto_price.zcxusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -13152,6 +13837,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "BAL-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "balusdt",
                 "routes": [
@@ -13209,6 +13899,11 @@
                 "source_id": "cryptocompare",
                 "id": "WCFG",
                 "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "WCFG-USD",
+                "routes": []
             }
         ],
         "processor": {
@@ -13247,7 +13942,9 @@
         "post_processors": []
     },
     "crypto_price.ctcusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -13334,6 +14031,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "C98-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "c98usdt",
                 "routes": [
@@ -13358,7 +14060,9 @@
         "post_processors": []
     },
     "crypto_price.fnsausd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -13434,7 +14138,9 @@
         "post_processors": []
     },
     "crypto_price.gfusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -13697,6 +14403,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "POND-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "pondusdt",
                 "routes": [
@@ -13721,7 +14432,9 @@
         "post_processors": []
     },
     "crypto_price.omiusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -13952,6 +14665,11 @@
                 "routes": []
             },
             {
+                "source_id": "coinbase",
+                "id": "SYN-USD",
+                "routes": []
+            },
+            {
                 "source_id": "htx",
                 "id": "synusdt",
                 "routes": [
@@ -13976,7 +14694,9 @@
         "post_processors": []
     },
     "crypto_price.kubusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -14008,7 +14728,9 @@
         "post_processors": []
     },
     "crypto_price.tribeusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -14111,7 +14833,9 @@
         "post_processors": []
     },
     "crypto_price.boneusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -14148,7 +14872,9 @@
         "post_processors": []
     },
     "crypto_price.bobausd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "bybit",
@@ -14173,6 +14899,11 @@
             {
                 "source_id": "cryptocompare",
                 "id": "BOBA",
+                "routes": []
+            },
+            {
+                "source_id": "coinbase",
+                "id": "BOBA-USD",
                 "routes": []
             },
             {

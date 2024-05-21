@@ -1,9 +1,9 @@
 version: v1
 plugins:
   - plugin: buf.build/community/neoeinstein-prost:v0.3.1
-    out: ../bothan-api/server/src/proto/query
+    out: ../bothan-api/server/src/proto
   - plugin: buf.build/community/neoeinstein-tonic:v0.4.0
-    out: ../bothan-api/server/src/proto/query
+    out: ../bothan-api/server/src/proto
   - plugin: buf.build/protocolbuffers/go:v1.34.0
     out: ../bothan-api/client/go-client
     opt:

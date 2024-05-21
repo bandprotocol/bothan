@@ -6,6 +6,7 @@ use tracing::info;
 
 use bothan_binance::BinanceServiceBuilder;
 use bothan_bybit::BybitServiceBuilder;
+use bothan_coinbase::CoinbaseServiceBuilder;
 use bothan_coingecko::CoinGeckoServiceBuilder;
 use bothan_coinmarketcap::CoinMarketCapServiceBuilder;
 use bothan_cryptocompare::CryptoCompareServiceBuilder;
@@ -15,7 +16,7 @@ use bothan_kraken::KrakenServiceBuilder;
 use crate::api::CryptoQueryServer;
 use crate::config::AppConfig;
 use crate::manager::price_service::manager::PriceServiceManager;
-use crate::proto::query::query::query_server::QueryServer;
+use crate::proto::query::query_server::QueryServer;
 use crate::registry::Registry;
 use crate::utils::add_service;
 
@@ -61,6 +62,7 @@ async fn init_crypto_server(config: &AppConfig) -> CryptoQueryServer {
 async fn init_crypto_services(config: &AppConfig, manager: &mut PriceServiceManager) {
     add_service!(manager, BinanceServiceBuilder, config.source.binance);
     add_service!(manager, BybitServiceBuilder, config.source.bybit);
+    add_service!(manager, CoinbaseServiceBuilder, config.source.coinbase);
     add_service!(manager, CoinGeckoServiceBuilder, config.source.coingecko);
     add_service!(
         manager,
