@@ -4,6 +4,7 @@ macro_rules! arc_mutex {
     };
 }
 
+#[macro_export]
 macro_rules! add_service {
     ($manager:expr, $builder:ty, $config:expr) => {
         let service_name = {
@@ -21,5 +22,5 @@ macro_rules! add_service {
     };
 }
 
-pub(crate) use add_service;
+pub use add_service;
 pub(crate) use arc_mutex;
