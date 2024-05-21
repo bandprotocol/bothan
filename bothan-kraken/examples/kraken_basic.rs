@@ -1,10 +1,11 @@
+use tracing_subscriber::fmt::init;
+
 use bothan_core::service::Service;
 use bothan_kraken::service::builder::KrakenServiceBuilder;
 
 #[tokio::main]
 async fn main() {
-    // init();
-    tracing_subscriber::fmt().with_env_filter("debug").init();
+    init();
 
     let service = KrakenServiceBuilder::default().build().await;
 

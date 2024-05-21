@@ -174,14 +174,6 @@ async fn handle_reconnect(
 
     //  resubscribe to all ids
     let keys = cache.keys().await;
-
-    // If the keys are empty, subscribe to a single symbol to keep the connection alive
-    // TODO: find a better solution
-    // let cmd = match keys.is_empty() {
-    //     true => Command::Subscribe(vec!["BTC/USD".to_string()]),
-    //     false => Command::Subscribe(keys),
-    // };
-
     if !keys.is_empty() && command_tx.send(Command::Subscribe(keys)).await.is_err() {
         error!("Failed to send subscribe command");
     };

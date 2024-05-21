@@ -56,10 +56,6 @@ impl KrakenServiceBuilder {
             self.remove_id_ch_size,
         );
 
-        // Subscribe to a single symbol first to keep connection alive
-        // TODO: find a better solution
-        // let _ = service.get_price_data(&["XBT/USD"]).await;
-
         Ok(service)
     }
 }
