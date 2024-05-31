@@ -45,6 +45,11 @@ impl KrakenWebSocketConnection {
         Self { sender, receiver }
     }
 
+    pub async fn ping(&mut self) -> Result<(), Error> {
+        let msg = Message::Ping("".into());
+        Ok(self.sender.send(msg).await?)
+    }
+
     pub async fn subscribe_ticker(
         &mut self,
         symbols: &[&str],
@@ -77,6 +82,7 @@ impl KrakenWebSocketConnection {
             return match result_msg {
                 Ok(Message::Text(msg)) => serde_json::from_str::<KrakenResponse>(&msg)
                     .map_err(|_| Error::UnsupportedMessage),
+                Ok(Message::Pong(_)) => Ok(KrakenResponse::Pong),
                 Ok(Message::Close(_)) => Err(Error::ChannelClosed),
                 Err(err) => match err {
                     TungsteniteError::Protocol(..) => Err(Error::ChannelClosed),
