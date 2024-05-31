@@ -19,12 +19,25 @@ use crate::{CoinbaseWebSocketConnection, CoinbaseWebSocketConnector};
 
 pub mod builder;
 
+/// A service for interacting with the Coinbase WebSocket API and caching price data.
 pub struct CoinbaseService {
     cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
 impl CoinbaseService {
+    /// Creates a new `CoinbaseService` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `connector` - An instance of `CoinbaseWebSocketConnector`.
+    /// * `connection` - An instance of `CoinbaseWebSocketConnection`.
+    /// * `cmd_ch_size` - The size of the command channel.
+    /// * `rem_id_ch_size` - The size of the remove ID channel.
+    ///
+    /// # Returns
+    ///
+    /// A new `CoinbaseService` instance.
     pub fn new(
         connector: Arc<CoinbaseWebSocketConnector>,
         connection: Arc<Mutex<CoinbaseWebSocketConnection>>,
@@ -53,6 +66,15 @@ impl CoinbaseService {
 
 #[async_trait::async_trait]
 impl Service for CoinbaseService {
+    /// Retrieves price data for the given IDs.
+    ///
+    /// # Arguments
+    ///
+    /// * `ids` - A slice of string slices representing the IDs.
+    ///
+    /// # Returns
+    ///
+    /// A vector of `ServiceResult` containing `PriceData`.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut sub_ids = Vec::new();
 
