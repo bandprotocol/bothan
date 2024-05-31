@@ -2,6 +2,16 @@ use bothan_core::types::PriceData;
 
 use crate::api::types::Ticker;
 
+/// Parses a `Ticker` into a `PriceData` object.
+///
+/// # Arguments
+///
+/// * `ticker` - A reference to the `Ticker` to be parsed.
+/// * `timestamp` - The timestamp associated with the `Ticker`.
+///
+/// # Returns
+///
+/// A `PriceData` object containing the parsed data.
 pub fn parse_ticker(ticker: &Ticker, timestamp: usize) -> PriceData {
     PriceData::new(
         ticker.symbol.to_string(),
