@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
-use crate::manager::price_service::manager::PriceServiceManager;
+use crate::manager::PriceServiceManager;
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{QueryPricesRequest, QueryPricesResponse};
 use crate::utils::arc_mutex;

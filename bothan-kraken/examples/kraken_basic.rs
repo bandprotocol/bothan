@@ -8,6 +8,7 @@ async fn main() {
     init();
 
     let service = KrakenServiceBuilder::default().build().await;
+
     if let Ok(mut service) = service {
         loop {
             let data = service.get_price_data(&["BTC/USD", "ETH/USD"]).await;
