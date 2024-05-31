@@ -20,12 +20,26 @@ use crate::api::CoinGeckoRestAPI;
 pub mod builder;
 pub mod error;
 
+/// A service for interacting with the CoinGecko REST API and caching price data.
 pub struct CoinGeckoService {
     cache: Arc<Cache<PriceData>>,
     coin_list: Arc<RwLock<HashSet<String>>>,
 }
 
 impl CoinGeckoService {
+    /// Creates a new `CoinGeckoService` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `rest_api` - An instance of `CoinGeckoRestAPI`.
+    /// * `update_interval` - The interval for updating the price data.
+    /// * `update_supported_assets_interval` - The interval for updating the list of supported assets.
+    /// * `page_size` - The size of the page for fetching market data.
+    /// * `page_query_delay` - The delay between page queries.
+    ///
+    /// # Returns
+    ///
+    /// A new `CoinGeckoService` instance.
     pub async fn new(
         rest_api: CoinGeckoRestAPI,
         update_interval: Duration,
@@ -55,6 +69,15 @@ impl CoinGeckoService {
 
 #[async_trait::async_trait]
 impl Service for CoinGeckoService {
+    /// Retrieves price data for the given IDs.
+    ///
+    /// # Arguments
+    ///
+    /// * `ids` - A slice of string slices representing the IDs.
+    ///
+    /// # Returns
+    ///
+    /// A vector of `ServiceResult` containing `PriceData`.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let reader = self.coin_list.read().await;
 
@@ -88,6 +111,17 @@ impl Service for CoinGeckoService {
     }
 }
 
+/// Starts the service for updating price data and the list of supported assets.
+///
+/// # Arguments
+///
+/// * `rest_api` - An instance of `CoinGeckoRestAPI`.
+/// * `cache` - An instance of `Cache<PriceData>`.
+/// * `update_price_interval` - The interval for updating the price data.
+/// * `update_supported_assets_interval` - The interval for updating the list of supported assets.
+/// * `coin_list` - An `RwLock` containing the list of supported coins.
+/// * `page_size` - The size of the page for fetching market data.
+/// * `page_query_delay` - The delay between page queries.
 pub async fn start_service(
     rest_api: Arc<CoinGeckoRestAPI>,
     cache: Arc<Cache<PriceData>>,
@@ -113,6 +147,14 @@ pub async fn start_service(
     });
 }
 
+/// Updates the price data in the cache.
+///
+/// # Arguments
+///
+/// * `rest_api` - An instance of `CoinGeckoRestAPI`.
+/// * `cache` - An instance of `Cache<PriceData>`.
+/// * `page_size` - The size of the page for fetching market data.
+/// * `page_query_delay` - The delay between page queries.
 async fn update_price_data(
     rest_api: Arc<CoinGeckoRestAPI>,
     cache: Arc<Cache<PriceData>>,
@@ -142,6 +184,14 @@ async fn update_price_data(
     join_all(tasks).await;
 }
 
+/// Updates the price data from the API.
+///
+/// # Arguments
+///
+/// * `rest_api` - An instance of `CoinGeckoRestAPI`.
+/// * `cache` - An instance of `Cache<PriceData>`.
+/// * `page` - The current page number.
+/// * `page_size` - The size of the page for fetching market data.
 async fn update_price_data_from_api(
     rest_api: &CoinGeckoRestAPI,
     cache: &Cache<PriceData>,
@@ -166,6 +216,12 @@ async fn update_price_data_from_api(
     }
 }
 
+/// Updates the list of supported coins.
+///
+/// # Arguments
+///
+/// * `rest_api` - An instance of `CoinGeckoRestAPI`.
+/// * `coin_list` - An `RwLock` containing the list of supported coins.
 async fn update_coin_list(rest_api: &CoinGeckoRestAPI, coin_list: &RwLock<HashSet<String>>) {
     if let Ok(new_coin_list) = rest_api.get_coins_list().await {
         let new_coin_set = HashSet::<String>::from_iter(new_coin_list.into_iter().map(|x| x.id));
@@ -176,6 +232,12 @@ async fn update_coin_list(rest_api: &CoinGeckoRestAPI, coin_list: &RwLock<HashSe
     }
 }
 
+/// Processes the market data and updates the cache.
+///
+/// # Arguments
+///
+/// * `market` - The market data to be processed.
+/// * `cache` - An instance of `Cache<PriceData>`.
 async fn process_market_data(market: &Market, cache: &Cache<PriceData>) {
     if let Ok(price_data) = parse_market(market) {
         let id = price_data.id.clone();
@@ -189,6 +251,15 @@ async fn process_market_data(market: &Market, cache: &Cache<PriceData>) {
     }
 }
 
+/// Parses the market data into a `PriceData` object.
+///
+/// # Arguments
+///
+/// * `market` - The market data to be parsed.
+///
+/// # Returns
+///
+/// A `Result` containing the `PriceData` if successful, or an `Error` otherwise.
 fn parse_market(market: &Market) -> Result<PriceData, Error> {
     let last_updated = market.last_updated.as_str();
     let naive_date_time = NaiveDateTime::parse_from_str(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ")

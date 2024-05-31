@@ -5,16 +5,32 @@ use reqwest::{Client, RequestBuilder, Response, Url};
 use crate::api::error::RestAPIError;
 use crate::api::types::{Coin, Market};
 
+/// A client for interacting with the CoinGecko REST API.
 pub struct CoinGeckoRestAPI {
     url: Url,
     client: Client,
 }
 
 impl CoinGeckoRestAPI {
+    /// Creates a new instance of `CoinGeckoRestAPI`.
+    ///
+    /// # Arguments
+    ///
+    /// * `url` - The base URL for the API.
+    /// * `client` - The HTTP client to be used.
+    ///
+    /// # Returns
+    ///
+    /// A new `CoinGeckoRestAPI` instance.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
+    /// Retrieves a list of coins from the CoinGecko API.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing a vector of `Coin` if successful, or a `RestAPIError` otherwise.
     pub async fn get_coins_list(&self) -> Result<Vec<Coin>, RestAPIError> {
         let url = format!("{}coins/list", self.url);
         let builder = self.client.get(url);
@@ -23,6 +39,17 @@ impl CoinGeckoRestAPI {
         Ok(response.json::<Vec<Coin>>().await?)
     }
 
+    /// Retrieves market data for the specified coins from the CoinGecko API.
+    ///
+    /// # Arguments
+    ///
+    /// * `ids` - A slice of string slices representing the coin IDs.
+    /// * `page_size` - The number of results per page.
+    /// * `page` - The page number.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing a vector of optional `Market` data if successful, or a `RestAPIError` otherwise.
     pub async fn get_coins_market(
         &self,
         ids: &[&str],
@@ -51,6 +78,15 @@ impl CoinGeckoRestAPI {
     }
 }
 
+/// Sends an HTTP request and checks for HTTP errors.
+///
+/// # Arguments
+///
+/// * `request_builder` - The request builder to be sent.
+///
+/// # Returns
+///
+/// A `Result` containing a `Response` if successful, or a `RestAPIError` otherwise.
 async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
     let response = request_builder.send().await?;
 
@@ -62,6 +98,15 @@ async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestA
     Ok(response)
 }
 
+/// Parses the HTTP response into the specified type.
+///
+/// # Arguments
+///
+/// * `response` - The HTTP response to be parsed.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed data if successful, or a `RestAPIError` otherwise.
 async fn parse_response<T: serde::de::DeserializeOwned>(
     response: Response,
 ) -> Result<T, RestAPIError> {

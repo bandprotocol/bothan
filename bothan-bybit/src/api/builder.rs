@@ -11,7 +11,7 @@ use crate::api::BybitRestAPI;
 ///
 /// # Example
 /// ```no_run
-/// use bothan_bybit::BybitRestAPIBuilder;
+/// use bothan_bybit::api::BybitRestAPIBuilder;
 ///
 /// #[tokio::main]
 /// async fn main() {
