@@ -25,13 +25,19 @@ use crate::utils::arc_mutex;
 ///
 /// ## Example
 /// ```no_run
+/// use std::collections::HashMap;
 /// use std::sync::Arc;
-/// use bothan_core::service::Service;
 ///
+/// use bothan_api::manager::PriceServiceManager;
+/// use bothan_core::service::Service;
+/// use bothan_coingecko::CoinGeckoServiceBuilder;
+///
+/// #[tokio::main]
 /// async fn main() {
 ///     let registry = Arc::new(HashMap::new());
-///     let mut manager = PriceServiceManager::new(registry).unwrap();
-///     let service = Box::new(MockService::new());
+///     let mut manager = PriceServiceManager::new(registry, 60).unwrap();
+///
+///     let service = Box::new(CoinGeckoServiceBuilder::default().build().await.unwrap());
 ///     
 ///     manager.add_service("mock".to_string(), service).await;
 /// }
