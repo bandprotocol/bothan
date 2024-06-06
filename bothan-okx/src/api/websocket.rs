@@ -9,18 +9,18 @@ use tracing::warn;
 
 use crate::api::error::Error;
 use crate::api::types::message::{InstrumentType, Op, PriceRequestArgument, WebSocketMessage};
-use crate::api::types::OKXResponse;
+use crate::api::types::OkxResponse;
 
-pub struct OKXWebSocketConnector {
+pub struct OkxWebSocketConnector {
     url: String,
 }
 
-impl OKXWebSocketConnector {
+impl OkxWebSocketConnector {
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
-    pub async fn connect(&self) -> Result<OKXWebSocketConnection, Error> {
+    pub async fn connect(&self) -> Result<OkxWebSocketConnection, Error> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
         let status = resp.status();
@@ -29,16 +29,16 @@ impl OKXWebSocketConnector {
             return Err(Error::ConnectionFailure(resp.status()));
         }
 
-        Ok(OKXWebSocketConnection::new(wss))
+        Ok(OkxWebSocketConnection::new(wss))
     }
 }
 
-pub struct OKXWebSocketConnection {
+pub struct OkxWebSocketConnection {
     sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 }
 
-impl OKXWebSocketConnection {
+impl OkxWebSocketConnection {
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
@@ -64,11 +64,11 @@ impl OKXWebSocketConnection {
         Ok(self.sender.send(message).await?)
     }
 
-    pub async fn next(&mut self) -> Result<OKXResponse, Error> {
+    pub async fn next(&mut self) -> Result<OkxResponse, Error> {
         if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {
                 Ok(Message::Text(msg)) => {
-                    serde_json::from_str::<OKXResponse>(&msg).map_err(|_| Error::UnsupportedMessage)
+                    serde_json::from_str::<OkxResponse>(&msg).map_err(|_| Error::UnsupportedMessage)
                 }
                 Ok(Message::Close(_)) => Err(Error::ChannelClosed),
                 Err(err) => match err {

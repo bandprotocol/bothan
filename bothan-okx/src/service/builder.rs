@@ -7,23 +7,23 @@ use tokio::sync::Mutex;
 use crate::api::types::DEFAULT_URL;
 use crate::error::Error;
 use crate::types::DEFAULT_CHANNEL_SIZE;
-use crate::{OKXService, OKXWebSocketConnector};
+use crate::{OkxService, OkxWebSocketConnector};
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct OKXServiceBuilderOpts {
+pub struct OkxServiceBuilderOpts {
     pub url: Option<String>,
     pub cmd_ch_size: Option<usize>,
     pub remove_id_ch_size: Option<usize>,
 }
 
-pub struct OKXServiceBuilder {
+pub struct OkxServiceBuilder {
     url: String,
     cmd_ch_size: usize,
     remove_id_ch_size: usize,
 }
 
-impl OKXServiceBuilder {
-    pub fn new(opts: OKXServiceBuilderOpts) -> Self {
+impl OkxServiceBuilder {
+    pub fn new(opts: OkxServiceBuilderOpts) -> Self {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
             cmd_ch_size: opts.cmd_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
@@ -46,11 +46,11 @@ impl OKXServiceBuilder {
         self
     }
 
-    pub async fn build(self) -> Result<OKXService, Error> {
-        let connector = OKXWebSocketConnector::new(self.url);
+    pub async fn build(self) -> Result<OkxService, Error> {
+        let connector = OkxWebSocketConnector::new(self.url);
         let connection = connector.connect().await?;
 
-        let mut service = OKXService::new(
+        let mut service = OkxService::new(
             Arc::new(connector),
             Arc::new(Mutex::new(connection)),
             self.cmd_ch_size,
@@ -65,7 +65,7 @@ impl OKXServiceBuilder {
     }
 }
 
-impl Default for OKXServiceBuilder {
+impl Default for OkxServiceBuilder {
     fn default() -> Self {
         Self {
             url: DEFAULT_URL.to_string(),

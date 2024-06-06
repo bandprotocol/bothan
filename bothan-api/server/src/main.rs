@@ -12,7 +12,7 @@ use bothan_coinmarketcap::CoinMarketCapServiceBuilder;
 use bothan_cryptocompare::CryptoCompareServiceBuilder;
 use bothan_htx::HtxServiceBuilder;
 use bothan_kraken::KrakenServiceBuilder;
-use bothan_okx::OKXServiceBuilder;
+use bothan_okx::OkxServiceBuilder;
 
 use crate::api::CryptoQueryServer;
 use crate::config::AppConfig;
@@ -77,5 +77,5 @@ async fn init_crypto_services(config: &AppConfig, manager: &mut PriceServiceMana
     );
     add_service!(manager, HtxServiceBuilder, config.source.htx);
     add_service!(manager, KrakenServiceBuilder, config.source.kraken);
-    add_service!(manager, OKXServiceBuilder, config.source.okx);
+    add_service!(manager, OkxServiceBuilder, config.source.okx);
 }

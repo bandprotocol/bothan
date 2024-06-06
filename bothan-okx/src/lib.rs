@@ -1,6 +1,6 @@
-pub use api::websocket::{OKXWebSocketConnection, OKXWebSocketConnector};
-pub use service::builder::{OKXServiceBuilder, OKXServiceBuilderOpts};
-pub use service::OKXService;
+pub use api::websocket::{OkxWebSocketConnection, OkxWebSocketConnector};
+pub use service::builder::{OkxServiceBuilder, OkxServiceBuilderOpts};
+pub use service::OkxService;
 
 pub mod api;
 pub mod error;

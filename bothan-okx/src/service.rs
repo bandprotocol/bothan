@@ -10,23 +10,23 @@ use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
 
-use crate::api::error::Error as OKXError;
+use crate::api::error::Error as OkxError;
 use crate::api::types::channel::{ChannelResponse, TickerData};
-use crate::api::types::OKXResponse;
+use crate::api::types::OkxResponse;
 use crate::types::{Command, DEFAULT_TIMEOUT};
-use crate::{OKXWebSocketConnection, OKXWebSocketConnector};
+use crate::{OkxWebSocketConnection, OkxWebSocketConnector};
 
 pub mod builder;
 
-pub struct OKXService {
+pub struct OkxService {
     cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
-impl OKXService {
+impl OkxService {
     pub fn new(
-        connector: Arc<OKXWebSocketConnector>,
-        connection: Arc<Mutex<OKXWebSocketConnection>>,
+        connector: Arc<OkxWebSocketConnector>,
+        connection: Arc<Mutex<OkxWebSocketConnection>>,
         cmd_ch_size: usize,
         rem_id_ch_size: usize,
     ) -> Self {
@@ -51,7 +51,7 @@ impl OKXService {
 }
 
 #[async_trait::async_trait]
-impl Service for OKXService {
+impl Service for OkxService {
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut sub_ids = Vec::new();
 
@@ -82,8 +82,8 @@ impl Service for OKXService {
 }
 
 fn start_service(
-    connector: Arc<OKXWebSocketConnector>,
-    connection: Arc<Mutex<OKXWebSocketConnection>>,
+    connector: Arc<OkxWebSocketConnector>,
+    connection: Arc<Mutex<OkxWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
     cache: Arc<Cache<PriceData>>,
@@ -104,7 +104,7 @@ fn start_service(
                         Ok(Ok(response)) => {
                             process_response(response, &cache, timestamp as u64).await;
                         },
-                        Ok(Err(OKXError::ChannelClosed)) | Err(_) => {
+                        Ok(Err(OkxError::ChannelClosed)) | Err(_) => {
                             // Attempt to reconnect on timeout or on channel close
                             handle_reconnect(&connector, &connection, &cache, &command_tx).await;
                         }
@@ -126,7 +126,7 @@ fn start_service(
 
 async fn process_command(
     cmd: &Command,
-    ws: &Mutex<OKXWebSocketConnection>,
+    ws: &Mutex<OkxWebSocketConnection>,
     cache: &Cache<PriceData>,
 ) {
     match cmd {
@@ -143,8 +143,8 @@ async fn process_command(
 }
 
 async fn handle_reconnect(
-    connector: &OKXWebSocketConnector,
-    connection: &Mutex<OKXWebSocketConnection>,
+    connector: &OkxWebSocketConnector,
+    connection: &Mutex<OkxWebSocketConnection>,
     cache: &Cache<PriceData>,
     command_tx: &Sender<Command>,
 ) {
@@ -191,14 +191,14 @@ async fn save_tickers(tickers: &Vec<TickerData>, cache: &Cache<PriceData>, times
     }
 }
 
-async fn process_response(resp: &OKXResponse, cache: &Cache<PriceData>, timestamp: u64) {
+async fn process_response(resp: &OkxResponse, cache: &Cache<PriceData>, timestamp: u64) {
     match resp {
-        OKXResponse::ChannelResponse(resp) => match resp {
+        OkxResponse::ChannelResponse(resp) => match resp {
             ChannelResponse::Ticker(push_data) => {
                 save_tickers(&push_data.data, cache, timestamp).await
             }
         },
-        OKXResponse::WebSocketMessageResponse(resp) => {
+        OkxResponse::WebSocketMessageResponse(resp) => {
             debug!("received public message from okx: {:?}", resp);
         }
     }

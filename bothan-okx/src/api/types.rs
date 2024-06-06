@@ -10,7 +10,7 @@ pub const DEFAULT_URL: &str = "wss://ws.okx.com:8443/ws/v5/public";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
-pub enum OKXResponse {
+pub enum OkxResponse {
     WebSocketMessageResponse(WebSocketMessageResponse),
     ChannelResponse(ChannelResponse),
 }
