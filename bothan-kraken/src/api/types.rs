@@ -11,6 +11,7 @@ pub const DEFAULT_URL: &str = "wss://ws.kraken.com/v2";
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", untagged)]
 pub enum KrakenResponse {
-    PublicMessageResponse(PublicMessageResponse),
-    ChannelResponse(ChannelResponse),
+    PublicMessage(PublicMessageResponse),
+    Channel(ChannelResponse),
+    Pong,
 }
