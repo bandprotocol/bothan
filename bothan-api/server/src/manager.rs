@@ -1,1 +1,3 @@
-pub mod price_service;
+mod price_service;
+
+pub use price_service::manager::PriceServiceManager;

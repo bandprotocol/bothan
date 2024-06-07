@@ -14,7 +14,9 @@ pub const DEFAULT_URL: &str = "wss://ws.kraken.com/v2";
 #[serde(rename_all = "snake_case", untagged)]
 pub enum KrakenResponse {
     /// A response for public messages.
-    PublicMessageResponse(PublicMessageResponse),
+    PublicMessage(PublicMessageResponse),
     /// A response from a channel subscription.
-    ChannelResponse(ChannelResponse),
+    Channel(ChannelResponse),
+    /// A response from a ping.
+    Pong,
 }

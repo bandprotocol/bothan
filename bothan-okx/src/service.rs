@@ -3,44 +3,30 @@ use std::sync::Arc;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::Mutex;
-use tokio::time::{interval, timeout};
+use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
 use bothan_core::types::PriceData;
 
-use crate::api::error::Error as KrakenError;
-use crate::api::types::channel::ticker::TickerResponse;
-use crate::api::types::channel::ChannelResponse;
-use crate::api::types::KrakenResponse;
-use crate::types::{Command, DEFAULT_TIMEOUT, KEEP_ALIVE_INTERVAL};
-use crate::{KrakenWebSocketConnection, KrakenWebSocketConnector};
+use crate::api::error::Error as OkxError;
+use crate::api::types::channel::{ChannelResponse, TickerData};
+use crate::api::types::OkxResponse;
+use crate::types::{Command, DEFAULT_TIMEOUT};
+use crate::{OkxWebSocketConnection, OkxWebSocketConnector};
 
 pub mod builder;
 
-/// Service for interacting with Kraken WebSocket API and managing price data cache.
-pub struct KrakenService {
+pub struct OkxService {
     cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
-impl KrakenService {
-    /// Creates a new `KrakenService` instance.
-    ///
-    /// # Arguments
-    ///
-    /// * `connector` - An instance of `KrakenWebSocketConnector`.
-    /// * `connection` - A `Mutex` wrapped `KrakenWebSocketConnection`.
-    /// * `cmd_ch_size` - The size of the command channel.
-    /// * `rem_id_ch_size` - The size of the remove ID channel.
-    ///
-    /// # Returns
-    ///
-    /// A new `KrakenService` instance.
+impl OkxService {
     pub fn new(
-        connector: Arc<KrakenWebSocketConnector>,
-        connection: Arc<Mutex<KrakenWebSocketConnection>>,
+        connector: Arc<OkxWebSocketConnector>,
+        connection: Arc<Mutex<OkxWebSocketConnection>>,
         cmd_ch_size: usize,
         rem_id_ch_size: usize,
     ) -> Self {
@@ -65,16 +51,7 @@ impl KrakenService {
 }
 
 #[async_trait::async_trait]
-impl Service for KrakenService {
-    /// Retrieves price data for the given IDs.
-    ///
-    /// # Arguments
-    ///
-    /// * `ids` - A slice of string slices representing the IDs.
-    ///
-    /// # Returns
-    ///
-    /// A vector of `ServiceResult` containing `PriceData`.
+impl Service for OkxService {
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut sub_ids = Vec::new();
 
@@ -104,35 +81,17 @@ impl Service for KrakenService {
     }
 }
 
-/// Starts the service for updating price data.
-///
-/// # Arguments
-///
-/// * `connector` - An instance of `KrakenWebSocketConnector`.
-/// * `connection` - A `Mutex` wrapped `KrakenWebSocketConnection`.
-/// * `command_rx` - A receiver for commands.
-/// * `removed_ids_rx` - A receiver for removed IDs.
-/// * `cache` - An instance of `Cache<PriceData>`.
-/// * `command_tx` - A sender for commands.
 fn start_service(
-    connector: Arc<KrakenWebSocketConnector>,
-    connection: Arc<Mutex<KrakenWebSocketConnection>>,
+    connector: Arc<OkxWebSocketConnector>,
+    connection: Arc<Mutex<OkxWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
     cache: Arc<Cache<PriceData>>,
     command_tx: Arc<Sender<Command>>,
 ) {
     tokio::spawn(async move {
-        let mut ping_interval = interval(KEEP_ALIVE_INTERVAL);
         loop {
             select! {
-                _ = ping_interval.tick() => {
-                    if connection.lock().await.ping().await.is_err() {
-                        warn!("failed to ping kraken");
-                    } else {
-                        debug!("sent ping to kraken");
-                    }
-                },
                 Some(cmd) = command_rx.recv() => {
                     process_command(&cmd, &connection, &cache).await;
                 },
@@ -145,7 +104,7 @@ fn start_service(
                         Ok(Ok(response)) => {
                             process_response(response, &cache, timestamp as u64).await;
                         },
-                        Ok(Err(KrakenError::ChannelClosed)) | Err(_) => {
+                        Ok(Err(OkxError::ChannelClosed)) | Err(_) => {
                             // Attempt to reconnect on timeout or on channel close
                             handle_reconnect(&connector, &connection, &cache, &command_tx).await;
                         }
@@ -165,16 +124,9 @@ fn start_service(
     });
 }
 
-/// Processes the command for subscribing to tickers.
-///
-/// # Arguments
-///
-/// * `cmd` - The command to process.
-/// * `ws` - The WebSocket connection.
-/// * `cache` - The price data cache.
 async fn process_command(
     cmd: &Command,
-    ws: &Mutex<KrakenWebSocketConnection>,
+    ws: &Mutex<OkxWebSocketConnection>,
     cache: &Cache<PriceData>,
 ) {
     match cmd {
@@ -183,66 +135,54 @@ async fn process_command(
 
             let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
             let mut locked = ws.lock().await;
-            if locked
-                .subscribe_ticker(vec_ids.as_slice(), None, None)
-                .await
-                .is_err()
-            {
+            if locked.subscribe_ticker(vec_ids.as_slice()).await.is_err() {
                 warn!("Failed to subscribe to ids: {:?}", ids);
             }
         }
     }
 }
 
-/// Handles the reconnection logic.
-///
-/// # Arguments
-///
-/// * `connector` - The WebSocket connector.
-/// * `connection` - The WebSocket connection.
-/// * `cache` - The price data cache.
-/// * `command_tx` - The command sender.
 async fn handle_reconnect(
-    connector: &KrakenWebSocketConnector,
-    connection: &Mutex<KrakenWebSocketConnection>,
+    connector: &OkxWebSocketConnector,
+    connection: &Mutex<OkxWebSocketConnection>,
     cache: &Cache<PriceData>,
     command_tx: &Sender<Command>,
 ) {
     // TODO: Handle reconnection failure
     let mut locked = connection.lock().await;
-    warn!("attempting to reconnect to kraken");
+    warn!("attempting to reconnect to okx");
     // reconnect
     if let Ok(new_connection) = connector.connect().await {
         *locked = new_connection;
     } else {
-        warn!("failed to reconnect to kraken");
+        warn!("failed to reconnect to okx");
         return;
     }
 
     //  resubscribe to all ids
     let keys = cache.keys().await;
-    if !keys.is_empty() && command_tx.send(Command::Subscribe(keys)).await.is_err() {
+
+    // If the keys are empty, subscribe to a single symbol to keep the connection alive
+    // TODO: find a better solution
+    let cmd = match keys.is_empty() {
+        true => Command::Subscribe(vec!["BTC-USDT".to_string()]),
+        false => Command::Subscribe(keys),
+    };
+
+    if command_tx.send(cmd).await.is_err() {
         error!("Failed to send subscribe command");
     };
 }
 
-/// Saves the ticker data to the cache.
-///
-/// # Arguments
-///
-/// * `tickers` - The tickers to save.
-/// * `cache` - The price data cache.
-/// * `timestamp` - The timestamp for the data.
-async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, timestamp: u64) {
+async fn save_tickers(tickers: &Vec<TickerData>, cache: &Cache<PriceData>, timestamp: u64) {
     for ticker in tickers {
-        let id = ticker.symbol.clone();
         let price_data = PriceData {
-            id: id.clone(),
+            id: ticker.inst_id.clone(),
             price: ticker.last.clone().to_string(),
             timestamp,
         };
-
         info!("received prices: {:?}", price_data);
+        let id = price_data.id.clone();
         if cache.set_data(id.clone(), price_data).await.is_err() {
             warn!("unexpected request to set data for id: {}", id);
         } else {
@@ -251,29 +191,15 @@ async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, t
     }
 }
 
-/// Processes the response from the Kraken API.
-///
-/// # Arguments
-///
-/// * `resp` - The response to process.
-/// * `cache` - The price data cache.
-/// * `timestamp` - The timestamp for the data.
-async fn process_response(resp: &KrakenResponse, cache: &Cache<PriceData>, timestamp: u64) {
+async fn process_response(resp: &OkxResponse, cache: &Cache<PriceData>, timestamp: u64) {
     match resp {
-        KrakenResponse::Channel(resp) => match resp {
-            ChannelResponse::Ticker(tickers) => save_tickers(tickers, cache, timestamp).await,
-            ChannelResponse::Heartbeat => {
-                debug!("received heartbeat from kraken");
-            }
-            ChannelResponse::Status(status) => {
-                debug!("received status from kraken: {:?}", status);
+        OkxResponse::ChannelResponse(resp) => match resp {
+            ChannelResponse::Ticker(push_data) => {
+                save_tickers(&push_data.data, cache, timestamp).await
             }
         },
-        KrakenResponse::PublicMessage(resp) => {
-            debug!("received public message from kraken: {:?}", resp);
-        }
-        KrakenResponse::Pong => {
-            debug!("received pong from kraken");
+        OkxResponse::WebSocketMessageResponse(resp) => {
+            debug!("received public message from okx: {:?}", resp);
         }
     }
 }

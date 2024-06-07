@@ -69,6 +69,16 @@ impl KrakenWebSocketConnection {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
     }
+    
+    /// Sends a ping message to the WebSocket server.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating the success or failure of the ping operation.
+    pub async fn ping(&mut self) -> Result<(), Error> {
+        let msg = Message::Ping("".into());
+        Ok(self.sender.send(msg).await?)
+    }
 
     /// Subscribes to ticker updates for the given symbols.
     ///
@@ -127,6 +137,7 @@ impl KrakenWebSocketConnection {
             return match result_msg {
                 Ok(Message::Text(msg)) => serde_json::from_str::<KrakenResponse>(&msg)
                     .map_err(|_| Error::UnsupportedMessage),
+                Ok(Message::Pong(_)) => Ok(KrakenResponse::Pong),
                 Ok(Message::Close(_)) => Err(Error::ChannelClosed),
                 Err(err) => match err {
                     TungsteniteError::Protocol(..) => Err(Error::ChannelClosed),

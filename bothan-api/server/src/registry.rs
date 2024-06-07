@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::post_processor::PostProcess;
 use crate::processor::Process;
 use crate::registry::source::Source;
+use crate::tasks::utils::get_tasks;
 
 pub mod source;
 
@@ -20,4 +21,24 @@ pub struct Signal {
     pub sources: Vec<Source>,
     pub processor: Process,
     pub post_processors: Vec<PostProcess>,
+}
+
+pub trait Validator {
+    fn validate(&self) -> bool;
+}
+
+impl Validator for Registry {
+    fn validate(&self) -> bool {
+        let validate_tasks = get_tasks(self).is_ok();
+        let validate_source_routes = self.iter().all(|(_, signal)| {
+            signal.sources.iter().all(|source| {
+                source
+                    .routes
+                    .iter()
+                    .all(|route| signal.prerequisites.contains(&route.signal_id))
+            })
+        });
+
+        validate_tasks && validate_source_routes
+    }
 }
