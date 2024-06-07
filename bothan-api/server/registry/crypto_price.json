@@ -58,6 +58,16 @@
                 "source_id": "kraken",
                 "id": "BTC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BTC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -127,6 +137,16 @@
                 "source_id": "kraken",
                 "id": "ETH/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ETH-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -223,6 +243,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "BNB-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -282,6 +312,16 @@
                 "source_id": "kraken",
                 "id": "SOL/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SOL-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -315,6 +355,16 @@
             {
                 "source_id": "htx",
                 "id": "stethusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "STETH-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -390,6 +440,16 @@
                 "source_id": "kraken",
                 "id": "XRP/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "XRP-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -444,6 +504,16 @@
                 "source_id": "kraken",
                 "id": "USDC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "USDC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -513,6 +583,16 @@
                 "source_id": "kraken",
                 "id": "ADA/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ADA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -582,6 +662,16 @@
                 "source_id": "kraken",
                 "id": "AVAX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "AVAX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -630,6 +720,16 @@
             {
                 "source_id": "htx",
                 "id": "dogeusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "DOGE-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -695,6 +795,16 @@
                 "source_id": "kraken",
                 "id": "SHIB/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SHIB-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -728,6 +838,16 @@
             {
                 "source_id": "htx",
                 "id": "tonusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "TON-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -793,6 +913,16 @@
                 "source_id": "kraken",
                 "id": "DOT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "DOT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -847,6 +977,16 @@
                 "source_id": "kraken",
                 "id": "TRX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "TRX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -916,6 +1056,16 @@
                 "source_id": "kraken",
                 "id": "LINK/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LINK-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -985,6 +1135,16 @@
                 "source_id": "kraken",
                 "id": "WBTC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "WBTC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1054,6 +1214,16 @@
                 "source_id": "kraken",
                 "id": "MATIC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "MATIC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1113,6 +1283,16 @@
                 "source_id": "kraken",
                 "id": "UNI/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "UNI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1182,6 +1362,16 @@
                 "source_id": "kraken",
                 "id": "BCH/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BCH-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1251,6 +1441,16 @@
                 "source_id": "kraken",
                 "id": "NEAR/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "NEAR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1320,6 +1520,16 @@
                 "source_id": "kraken",
                 "id": "LTC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LTC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1379,6 +1589,16 @@
                 "source_id": "kraken",
                 "id": "APT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "APT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1390,7 +1610,9 @@
         "post_processors": []
     },
     "crypto_price.leousd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -1406,6 +1628,16 @@
                 "source_id": "cryptocompare",
                 "id": "LEO",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LEO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1475,6 +1707,16 @@
                 "source_id": "kraken",
                 "id": "ICP/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ICP-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1524,6 +1766,16 @@
                 "source_id": "kraken",
                 "id": "DAI/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "DAI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1593,6 +1845,16 @@
                 "source_id": "kraken",
                 "id": "ARB/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ARB-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1662,6 +1924,16 @@
                 "source_id": "kraken",
                 "id": "RNDR/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "RNDR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1731,6 +2003,16 @@
                 "source_id": "kraken",
                 "id": "ATOM/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ATOM-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1780,6 +2062,16 @@
                 "source_id": "kraken",
                 "id": "STX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "STX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1849,6 +2141,16 @@
                 "source_id": "kraken",
                 "id": "FIL/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "FIL-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -1918,6 +2220,16 @@
                 "source_id": "kraken",
                 "id": "ETC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ETC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2026,6 +2338,16 @@
                 "source_id": "kraken",
                 "id": "IMX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "IMX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2085,6 +2407,16 @@
                 "source_id": "kraken",
                 "id": "GRT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "GRT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2154,6 +2486,16 @@
                 "source_id": "kraken",
                 "id": "XLM/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "XLM-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2218,6 +2560,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "HBAR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2229,7 +2581,9 @@
         "post_processors": []
     },
     "crypto_price.okbusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -2245,6 +2599,16 @@
                 "source_id": "cryptocompare",
                 "id": "OKB",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "OKB-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2314,6 +2678,16 @@
                 "source_id": "kraken",
                 "id": "OP/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "OP-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2352,6 +2726,16 @@
             {
                 "source_id": "htx",
                 "id": "crousdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "CRO-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -2427,6 +2811,16 @@
                 "source_id": "kraken",
                 "id": "INJ/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "INJ-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2491,6 +2885,16 @@
                 "source_id": "kraken",
                 "id": "PEPE/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "PEPE-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2631,6 +3035,16 @@
                 "source_id": "kraken",
                 "id": "FET/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "FET-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2700,6 +3114,16 @@
                 "source_id": "kraken",
                 "id": "MKR/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "MKR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2788,6 +3212,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "THETA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2852,6 +3286,16 @@
                 "source_id": "kraken",
                 "id": "FTM/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "FTM-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -2989,6 +3433,16 @@
                 "source_id": "kraken",
                 "id": "TIA/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "TIA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3112,6 +3566,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "AR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3181,6 +3645,16 @@
                 "source_id": "kraken",
                 "id": "LDO/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LDO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3245,6 +3719,16 @@
                 "source_id": "kraken",
                 "id": "WIF/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "WIF-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3407,6 +3891,16 @@
                 "source_id": "kraken",
                 "id": "GALA/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "GALA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3466,6 +3960,16 @@
                 "source_id": "kraken",
                 "id": "SUI/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SUI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3535,6 +4039,16 @@
                 "source_id": "kraken",
                 "id": "ALGO/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ALGO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3604,6 +4118,16 @@
                 "source_id": "kraken",
                 "id": "FLOW/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "FLOW-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3691,6 +4215,16 @@
             {
                 "source_id": "htx",
                 "id": "flokiusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "FLOKI-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -3810,6 +4344,16 @@
                 "source_id": "kraken",
                 "id": "AAVE/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "AAVE-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3923,6 +4467,16 @@
                 "source_id": "kraken",
                 "id": "JUP/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "JUP-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -3982,6 +4536,16 @@
                 "source_id": "kraken",
                 "id": "EGLD/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "EGLD-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4036,6 +4600,16 @@
                 "source_id": "kraken",
                 "id": "DYDX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "DYDX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4095,6 +4669,16 @@
                 "source_id": "kraken",
                 "id": "STRK/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "STRK-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4164,6 +4748,16 @@
                 "source_id": "kraken",
                 "id": "BONK/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BONK-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4197,6 +4791,16 @@
             {
                 "source_id": "htx",
                 "id": "bsvusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "BSV-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -4267,6 +4871,16 @@
                 "source_id": "kraken",
                 "id": "PYTH/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "PYTH-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4306,6 +4920,16 @@
                 "source_id": "cryptocompare",
                 "id": "CFX",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "CFX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4365,6 +4989,16 @@
                 "source_id": "kraken",
                 "id": "AXS/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "AXS-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4424,6 +5058,16 @@
                 "source_id": "kraken",
                 "id": "SAND/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SAND-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4504,6 +5148,16 @@
             {
                 "source_id": "htx",
                 "id": "agixusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "AGIX-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -4613,6 +5267,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "ORDI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4689,6 +5353,16 @@
                 "source_id": "kraken",
                 "id": "BTT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BTT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4834,6 +5508,16 @@
                 "source_id": "kraken",
                 "id": "MINA/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "MINA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4893,6 +5577,16 @@
                 "source_id": "kraken",
                 "id": "SNX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SNX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -4936,6 +5630,16 @@
             {
                 "source_id": "htx",
                 "id": "wldusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "WLD-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -5023,6 +5727,16 @@
                 "source_id": "kraken",
                 "id": "FLR/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "FLR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5119,6 +5833,16 @@
                 "source_id": "kraken",
                 "id": "XTZ/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "XTZ-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5222,6 +5946,16 @@
                 "source_id": "kraken",
                 "id": "APE/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "APE-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5291,6 +6025,16 @@
                 "source_id": "kraken",
                 "id": "MANA/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "MANA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5360,6 +6104,16 @@
                 "source_id": "kraken",
                 "id": "CHZ/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "CHZ-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5419,6 +6173,16 @@
                 "source_id": "kraken",
                 "id": "EOS/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "EOS-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5581,6 +6345,16 @@
                 "source_id": "coinmarketcap",
                 "id": "14101",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "RON-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5630,6 +6404,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "NEO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5658,6 +6442,16 @@
             {
                 "source_id": "htx",
                 "id": "satsusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "SATS-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -5733,6 +6527,16 @@
                 "source_id": "kraken",
                 "id": "ZRX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ZRX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5954,6 +6758,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "XEC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -5997,6 +6811,16 @@
             {
                 "source_id": "htx",
                 "id": "iotausdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "IOTA-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -6355,6 +7179,16 @@
             {
                 "source_id": "htx",
                 "id": "klayusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "KLAY-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -6769,6 +7603,16 @@
                 "source_id": "kraken",
                 "id": "BLUR/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BLUR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -6882,6 +7726,16 @@
                 "source_id": "kraken",
                 "id": "WOO/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "WOO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -6985,6 +7839,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "LUNC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -7029,6 +7893,16 @@
                 "source_id": "coinbase",
                 "id": "ILV-USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ILV-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -7083,6 +7957,16 @@
                 "source_id": "kraken",
                 "id": "ASTR/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ASTR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -7152,6 +8036,16 @@
                 "source_id": "kraken",
                 "id": "CRV/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "CRV-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -7441,6 +8335,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "ID-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -7510,6 +8414,16 @@
                 "source_id": "kraken",
                 "id": "ENJ/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ENJ-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -7758,6 +8672,16 @@
                 "source_id": "kraken",
                 "id": "ENS/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ENS-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -7935,6 +8859,16 @@
                 "source_id": "kraken",
                 "id": "1INCH/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "1INCH-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8087,6 +9021,16 @@
                 "source_id": "cryptocompare",
                 "id": "OM",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "OM-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8140,6 +9084,16 @@
             {
                 "source_id": "htx",
                 "id": "celousdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "CELO-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -8210,6 +9164,16 @@
                 "source_id": "kraken",
                 "id": "LUNA/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LUNA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8263,6 +9227,16 @@
             {
                 "source_id": "htx",
                 "id": "zilusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "ZIL-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -8338,6 +9312,16 @@
                 "source_id": "kraken",
                 "id": "RPL/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "RPL-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8392,6 +9376,16 @@
                 "source_id": "kraken",
                 "id": "FXS/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "FXS-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8527,6 +9521,16 @@
                 "source_id": "kraken",
                 "id": "LPT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LPT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8571,6 +9575,16 @@
                 "source_id": "kraken",
                 "id": "RAY/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "RAY-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8669,6 +9683,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "MEME-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -8717,6 +9741,16 @@
             {
                 "source_id": "htx",
                 "id": "sklusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "SKL-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -8805,6 +9839,16 @@
             {
                 "source_id": "htx",
                 "id": "xautusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "XAUT-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -8914,6 +9958,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "METIS-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9006,6 +10060,16 @@
             {
                 "source_id": "htx",
                 "id": "nftusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "NFT-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -9135,6 +10199,16 @@
                 "source_id": "kraken",
                 "id": "GMT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "GMT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9178,6 +10252,16 @@
             {
                 "source_id": "htx",
                 "id": "coreusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "CORE-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -9238,6 +10322,16 @@
                 "source_id": "kraken",
                 "id": "SC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9346,6 +10440,16 @@
                 "source_id": "kraken",
                 "id": "COMP/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "COMP-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9415,6 +10519,16 @@
                 "source_id": "kraken",
                 "id": "GAL/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "GAL-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9458,6 +10572,16 @@
             {
                 "source_id": "htx",
                 "id": "csprusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "CSPR-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -9534,6 +10658,16 @@
             {
                 "source_id": "htx",
                 "id": "zetausdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "ZETA-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -9633,6 +10767,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "GLM-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9702,6 +10846,16 @@
                 "source_id": "kraken",
                 "id": "LRC/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LRC-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9832,6 +10986,16 @@
                 "source_id": "kraken",
                 "id": "GMX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "GMX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9886,6 +11050,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "ETHFI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -9929,6 +11103,16 @@
             {
                 "source_id": "htx",
                 "id": "elfusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "ELF-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -9994,6 +11178,16 @@
                 "source_id": "kraken",
                 "id": "BAT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BAT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10058,6 +11252,16 @@
                 "source_id": "kraken",
                 "id": "QTUM/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "QTUM-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10252,6 +11456,16 @@
                 "source_id": "kraken",
                 "id": "GLMR/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "GLMR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10370,6 +11584,16 @@
                 "source_id": "kraken",
                 "id": "MASK/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "MASK-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10423,6 +11647,16 @@
             {
                 "source_id": "htx",
                 "id": "xemusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "XEM-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -10704,6 +11938,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "GAS-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10737,6 +11981,16 @@
             {
                 "source_id": "htx",
                 "id": "xchusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "XCH-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -10792,6 +12046,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "SSV-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10841,6 +12105,16 @@
                 "source_id": "cryptocompare",
                 "id": "KDA",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "KDA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10910,6 +12184,16 @@
                 "source_id": "kraken",
                 "id": "KSM/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "KSM-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -10943,6 +12227,16 @@
             {
                 "source_id": "htx",
                 "id": "daousdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "DAO-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -11133,6 +12427,16 @@
                 "source_id": "kraken",
                 "id": "ETHW/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ETHW-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11176,6 +12480,16 @@
             {
                 "source_id": "htx",
                 "id": "dcrusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "DCR-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -11251,6 +12565,16 @@
                 "source_id": "kraken",
                 "id": "JTO/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "JTO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11381,6 +12705,16 @@
                 "source_id": "kraken",
                 "id": "BICO/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BICO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11464,6 +12798,16 @@
                 "source_id": "kraken",
                 "id": "ANT/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ANT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11523,6 +12867,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "ONE-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11572,6 +12926,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "BABYDOGE-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11583,7 +12947,9 @@
         "post_processors": []
     },
     "crypto_price.cfgusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -11604,6 +12970,16 @@
                 "source_id": "kraken",
                 "id": "CFG/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "CFG-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11707,6 +13083,16 @@
                 "source_id": "kraken",
                 "id": "API3/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "API3-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11766,6 +13152,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "RVN-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11777,7 +13173,9 @@
         "post_processors": []
     },
     "crypto_price.oktusd": {
-        "prerequisites": [],
+        "prerequisites": [
+            "crypto_price.usdtusd"
+        ],
         "sources": [
             {
                 "source_id": "coingecko",
@@ -11788,6 +13186,16 @@
                 "source_id": "cryptocompare",
                 "id": "OKT",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "OKT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -11979,6 +13387,16 @@
                 "source_id": "kraken",
                 "id": "SUSHI/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SUSHI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -12087,6 +13505,16 @@
                 "source_id": "kraken",
                 "id": "T/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "T-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -12146,6 +13574,16 @@
                 "source_id": "kraken",
                 "id": "CVX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "CVX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -12359,6 +13797,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "JST-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -12402,6 +13850,16 @@
             {
                 "source_id": "htx",
                 "id": "rss3usdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "RSS3-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -12734,6 +14192,16 @@
                 "source_id": "kraken",
                 "id": "UMA/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "UMA-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -12825,6 +14293,16 @@
                 "source_id": "kraken",
                 "id": "YFI/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "YFI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -12912,6 +14390,16 @@
             {
                 "source_id": "htx",
                 "id": "joeusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "JOE-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -13202,6 +14690,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "RSR-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -13261,6 +14759,16 @@
                 "source_id": "kraken",
                 "id": "BAND/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BAND-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -13325,6 +14833,16 @@
                 "source_id": "kraken",
                 "id": "ICX/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "ICX-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -13374,23 +14892,16 @@
                         "operation": "*"
                     }
                 ]
-            }
-        ],
-        "processor": {
-            "function": "median",
-            "params": {
-                "min_source_count": 3
-            }
-        },
-        "post_processors": []
-    },
-    "crypto_price.btc.busd": {
-        "prerequisites": [],
-        "sources": [
+            },
             {
-                "source_id": "coingecko",
-                "id": "bitcoin-avalanche-bridged-btc-b",
-                "routes": []
+                "source_id": "okx",
+                "id": "ONT-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -13449,6 +14960,16 @@
             {
                 "source_id": "htx",
                 "id": "magicusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "MAGIC-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -13547,6 +15068,16 @@
             {
                 "source_id": "htx",
                 "id": "waxpusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "WAXP-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -13710,6 +15241,16 @@
                         "operation": "*"
                     }
                 ]
+            },
+            {
+                "source_id": "okx",
+                "id": "AEVO-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -13855,6 +15396,16 @@
                 "source_id": "kraken",
                 "id": "BAL/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "BAL-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -13974,6 +15525,16 @@
             {
                 "source_id": "htx",
                 "id": "ctcusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "CTC-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -14127,6 +15688,16 @@
                 "source_id": "cryptocompare",
                 "id": "IQ",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "IQ-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -14313,6 +15884,16 @@
                 "source_id": "kraken",
                 "id": "LSK/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "LSK-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -14455,6 +16036,16 @@
                 "source_id": "cryptocompare",
                 "id": "OMI",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "OMI-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -14498,6 +16089,16 @@
             {
                 "source_id": "htx",
                 "id": "ustcusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "USTC-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",
@@ -14585,6 +16186,16 @@
                 "source_id": "kraken",
                 "id": "YGG/USD",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "YGG-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -14624,6 +16235,16 @@
                 "source_id": "cryptocompare",
                 "id": "SLP",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "SLP-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -14822,6 +16443,16 @@
                 "source_id": "cryptocompare",
                 "id": "DGB",
                 "routes": []
+            },
+            {
+                "source_id": "okx",
+                "id": "DGB-USDT",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
             }
         ],
         "processor": {
@@ -14855,6 +16486,16 @@
             {
                 "source_id": "htx",
                 "id": "boneusdt",
+                "routes": [
+                    {
+                        "signal_id": "crypto_price.usdtusd",
+                        "operation": "*"
+                    }
+                ]
+            },
+            {
+                "source_id": "okx",
+                "id": "BONE-USDT",
                 "routes": [
                     {
                         "signal_id": "crypto_price.usdtusd",

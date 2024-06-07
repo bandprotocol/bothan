@@ -8,20 +8,19 @@ use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tracing::warn;
 
 use crate::api::error::Error;
-use crate::api::types::channel::ticker::{EventTrigger, TickerRequestParameters};
-use crate::api::types::message::{Method, PublicMessage};
-use crate::api::types::KrakenResponse;
+use crate::api::types::message::{InstrumentType, Op, PriceRequestArgument, WebSocketMessage};
+use crate::api::types::OkxResponse;
 
-pub struct KrakenWebSocketConnector {
+pub struct OkxWebSocketConnector {
     url: String,
 }
 
-impl KrakenWebSocketConnector {
+impl OkxWebSocketConnector {
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
-    pub async fn connect(&self) -> Result<KrakenWebSocketConnection, Error> {
+    pub async fn connect(&self) -> Result<OkxWebSocketConnection, Error> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
         let status = resp.status();
@@ -30,59 +29,47 @@ impl KrakenWebSocketConnector {
             return Err(Error::ConnectionFailure(resp.status()));
         }
 
-        Ok(KrakenWebSocketConnection::new(wss))
+        Ok(OkxWebSocketConnection::new(wss))
     }
 }
 
-pub struct KrakenWebSocketConnection {
+pub struct OkxWebSocketConnection {
     sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 }
 
-impl KrakenWebSocketConnection {
+impl OkxWebSocketConnection {
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
     }
 
-    pub async fn ping(&mut self) -> Result<(), Error> {
-        let msg = Message::Ping("".into());
-        Ok(self.sender.send(msg).await?)
-    }
-
-    pub async fn subscribe_ticker(
-        &mut self,
-        symbols: &[&str],
-        event_trigger: Option<EventTrigger>,
-        snapshot: Option<bool>,
-    ) -> Result<(), Error> {
-        let ticker_param = build_ticker_request(symbols, event_trigger, snapshot);
-        let msg = PublicMessage {
-            method: Method::Subscribe,
-            params: Some(ticker_param),
-            req_id: None,
+    pub async fn subscribe_ticker(&mut self, inst_ids: &[&str]) -> Result<(), Error> {
+        let ticker_args = build_ticker_arguments(inst_ids);
+        let msg = WebSocketMessage {
+            op: Op::Subscribe,
+            args: Some(ticker_args),
         };
         let message = Message::Text(serde_json::to_string(&msg)?);
         Ok(self.sender.send(message).await?)
     }
 
-    pub async fn unsubscribe_ticker(&mut self, symbols: &[&str]) -> Result<(), Error> {
-        let params = build_ticker_request(symbols, None, None);
-        let msg = PublicMessage {
-            method: Method::Unsubscribe,
-            params: Some(params),
-            req_id: None,
+    pub async fn unsubscribe_ticker(&mut self, inst_ids: &[&str]) -> Result<(), Error> {
+        let ticker_args = build_ticker_arguments(inst_ids);
+        let msg = WebSocketMessage {
+            op: Op::Unsubscribe,
+            args: Some(ticker_args),
         };
         let message = Message::Text(serde_json::to_string(&msg)?);
         Ok(self.sender.send(message).await?)
     }
 
-    pub async fn next(&mut self) -> Result<KrakenResponse, Error> {
+    pub async fn next(&mut self) -> Result<OkxResponse, Error> {
         if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {
-                Ok(Message::Text(msg)) => serde_json::from_str::<KrakenResponse>(&msg)
-                    .map_err(|_| Error::UnsupportedMessage),
-                Ok(Message::Pong(_)) => Ok(KrakenResponse::Pong),
+                Ok(Message::Text(msg)) => {
+                    serde_json::from_str::<OkxResponse>(&msg).map_err(|_| Error::UnsupportedMessage)
+                }
                 Ok(Message::Close(_)) => Err(Error::ChannelClosed),
                 Err(err) => match err {
                     TungsteniteError::Protocol(..) => Err(Error::ChannelClosed),
@@ -97,19 +84,19 @@ impl KrakenWebSocketConnection {
     }
 }
 
-fn build_ticker_request(
-    symbols: &[&str],
-    event_trigger: Option<EventTrigger>,
-    snapshot: Option<bool>,
-) -> TickerRequestParameters {
-    let symbols = symbols
+fn build_ticker_arguments(inst_ids: &[&str]) -> Vec<PriceRequestArgument> {
+    let inst_ids = inst_ids
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
-    TickerRequestParameters {
-        channel: "ticker".to_string(),
-        symbol: symbols,
-        event_trigger,
-        snapshot,
-    }
+
+    inst_ids
+        .iter()
+        .map(|id| PriceRequestArgument {
+            channel: "tickers".to_string(),
+            inst_type: Some(InstrumentType::Spot),
+            inst_family: None,
+            inst_id: Some(id.clone()),
+        })
+        .collect()
 }

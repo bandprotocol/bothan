@@ -1,9 +1,10 @@
 syntax = "proto3";
 
 package query;
-option go_package = "bothan-api/query";
 
 import "google/api/annotations.proto";
+
+option go_package = "bothan-api/query";
 
 // Query defines the gRPC service.
 service Query {
@@ -15,11 +16,15 @@ service Query {
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesRequest { repeated string signal_ids = 1; }
+message QueryPricesRequest {
+  repeated string signal_ids = 1;
+}
 
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesResponse { repeated PriceData prices = 1; }
+message QueryPricesResponse {
+  repeated PriceData prices = 1;
+}
 
 // PriceData defines the data of a symbol price.
 message PriceData {

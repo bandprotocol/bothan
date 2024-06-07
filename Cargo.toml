@@ -33,11 +33,13 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = "2.5.0"
 
 bothan-core = { version = "0.1.0", path = "bothan-core" }
+
 bothan-binance = { version = "0.1.0", path = "bothan-binance" }
-bothan-coinbase = { version = "0.1.0", path = "bothan-coinbase" }
 bothan-bybit = { version = "0.1.0", path = "bothan-bybit" }
+bothan-coinbase = { version = "0.1.0", path = "bothan-coinbase" }
 bothan-coingecko = { version = "0.1.0", path = "bothan-coingecko" }
 bothan-coinmarketcap = { version = "0.1.0", path = "bothan-coinmarketcap" }
 bothan-cryptocompare = { version = "0.1.0", path = "bothan-cryptocompare" }
 bothan-htx = { version = "0.1.0", path = "bothan-htx" }
 bothan-kraken = { version = "0.1.0", path = "bothan-kraken" }
+bothan-okx = { version = "0.1.0", path = "bothan-okx" }
