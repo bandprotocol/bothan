@@ -22,6 +22,7 @@ bothan-core = { workspace = true }
 bothan-cryptocompare = { workspace = true }
 bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
+bothan-okx = { workspace = true }
 
 chrono = { workspace = true }
 humantime-serde = { workspace = true }

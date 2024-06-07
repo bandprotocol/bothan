@@ -19,6 +19,7 @@ use bothan_coinmarketcap::CoinMarketCapServiceBuilder;
 use bothan_cryptocompare::CryptoCompareServiceBuilder;
 use bothan_htx::HtxServiceBuilder;
 use bothan_kraken::KrakenServiceBuilder;
+use bothan_okx::OkxServiceBuilder;
 
 #[tokio::main]
 async fn main() {
@@ -64,4 +65,5 @@ async fn init_crypto_services(config: &AppConfig, manager: &mut PriceServiceMana
     add_service!(manager, CryptoCompareServiceBuilder, config.source.cryptocompare);
     add_service!(manager, HtxServiceBuilder, config.source.htx);
     add_service!(manager, KrakenServiceBuilder, config.source.kraken);
+    add_service!(manager, OkxServiceBuilder, config.source.okx);
 }

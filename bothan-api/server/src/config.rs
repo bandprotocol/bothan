@@ -9,6 +9,7 @@ use bothan_coinmarketcap::CoinMarketCapServiceBuilderOpts;
 use bothan_cryptocompare::CryptoCompareServiceBuilderOpts;
 use bothan_htx::HtxServiceBuilderOpts;
 use bothan_kraken::KrakenServiceBuilderOpts;
+use bothan_okx::OkxServiceBuilderOpts;
 
 /// The configuration for the gRPC server.
 #[derive(Clone, Debug, Deserialize)]
@@ -33,6 +34,7 @@ pub struct SourceConfig {
     pub cryptocompare: CryptoCompareServiceBuilderOpts,
     pub htx: HtxServiceBuilderOpts,
     pub kraken: KrakenServiceBuilderOpts,
+    pub okx: OkxServiceBuilderOpts,
 }
 
 /// The configuration for the registry.
