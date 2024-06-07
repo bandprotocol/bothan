@@ -69,7 +69,7 @@ impl KrakenWebSocketConnection {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
     }
-    
+
     /// Sends a ping message to the WebSocket server.
     ///
     /// # Returns
