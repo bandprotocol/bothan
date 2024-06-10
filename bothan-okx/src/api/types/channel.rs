@@ -1,24 +1,33 @@
 use serde::{Deserialize, Serialize};
 
+/// Represents a response from a channel subscription.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ChannelResponse {
+    /// Ticker data response.
     Ticker(PushData<Vec<TickerData>>),
 }
 
+/// Represents push data from a channel.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PushData<T> {
+    /// The argument for the channel.
     pub arg: ChannelArgument,
+    /// The data received from the channel.
     pub data: T,
 }
 
+/// Represents the argument for a channel.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ChannelArgument {
+    /// The name of the channel.
     pub channel: String,
+    /// The instrument ID.
     pub inst_id: String,
 }
 
+/// Represents ticker data received from the channel.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TickerData {
