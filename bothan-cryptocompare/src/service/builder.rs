@@ -22,6 +22,7 @@ pub struct CryptoCompareServiceBuilderOpts {
 /// # Example
 /// ```no_run
 /// use bothan_cryptocompare::CryptoCompareServiceBuilder;
+/// use tokio::time::Duration;
 ///
 /// #[tokio::main]
 /// async fn main() {
@@ -43,57 +44,7 @@ pub struct CryptoCompareServiceBuilder {
 }
 
 impl CryptoCompareServiceBuilder {
-    /// Sets the URL for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - A string slice that holds the URL.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
-    pub fn with_url(mut self, url: &str) -> Self {
-        self.url = Some(url.into());
-        self
-    }
-
-    /// Sets the API key for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `api_key` - A string slice that holds the API key.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
-    pub fn with_api_key(mut self, api_key: &str) -> Self {
-        self.api_key = Some(api_key.into());
-        self
-    }
-
-    /// Sets the update interval for the service.
-    ///
-    /// # Arguments
-    ///
-    /// * `update_interval` - The duration for the update interval.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
-    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
-        self.update_interval = update_interval;
-        self
-    }
-
     /// Creates a new builder instance from the provided options.
-    ///
-    /// # Arguments
-    ///
-    /// * `opts` - The options for configuring the builder.
-    ///
-    /// # Returns
-    ///
-    /// A new `CryptoCompareServiceBuilder` instance.
     pub fn new(opts: CryptoCompareServiceBuilderOpts) -> Self {
         Self {
             url: opts.url,
@@ -102,11 +53,28 @@ impl CryptoCompareServiceBuilder {
         }
     }
 
+    /// Sets the URL for the API.
+    /// The default URL is `DEFAULT_URL`.
+    pub fn with_url(mut self, url: &str) -> Self {
+        self.url = Some(url.into());
+        self
+    }
+
+    /// Sets the API key for the API.
+    /// The default is `None`.
+    pub fn with_api_key(mut self, api_key: &str) -> Self {
+        self.api_key = Some(api_key.into());
+        self
+    }
+
+    /// Sets the update interval for the service.
+    /// The default interval is `DEFAULT_UPDATE_INTERVAL`.
+    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
+        self.update_interval = update_interval;
+        self
+    }
+
     /// Builds the `CryptoCompareService` instance.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `CryptoCompareService` if successful, or a `BuilderError` otherwise.
     pub async fn build(self) -> Result<CryptoCompareService, BuilderError> {
         let mut api_builder = CryptoCompareRestAPIBuilder::default();
         if let Some(url) = &self.url {

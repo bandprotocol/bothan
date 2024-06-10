@@ -19,23 +19,11 @@ pub struct KrakenWebSocketConnector {
 
 impl KrakenWebSocketConnector {
     /// Creates a new instance of `KrakenWebSocketConnector`.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - The WebSocket URL to connect to.
-    ///
-    /// # Returns
-    ///
-    /// A new `KrakenWebSocketConnector` instance.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
     /// Connects to the Kraken WebSocket API.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `KrakenWebSocketConnection` if successful, or an `Error` otherwise.
     pub async fn connect(&self) -> Result<KrakenWebSocketConnection, Error> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
@@ -57,40 +45,18 @@ pub struct KrakenWebSocketConnection {
 
 impl KrakenWebSocketConnection {
     /// Creates a new `KrakenWebSocketConnection` instance.
-    ///
-    /// # Arguments
-    ///
-    /// * `web_socket_stream` - The WebSocket stream.
-    ///
-    /// # Returns
-    ///
-    /// A new `KrakenWebSocketConnection` instance.
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
     }
 
     /// Sends a ping message to the WebSocket server.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` indicating the success or failure of the ping operation.
     pub async fn ping(&mut self) -> Result<(), Error> {
         let msg = Message::Ping("".into());
         Ok(self.sender.send(msg).await?)
     }
 
     /// Subscribes to ticker updates for the given symbols.
-    ///
-    /// # Arguments
-    ///
-    /// * `symbols` - The symbols to subscribe to.
-    /// * `event_trigger` - Optional event trigger for the subscription.
-    /// * `snapshot` - Optional snapshot flag for the subscription.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` indicating the success or failure of the subscription.
     pub async fn subscribe_ticker(
         &mut self,
         symbols: &[&str],
@@ -108,14 +74,6 @@ impl KrakenWebSocketConnection {
     }
 
     /// Unsubscribes from ticker updates for the given symbols.
-    ///
-    /// # Arguments
-    ///
-    /// * `symbols` - The symbols to unsubscribe from.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` indicating the success or failure of the unsubscription.
     pub async fn unsubscribe_ticker(&mut self, symbols: &[&str]) -> Result<(), Error> {
         let params = build_ticker_request(symbols, None, None);
         let msg = PublicMessage {
@@ -128,10 +86,6 @@ impl KrakenWebSocketConnection {
     }
 
     /// Receives the next message from the WebSocket connection.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `KrakenResponse` if successful, or an `Error` otherwise.
     pub async fn next(&mut self) -> Result<KrakenResponse, Error> {
         if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {
@@ -153,16 +107,6 @@ impl KrakenWebSocketConnection {
 }
 
 /// Builds a ticker request with the given parameters.
-///
-/// # Arguments
-///
-/// * `symbols` - The symbols to include in the request.
-/// * `event_trigger` - Optional event trigger for the request.
-/// * `snapshot` - Optional snapshot flag for the request.
-///
-/// # Returns
-///
-/// A `TickerRequestParameters` instance.
 fn build_ticker_request(
     symbols: &[&str],
     event_trigger: Option<EventTrigger>,

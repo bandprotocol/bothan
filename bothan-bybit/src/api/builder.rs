@@ -15,10 +15,9 @@ use crate::api::BybitRestAPI;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let api = BybitRestAPIBuilder::default()
-///         .with_url("https://api.bybit.com")
-///         .build()
-///         .unwrap();
+///     let mut builder = BybitRestAPIBuilder::default();
+///     builder.with_url("https://api.bybit.com");
+///     let api = builder.build().unwrap();
 ///
 ///     // use api ...
 /// }
@@ -29,24 +28,13 @@ pub struct BybitRestAPIBuilder {
 
 impl BybitRestAPIBuilder {
     /// Sets the URL for the api.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - A string slice that holds the URL.
-    ///
-    /// # Returns
-    ///
-    /// A mutable reference to the builder.
+    /// The default URL is `DEFAULT_URL`.
     pub fn with_url(&mut self, url: &str) -> &Self {
         self.url = url.into();
         self
     }
 
     /// Builds the `BybitRestAPI` instance.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` which is `Ok` if the instance was created successfully, or a `BuilderError` if there was a problem.
     pub fn build(self) -> Result<BybitRestAPI, BuilderError> {
         let parsed_url = Url::parse(&self.url)?;
         let client = ClientBuilder::new().build()?;

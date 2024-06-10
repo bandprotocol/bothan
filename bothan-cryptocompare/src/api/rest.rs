@@ -13,28 +13,11 @@ pub struct CryptoCompareRestAPI {
 
 impl CryptoCompareRestAPI {
     /// Creates a new instance of `CryptoCompareRestAPI`.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - The base URL for the API.
-    /// * `client` - The HTTP client to be used.
-    ///
-    /// # Returns
-    ///
-    /// A new `CryptoCompareRestAPI` instance.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
     /// Retrieves the price for multiple symbols from the CryptoCompare API.
-    ///
-    /// # Arguments
-    ///
-    /// * `ids` - A slice of string slices representing the coin IDs.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing a vector of optional prices if successful, or a `RestAPIError` otherwise.
     pub async fn get_multi_symbol_price(
         &self,
         ids: &[&str],
@@ -55,14 +38,6 @@ impl CryptoCompareRestAPI {
 }
 
 /// Sends an HTTP request and checks for HTTP errors.
-///
-/// # Arguments
-///
-/// * `request_builder` - The request builder to be sent.
-///
-/// # Returns
-///
-/// A `Result` containing a `Response` if successful, or a `RestAPIError` otherwise.
 async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
     let response = request_builder.send().await?;
 
@@ -75,14 +50,6 @@ async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestA
 }
 
 /// Parses the HTTP response into the specified type.
-///
-/// # Arguments
-///
-/// * `response` - The HTTP response to be parsed.
-///
-/// # Returns
-///
-/// A `Result` containing the parsed data if successful, or a `RestAPIError` otherwise.
 async fn parse_response<T: serde::de::DeserializeOwned>(
     response: Response,
 ) -> Result<T, RestAPIError> {

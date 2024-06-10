@@ -24,6 +24,7 @@ pub struct HtxServiceBuilderOpts {
 /// # Example
 /// ```no_run
 /// use bothan_htx::HtxServiceBuilder;
+/// use tokio::time::Duration;
 ///
 /// #[tokio::main]
 /// async fn main() {
@@ -43,43 +44,7 @@ pub struct HtxServiceBuilder {
 }
 
 impl HtxServiceBuilder {
-    /// Sets the URL for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - A string slice that holds the URL.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
-    pub fn with_url(mut self, url: &str) -> Self {
-        self.url = url.into();
-        self
-    }
-
-    /// Sets the update interval for the service.
-    ///
-    /// # Arguments
-    ///
-    /// * `update_interval` - The duration for the update interval.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
-    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
-        self.update_interval = update_interval;
-        self
-    }
-
     /// Creates a new builder instance from the provided options.
-    ///
-    /// # Arguments
-    ///
-    /// * `opts` - The options for configuring the builder.
-    ///
-    /// # Returns
-    ///
-    /// A new `HtxServiceBuilder` instance.
     pub fn new(opts: HtxServiceBuilderOpts) -> Self {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.into()),
@@ -87,11 +52,21 @@ impl HtxServiceBuilder {
         }
     }
 
+    /// Sets the URL for the API.
+    /// The default URL is `DEFAULT_URL`.
+    pub fn with_url(mut self, url: &str) -> Self {
+        self.url = url.into();
+        self
+    }
+
+    /// Sets the update interval for the service.
+    /// The default update interval is `DEFAULT_UPDATE_INTERVAL`.
+    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
+        self.update_interval = update_interval;
+        self
+    }
+
     /// Builds the `HtxService` instance.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `HtxService` if successful, or a `BuilderError` otherwise.
     pub async fn build(self) -> Result<HtxService, BuilderError> {
         let mut api_builder = HtxRestAPIBuilder::default();
         api_builder.with_url(&self.url);

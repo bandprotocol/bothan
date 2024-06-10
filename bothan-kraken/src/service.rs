@@ -27,17 +27,6 @@ pub struct KrakenService {
 
 impl KrakenService {
     /// Creates a new `KrakenService` instance.
-    ///
-    /// # Arguments
-    ///
-    /// * `connector` - An instance of `KrakenWebSocketConnector`.
-    /// * `connection` - A `Mutex` wrapped `KrakenWebSocketConnection`.
-    /// * `cmd_ch_size` - The size of the command channel.
-    /// * `rem_id_ch_size` - The size of the remove ID channel.
-    ///
-    /// # Returns
-    ///
-    /// A new `KrakenService` instance.
     pub fn new(
         connector: Arc<KrakenWebSocketConnector>,
         connection: Arc<Mutex<KrakenWebSocketConnection>>,
@@ -67,14 +56,6 @@ impl KrakenService {
 #[async_trait::async_trait]
 impl Service for KrakenService {
     /// Retrieves price data for the given IDs.
-    ///
-    /// # Arguments
-    ///
-    /// * `ids` - A slice of string slices representing the IDs.
-    ///
-    /// # Returns
-    ///
-    /// A vector of `ServiceResult` containing `PriceData`.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut sub_ids = Vec::new();
 
@@ -105,15 +86,6 @@ impl Service for KrakenService {
 }
 
 /// Starts the service for updating price data.
-///
-/// # Arguments
-///
-/// * `connector` - An instance of `KrakenWebSocketConnector`.
-/// * `connection` - A `Mutex` wrapped `KrakenWebSocketConnection`.
-/// * `command_rx` - A receiver for commands.
-/// * `removed_ids_rx` - A receiver for removed IDs.
-/// * `cache` - An instance of `Cache<PriceData>`.
-/// * `command_tx` - A sender for commands.
 fn start_service(
     connector: Arc<KrakenWebSocketConnector>,
     connection: Arc<Mutex<KrakenWebSocketConnection>>,
@@ -166,12 +138,6 @@ fn start_service(
 }
 
 /// Processes the command for subscribing to tickers.
-///
-/// # Arguments
-///
-/// * `cmd` - The command to process.
-/// * `ws` - The WebSocket connection.
-/// * `cache` - The price data cache.
 async fn process_command(
     cmd: &Command,
     ws: &Mutex<KrakenWebSocketConnection>,
@@ -195,13 +161,6 @@ async fn process_command(
 }
 
 /// Handles the reconnection logic.
-///
-/// # Arguments
-///
-/// * `connector` - The WebSocket connector.
-/// * `connection` - The WebSocket connection.
-/// * `cache` - The price data cache.
-/// * `command_tx` - The command sender.
 async fn handle_reconnect(
     connector: &KrakenWebSocketConnector,
     connection: &Mutex<KrakenWebSocketConnection>,
@@ -227,12 +186,6 @@ async fn handle_reconnect(
 }
 
 /// Saves the ticker data to the cache.
-///
-/// # Arguments
-///
-/// * `tickers` - The tickers to save.
-/// * `cache` - The price data cache.
-/// * `timestamp` - The timestamp for the data.
 async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, timestamp: u64) {
     for ticker in tickers {
         let id = ticker.symbol.clone();
@@ -252,12 +205,6 @@ async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, t
 }
 
 /// Processes the response from the Kraken API.
-///
-/// # Arguments
-///
-/// * `resp` - The response to process.
-/// * `cache` - The price data cache.
-/// * `timestamp` - The timestamp for the data.
 async fn process_response(resp: &KrakenResponse, cache: &Cache<PriceData>, timestamp: u64) {
     match resp {
         KrakenResponse::Channel(resp) => match resp {

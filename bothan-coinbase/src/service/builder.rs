@@ -48,14 +48,6 @@ pub struct CoinbaseServiceBuilder {
 /// ```
 impl CoinbaseServiceBuilder {
     /// Creates a new `CoinbaseServiceBuilder` with the given options.
-    ///
-    /// # Arguments
-    ///
-    /// * `opts` - The options for configuring the builder.
-    ///
-    /// # Returns
-    ///
-    /// A new `CoinbaseServiceBuilder` instance.
     pub fn new(opts: CoinbaseServiceBuilderOpts) -> Self {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
@@ -65,52 +57,27 @@ impl CoinbaseServiceBuilder {
     }
 
     /// Sets the URL for the Coinbase API.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - The URL for the API.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default URL is `DEFAULT_URL`.
     pub fn with_url(mut self, url: String) -> Self {
         self.url = url;
         self
     }
 
     /// Sets the size of the command channel.
-    ///
-    /// # Arguments
-    ///
-    /// * `size` - The size of the command channel.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default size is `DEFAULT_CHANNEL_SIZE`.
     pub fn with_cmd_ch_size(mut self, size: usize) -> Self {
         self.cmd_ch_size = size;
         self
     }
 
     /// Sets the size of the remove ID channel.
-    ///
-    /// # Arguments
-    ///
-    /// * `size` - The size of the remove ID channel.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default size is `DEFAULT_CHANNEL_SIZE`.
     pub fn with_rem_id_ch_size(mut self, size: usize) -> Self {
         self.remove_id_ch_size = size;
         self
     }
 
     /// Builds the `CoinbaseService` instance.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `CoinbaseService` if successful, or an `Error` otherwise.
     pub async fn build(self) -> Result<CoinbaseService, Error> {
         let connector = CoinbaseWebSocketConnector::new(self.url);
         let connection = connector.connect().await?;

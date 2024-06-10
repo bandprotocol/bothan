@@ -14,10 +14,9 @@ use crate::api::HtxRestAPI;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let api = HtxRestAPIBuilder::default()
-///         .with_url("https://api.htx.com/")
-///         .build()
-///         .unwrap();
+///     let mut builder = HtxRestAPIBuilder::default();
+///     builder.with_url("https://api.htx.com/");
+///     let api = builder.build().unwrap();
 ///
 ///     // use api ...
 /// }
@@ -28,27 +27,15 @@ pub struct HtxRestAPIBuilder {
 
 impl HtxRestAPIBuilder {
     /// Sets the URL for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - A string slice that holds the URL.
-    ///
-    /// # Returns
-    ///
-    /// A mutable reference to the builder.
+    /// The default URL is `DEFAULT_URL`.
     pub fn with_url(&mut self, url: &str) -> &Self {
         self.url = url.into();
         self
     }
 
     /// Builds the `HtxRestAPI` instance.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` which is `Ok` if the instance was created successfully, or a `BuilderError` if there was a problem.
     pub fn build(self) -> Result<HtxRestAPI, BuilderError> {
         let parsed_url = Url::parse(&self.url)?;
-
         let client = ClientBuilder::new().build()?;
 
         Ok(HtxRestAPI::new(parsed_url, client))

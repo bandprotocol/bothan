@@ -19,15 +19,6 @@ pub struct CryptoCompareService {
 
 impl CryptoCompareService {
     /// Creates a new `CryptoCompareService` instance.
-    ///
-    /// # Arguments
-    ///
-    /// * `rest_api` - An instance of `CryptoCompareRestAPI`.
-    /// * `update_interval` - The interval for updating the price data.
-    ///
-    /// # Returns
-    ///
-    /// A new `CryptoCompareService` instance.
     pub async fn new(rest_api: CryptoCompareRestAPI, update_interval: Duration) -> Self {
         let cache = Arc::new(Cache::new(None));
         let update_price_interval = interval(update_interval);
@@ -41,14 +32,6 @@ impl CryptoCompareService {
 #[async_trait::async_trait]
 impl Service for CryptoCompareService {
     /// Retrieves price data for the given IDs.
-    ///
-    /// # Arguments
-    ///
-    /// * `ids` - A slice of string slices representing the IDs.
-    ///
-    /// # Returns
-    ///
-    /// A vector of `ServiceResult` containing `PriceData`.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut to_set_pending = Vec::<String>::new();
         let result = self
@@ -77,12 +60,6 @@ impl Service for CryptoCompareService {
 }
 
 /// Starts the service for updating price data.
-///
-/// # Arguments
-///
-/// * `rest_api` - An instance of `CryptoCompareRestAPI`.
-/// * `cache` - An instance of `Cache<PriceData>`.
-/// * `update_price_interval` - The interval for updating the price data.
 pub fn start_service(
     rest_api: Arc<CryptoCompareRestAPI>,
     cache: Arc<Cache<PriceData>>,
@@ -97,11 +74,6 @@ pub fn start_service(
 }
 
 /// Updates the price data in the cache.
-///
-/// # Arguments
-///
-/// * `rest_api` - An instance of `CryptoCompareRestAPI`.
-/// * `cache` - An instance of `Cache<PriceData>`.
 async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceData>) {
     let keys = cache.keys().await;
 
@@ -129,13 +101,6 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
 }
 
 /// Processes the symbol price data and updates the cache.
-///
-/// # Arguments
-///
-/// * `id` - The ID of the symbol.
-/// * `symbol_price` - The price of the symbol.
-/// * `timestamp` - The current timestamp.
-/// * `cache` - An instance of `Cache<PriceData>`.
 async fn process_symbol_price(
     id: &str,
     symbol_price: &f64,
@@ -153,16 +118,6 @@ async fn process_symbol_price(
 }
 
 /// Parses the symbol price data into a `PriceData` object.
-///
-/// # Arguments
-///
-/// * `id` - The ID of the symbol.
-/// * `symbol_price` - The price of the symbol.
-/// * `timestamp` - The current timestamp.
-///
-/// # Returns
-///
-/// A `PriceData` object.
 fn parse_symbol_price(id: &str, symbol_price: &f64, timestamp: &u64) -> PriceData {
     PriceData::new(
         id.to_owned(),

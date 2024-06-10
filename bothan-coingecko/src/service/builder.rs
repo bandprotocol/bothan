@@ -33,6 +33,7 @@ pub struct CoinGeckoServiceBuilderOpts {
 /// # Example
 /// ```no_run
 /// use bothan_coingecko::CoinGeckoServiceBuilder;
+/// use tokio::time::Duration;
 ///
 /// #[tokio::main]
 /// async fn main() {
@@ -61,70 +62,35 @@ pub struct CoinGeckoServiceBuilder {
 
 impl CoinGeckoServiceBuilder {
     /// Sets the URL for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - A string slice that holds the URL.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default URL is `DEFAULT_URL` when no API key is provided, and `DEFAULT_PRO_URL` when an API key is provided.
     pub fn with_url(mut self, url: &str) -> Self {
         self.url = Some(url.into());
         self
     }
 
-    /// Sets the API key for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `api_key` - A string slice that holds the API key.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// Sets the API key.
+    /// The default is `None`.
     pub fn with_api_key(mut self, api_key: &str) -> Self {
         self.api_key = Some(api_key.into());
         self
     }
 
-    /// Sets the user agent for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `user_agent` - A string slice that holds the user agent.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// Sets the User-Agent header.
+    /// The default is `DEFAULT_USER_AGENT`.
     pub fn with_user_agent(mut self, user_agent: &str) -> Self {
         self.user_agent = user_agent.into();
         self
     }
 
     /// Sets the update interval for the service.
-    ///
-    /// # Arguments
-    ///
-    /// * `update_interval` - The duration for the update interval.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default is `DEFAULT_UPDATE_INTERVAL`.
     pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
         self.update_interval = update_interval;
         self
     }
 
     /// Sets the update interval for supported assets.
-    ///
-    /// # Arguments
-    ///
-    /// * `update_supported_assets_interval` - The duration for the update interval for supported assets.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default is `DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL`.
     pub fn with_update_supported_assets_interval(
         mut self,
         update_supported_assets_interval: Duration,
@@ -134,42 +100,20 @@ impl CoinGeckoServiceBuilder {
     }
 
     /// Sets the page size for the service.
-    ///
-    /// # Arguments
-    ///
-    /// * `page_size` - The size of the page.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default is `DEFAULT_PAGE_SIZE`.
     pub fn with_page_size(mut self, page_size: usize) -> Self {
         self.page_size = page_size;
         self
     }
 
     /// Sets the page query delay for the service.
-    ///
-    /// # Arguments
-    ///
-    /// * `page_query_delay` - The duration for the page query delay.
-    ///
-    /// # Returns
-    ///
-    /// The updated builder instance.
+    /// The default is `None`.
     pub fn with_page_query_delay(mut self, page_query_delay: Duration) -> Self {
         self.page_query_delay = Some(page_query_delay);
         self
     }
 
     /// Creates a new builder instance from the provided options.
-    ///
-    /// # Arguments
-    ///
-    /// * `opts` - The options for configuring the builder.
-    ///
-    /// # Returns
-    ///
-    /// A new `CoinGeckoServiceBuilder` instance.
     pub fn new(opts: CoinGeckoServiceBuilderOpts) -> Self {
         Self {
             url: opts.url,
@@ -185,10 +129,6 @@ impl CoinGeckoServiceBuilder {
     }
 
     /// Builds the `CoinGeckoService` instance.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `CoinGeckoService` if successful, or a `BuilderError` otherwise.
     pub async fn build(self) -> Result<CoinGeckoService, BuilderError> {
         let mut api_builder = CoinGeckoRestAPIBuilder::default();
         if let Some(url) = &self.url {

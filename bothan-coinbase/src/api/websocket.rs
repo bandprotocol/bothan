@@ -19,19 +19,11 @@ pub struct CoinbaseWebSocketConnector {
 
 impl CoinbaseWebSocketConnector {
     /// Creates a new `CoinbaseWebSocketConnector`.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - The URL of the WebSocket endpoint.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
     /// Connects to the WebSocket and returns a `CoinbaseWebSocketConnection`.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `CoinbaseWebSocketConnection` if successful, or an `Error` otherwise.
     pub async fn connect(&self) -> Result<CoinbaseWebSocketConnection, Error> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
@@ -62,25 +54,12 @@ pub struct CoinbaseWebSocketConnection {
 
 impl CoinbaseWebSocketConnection {
     /// Creates a new `CoinbaseWebSocketConnection`.
-    ///
-    /// # Arguments
-    ///
-    /// * `web_socket_stream` - The WebSocket stream.
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
     }
 
     /// Subscribes to the specified channels and product IDs.
-    ///
-    /// # Arguments
-    ///
-    /// * `channels` - The channels to subscribe to.
-    /// * `product_ids` - The product IDs to subscribe to.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` indicating success or failure.
     pub async fn subscribe(
         &mut self,
         channels: Vec<Channel>,
@@ -97,15 +76,6 @@ impl CoinbaseWebSocketConnection {
     }
 
     /// Unsubscribes from the specified channels and product IDs.
-    ///
-    /// # Arguments
-    ///
-    /// * `channels` - The channels to unsubscribe from.
-    /// * `product_ids` - The product IDs to unsubscribe from.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` indicating success or failure.
     pub async fn unsubscribe(
         &mut self,
         channels: Vec<Channel>,
@@ -121,10 +91,6 @@ impl CoinbaseWebSocketConnection {
     }
 
     /// Receives the next message from the WebSocket.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the `CoinbaseResponse` if successful, or an `Error` otherwise.
     pub async fn next(&mut self) -> Result<CoinbaseResponse, Error> {
         if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {

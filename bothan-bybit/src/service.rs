@@ -22,15 +22,6 @@ pub struct BybitService {
 
 impl BybitService {
     /// Creates a new `BybitService` instance.
-    ///
-    /// # Arguments
-    ///
-    /// * `rest_api` - An instance of `BybitRestAPI`.
-    /// * `update_interval` - The interval for updating the price data.
-    ///
-    /// # Returns
-    ///
-    /// A new `BybitService` instance.
     pub async fn new(rest_api: BybitRestAPI, update_interval: Duration) -> Self {
         let cache = Arc::new(Cache::new(None));
         let update_price_interval = interval(update_interval);
@@ -44,14 +35,6 @@ impl BybitService {
 #[async_trait::async_trait]
 impl Service for BybitService {
     /// Retrieves price data for the given IDs.
-    ///
-    /// # Arguments
-    ///
-    /// * `ids` - A slice of string slices representing the IDs.
-    ///
-    /// # Returns
-    ///
-    /// A vector of `ServiceResult` containing `PriceData`.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         self.cache
             .get_batch(ids)
@@ -69,12 +52,6 @@ impl Service for BybitService {
 }
 
 /// Starts the price data update service.
-///
-/// # Arguments
-///
-/// * `rest_api` - An instance of `BybitRestAPI`.
-/// * `cache` - An instance of `Cache<PriceData>`.
-/// * `update_price_interval` - The interval for updating the price data.
 pub async fn start_service(
     rest_api: Arc<BybitRestAPI>,
     cache: Arc<Cache<PriceData>>,
@@ -90,11 +67,6 @@ pub async fn start_service(
 }
 
 /// Updates the price data in the cache.
-///
-/// # Arguments
-///
-/// * `rest_api` - An instance of `BybitRestAPI`.
-/// * `cache` - An instance of `Cache<PriceData>`.
 async fn update_price_data(rest_api: Arc<BybitRestAPI>, cache: Arc<Cache<PriceData>>) {
     match rest_api.get_tickers(Category::Spot, None).await {
         Ok(response) => {
@@ -111,12 +83,6 @@ async fn update_price_data(rest_api: Arc<BybitRestAPI>, cache: Arc<Cache<PriceDa
 }
 
 /// Processes the tickers and updates the cache.
-///
-/// # Arguments
-///
-/// * `tickers` - A reference to the `Tickers` to be processed.
-/// * `timestamp` - The timestamp to be included in each `PriceData`.
-/// * `cache` - An instance of `Cache<PriceData>`.
 async fn process_tickers(tickers: &Tickers, timestamp: usize, cache: Arc<Cache<PriceData>>) {
     let mut set = JoinSet::new();
     for price_data in parse_tickers(tickers, timestamp) {

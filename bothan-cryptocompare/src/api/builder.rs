@@ -15,11 +15,10 @@ use crate::api::CryptoCompareRestAPI;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let api = CryptoCompareRestAPIBuilder::default()
-///         .set_url("https://min-api.cryptocompare.com/data")
-///         .set_api_key("your_api_key")
-///         .build()
-///         .unwrap();
+///     let mut builder = CryptoCompareRestAPIBuilder::default();
+///     builder.set_url("https://min-api.cryptocompare.com/data");
+///     builder.set_api_key("your_api_key");
+///     let api = builder.build().unwrap();
 ///
 ///     // use api ...
 /// }
@@ -31,38 +30,20 @@ pub struct CryptoCompareRestAPIBuilder {
 
 impl CryptoCompareRestAPIBuilder {
     /// Sets the URL for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - A string slice that holds the URL.
-    ///
-    /// # Returns
-    ///
-    /// A mutable reference to the builder.
+    /// The default URL is `DEFAULT_URL`.
     pub fn set_url(&mut self, url: &str) -> &Self {
         self.url = url.into();
         self
     }
 
     /// Sets the API key for the API.
-    ///
-    /// # Arguments
-    ///
-    /// * `api_key` - A string slice that holds the API key.
-    ///
-    /// # Returns
-    ///
-    /// A mutable reference to the builder.
+    /// The default is `None`.
     pub fn set_api_key(&mut self, api_key: &str) -> &Self {
         self.api_key = Some(api_key.into());
         self
     }
 
     /// Builds the `CryptoCompareRestAPI` instance.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` which is `Ok` if the instance was created successfully, or a `BuilderError` if there was a problem.
     pub fn build(self) -> Result<CryptoCompareRestAPI, BuilderError> {
         let mut headers = HeaderMap::new();
 
@@ -81,7 +62,7 @@ impl CryptoCompareRestAPIBuilder {
 }
 
 impl Default for CryptoCompareRestAPIBuilder {
-    /// Creates a default `CryptoCompareRestAPIBuilder` instance with default values.
+    /// Creates a default `CryptoCompareRestAPIBuilder` instance with the default URL.
     fn default() -> Self {
         CryptoCompareRestAPIBuilder {
             url: DEFAULT_URL.to_string(),

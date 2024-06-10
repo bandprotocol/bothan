@@ -12,29 +12,11 @@ pub struct BybitRestAPI {
 
 impl BybitRestAPI {
     /// Creates a new instance of `BybitRestAPI`.
-    ///
-    /// # Arguments
-    ///
-    /// * `url` - The base URL for the API.
-    /// * `client` - The HTTP client to be used.
-    ///
-    /// # Returns
-    ///
-    /// A new `BybitRestAPI` instance.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
     /// Retrieves tickers from the Bybit API.
-    ///
-    /// # Arguments
-    ///
-    /// * `category` - The category of the ticker.
-    /// * `symbol` - An optional symbol to filter the tickers.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing a `Response` with `TickersResponse` if successful, or a `RestAPIError` otherwise.
     pub async fn get_tickers(
         &self,
         category: Category,
@@ -57,14 +39,6 @@ impl BybitRestAPI {
 }
 
 /// Sends a request and checks for HTTP errors.
-///
-/// # Arguments
-///
-/// * `request_builder` - The request builder to be sent.
-///
-/// # Returns
-///
-/// A `Result` containing a `ReqwestResponse` if successful, or a `RestAPIError` otherwise.
 async fn send_request(request_builder: RequestBuilder) -> Result<ReqwestResponse, RestAPIError> {
     let response = request_builder.send().await?;
 
