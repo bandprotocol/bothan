@@ -2,6 +2,7 @@ use bothan_core::types::PriceData;
 
 use crate::api::types::ticker::{SpotTicker, Tickers};
 
+/// Parses a `SpotTicker` into a `PriceData` object.
 pub fn parse_spot_ticker(ticker: &SpotTicker, timestamp: usize) -> PriceData {
     PriceData::new(
         ticker.symbol.clone(),
@@ -10,6 +11,7 @@ pub fn parse_spot_ticker(ticker: &SpotTicker, timestamp: usize) -> PriceData {
     )
 }
 
+/// Parses a `Tickers` object into a vector of `PriceData` objects.
 pub fn parse_tickers(tickers: &Tickers, timestamp: usize) -> Vec<PriceData> {
     match &tickers {
         Tickers::Spot(spot_tickers) => spot_tickers

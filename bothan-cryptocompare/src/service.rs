@@ -12,11 +12,13 @@ use crate::api::CryptoCompareRestAPI;
 
 pub mod builder;
 
+/// A service for interacting with the CryptoCompare REST API and caching price data.
 pub struct CryptoCompareService {
     cache: Arc<Cache<PriceData>>,
 }
 
 impl CryptoCompareService {
+    /// Creates a new `CryptoCompareService` instance.
     pub async fn new(rest_api: CryptoCompareRestAPI, update_interval: Duration) -> Self {
         let cache = Arc::new(Cache::new(None));
         let update_price_interval = interval(update_interval);
@@ -29,6 +31,7 @@ impl CryptoCompareService {
 
 #[async_trait::async_trait]
 impl Service for CryptoCompareService {
+    /// Retrieves price data for the given IDs.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut to_set_pending = Vec::<String>::new();
         let result = self
@@ -56,6 +59,7 @@ impl Service for CryptoCompareService {
     }
 }
 
+/// Starts the service for updating price data.
 pub fn start_service(
     rest_api: Arc<CryptoCompareRestAPI>,
     cache: Arc<Cache<PriceData>>,
@@ -69,6 +73,7 @@ pub fn start_service(
     });
 }
 
+/// Updates the price data in the cache.
 async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceData>) {
     let keys = cache.keys().await;
 
@@ -95,6 +100,7 @@ async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceD
     }
 }
 
+/// Processes the symbol price data and updates the cache.
 async fn process_symbol_price(
     id: &str,
     symbol_price: &f64,
@@ -111,6 +117,7 @@ async fn process_symbol_price(
     }
 }
 
+/// Parses the symbol price data into a `PriceData` object.
 fn parse_symbol_price(id: &str, symbol_price: &f64, timestamp: &u64) -> PriceData {
     PriceData::new(
         id.to_owned(),

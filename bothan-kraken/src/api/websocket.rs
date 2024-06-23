@@ -12,15 +12,18 @@ use crate::api::types::channel::ticker::{EventTrigger, TickerRequestParameters};
 use crate::api::types::message::{Method, PublicMessage};
 use crate::api::types::KrakenResponse;
 
+/// A connector for establishing a WebSocket connection to the Kraken API.
 pub struct KrakenWebSocketConnector {
     url: String,
 }
 
 impl KrakenWebSocketConnector {
+    /// Creates a new instance of `KrakenWebSocketConnector`.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
+    /// Connects to the Kraken WebSocket API.
     pub async fn connect(&self) -> Result<KrakenWebSocketConnection, Error> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
@@ -34,22 +37,26 @@ impl KrakenWebSocketConnector {
     }
 }
 
+/// Represents an active WebSocket connection to the Kraken API.
 pub struct KrakenWebSocketConnection {
     sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 }
 
 impl KrakenWebSocketConnection {
+    /// Creates a new `KrakenWebSocketConnection` instance.
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
         Self { sender, receiver }
     }
 
+    /// Sends a ping message to the WebSocket server.
     pub async fn ping(&mut self) -> Result<(), Error> {
         let msg = Message::Ping("".into());
         Ok(self.sender.send(msg).await?)
     }
 
+    /// Subscribes to ticker updates for the given symbols.
     pub async fn subscribe_ticker(
         &mut self,
         symbols: &[&str],
@@ -66,6 +73,7 @@ impl KrakenWebSocketConnection {
         Ok(self.sender.send(message).await?)
     }
 
+    /// Unsubscribes from ticker updates for the given symbols.
     pub async fn unsubscribe_ticker(&mut self, symbols: &[&str]) -> Result<(), Error> {
         let params = build_ticker_request(symbols, None, None);
         let msg = PublicMessage {
@@ -77,6 +85,7 @@ impl KrakenWebSocketConnection {
         Ok(self.sender.send(message).await?)
     }
 
+    /// Receives the next message from the WebSocket connection.
     pub async fn next(&mut self) -> Result<KrakenResponse, Error> {
         if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {
@@ -97,6 +106,7 @@ impl KrakenWebSocketConnection {
     }
 }
 
+/// Builds a ticker request with the given parameters.
 fn build_ticker_request(
     symbols: &[&str],
     event_trigger: Option<EventTrigger>,

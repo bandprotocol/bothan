@@ -1,8 +1,11 @@
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
+/// Errors that can occur while building the `HtxRestAPI`.
 pub enum BuilderError {
+    /// The URL provided is invalid.
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
 
+    /// An error occurred with the `reqwest` client.
     #[error("reqwest error: {0}")]
     Reqwest(String),
 }
@@ -14,11 +17,13 @@ impl From<reqwest::Error> for BuilderError {
 }
 
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
+/// Errors that can occur while interacting with the REST API.
 pub enum RestAPIError {
+    /// An HTTP error occurred.
     #[error("http error: {0}")]
     Http(reqwest::StatusCode),
 
-    // #[error("serde e
+    /// An error occurred with the `reqwest` client.
     #[error("reqwest error: {0}")]
     Reqwest(String),
 }

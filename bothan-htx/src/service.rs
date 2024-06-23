@@ -15,11 +15,13 @@ use crate::service::parser::parse_ticker;
 pub mod builder;
 mod parser;
 
+/// A service for interacting with the HTX REST API and caching price data.
 pub struct HtxService {
     cache: Arc<Cache<PriceData>>,
 }
 
 impl HtxService {
+    /// Creates a new `HtxService` instance.
     pub async fn new(rest_api: HtxRestAPI, update_interval: Duration) -> Self {
         let cache = Arc::new(Cache::new(None));
         let update_price_interval = interval(update_interval);
@@ -32,6 +34,7 @@ impl HtxService {
 
 #[async_trait::async_trait]
 impl Service for HtxService {
+    /// Retrieves price data for the given IDs.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         self.cache
             .get_batch(ids)
@@ -47,6 +50,7 @@ impl Service for HtxService {
     }
 }
 
+/// Starts the service for updating price data.
 pub async fn start_service(
     rest_api: Arc<HtxRestAPI>,
     cache: Arc<Cache<PriceData>>,
@@ -61,6 +65,7 @@ pub async fn start_service(
     });
 }
 
+/// Updates the price data in the cache.
 async fn update_price_data(rest_api: Arc<HtxRestAPI>, cache: Arc<Cache<PriceData>>) {
     if let Ok(quote) = rest_api.get_latest_tickers().await {
         match quote.status {
@@ -84,6 +89,7 @@ async fn update_price_data(rest_api: Arc<HtxRestAPI>, cache: Arc<Cache<PriceData
     }
 }
 
+/// Processes the ticker data and updates the cache.
 async fn process_ticker(ticker: &Ticker, timestamp: usize, cache: &Cache<PriceData>) {
     let price_data = parse_ticker(ticker, timestamp);
     let id = price_data.id.clone();
