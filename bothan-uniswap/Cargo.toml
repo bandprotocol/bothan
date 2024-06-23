@@ -1,0 +1,25 @@
+[package]
+name = "bothan-uniswap"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+hyper = ["alloy/hyper"]
+reqwest = ["alloy/reqwest"]
+default = ["reqwest", "hyper"]
+
+[dependencies]
+alloy-primitives = "0.7.4"
+alloy = { git = "https://github.com/alloy-rs/alloy", rev = "3f6c74453c2b137e6d2a4d58cfb24b805305ce07", features = ["contract", "providers", "transports", "sol-types", "eips", "transport-http", "network", "provider-http", "rpc-types-eth"] }
+url = { workspace = true }
+
+bothan-core = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+reqwest = { workspace = true }
