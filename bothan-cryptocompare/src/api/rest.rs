@@ -5,16 +5,19 @@ use reqwest::{Client, RequestBuilder, Response, Url};
 use crate::api::error::RestAPIError;
 use crate::api::types::Price;
 
+/// A client for interacting with the CryptoCompare REST API.
 pub struct CryptoCompareRestAPI {
     url: Url,
     client: Client,
 }
 
 impl CryptoCompareRestAPI {
+    /// Creates a new instance of `CryptoCompareRestAPI`.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
+    /// Retrieves the price for multiple symbols from the CryptoCompare API.
     pub async fn get_multi_symbol_price(
         &self,
         ids: &[&str],
@@ -34,6 +37,7 @@ impl CryptoCompareRestAPI {
     }
 }
 
+/// Sends an HTTP request and checks for HTTP errors.
 async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
     let response = request_builder.send().await?;
 
@@ -45,6 +49,7 @@ async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestA
     Ok(response)
 }
 
+/// Parses the HTTP response into the specified type.
 async fn parse_response<T: serde::de::DeserializeOwned>(
     response: Response,
 ) -> Result<T, RestAPIError> {

@@ -15,11 +15,13 @@ use crate::service::parser::parse_tickers;
 pub mod builder;
 mod parser;
 
+/// A service for interacting with the Bybit REST API and caching price data.
 pub struct BybitService {
     cache: Arc<Cache<PriceData>>,
 }
 
 impl BybitService {
+    /// Creates a new `BybitService` instance.
     pub async fn new(rest_api: BybitRestAPI, update_interval: Duration) -> Self {
         let cache = Arc::new(Cache::new(None));
         let update_price_interval = interval(update_interval);
@@ -32,6 +34,7 @@ impl BybitService {
 
 #[async_trait::async_trait]
 impl Service for BybitService {
+    /// Retrieves price data for the given IDs.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         self.cache
             .get_batch(ids)
@@ -39,14 +42,16 @@ impl Service for BybitService {
             .into_iter()
             .map(|result| match result {
                 Ok(price_data) => Ok(price_data),
-                Err(CacheError::DoesNotExist) => Err(ServiceError::InvalidSymbol),
-                Err(CacheError::Invalid) => Err(ServiceError::InvalidSymbol),
+                Err(CacheError::DoesNotExist) | Err(CacheError::Invalid) => {
+                    Err(ServiceError::InvalidSymbol)
+                }
                 Err(e) => panic!("unexpected error: {}", e), // This should never happen
             })
             .collect()
     }
 }
 
+/// Starts the price data update service.
 pub async fn start_service(
     rest_api: Arc<BybitRestAPI>,
     cache: Arc<Cache<PriceData>>,
@@ -61,6 +66,7 @@ pub async fn start_service(
     });
 }
 
+/// Updates the price data in the cache.
 async fn update_price_data(rest_api: Arc<BybitRestAPI>, cache: Arc<Cache<PriceData>>) {
     match rest_api.get_tickers(Category::Spot, None).await {
         Ok(response) => {
@@ -76,6 +82,7 @@ async fn update_price_data(rest_api: Arc<BybitRestAPI>, cache: Arc<Cache<PriceDa
     }
 }
 
+/// Processes the tickers and updates the cache.
 async fn process_tickers(tickers: &Tickers, timestamp: usize, cache: Arc<Cache<PriceData>>) {
     let mut set = JoinSet::new();
     for price_data in parse_tickers(tickers, timestamp) {

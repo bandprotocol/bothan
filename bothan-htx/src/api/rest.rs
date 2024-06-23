@@ -3,16 +3,19 @@ use reqwest::{Client, RequestBuilder, Response as ReqwestResponse, Url};
 use crate::api::error::RestAPIError;
 use crate::api::types::{Response, Ticker};
 
+/// A client for interacting with the HTX REST API.
 pub struct HtxRestAPI {
     url: Url,
     client: Client,
 }
 
 impl HtxRestAPI {
+    /// Creates a new instance of `HtxRestAPI`.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
+    /// Retrieves the latest tickers from the HTX API.
     pub async fn get_latest_tickers(&self) -> Result<Response<Vec<Ticker>>, RestAPIError> {
         let url = format!("{}market/tickers", self.url);
 
@@ -23,6 +26,7 @@ impl HtxRestAPI {
     }
 }
 
+/// Sends an HTTP request and checks for HTTP errors.
 async fn send_request(request_builder: RequestBuilder) -> Result<ReqwestResponse, RestAPIError> {
     let response = request_builder.send().await?;
 

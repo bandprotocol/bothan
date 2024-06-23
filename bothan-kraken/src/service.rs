@@ -19,12 +19,14 @@ use crate::{KrakenWebSocketConnection, KrakenWebSocketConnector};
 
 pub mod builder;
 
+/// Service for interacting with Kraken WebSocket API and managing price data cache.
 pub struct KrakenService {
     cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
 impl KrakenService {
+    /// Creates a new `KrakenService` instance.
     pub fn new(
         connector: Arc<KrakenWebSocketConnector>,
         connection: Arc<Mutex<KrakenWebSocketConnection>>,
@@ -53,6 +55,7 @@ impl KrakenService {
 
 #[async_trait::async_trait]
 impl Service for KrakenService {
+    /// Retrieves price data for the given IDs.
     async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
         let mut sub_ids = Vec::new();
 
@@ -82,6 +85,7 @@ impl Service for KrakenService {
     }
 }
 
+/// Starts the service for updating price data.
 fn start_service(
     connector: Arc<KrakenWebSocketConnector>,
     connection: Arc<Mutex<KrakenWebSocketConnection>>,
@@ -133,6 +137,7 @@ fn start_service(
     });
 }
 
+/// Processes the command for subscribing to tickers.
 async fn process_command(
     cmd: &Command,
     ws: &Mutex<KrakenWebSocketConnection>,
@@ -155,6 +160,7 @@ async fn process_command(
     }
 }
 
+/// Handles the reconnection logic.
 async fn handle_reconnect(
     connector: &KrakenWebSocketConnector,
     connection: &Mutex<KrakenWebSocketConnection>,
@@ -179,6 +185,7 @@ async fn handle_reconnect(
     };
 }
 
+/// Saves the ticker data to the cache.
 async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, timestamp: u64) {
     for ticker in tickers {
         let id = ticker.symbol.clone();
@@ -197,6 +204,7 @@ async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, t
     }
 }
 
+/// Processes the response from the Kraken API.
 async fn process_response(resp: &KrakenResponse, cache: &Cache<PriceData>, timestamp: u64) {
     match resp {
         KrakenResponse::Channel(resp) => match resp {

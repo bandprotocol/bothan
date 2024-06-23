@@ -18,12 +18,14 @@ use crate::{OkxWebSocketConnection, OkxWebSocketConnector};
 
 pub mod builder;
 
+/// Represents the OKX service for managing price data.
 pub struct OkxService {
     cache: Arc<Cache<PriceData>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
 impl OkxService {
+    /// Creates a new instance of `OkxService`.
     pub fn new(
         connector: Arc<OkxWebSocketConnector>,
         connection: Arc<Mutex<OkxWebSocketConnection>>,

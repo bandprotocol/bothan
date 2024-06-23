@@ -4,16 +4,19 @@ use crate::api::error::RestAPIError;
 use crate::api::types::ticker::{Category, TickersResponse};
 use crate::api::types::Response;
 
+/// A client for interacting with the Bybit REST API.
 pub struct BybitRestAPI {
     url: Url,
     client: Client,
 }
 
 impl BybitRestAPI {
+    /// Creates a new instance of `BybitRestAPI`.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
+    /// Retrieves tickers from the Bybit API.
     pub async fn get_tickers(
         &self,
         category: Category,
@@ -35,6 +38,7 @@ impl BybitRestAPI {
     }
 }
 
+/// Sends a request and checks for HTTP errors.
 async fn send_request(request_builder: RequestBuilder) -> Result<ReqwestResponse, RestAPIError> {
     let response = request_builder.send().await?;
 
