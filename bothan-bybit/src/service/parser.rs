@@ -1,10 +1,10 @@
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::types::ticker::{SpotTicker, Tickers};
 
 /// Parses a `SpotTicker` into a `PriceData` object.
-pub fn parse_spot_ticker(ticker: &SpotTicker, timestamp: usize) -> PriceData {
-    PriceData::new(
+pub fn parse_spot_ticker(ticker: &SpotTicker, timestamp: usize) -> AssetInfo {
+    AssetInfo::new(
         ticker.symbol.clone(),
         ticker.last_price.clone(),
         timestamp as u64,
@@ -12,7 +12,7 @@ pub fn parse_spot_ticker(ticker: &SpotTicker, timestamp: usize) -> PriceData {
 }
 
 /// Parses a `Tickers` object into a vector of `PriceData` objects.
-pub fn parse_tickers(tickers: &Tickers, timestamp: usize) -> Vec<PriceData> {
+pub fn parse_tickers(tickers: &Tickers, timestamp: usize) -> Vec<AssetInfo> {
     match &tickers {
         Tickers::Spot(spot_tickers) => spot_tickers
             .iter()
@@ -23,7 +23,7 @@ pub fn parse_tickers(tickers: &Tickers, timestamp: usize) -> Vec<PriceData> {
 
 #[cfg(test)]
 mod test {
-    use bothan_core::types::PriceData;
+    use bothan_core::types::AssetInfo;
 
     use crate::api::types::ticker::SpotTicker;
     use crate::service::parser::parse_spot_ticker;
@@ -48,7 +48,7 @@ mod test {
         let timestamp: usize = 100000;
         let result = parse_spot_ticker(&spot_ticker, timestamp);
 
-        let expected = PriceData::new("BTCUSDT".to_string(), "80000".to_string(), 100000);
+        let expected = AssetInfo::new("BTCUSDT".to_string(), "80000".to_string(), 100000);
         assert_eq!(result, expected);
     }
 }

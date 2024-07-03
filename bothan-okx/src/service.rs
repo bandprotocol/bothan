@@ -8,7 +8,7 @@ use tracing::{debug, error, info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::error::Error as OkxError;
 use crate::api::types::channel::{ChannelResponse, TickerData};
@@ -20,7 +20,7 @@ pub mod builder;
 
 /// Represents the OKX service for managing price data.
 pub struct OkxService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
@@ -54,7 +54,7 @@ impl OkxService {
 
 #[async_trait::async_trait]
 impl Service for OkxService {
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         let mut sub_ids = Vec::new();
 
         let result = self
@@ -88,7 +88,7 @@ fn start_service(
     connection: Arc<Mutex<OkxWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     command_tx: Arc<Sender<Command>>,
 ) {
     tokio::spawn(async move {
@@ -129,7 +129,7 @@ fn start_service(
 async fn process_command(
     cmd: &Command,
     ws: &Mutex<OkxWebSocketConnection>,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
 ) {
     match cmd {
         Command::Subscribe(ids) => {
@@ -147,7 +147,7 @@ async fn process_command(
 async fn handle_reconnect(
     connector: &OkxWebSocketConnector,
     connection: &Mutex<OkxWebSocketConnection>,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
     command_tx: &Sender<Command>,
 ) {
     // TODO: Handle reconnection failure
@@ -176,9 +176,9 @@ async fn handle_reconnect(
     };
 }
 
-async fn save_tickers(tickers: &Vec<TickerData>, cache: &Cache<PriceData>, timestamp: u64) {
+async fn save_tickers(tickers: &Vec<TickerData>, cache: &Cache<AssetInfo>, timestamp: u64) {
     for ticker in tickers {
-        let price_data = PriceData {
+        let price_data = AssetInfo {
             id: ticker.inst_id.clone(),
             price: ticker.last.clone().to_string(),
             timestamp,
@@ -193,7 +193,7 @@ async fn save_tickers(tickers: &Vec<TickerData>, cache: &Cache<PriceData>, times
     }
 }
 
-async fn process_response(resp: &OkxResponse, cache: &Cache<PriceData>, timestamp: u64) {
+async fn process_response(resp: &OkxResponse, cache: &Cache<AssetInfo>, timestamp: u64) {
     match resp {
         OkxResponse::ChannelResponse(resp) => match resp {
             ChannelResponse::Ticker(push_data) => {

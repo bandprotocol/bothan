@@ -8,7 +8,7 @@ use tracing::{debug, error, info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::error::Error as KrakenError;
 use crate::api::types::channel::ticker::TickerResponse;
@@ -21,7 +21,7 @@ pub mod builder;
 
 /// Service for interacting with Kraken WebSocket API and managing price data cache.
 pub struct KrakenService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
@@ -56,7 +56,7 @@ impl KrakenService {
 #[async_trait::async_trait]
 impl Service for KrakenService {
     /// Retrieves price data for the given IDs.
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         let mut sub_ids = Vec::new();
 
         let result = self
@@ -91,7 +91,7 @@ fn start_service(
     connection: Arc<Mutex<KrakenWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     command_tx: Arc<Sender<Command>>,
 ) {
     tokio::spawn(async move {
@@ -141,7 +141,7 @@ fn start_service(
 async fn process_command(
     cmd: &Command,
     ws: &Mutex<KrakenWebSocketConnection>,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
 ) {
     match cmd {
         Command::Subscribe(ids) => {
@@ -164,7 +164,7 @@ async fn process_command(
 async fn handle_reconnect(
     connector: &KrakenWebSocketConnector,
     connection: &Mutex<KrakenWebSocketConnection>,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
     command_tx: &Sender<Command>,
 ) {
     // TODO: Handle reconnection failure
@@ -186,10 +186,10 @@ async fn handle_reconnect(
 }
 
 /// Saves the ticker data to the cache.
-async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, timestamp: u64) {
+async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<AssetInfo>, timestamp: u64) {
     for ticker in tickers {
         let id = ticker.symbol.clone();
-        let price_data = PriceData {
+        let price_data = AssetInfo {
             id: id.clone(),
             price: ticker.last.clone().to_string(),
             timestamp,
@@ -205,7 +205,7 @@ async fn save_tickers(tickers: &Vec<TickerResponse>, cache: &Cache<PriceData>, t
 }
 
 /// Processes the response from the Kraken API.
-async fn process_response(resp: &KrakenResponse, cache: &Cache<PriceData>, timestamp: u64) {
+async fn process_response(resp: &KrakenResponse, cache: &Cache<AssetInfo>, timestamp: u64) {
     match resp {
         KrakenResponse::Channel(resp) => match resp {
             ChannelResponse::Ticker(tickers) => save_tickers(tickers, cache, timestamp).await,

@@ -11,7 +11,7 @@ use tracing::{info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 use error::Error;
 
 use crate::api::types::Market;
@@ -22,7 +22,7 @@ pub mod error;
 
 /// A service for interacting with the CoinGecko REST API and caching price data.
 pub struct CoinGeckoService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     coin_list: Arc<RwLock<HashSet<String>>>,
 }
 
@@ -58,7 +58,7 @@ impl CoinGeckoService {
 #[async_trait::async_trait]
 impl Service for CoinGeckoService {
     /// Retrieves price data for the given IDs.
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         let reader = self.coin_list.read().await;
 
         let mut to_set_pending = Vec::<String>::new();
@@ -94,7 +94,7 @@ impl Service for CoinGeckoService {
 /// Starts the service for updating price data and the list of supported assets.
 pub async fn start_service(
     rest_api: Arc<CoinGeckoRestAPI>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     mut update_price_interval: Interval,
     mut update_supported_assets_interval: Interval,
     coin_list: Arc<RwLock<HashSet<String>>>,
@@ -120,7 +120,7 @@ pub async fn start_service(
 /// Updates the price data in the cache.
 async fn update_price_data(
     rest_api: Arc<CoinGeckoRestAPI>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     page_size: usize,
     page_query_delay: Option<Duration>,
 ) {
@@ -150,7 +150,7 @@ async fn update_price_data(
 /// Updates the price data from the API.
 async fn update_price_data_from_api(
     rest_api: &CoinGeckoRestAPI,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
     page: usize,
     page_size: usize,
 ) {
@@ -184,7 +184,7 @@ async fn update_coin_list(rest_api: &CoinGeckoRestAPI, coin_list: &RwLock<HashSe
 }
 
 /// Processes the market data and updates the cache.
-async fn process_market_data(market: &Market, cache: &Cache<PriceData>) {
+async fn process_market_data(market: &Market, cache: &Cache<AssetInfo>) {
     if let Ok(price_data) = parse_market(market) {
         let id = price_data.id.clone();
         if cache.set_data(id.clone(), price_data).await.is_err() {
@@ -198,13 +198,13 @@ async fn process_market_data(market: &Market, cache: &Cache<PriceData>) {
 }
 
 /// Parses the market data into a `PriceData` object.
-fn parse_market(market: &Market) -> Result<PriceData, Error> {
+fn parse_market(market: &Market) -> Result<AssetInfo, Error> {
     let last_updated = market.last_updated.as_str();
     let naive_date_time = NaiveDateTime::parse_from_str(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ")
         .map_err(|_| Error::InvalidTimestamp)?;
     let timestamp = naive_date_time.and_utc().timestamp();
 
-    Ok(PriceData::new(
+    Ok(AssetInfo::new(
         market.id.clone(),
         market.current_price.to_string(),
         timestamp as u64,
@@ -220,8 +220,8 @@ mod test {
 
     use super::*;
 
-    async fn setup() -> (Arc<CoinGeckoRestAPI>, Arc<Cache<PriceData>>, ServerGuard) {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+    async fn setup() -> (Arc<CoinGeckoRestAPI>, Arc<Cache<AssetInfo>>, ServerGuard) {
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let (server, rest_api) = api_setup().await;
         (Arc::new(rest_api), cache, server)
     }
@@ -241,7 +241,7 @@ mod test {
 
         update_price_data(rest_api, cache.clone(), 250, None).await;
         let result = cache.get("bitcoin").await;
-        let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
+        let expected = AssetInfo::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
         assert_eq!(result, Ok(expected));
     }
 
@@ -263,7 +263,7 @@ mod test {
 
     #[tokio::test]
     async fn test_process_market_data() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let market = Market {
             id: "bitcoin".to_string(),
             symbol: "BTC".to_string(),
@@ -275,13 +275,13 @@ mod test {
         cache.set_batch_pending(vec!["bitcoin".to_string()]).await;
         process_market_data(&market, &cache).await;
         let result = cache.get("bitcoin").await;
-        let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
+        let expected = AssetInfo::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
         assert_eq!(result.unwrap(), expected);
     }
 
     #[tokio::test]
     async fn test_process_market_data_without_set_pending() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let market = Market {
             id: "bitcoin".to_string(),
             symbol: "BTC".to_string(),
@@ -305,7 +305,7 @@ mod test {
             last_updated: "2021-01-01T00:00:00.000Z".to_string(),
         };
         let result = parse_market(&market);
-        let expected = PriceData::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
+        let expected = AssetInfo::new("bitcoin".to_string(), "8426.69".to_string(), 1609459200);
         assert_eq!(result.unwrap(), expected);
     }
 

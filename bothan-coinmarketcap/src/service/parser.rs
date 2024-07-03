@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::types::Quote;
 
@@ -13,7 +13,7 @@ pub(crate) enum QuoteParserError {
     InvalidPrice,
 }
 
-pub(crate) fn parse_quote(quote: &Quote) -> Result<PriceData, QuoteParserError> {
+pub(crate) fn parse_quote(quote: &Quote) -> Result<AssetInfo, QuoteParserError> {
     let price = quote
         .price_quotes
         .usd
@@ -24,7 +24,7 @@ pub(crate) fn parse_quote(quote: &Quote) -> Result<PriceData, QuoteParserError> 
         .map_err(|_| QuoteParserError::InvalidTimestamp)?;
     let timestamp = naive_date_time.and_utc().timestamp();
 
-    Ok(PriceData::new(
+    Ok(AssetInfo::new(
         quote.id.to_string(),
         price.to_string(),
         timestamp as u64,
@@ -33,7 +33,7 @@ pub(crate) fn parse_quote(quote: &Quote) -> Result<PriceData, QuoteParserError> 
 
 #[cfg(test)]
 mod test {
-    use bothan_core::types::PriceData;
+    use bothan_core::types::AssetInfo;
 
     use crate::api::rest::test::mock_quote;
     use crate::api::types::{PriceQuote, PriceQuotes, Quote};
@@ -44,7 +44,7 @@ mod test {
         let quote = mock_quote();
         let result = parse_quote(&quote);
 
-        let expected = PriceData::new("1".to_string(), "80000".to_string(), 1710572115);
+        let expected = AssetInfo::new("1".to_string(), "80000".to_string(), 1710572115);
         assert_eq!(result.unwrap(), expected);
     }
 

@@ -6,7 +6,7 @@ use tracing::{info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::types::Quote;
 use crate::api::CoinMarketCapRestAPI;
@@ -17,7 +17,7 @@ mod parser;
 
 /// A service that fetches and caches cryptocurrency prices from CoinMarketCap.
 pub struct CoinMarketCapService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
 }
 
 impl CoinMarketCapService {
@@ -35,7 +35,7 @@ impl CoinMarketCapService {
 #[async_trait::async_trait]
 impl Service for CoinMarketCapService {
     /// Fetches the price data for the given cryptocurrency IDs.
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         let mut to_set_pending = Vec::<String>::new();
 
         let result = self
@@ -65,7 +65,7 @@ impl Service for CoinMarketCapService {
 
 async fn start_service(
     rest_api: Arc<CoinMarketCapRestAPI>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     mut update_price_interval: Interval,
 ) {
     tokio::spawn(async move {
@@ -76,7 +76,7 @@ async fn start_service(
     });
 }
 
-async fn update_price_data(rest_api: Arc<CoinMarketCapRestAPI>, cache: Arc<Cache<PriceData>>) {
+async fn update_price_data(rest_api: Arc<CoinMarketCapRestAPI>, cache: Arc<Cache<AssetInfo>>) {
     let keys = cache.keys().await;
 
     if !keys.is_empty() {
@@ -104,7 +104,7 @@ async fn update_price_data(rest_api: Arc<CoinMarketCapRestAPI>, cache: Arc<Cache
     }
 }
 
-async fn process_price_quote(quote: &Quote, cache: &Cache<PriceData>) {
+async fn process_price_quote(quote: &Quote, cache: &Cache<AssetInfo>) {
     match parse_quote(quote) {
         Ok(price_data) => {
             let id = price_data.id.clone();
@@ -129,10 +129,10 @@ mod test {
 
     async fn setup() -> (
         Arc<CoinMarketCapRestAPI>,
-        Arc<Cache<PriceData>>,
+        Arc<Cache<AssetInfo>>,
         ServerGuard,
     ) {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let (server, rest_api) = api_setup().await;
         (Arc::new(rest_api), cache, server)
     }
@@ -154,7 +154,7 @@ mod test {
 
     #[tokio::test]
     async fn test_process_market_data() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let quote = mock_quote();
 
         cache.set_batch_pending(vec!["1".to_string()]).await;
@@ -166,7 +166,7 @@ mod test {
 
     #[tokio::test]
     async fn test_process_market_data_without_set_pending() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let quote = mock_quote();
 
         process_price_quote(&quote, &cache).await;

@@ -23,27 +23,22 @@ message QueryPricesRequest {
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 // method.
 message QueryPricesResponse {
-  repeated PriceData prices = 1;
+  repeated AssetPrice prices = 1;
 }
 
-// PriceData defines the data of a symbol price.
-message PriceData {
-  // The symbol of the price.
+// AssetPrice contains the price of a signal ID.
+message AssetPrice {
+  // The asset's signal ID.
   string signal_id = 1;
-  // The price of the symbol.
+  // The asset's price.
   string price = 2;
-  // PriceStatus defines the price status of a symbol.
-  PriceStatus price_status = 3;
+  // The asset's price status.
+  Status status = 3;
 }
 
-// PriceOption defines the price option of a price.
-enum PriceStatus {
-  // PRICE_STATUS_UNSPECIFIED defines an unspecified price status.
-  PRICE_STATUS_UNSPECIFIED = 0;
-  // PRICE_STATUS_UNSUPPORTED defines an unsupported price status.
-  PRICE_STATUS_UNSUPPORTED = 1;
-  // PRICE_STATUS_UNAVAILABLE defines an unavailable price status.
-  PRICE_STATUS_UNAVAILABLE = 2;
-  // PRICE_STATUS_AVAILABLE defines an available price status.
-  PRICE_STATUS_AVAILABLE = 3;
+// Status is the status that defines the AssetPrice result.
+enum Status {
+  UNSUPPORTED = 0;
+  UNAVAILABLE = 1;
+  AVAILABLE = 2;
 }

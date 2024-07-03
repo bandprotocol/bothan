@@ -7,7 +7,7 @@ use tokio::task::JoinSet;
 use tracing::debug;
 
 use bothan_core::service::{Service as CoreService, ServiceResult};
-use bothan_core::types::PriceData as CorePriceData;
+use bothan_core::types::AssetInfo as CorePriceData;
 
 use crate::manager::price_service::types::{
     ResultsStore, ServiceMap, SignalResultsStore, SourceResultsStore,

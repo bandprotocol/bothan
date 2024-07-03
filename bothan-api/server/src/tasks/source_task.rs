@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use bothan_core::service::{Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 /// A SourceTask represents a task that is responsible for fetching price data from a source. It
 /// contains a `source_name` which is the name of the source and a set of `source_ids` which are the
@@ -36,7 +36,7 @@ impl SourceTask {
     pub async fn get_prices(
         &self,
         service: &mut Box<dyn Service>,
-    ) -> Vec<ServiceResult<PriceData>> {
+    ) -> Vec<ServiceResult<AssetInfo>> {
         let ids = self
             .source_ids
             .iter()
