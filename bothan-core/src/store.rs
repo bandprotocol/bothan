@@ -20,7 +20,7 @@ pub enum Error {
 #[async_trait::async_trait]
 pub trait AssetStore: Send + Sync + 'static {
     async fn start(&mut self);
-    async fn get_prices(&self, ids: &[&str]) -> Vec<AssetStatus>;
+    async fn get_asset(&self, ids: &[&str]) -> Vec<AssetStatus>;
     async fn add_query_ids(&mut self, ids: &[&str]) -> Result<(), Error>;
     async fn remove_query_ids(&mut self, ids: &[&str]) -> Result<(), Error>;
     async fn get_query_ids(&self) -> Vec<String>;
