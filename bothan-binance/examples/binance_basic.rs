@@ -1,7 +1,7 @@
 use tracing_subscriber::fmt::init;
 
 use bothan_binance::BinanceServiceBuilder;
-use bothan_core::service::Service;
+use bothan_core::store::Service;
 
 #[tokio::main]
 async fn main() {
