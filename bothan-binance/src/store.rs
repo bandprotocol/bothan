@@ -54,19 +54,21 @@ impl AssetStore for BinanceStore {
         self.subscribe_ch_tx = Some(sub_tx);
         self.unsubscribe_ch_tx = Some(unsub_tx);
 
-        start_asset_store(
-            self.connector.clone(),
-            self.connection.clone(),
-            self.data_store.clone(),
-            self.query_ids.clone(),
-            sub_rx,
-            unsub_rx,
-        )
-        .await
+        let connector = self.connector.clone();
+        let connection = self.connection.clone();
+        let data_store = self.data_store.clone();
+        let query_ids = self.query_ids.clone();
+
+        tokio::spawn(async move {
+            start_asset_store(
+                connector, connection, data_store, query_ids, sub_rx, unsub_rx,
+            )
+            .await
+        });
     }
 
     /// Fetches the price data for the given cryptocurrency ids.
-    async fn get_prices(&self, ids: &[&str]) -> Vec<AssetStatus> {
+    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
         let data_reader = self.data_store.read().await;
         let id_reader = self.query_ids.read().await;
         ids.iter()
