@@ -22,12 +22,13 @@ impl BinanceWorker {
     /// Create a new BinanceStore with the specified connector, connection, and internal channel size.
     pub fn new(
         connector: BinanceWebSocketConnector,
+        store: Store,
         subscribe_tx: Sender<Vec<String>>,
         unsubscribe_tx: Sender<Vec<String>>,
     ) -> Self {
         Self {
             connector,
-            store: Store::default(),
+            store,
             subscribe_tx,
             unsubscribe_tx,
         }
@@ -37,15 +38,15 @@ impl BinanceWorker {
 #[async_trait::async_trait]
 impl AssetWorker for BinanceWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
+    async fn get_assets<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Vec<AssetStatus> {
         self.store.get_assets(ids).await
     }
 
     /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn add_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
+    async fn add_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error> {
         let to_sub = self
             .store
-            .filter_existing_query_ids(ids.iter().map(|id| id.to_string()).collect::<Vec<String>>())
+            .filter_existing_query_ids(ids.iter().map(|id| id.as_ref()).collect::<Vec<&str>>())
             .await;
 
         if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
@@ -57,10 +58,10 @@ impl AssetWorker for BinanceWorker {
     }
 
     /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
+    async fn remove_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error> {
         let to_unsub = self
             .store
-            .filter_missing_query_ids(ids.iter().map(|id| id.to_string()).collect::<Vec<String>>())
+            .filter_missing_query_ids(ids.iter().map(|id| id.as_ref()).collect::<Vec<&str>>())
             .await;
 
         if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {

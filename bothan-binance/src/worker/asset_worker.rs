@@ -21,18 +21,23 @@ pub(crate) async fn start_asset_worker(
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
-    while let Some(worker) = worker.upgrade() {
+    loop {
         select! {
-            id = subscribe_rx.recv() => handle_subscribe_recv(id, &mut connection).await,
-            id = unsubscribe_rx.recv() => handle_unsubscribe_recv(id, &mut connection).await,
+            Some(id) = subscribe_rx.recv() => handle_subscribe_recv(id, &mut connection).await,
+            Some(id) = unsubscribe_rx.recv() => handle_unsubscribe_recv(id, &mut connection).await,
             result = timeout(DEFAULT_TIMEOUT, connection.next()) => {
-                match result {
-                    Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
-                    Ok(binance_result) => handle_connection_recv(binance_result, &worker.connector, &mut connection, &worker.store).await,
+                if let Some(worker) = worker.upgrade() {
+                    match result {
+                        Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
+                        Ok(binance_result) => handle_connection_recv(binance_result, &worker.connector, &mut connection, &worker.store).await,
+                    }
+                } else {
+                    break
                 }
             }
         }
     }
+    debug!("asset worker exited")
 }
 
 async fn subscribe(
@@ -48,49 +53,25 @@ async fn subscribe(
     Ok(())
 }
 
-async fn handle_subscribe_recv(
-    ids: Option<Vec<String>>,
-    connection: &mut BinanceWebSocketConnection,
-) {
-    match ids {
-        Some(ids) => {
-            if let Err(e) = subscribe(ids, connection).await {
-                error!("failed to subscribe: {}", e);
-            } else {
-                info!("subscribed to ids");
-            }
-        }
-        None => {
-            // Panic here as channel should never close itself
-            panic!("subscribe channel closed")
-        }
+async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSocketConnection) {
+    if let Err(e) = subscribe(ids, connection).await {
+        error!("failed to subscribe: {}", e);
+    } else {
+        info!("subscribed to ids");
     }
 }
 
-async fn handle_unsubscribe_recv(
-    ids: Option<Vec<String>>,
-    connection: &mut BinanceWebSocketConnection,
-) {
-    match ids {
-        Some(ids) => {
-            if ids.is_empty() {
-                debug!("received empty unsubscribe command");
-            } else {
-                let res = connection
-                    .unsubscribe_mini_ticker_stream(
-                        &ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
-                    )
-                    .await;
-                if res.is_err() {
-                    error!("failed to unsubscribe to ids: {:?}", ids);
-                } else {
-                    info!("unsubscribed to ids: {:?}", ids);
-                }
-            }
-        }
-        None => {
-            // Panic here as channel should never close itself
-            panic!("unsubscribe channel closed")
+async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSocketConnection) {
+    if ids.is_empty() {
+        debug!("received empty unsubscribe command");
+    } else {
+        let res = connection
+            .unsubscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
+            .await;
+        if res.is_err() {
+            error!("failed to unsubscribe to ids: {:?}", ids);
+        } else {
+            info!("unsubscribed to ids: {:?}", ids);
         }
     }
 }
@@ -100,7 +81,10 @@ async fn handle_reconnect(
     connection: &mut BinanceWebSocketConnection,
     query_ids: &Store,
 ) {
+    let mut retry_count: usize = 1;
     loop {
+        error!("reconnecting: attempt {}", retry_count);
+
         if let Ok(new_connection) = connector.connect().await {
             *connection = new_connection;
 
@@ -119,7 +103,7 @@ async fn handle_reconnect(
             error!("failed to reconnect to binance");
         }
 
-        error!("retrying reconnect process");
+        retry_count += 1;
         sleep(RECONNECT_BUFFER).await;
     }
 }

@@ -20,8 +20,8 @@ pub enum Error {
 /// The universal trait for all services that provide price data.
 #[async_trait::async_trait]
 pub trait AssetWorker {
-    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus>;
-    async fn add_query_ids(&self, ids: &[&str]) -> Result<(), Error>;
-    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error>;
+    async fn get_assets<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Vec<AssetStatus>;
+    async fn add_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error>;
+    async fn remove_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error>;
     async fn get_query_ids(&self) -> Vec<String>;
 }

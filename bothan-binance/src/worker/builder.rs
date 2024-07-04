@@ -3,6 +3,8 @@ use std::sync::Arc;
 use serde::Deserialize;
 use tokio::sync::mpsc::channel;
 
+use bothan_core::store::Store;
+
 use crate::api::types::DEFAULT_URL;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::worker::error::BuildError;
@@ -38,14 +40,16 @@ pub struct BinanceWorkerBuilderOpts {
 pub struct BinanceWorkerBuilder {
     url: String,
     internal_ch_size: usize,
+    store: Store,
 }
 
 impl BinanceWorkerBuilder {
     /// Returns a new `BinanceStoreBuilder` with the given options.
-    pub fn new(opts: BinanceWorkerBuilderOpts) -> Self {
+    pub fn new(opts: BinanceWorkerBuilderOpts, store: Option<Store>) -> Self {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
             internal_ch_size: opts.internal_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
+            store: store.unwrap_or_default(),
         }
     }
 
@@ -63,6 +67,11 @@ impl BinanceWorkerBuilder {
         self
     }
 
+    pub fn with_store(mut self, store: Store) -> Self {
+        self.store = store;
+        self
+    }
+
     /// Creates the configured `BinanceService`.
     pub async fn build(self) -> Result<Arc<BinanceWorker>, BuildError> {
         let connector = BinanceWebSocketConnector::new(self.url);
@@ -71,7 +80,7 @@ impl BinanceWorkerBuilder {
         let (sub_tx, sub_rx) = channel(self.internal_ch_size);
         let (unsub_tx, unsub_rx) = channel(self.internal_ch_size);
 
-        let worker = Arc::new(BinanceWorker::new(connector, sub_tx, unsub_tx));
+        let worker = Arc::new(BinanceWorker::new(connector, self.store, sub_tx, unsub_tx));
 
         tokio::spawn(start_asset_worker(
             Arc::downgrade(&worker),
@@ -87,6 +96,6 @@ impl BinanceWorkerBuilder {
 impl Default for BinanceWorkerBuilder {
     /// Create a new `BinanceServiceBuilder` with the default values.
     fn default() -> Self {
-        Self::new(BinanceWorkerBuilderOpts::default())
+        Self::new(BinanceWorkerBuilderOpts::default(), None)
     }
 }

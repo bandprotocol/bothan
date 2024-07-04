@@ -4,6 +4,7 @@ use tokio::sync::{Mutex, RwLock};
 
 use crate::types::AssetInfo;
 
+// TODO: Store should have namespace for different sources
 pub struct Store {
     asset_store: RwLock<HashMap<String, AssetInfo>>,
     query_ids: Mutex<HashSet<String>>,
@@ -23,7 +24,10 @@ impl Store {
         }
     }
 
-    pub async fn get_assets<K: AsRef<str>>(&self, ids: &[K]) -> Vec<crate::worker::AssetStatus> {
+    pub async fn get_assets<K: AsRef<str> + Send + Sync>(
+        &self,
+        ids: &[K],
+    ) -> Vec<crate::worker::AssetStatus> {
         let data_store = self.asset_store.read().await;
         let query_ids = self.query_ids.lock().await;
 
