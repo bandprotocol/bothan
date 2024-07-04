@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
 use serde::Deserialize;
-use tokio::sync::Mutex;
+use tokio::sync::mpsc::channel;
 
 use crate::api::types::DEFAULT_URL;
-use crate::api::ConnectionError;
+use crate::store::asset_worker::start_asset_worker;
 use crate::store::types::DEFAULT_CHANNEL_SIZE;
-use crate::{BinanceStore, BinanceWebSocketConnector};
+use crate::store::BinanceWorker;
+use crate::BinanceWebSocketConnector;
 
 /// Options for the `BinanceServiceBuilder`.
-#[derive(Clone, Debug, Deserialize)]
-pub struct BinanceStoreBuilderOpts {
+#[derive(Clone, Debug, Default, Deserialize)]
+pub struct BinanceWorkerBuilderOpts {
     pub url: Option<String>,
-    pub cmd_ch_size: Option<usize>,
-    pub remove_id_ch_size: Option<usize>,
+    pub internal_ch_size: Option<usize>,
 }
 
 /// Builds a Binance service with custom options.
@@ -21,30 +21,30 @@ pub struct BinanceStoreBuilderOpts {
 /// service is constructed by calling the [`build`](BinanceServiceBuilder::build) method.
 /// # Example
 /// ```no_run
-/// use bothan_binance::BinanceStoreBuilder;
+/// use bothan_binance::BinanceWorkerBuilder;
 ///
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let service = BinanceStoreBuilder::default()
+///     let worker = BinanceWorkerBuilder::default()
 ///         .build()
 ///         .await
 ///         .unwrap();
 ///
-///     // use service ...
+///     // use worker ...
 /// }
 /// ```
-pub struct BinanceStoreBuilder {
+pub struct BinanceWorkerBuilder {
     url: String,
     internal_ch_size: usize,
 }
 
-impl BinanceStoreBuilder {
+impl BinanceWorkerBuilder {
     /// Returns a new `BinanceStoreBuilder` with the given options.
-    pub fn new(opts: BinanceStoreBuilderOpts) -> Self {
+    pub fn new(opts: BinanceWorkerBuilderOpts) -> Self {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
-            internal_ch_size: opts.cmd_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
+            internal_ch_size: opts.internal_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
         }
     }
 
@@ -63,26 +63,23 @@ impl BinanceStoreBuilder {
     }
 
     /// Creates the configured `BinanceService`.
-    pub async fn build(self) -> Result<BinanceStore, ConnectionError> {
+    pub async fn build(self) -> Result<Arc<BinanceWorker>, anyhow::Error> {
         let connector = BinanceWebSocketConnector::new(self.url);
         let connection = connector.connect().await?;
 
-        let service = BinanceStore::new(
-            Arc::new(connector),
-            Arc::new(Mutex::new(connection)),
-            self.internal_ch_size,
-        );
+        let (sub_tx, sub_rx) = channel(self.internal_ch_size);
+        let (unsub_tx, unsub_rx) = channel(self.internal_ch_size);
 
-        Ok(service)
+        let worker = Arc::new(BinanceWorker::new(connector, sub_tx, unsub_tx));
+
+        start_asset_worker(Arc::downgrade(&worker), connection, sub_rx, unsub_rx).await;
+        Ok(worker)
     }
 }
 
-impl Default for BinanceStoreBuilder {
+impl Default for BinanceWorkerBuilder {
     /// Create a new `BinanceServiceBuilder` with the default values.
     fn default() -> Self {
-        Self {
-            url: DEFAULT_URL.to_string(),
-            internal_ch_size: DEFAULT_CHANNEL_SIZE,
-        }
+        Self::new(BinanceWorkerBuilderOpts::default())
     }
 }

@@ -1,108 +1,76 @@
-use std::sync::Arc;
+use tokio::sync::mpsc::Sender;
 
-use tokio::sync::mpsc::{channel, Sender};
-use tokio::sync::Mutex;
+use bothan_core::store::Store;
+use bothan_core::worker::{AssetStatus, AssetWorker, Error};
 
-use asset_store::start_asset_store;
-use bothan_core::store::{AssetStatus, AssetStore, Error as StoreError, Storage};
+use crate::api::websocket::BinanceWebSocketConnector;
 
-use crate::api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
-
-mod asset_store;
+mod asset_worker;
 pub mod builder;
 mod types;
 
 /// A store that fetches and stores the asset information from Binance's API.
-pub struct BinanceStore {
-    connector: Arc<BinanceWebSocketConnector>,
-    connection: Arc<Mutex<BinanceWebSocketConnection>>,
-    storage: Arc<Storage>,
-    internal_ch_size: usize,
-    subscribe_ch_tx: Option<Sender<Vec<String>>>,
-    unsubscribe_ch_tx: Option<Sender<Vec<String>>>,
+pub struct BinanceWorker {
+    connector: BinanceWebSocketConnector,
+    store: Store,
+    subscribe_tx: Sender<Vec<String>>,
+    unsubscribe_tx: Sender<Vec<String>>,
 }
 
-impl BinanceStore {
+impl BinanceWorker {
     /// Create a new BinanceStore with the specified connector, connection, and internal channel size.
     pub fn new(
-        connector: Arc<BinanceWebSocketConnector>,
-        connection: Arc<Mutex<BinanceWebSocketConnection>>,
-        internal_ch_size: usize,
+        connector: BinanceWebSocketConnector,
+        subscribe_tx: Sender<Vec<String>>,
+        unsubscribe_tx: Sender<Vec<String>>,
     ) -> Self {
         Self {
             connector,
-            connection,
-            storage: Arc::new(Storage::default()),
-            internal_ch_size,
-            subscribe_ch_tx: None,
-            unsubscribe_ch_tx: None,
+            store: Store::default(),
+            subscribe_tx,
+            unsubscribe_tx,
         }
     }
 }
 
 #[async_trait::async_trait]
-impl AssetStore for BinanceStore {
-    /// Starts the BinanceStore service, setting up the necessary channels and spawning the asset store.
-    async fn start(&mut self) {
-        let (sub_tx, sub_rx) = channel(self.internal_ch_size);
-        let (unsub_tx, unsub_rx) = channel(self.internal_ch_size);
-
-        self.subscribe_ch_tx = Some(sub_tx);
-        self.unsubscribe_ch_tx = Some(unsub_tx);
-
-        let connector = self.connector.clone();
-        let connection = self.connection.clone();
-        let storage = self.storage.clone();
-
-        tokio::spawn(async move {
-            start_asset_store(connector, connection, storage, sub_rx, unsub_rx).await
-        });
-    }
-
+impl AssetWorker for BinanceWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
     async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
-        self.storage.get_assets(ids).await
+        self.store.get_assets(ids).await
     }
 
     /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn add_query_ids(&mut self, ids: &[&str]) -> Result<(), StoreError> {
+    async fn add_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
         let to_sub = self
-            .storage
+            .store
             .filter_existing_query_ids(ids.iter().map(|id| id.to_string()).collect::<Vec<String>>())
             .await;
 
-        if let Some(tx) = &self.subscribe_ch_tx {
-            if let Err(e) = tx.send(to_sub.clone()).await {
-                Err(StoreError::ModifyQueryIDsFailed(e.to_string()))
-            } else {
-                self.storage.set_query_ids(to_sub).await;
-                Ok(())
-            }
+        if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
+            Err(Error::ModifyQueryIDsFailed(e.to_string()))
         } else {
-            Err(StoreError::NotStarted)
+            self.store.set_query_ids(to_sub).await;
+            Ok(())
         }
     }
 
     /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn remove_query_ids(&mut self, ids: &[&str]) -> Result<(), StoreError> {
+    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
         let to_unsub = self
-            .storage
+            .store
             .filter_missing_query_ids(ids.iter().map(|id| id.to_string()).collect::<Vec<String>>())
             .await;
 
-        if let Some(tx) = &self.unsubscribe_ch_tx {
-            if let Err(e) = tx.send(to_unsub.clone()).await {
-                Err(StoreError::ModifyQueryIDsFailed(e.to_string()))
-            } else {
-                self.storage.remove_query_ids(to_unsub.as_slice()).await;
-                Ok(())
-            }
+        if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {
+            Err(Error::ModifyQueryIDsFailed(e.to_string()))
         } else {
-            Err(StoreError::NotStarted)
+            self.store.remove_query_ids(to_unsub.as_slice()).await;
+            Ok(())
         }
     }
     /// Retrieves the current set of queried cryptocurrency IDs.
     async fn get_query_ids(&self) -> Vec<String> {
-        self.storage.get_query_ids().await
+        self.store.get_query_ids().await
     }
 }

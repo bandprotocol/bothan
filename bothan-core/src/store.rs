@@ -4,67 +4,51 @@ use tokio::sync::{Mutex, RwLock};
 
 use crate::types::AssetInfo;
 
-#[derive(Debug)]
-pub enum AssetStatus {
-    Unsupported,
-    Pending,
-    Available(AssetInfo),
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Not started")]
-    NotStarted,
-
-    #[error("failed to modify query IDs: {0}")]
-    ModifyQueryIDsFailed(String),
-}
-
-pub struct Storage {
-    data_store: RwLock<HashMap<String, AssetInfo>>,
+pub struct Store {
+    asset_store: RwLock<HashMap<String, AssetInfo>>,
     query_ids: Mutex<HashSet<String>>,
 }
 
-impl Default for Storage {
+impl Default for Store {
     fn default() -> Self {
-        Storage::new()
+        Store::new()
     }
 }
 
-impl Storage {
+impl Store {
     pub fn new() -> Self {
         Self {
-            data_store: RwLock::new(HashMap::new()),
+            asset_store: RwLock::new(HashMap::new()),
             query_ids: Mutex::new(HashSet::new()),
         }
     }
 
-    pub async fn get_assets<K: AsRef<str>>(&self, ids: &[K]) -> Vec<AssetStatus> {
-        let data_store = self.data_store.read().await;
+    pub async fn get_assets<K: AsRef<str>>(&self, ids: &[K]) -> Vec<crate::worker::AssetStatus> {
+        let data_store = self.asset_store.read().await;
         let query_ids = self.query_ids.lock().await;
 
         ids.iter()
             .map(
                 |id| match (query_ids.contains(id.as_ref()), data_store.get(id.as_ref())) {
-                    (false, _) => AssetStatus::Unsupported,
-                    (true, Some(asset)) => AssetStatus::Available(asset.clone()),
-                    (true, None) => AssetStatus::Pending,
+                    (false, _) => crate::worker::AssetStatus::Unsupported,
+                    (true, Some(asset)) => crate::worker::AssetStatus::Available(asset.clone()),
+                    (true, None) => crate::worker::AssetStatus::Pending,
                 },
             )
             .collect()
     }
 
     pub async fn get_all_assets(&self) -> Vec<AssetInfo> {
-        self.data_store.read().await.values().cloned().collect()
+        self.asset_store.read().await.values().cloned().collect()
     }
 
     pub async fn set_asset<K: Into<String>>(&self, id: K, asset_info: AssetInfo) {
-        let mut data_store = self.data_store.write().await;
+        let mut data_store = self.asset_store.write().await;
         data_store.insert(id.into(), asset_info);
     }
 
     pub async fn set_assets<K: Into<String>>(&self, assets: Vec<(K, AssetInfo)>) {
-        let mut data_store = self.data_store.write().await;
+        let mut data_store = self.asset_store.write().await;
         for (id, asset) in assets {
             data_store.insert(id.into(), asset);
         }
@@ -113,15 +97,4 @@ impl Storage {
             })
             .collect()
     }
-}
-
-/// Type alias for a service result, which is either a valid result or an error.
-/// The universal trait for all services that provide price data.
-#[async_trait::async_trait]
-pub trait AssetStore {
-    async fn start(&mut self);
-    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus>;
-    async fn add_query_ids(&mut self, ids: &[&str]) -> Result<(), Error>;
-    async fn remove_query_ids(&mut self, ids: &[&str]) -> Result<(), Error>;
-    async fn get_query_ids(&self) -> Vec<String>;
 }

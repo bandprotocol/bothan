@@ -1,58 +1,45 @@
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::sync::Weak;
 
 use rust_decimal::Decimal;
 use tokio::select;
-use tokio::sync::{mpsc::Receiver, Mutex, RwLock};
+use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
-use bothan_core::store::Storage;
+use bothan_core::store::Store;
 use bothan_core::types::AssetInfo;
 
 use crate::api::types::{BinanceResponse, Data};
 use crate::api::{self, BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::store::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
+use crate::store::BinanceWorker;
 
-pub(crate) async fn start_asset_store(
-    connector: Arc<BinanceWebSocketConnector>,
-    connection: Arc<Mutex<BinanceWebSocketConnection>>,
-    store: Storage,
-    query_ids: Arc<RwLock<HashSet<String>>>,
-    mut subscribe_ch_rx: Receiver<Vec<String>>,
-    mut unsubscribe_ch_rx: Receiver<Vec<String>>,
+pub(crate) async fn start_asset_worker(
+    worker: Weak<BinanceWorker>,
+    mut connection: BinanceWebSocketConnection,
+    mut subscribe_rx: Receiver<Vec<String>>,
+    mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
-    loop {
+    while let Some(worker) = worker.upgrade() {
         select! {
-            id = subscribe_ch_rx.recv() => {
-                handle_subscribe_recv(id, &connection).await;
-            },
-            id = unsubscribe_ch_rx.recv() => {
-                handle_unsubscribe_recv(id, &connection).await;
-            },
-            result = {
-                let cloned = connection.clone();
-                // TODO: Need to find a better way to resolve this
-                timeout(DEFAULT_TIMEOUT, async move { cloned.lock().await.next().await })
-            } => {
+            id = subscribe_rx.recv() => handle_subscribe_recv(id, &mut connection).await,
+            id = unsubscribe_rx.recv() => handle_unsubscribe_recv(id, &mut connection).await,
+            result = timeout(DEFAULT_TIMEOUT, connection.next()) => {
                 match result {
-                    Err(_) => handle_reconnect(&connector, &connection, &store).await,
-                    Ok(binance_result) => handle_connection_recv(binance_result, &connector, &connection, &store).await,
+                    Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
+                    Ok(binance_result) => handle_connection_recv(binance_result, &worker.connector, &mut connection, &worker.store).await,
                 }
-            },
-
+            }
         }
     }
 }
 
 async fn subscribe(
     ids: Vec<String>,
-    connection: &Mutex<BinanceWebSocketConnection>,
+    connection: &mut BinanceWebSocketConnection,
 ) -> Result<(), anyhow::Error> {
     if !ids.is_empty() {
         connection
-            .lock()
-            .await
             .subscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
             .await?
     }
@@ -62,7 +49,7 @@ async fn subscribe(
 
 async fn handle_subscribe_recv(
     ids: Option<Vec<String>>,
-    connection: &Mutex<BinanceWebSocketConnection>,
+    connection: &mut BinanceWebSocketConnection,
 ) {
     match ids {
         Some(ids) => {
@@ -81,7 +68,7 @@ async fn handle_subscribe_recv(
 
 async fn handle_unsubscribe_recv(
     ids: Option<Vec<String>>,
-    connection: &Mutex<BinanceWebSocketConnection>,
+    connection: &mut BinanceWebSocketConnection,
 ) {
     match ids {
         Some(ids) => {
@@ -89,8 +76,6 @@ async fn handle_unsubscribe_recv(
                 debug!("received empty unsubscribe command");
             } else {
                 let res = connection
-                    .lock()
-                    .await
                     .unsubscribe_mini_ticker_stream(
                         &ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
                     )
@@ -111,16 +96,12 @@ async fn handle_unsubscribe_recv(
 
 async fn handle_reconnect(
     connector: &BinanceWebSocketConnector,
-    connection: &Mutex<BinanceWebSocketConnection>,
-    query_ids: &Storage,
+    connection: &mut BinanceWebSocketConnection,
+    query_ids: &Store,
 ) {
     loop {
-        // Attempt to reconnect to binance
-        let mut locked = connection.lock().await;
-        warn!("attempting to reconnect to binance");
-
         if let Ok(new_connection) = connector.connect().await {
-            *locked = new_connection;
+            *connection = new_connection;
 
             // Resubscribe to all ids
             let ids = query_ids.get_query_ids().await;
@@ -142,7 +123,7 @@ async fn handle_reconnect(
     }
 }
 
-async fn store_data(data: Data, store: &Storage) -> anyhow::Result<()> {
+async fn store_data(data: Data, store: &Store) -> anyhow::Result<()> {
     match data {
         Data::MiniTicker(ticker) => {
             let asset_info = AssetInfo {
@@ -158,7 +139,7 @@ async fn store_data(data: Data, store: &Storage) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn process_response(resp: BinanceResponse, store: &Storage) {
+async fn process_response(resp: BinanceResponse, store: &Store) {
     match resp {
         BinanceResponse::Stream(resp) => match store_data(resp.data, store).await {
             Ok(_) => info!("saved data"),
@@ -179,8 +160,8 @@ async fn process_response(resp: BinanceResponse, store: &Storage) {
 async fn handle_connection_recv(
     recv_result: Result<BinanceResponse, api::Error>,
     connector: &BinanceWebSocketConnector,
-    connection: &Mutex<BinanceWebSocketConnection>,
-    store: &Storage,
+    connection: &mut BinanceWebSocketConnection,
+    store: &Store,
 ) {
     match recv_result {
         Ok(resp) => {
