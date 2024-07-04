@@ -57,7 +57,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSock
     if let Err(e) = subscribe(&ids, connection).await {
         error!("failed to subscribe to ids {:?}: {}", ids, e);
     } else {
-        info!("subscribed to ids");
+        info!("subscribed to ids {:?}", ids);
     }
 }
 
@@ -78,7 +78,7 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSo
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
-        info!("subscribed to ids");
+        info!("subscribed to ids {:?}", ids);
     }
 }
 
