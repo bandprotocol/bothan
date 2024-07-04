@@ -73,7 +73,13 @@ impl BinanceWorkerBuilder {
 
         let worker = Arc::new(BinanceWorker::new(connector, sub_tx, unsub_tx));
 
-        start_asset_worker(Arc::downgrade(&worker), connection, sub_rx, unsub_rx).await;
+        tokio::spawn(start_asset_worker(
+            Arc::downgrade(&worker),
+            connection,
+            sub_rx,
+            unsub_rx,
+        ));
+
         Ok(worker)
     }
 }
