@@ -19,7 +19,7 @@ pub enum Error {
 /// Type alias for a service result, which is either a valid result or an error.
 /// The universal trait for all services that provide price data.
 #[async_trait::async_trait]
-pub trait AssetStore: Send + Sync + 'static {
+pub trait AssetStore {
     async fn start(&mut self);
     async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus>;
     async fn add_query_ids(&mut self, ids: &[&str]) -> Result<(), Error>;
