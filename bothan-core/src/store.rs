@@ -58,7 +58,7 @@ impl Store {
         }
     }
 
-    pub async fn set_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<String> {
+    pub async fn add_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<String> {
         let mut query_ids = self.query_ids.lock().await;
         ids.into_iter()
             .filter_map(|id| {
