@@ -4,8 +4,8 @@ use serde::Deserialize;
 use tokio::sync::Mutex;
 
 use crate::api::types::DEFAULT_URL;
-use crate::error::Error;
-use crate::types::DEFAULT_CHANNEL_SIZE;
+use crate::api::ConnectionError;
+use crate::store::types::DEFAULT_CHANNEL_SIZE;
 use crate::{BinanceStore, BinanceWebSocketConnector};
 
 /// Options for the `BinanceServiceBuilder`.
@@ -63,7 +63,7 @@ impl BinanceStoreBuilder {
     }
 
     /// Creates the configured `BinanceService`.
-    pub async fn build(self) -> Result<BinanceStore, Error> {
+    pub async fn build(self) -> Result<BinanceStore, ConnectionError> {
         let connector = BinanceWebSocketConnector::new(self.url);
         let connection = connector.connect().await?;
 

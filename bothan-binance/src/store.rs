@@ -15,7 +15,7 @@ mod asset_store;
 pub mod builder;
 mod types;
 
-/// A service that fetches and caches the cryptocurrency prices from Binance.
+/// A store that fetches and stores the asset information from Binance's API.
 pub struct BinanceStore {
     connector: Arc<BinanceWebSocketConnector>,
     connection: Arc<Mutex<BinanceWebSocketConnection>>,
@@ -27,7 +27,7 @@ pub struct BinanceStore {
 }
 
 impl BinanceStore {
-    /// Create a new Binance service with the connector, connection, and channel sizes.
+    /// Create a new BinanceStore with the specified connector, connection, and internal channel size.
     pub fn new(
         connector: Arc<BinanceWebSocketConnector>,
         connection: Arc<Mutex<BinanceWebSocketConnection>>,
@@ -47,6 +47,7 @@ impl BinanceStore {
 
 #[async_trait::async_trait]
 impl AssetStore for BinanceStore {
+    /// Starts the BinanceStore service, setting up the necessary channels and spawning the asset store.
     async fn start(&mut self) {
         let (sub_tx, sub_rx) = channel(self.internal_ch_size);
         let (unsub_tx, unsub_rx) = channel(self.internal_ch_size);
@@ -67,7 +68,7 @@ impl AssetStore for BinanceStore {
         });
     }
 
-    /// Fetches the price data for the given cryptocurrency ids.
+    /// Fetches the AssetStatus for the given cryptocurrency ids.
     async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
         let data_reader = self.data_store.read().await;
         let id_reader = self.query_ids.read().await;
@@ -85,6 +86,7 @@ impl AssetStore for BinanceStore {
             .collect()
     }
 
+    /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
     async fn add_query_ids(&mut self, ids: &[&str]) -> Result<(), StoreError> {
         let mut writer = self.query_ids.write().await;
         let sub = ids
@@ -109,6 +111,7 @@ impl AssetStore for BinanceStore {
         }
     }
 
+    /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
     async fn remove_query_ids(&mut self, ids: &[&str]) -> Result<(), StoreError> {
         let mut writer = self.query_ids.write().await;
         let unsub = ids
@@ -126,99 +129,9 @@ impl AssetStore for BinanceStore {
             Err(StoreError::NotStarted)
         }
     }
-
+    /// Retrieves the current set of queried cryptocurrency IDs.
     async fn get_query_ids(&self) -> Vec<String> {
         let reader = self.query_ids.read().await;
         reader.iter().cloned().collect()
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use tokio_tungstenite::tungstenite::Message;
-//     use ws_mock::ws_mock_server::WsMock;
-//
-//     use crate::api::types::{Data, MiniTickerInfo, StreamResponse};
-//     use crate::api::websocket::test::setup_mock_server;
-//
-//     use super::*;
-//
-//     #[tokio::test]
-//     async fn test_process_command() {
-//         let mock = setup_mock_server().await;
-//
-//         let connector = Arc::new(BinanceWebSocketConnector::new(mock.uri().await));
-//         let connection = Arc::new(Mutex::new(connector.connect().await.unwrap()));
-//
-//         let cache = Arc::new(Cache::new(None));
-//
-//         let (_, msg_rx) = channel::<Message>(32);
-//
-//     }
-//
-//     #[tokio::test]
-//     async fn test_save_datum() {
-//         let cache = Arc::new(Cache::new(None));
-//         cache.set_pending("btcusdt".to_string()).await;
-//
-//         let ticker = MiniTickerInfo {
-//             event_time: 1628794647025,
-//             symbol: "BTCUSDT".to_string(),
-//             close_price: "45000.00".to_string(),
-//             open_price: "44000.00".to_string(),
-//             high_price: "46000.00".to_string(),
-//             low_price: "43000.00".to_string(),
-//             base_volume: "1000.00".to_string(),
-//             quote_volume: "45000000.00".to_string(),
-//         };
-//
-//         let data = Data::MiniTicker(ticker);
-//         save_datum(&data, &cache).await;
-//
-//         let price_data = cache.get("btcusdt").await.unwrap();
-//         assert_eq!(
-//             price_data,
-//             AssetInfo {
-//                 id: "btcusdt".to_string(),
-//                 price: "45000.00".to_string(),
-//                 timestamp: 1628794647025,
-//             }
-//         );
-//     }
-//
-//     #[tokio::test]
-//     async fn test_process_response() {
-//         let cache = Arc::new(Cache::new(None));
-//         cache.set_pending("btcusdt".to_string()).await;
-//
-//         let ticker = MiniTickerInfo {
-//             event_time: 1628794647025,
-//             symbol: "BTCUSDT".to_string(),
-//             close_price: "45000.00".to_string(),
-//             open_price: "44000.00".to_string(),
-//             high_price: "46000.00".to_string(),
-//             low_price: "43000.00".to_string(),
-//             base_volume: "1000.00".to_string(),
-//             quote_volume: "45000000.00".to_string(),
-//         };
-//
-//         let data = Data::MiniTicker(ticker);
-//         let stream_resp = StreamResponse {
-//             stream: "btcusdt@miniTicker".to_string(),
-//             data,
-//         };
-//
-//         let response = BinanceResponse::Stream(stream_resp);
-//         process_response(&response, &cache).await;
-//
-//         let price_data = cache.get("btcusdt").await.unwrap();
-//         assert_eq!(
-//             price_data,
-//             AssetInfo {
-//                 id: "btcusdt".to_string(),
-//                 price: "45000.00".to_string(),
-//                 timestamp: 1628794647025,
-//             }
-//         );
-//     }
-// }
