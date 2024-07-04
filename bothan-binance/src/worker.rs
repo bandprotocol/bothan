@@ -44,8 +44,8 @@ impl AssetWorker for BinanceWorker {
     }
 
     /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn add_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error> {
-        let to_sub = self.store.set_query_ids(ids.into_vec()).await;
+    async fn add_query_ids<T: Into<String> + Send + Sync>(&self, ids: Vec<T>) -> Result<(), Error> {
+        let to_sub = self.store.set_query_ids(ids).await;
 
         if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
             error!("failed to add query ids: {}", e);
@@ -62,7 +62,7 @@ impl AssetWorker for BinanceWorker {
 
         if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {
             error!("failed to remove query ids: {}", e);
-            self.store.add_query_ids(to_unsub.as_slice()).await;
+            self.store.set_query_ids(to_unsub).await;
             Err(Error::ModifyQueryIDsFailed(e.to_string()))
         } else {
             Ok(())

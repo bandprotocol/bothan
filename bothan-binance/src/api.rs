@@ -3,5 +3,4 @@ pub use websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 
 pub mod error;
 pub mod msgs;
-pub mod types;
 pub mod websocket;

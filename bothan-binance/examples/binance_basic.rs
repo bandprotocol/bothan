@@ -8,7 +8,10 @@ async fn main() {
     init();
     let worker = BinanceWorkerBuilder::default().build().await.unwrap();
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-    worker.add_query_ids(&["btcusdt", "ethusdt"]).await.unwrap();
+    worker
+        .add_query_ids(vec!["btcusdt", "ethusdt"])
+        .await
+        .unwrap();
     loop {
         let data = worker.get_assets(&["btcusdt", "ethusdt"]).await;
         println!("{:?}", data);

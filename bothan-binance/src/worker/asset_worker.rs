@@ -41,7 +41,7 @@ pub(crate) async fn start_asset_worker(
 }
 
 async fn subscribe(
-    ids: &Vec<String>,
+    ids: &[String],
     connection: &mut BinanceWebSocketConnection,
 ) -> Result<(), api::SubscriptionError> {
     if !ids.is_empty() {
@@ -62,7 +62,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSock
 }
 
 async fn unsubscribe(
-    ids: &Vec<String>,
+    ids: &[String],
     connection: &mut BinanceWebSocketConnection,
 ) -> Result<(), api::SubscriptionError> {
     if !ids.is_empty() {
@@ -96,7 +96,7 @@ async fn handle_reconnect(
 
             // Resubscribe to all ids
             let ids = query_ids.get_query_ids().await;
-            match subscribe(ids, connection).await {
+            match subscribe(&ids, connection).await {
                 Ok(_) => {
                     info!("resubscribed to all ids");
                     return;
