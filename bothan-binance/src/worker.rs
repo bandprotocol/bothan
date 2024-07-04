@@ -7,6 +7,7 @@ use crate::api::websocket::BinanceWebSocketConnector;
 
 mod asset_worker;
 pub mod builder;
+pub(crate) mod error;
 mod types;
 
 /// A store that fetches and stores the asset information from Binance's API.

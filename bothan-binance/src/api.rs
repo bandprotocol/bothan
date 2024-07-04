@@ -1,4 +1,4 @@
-pub use error::{ConnectionError, Error};
+pub use error::{ConnectionError, Error, SubscriptionError};
 pub use websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 
 pub mod error;

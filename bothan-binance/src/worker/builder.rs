@@ -4,9 +4,10 @@ use serde::Deserialize;
 use tokio::sync::mpsc::channel;
 
 use crate::api::types::DEFAULT_URL;
-use crate::store::asset_worker::start_asset_worker;
-use crate::store::types::DEFAULT_CHANNEL_SIZE;
-use crate::store::BinanceWorker;
+use crate::worker::asset_worker::start_asset_worker;
+use crate::worker::error::BuildError;
+use crate::worker::types::DEFAULT_CHANNEL_SIZE;
+use crate::worker::BinanceWorker;
 use crate::BinanceWebSocketConnector;
 
 /// Options for the `BinanceServiceBuilder`.
@@ -63,7 +64,7 @@ impl BinanceWorkerBuilder {
     }
 
     /// Creates the configured `BinanceService`.
-    pub async fn build(self) -> Result<Arc<BinanceWorker>, anyhow::Error> {
+    pub async fn build(self) -> Result<Arc<BinanceWorker>, BuildError> {
         let connector = BinanceWebSocketConnector::new(self.url);
         let connection = connector.connect().await?;
 

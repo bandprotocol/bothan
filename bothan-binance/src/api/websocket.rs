@@ -3,8 +3,9 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, tungstenite, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
+use crate::api::error::SubscriptionError;
 use crate::api::{types::BinanceResponse, ConnectionError, Error};
 
 /// A connector for establishing WebSocket connections to Binance.
@@ -71,7 +72,7 @@ impl BinanceWebSocketConnection {
     pub async fn subscribe_mini_ticker_stream(
         &mut self,
         ids: &[&str],
-    ) -> Result<(), tungstenite::Error> {
+    ) -> Result<(), SubscriptionError> {
         // Format the stream IDs for subscription.
         let stream_ids = ids
             .iter()
@@ -87,7 +88,8 @@ impl BinanceWebSocketConnection {
 
         // Send the subscription message.
         let message = Message::Text(payload.to_string());
-        self.sender.send(message).await
+        self.sender.send(message).await?;
+        Ok(())
     }
 
     /// Unsubscribes from the mini ticker stream for the specified symbol IDs.
@@ -101,7 +103,7 @@ impl BinanceWebSocketConnection {
     pub async fn unsubscribe_mini_ticker_stream(
         &mut self,
         ids: &[&str],
-    ) -> Result<(), tungstenite::Error> {
+    ) -> Result<(), SubscriptionError> {
         // Format the stream IDs for unsubscription.
         let stream_ids = ids
             .iter()
@@ -117,7 +119,8 @@ impl BinanceWebSocketConnection {
 
         // Send the unsubscription message.
         let message = Message::Text(payload.to_string());
-        self.sender.send(message).await
+        self.sender.send(message).await?;
+        Ok(())
     }
 
     /// Retrieves the next message from the WebSocket stream.

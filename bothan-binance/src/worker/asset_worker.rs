@@ -11,8 +11,9 @@ use bothan_core::types::AssetInfo;
 
 use crate::api::types::{BinanceResponse, Data};
 use crate::api::{self, BinanceWebSocketConnection, BinanceWebSocketConnector};
-use crate::store::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::store::BinanceWorker;
+use crate::worker::error::ParseError;
+use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
+use crate::worker::BinanceWorker;
 
 pub(crate) async fn start_asset_worker(
     worker: Weak<BinanceWorker>,
@@ -37,7 +38,7 @@ pub(crate) async fn start_asset_worker(
 async fn subscribe(
     ids: Vec<String>,
     connection: &mut BinanceWebSocketConnection,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), api::SubscriptionError> {
     if !ids.is_empty() {
         connection
             .subscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
@@ -123,7 +124,7 @@ async fn handle_reconnect(
     }
 }
 
-async fn store_data(data: Data, store: &Store) -> anyhow::Result<()> {
+async fn store_data(data: Data, store: &Store) -> Result<(), ParseError> {
     match data {
         Data::MiniTicker(ticker) => {
             let asset_info = AssetInfo {

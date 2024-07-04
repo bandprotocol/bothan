@@ -25,3 +25,10 @@ pub enum Error {
     #[error("unsupported message")]
     UnsupportedMessage,
 }
+
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct SubscriptionError {
+    #[from]
+    source: tungstenite::Error,
+}
