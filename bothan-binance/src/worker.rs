@@ -10,7 +10,7 @@ pub mod builder;
 pub(crate) mod error;
 mod types;
 
-/// A store that fetches and stores the asset information from Binance's API.
+/// A worker that fetches and stores the asset information from Binance's API.
 pub struct BinanceWorker {
     connector: BinanceWebSocketConnector,
     store: Store,
@@ -19,7 +19,7 @@ pub struct BinanceWorker {
 }
 
 impl BinanceWorker {
-    /// Create a new BinanceStore with the specified connector, connection, and internal channel size.
+    /// Create a new worker with the specified connector, store and channels.
     pub fn new(
         connector: BinanceWebSocketConnector,
         store: Store,
