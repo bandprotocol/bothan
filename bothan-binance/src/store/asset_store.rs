@@ -10,8 +10,8 @@ use tracing::{debug, error, info, warn};
 use bothan_core::store::Storage;
 use bothan_core::types::AssetInfo;
 
-use crate::api::{self, BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::api::types::{BinanceResponse, Data};
+use crate::api::{self, BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::store::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 
 pub(crate) async fn start_asset_store(

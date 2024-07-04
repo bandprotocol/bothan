@@ -44,11 +44,13 @@ impl Storage {
         let query_ids = self.query_ids.lock().await;
 
         ids.iter()
-            .map(|id| match (query_ids.contains(id.as_ref()), data_store.get(id.as_ref())) {
-                (false, _) => AssetStatus::Unsupported,
-                (true, Some(asset)) => AssetStatus::Available(asset.clone()),
-                (true, None) => AssetStatus::Pending,
-            })
+            .map(
+                |id| match (query_ids.contains(id.as_ref()), data_store.get(id.as_ref())) {
+                    (false, _) => AssetStatus::Unsupported,
+                    (true, Some(asset)) => AssetStatus::Available(asset.clone()),
+                    (true, None) => AssetStatus::Pending,
+                },
+            )
             .collect()
     }
 
@@ -70,7 +72,9 @@ impl Storage {
 
     pub async fn set_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<bool> {
         let mut query_ids = self.query_ids.lock().await;
-        ids.into_iter().map(|id| query_ids.insert(id.into())).collect()
+        ids.into_iter()
+            .map(|id| query_ids.insert(id.into()))
+            .collect()
     }
 
     pub async fn remove_query_ids<K: AsRef<str>>(&self, ids: &[K]) -> Vec<bool> {
