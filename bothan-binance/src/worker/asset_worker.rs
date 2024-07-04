@@ -41,7 +41,7 @@ pub(crate) async fn start_asset_worker(
 }
 
 async fn subscribe(
-    ids: Vec<String>,
+    ids: &Vec<String>,
     connection: &mut BinanceWebSocketConnection,
 ) -> Result<(), api::SubscriptionError> {
     if !ids.is_empty() {
@@ -54,25 +54,31 @@ async fn subscribe(
 }
 
 async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSocketConnection) {
-    if let Err(e) = subscribe(ids, connection).await {
-        error!("failed to subscribe: {}", e);
+    if let Err(e) = subscribe(&ids, connection).await {
+        error!("failed to subscribe to ids {:?}: {}", ids, e);
     } else {
         info!("subscribed to ids");
     }
 }
 
-async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSocketConnection) {
-    if ids.is_empty() {
-        debug!("received empty unsubscribe command");
-    } else {
-        let res = connection
+async fn unsubscribe(
+    ids: &Vec<String>,
+    connection: &mut BinanceWebSocketConnection,
+) -> Result<(), api::SubscriptionError> {
+    if !ids.is_empty() {
+        connection
             .unsubscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
-            .await;
-        if res.is_err() {
-            error!("failed to unsubscribe to ids: {:?}", ids);
-        } else {
-            info!("unsubscribed to ids: {:?}", ids);
-        }
+            .await?
+    }
+
+    Ok(())
+}
+
+async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSocketConnection) {
+    if let Err(e) = unsubscribe(&ids, connection).await {
+        error!("failed to unsubscribe to ids {:?}: {}", ids, e);
+    } else {
+        info!("subscribed to ids");
     }
 }
 

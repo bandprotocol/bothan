@@ -5,7 +5,7 @@ use tokio::sync::mpsc::channel;
 
 use bothan_core::store::Store;
 
-use crate::api::types::DEFAULT_URL;
+use crate::api::websocket::DEFAULT_URL;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::worker::error::BuildError;
 use crate::worker::types::DEFAULT_CHANNEL_SIZE;

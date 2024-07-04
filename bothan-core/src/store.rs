@@ -58,16 +58,32 @@ impl Store {
         }
     }
 
-    pub async fn set_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<bool> {
+    pub async fn set_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<String> {
         let mut query_ids = self.query_ids.lock().await;
         ids.into_iter()
-            .map(|id| query_ids.insert(id.into()))
-            .collect()
+            .filter_map(|id| {
+                let id = id.into();
+                if query_ids.insert(id.clone()) {
+                    Some(id)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<String>>()
     }
 
-    pub async fn remove_query_ids<K: AsRef<str>>(&self, ids: &[K]) -> Vec<bool> {
+    pub async fn remove_query_ids<K: AsRef<str>>(&self, ids: &[K]) -> Vec<String> {
         let mut query_ids = self.query_ids.lock().await;
-        ids.iter().map(|id| query_ids.remove(id.as_ref())).collect()
+        ids.iter()
+            .filter_map(|id| {
+                let id = id.as_ref();
+                if query_ids.remove(id) {
+                    Some(id.to_string())
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub async fn get_query_ids(&self) -> Vec<String> {

@@ -1,4 +1,5 @@
 use tokio::sync::mpsc::Sender;
+use tracing::error;
 
 use bothan_core::store::Store;
 use bothan_core::worker::{AssetStatus, AssetWorker, Error};
@@ -44,30 +45,26 @@ impl AssetWorker for BinanceWorker {
 
     /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
     async fn add_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error> {
-        let to_sub = self
-            .store
-            .filter_existing_query_ids(ids.iter().map(|id| id.as_ref()).collect::<Vec<&str>>())
-            .await;
+        let to_sub = self.store.set_query_ids(ids.into_vec()).await;
 
         if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
+            error!("failed to add query ids: {}", e);
+            self.store.remove_query_ids(to_sub.as_slice()).await;
             Err(Error::ModifyQueryIDsFailed(e.to_string()))
         } else {
-            self.store.set_query_ids(to_sub).await;
             Ok(())
         }
     }
 
     /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
     async fn remove_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error> {
-        let to_unsub = self
-            .store
-            .filter_missing_query_ids(ids.iter().map(|id| id.as_ref()).collect::<Vec<&str>>())
-            .await;
+        let to_unsub = self.store.remove_query_ids(ids).await;
 
         if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {
+            error!("failed to remove query ids: {}", e);
+            self.store.add_query_ids(to_unsub.as_slice()).await;
             Err(Error::ModifyQueryIDsFailed(e.to_string()))
         } else {
-            self.store.remove_query_ids(to_unsub.as_slice()).await;
             Ok(())
         }
     }

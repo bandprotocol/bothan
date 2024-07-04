@@ -8,6 +8,8 @@ use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use crate::api::error::SubscriptionError;
 use crate::api::{msgs::BinanceResponse, ConnectionError, Error};
 
+pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
+
 /// A connector for establishing WebSocket connections to Binance.
 pub struct BinanceWebSocketConnector {
     url: String,
@@ -69,14 +71,14 @@ impl BinanceWebSocketConnection {
     /// let mut connection = connector.connect().await?;
     /// connection.subscribe_mini_ticker_stream(&["btcusdt"]).await?;
     /// ```
-    pub async fn subscribe_mini_ticker_stream(
+    pub async fn subscribe_mini_ticker_stream<T: AsRef<str>>(
         &mut self,
-        ids: &[&str],
+        ids: &[T],
     ) -> Result<(), SubscriptionError> {
         // Format the stream IDs for subscription.
         let stream_ids = ids
             .iter()
-            .map(|id| format!("{}@miniTicker", id))
+            .map(|id| format!("{}@miniTicker", id.as_ref()))
             .collect::<Vec<_>>();
 
         // Create the subscription payload.
@@ -100,14 +102,14 @@ impl BinanceWebSocketConnection {
     /// let mut connection = connector.connect().await?;
     /// connection.unsubscribe_mini_ticker_stream(&["btcusdt"]).await?;
     /// ```
-    pub async fn unsubscribe_mini_ticker_stream(
+    pub async fn unsubscribe_mini_ticker_stream<T: AsRef<str>>(
         &mut self,
-        ids: &[&str],
+        ids: &[T],
     ) -> Result<(), SubscriptionError> {
         // Format the stream IDs for unsubscription.
         let stream_ids = ids
             .iter()
-            .map(|id| format!("{}@miniTicker", id))
+            .map(|id| format!("{}@miniTicker", id.as_ref()))
             .collect::<Vec<_>>();
 
         // Create the unsubscription payload.
