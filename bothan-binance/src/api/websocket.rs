@@ -6,7 +6,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
 use crate::api::error::SubscriptionError;
-use crate::api::{types::BinanceResponse, ConnectionError, Error};
+use crate::api::{msgs::BinanceResponse, ConnectionError, Error};
 
 /// A connector for establishing WebSocket connections to Binance.
 pub struct BinanceWebSocketConnector {
@@ -154,7 +154,7 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::types::{Data, MiniTickerInfo, StreamResponse};
+    use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
 
     use super::*;
 

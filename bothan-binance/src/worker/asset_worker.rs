@@ -9,7 +9,7 @@ use tracing::{debug, error, info};
 use bothan_core::store::Store;
 use bothan_core::types::AssetInfo;
 
-use crate::api::types::{BinanceResponse, Data};
+use crate::api::msgs::{BinanceResponse, Data};
 use crate::api::{self, BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::worker::error::ParseError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
