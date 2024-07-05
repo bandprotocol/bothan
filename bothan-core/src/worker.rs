@@ -16,8 +16,7 @@ pub enum Error {
     ModifyQueryIDsFailed(String),
 }
 
-/// Type alias for a service result, which is either a valid result or an error.
-/// The universal trait for all services that provide price data.
+/// The universal trait for all workers that provide asset info.
 #[async_trait::async_trait]
 pub trait AssetWorker {
     async fn get_assets<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Vec<AssetStatus>;

@@ -23,9 +23,9 @@ pub struct BinanceWorkerBuilderOpts {
     pub internal_ch_size: Option<usize>,
 }
 
-/// Builds a Binance service with custom options.
+/// Builds a `BinanceWorker` with custom options.
 /// Methods can be chained to set the configuration values and the
-/// service is constructed by calling the [`build`](BinanceServiceBuilder::build) method.
+/// service is constructed by calling the [`build`](BinanceWorkerBuilder::build) method.
 /// # Example
 /// ```no_run
 /// use bothan_binance::BinanceWorkerBuilder;
@@ -44,12 +44,12 @@ pub struct BinanceWorkerBuilderOpts {
 pub struct BinanceWorkerBuilder {
     url: String,
     internal_ch_size: usize,
-    store: Store,
+    store: Arc<Store>,
 }
 
 impl BinanceWorkerBuilder {
-    /// Returns a new `BinanceStoreBuilder` with the given options.
-    pub fn new(opts: BinanceWorkerBuilderOpts, store: Option<Store>) -> Self {
+    /// Returns a new `BinanceWorkerBuilder` with the given options.
+    pub fn new(opts: BinanceWorkerBuilderOpts, store: Option<Arc<Store>>) -> Self {
         Self {
             url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
             internal_ch_size: opts.internal_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
@@ -57,26 +57,26 @@ impl BinanceWorkerBuilder {
         }
     }
 
-    /// Set the URL for the BinanceStore.
+    /// Set the URL for the `BinanceWorker`.
     /// The default URL is `DEFAULT_URL`.
     pub fn with_url(mut self, url: String) -> Self {
         self.url = url;
         self
     }
 
-    /// Set the internal channel size for the BinanceStore.
+    /// Set the internal channel size for the `BinanceWorker`.
     /// The default size is `DEFAULT_CHANNEL_SIZE`.
     pub fn with_internal_ch_size(mut self, size: usize) -> Self {
         self.internal_ch_size = size;
         self
     }
 
-    pub fn with_store(mut self, store: Store) -> Self {
+    pub fn with_store(mut self, store: Arc<Store>) -> Self {
         self.store = store;
         self
     }
 
-    /// Creates the configured `BinanceService`.
+    /// Creates the configured `BinanceWorker`.
     pub async fn build(self) -> Result<Arc<BinanceWorker>, BuildError> {
         let connector = BinanceWebSocketConnector::new(self.url);
         let connection = connector.connect().await?;
@@ -98,7 +98,7 @@ impl BinanceWorkerBuilder {
 }
 
 impl Default for BinanceWorkerBuilder {
-    /// Create a new `BinanceServiceBuilder` with the default values.
+    /// Create a new `BinanceWorkerBuilder` with the default values.
     fn default() -> Self {
         Self::new(BinanceWorkerBuilderOpts::default(), None)
     }

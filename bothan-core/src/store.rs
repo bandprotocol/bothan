@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::types::AssetInfo;
+use crate::worker::AssetStatus;
 
 // TODO: Store should have namespace for different sources
 pub struct Store {
@@ -24,10 +25,7 @@ impl Store {
         }
     }
 
-    pub async fn get_assets<K: AsRef<str> + Send + Sync>(
-        &self,
-        ids: &[K],
-    ) -> Vec<crate::worker::AssetStatus> {
+    pub async fn get_assets<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Vec<AssetStatus> {
         let data_store = self.asset_store.read().await;
         let query_ids = self.query_ids.lock().await;
 
@@ -69,7 +67,7 @@ impl Store {
                     None
                 }
             })
-            .collect::<Vec<String>>()
+            .collect()
     }
 
     pub async fn remove_query_ids<K: AsRef<str>>(&self, ids: &[K]) -> Vec<String> {
@@ -88,33 +86,5 @@ impl Store {
 
     pub async fn get_query_ids(&self) -> Vec<String> {
         self.query_ids.lock().await.iter().cloned().collect()
-    }
-
-    pub async fn filter_existing_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<String> {
-        let query_ids = self.query_ids.lock().await;
-        ids.into_iter()
-            .filter_map(|id| {
-                let string_id = id.into();
-                if !query_ids.contains(&string_id) {
-                    Some(string_id)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    pub async fn filter_missing_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<String> {
-        let query_ids = self.query_ids.lock().await;
-        ids.into_iter()
-            .filter_map(|id| {
-                let string_id = id.into();
-                if query_ids.contains(&string_id) {
-                    Some(string_id)
-                } else {
-                    None
-                }
-            })
-            .collect()
     }
 }

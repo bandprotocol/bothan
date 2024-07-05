@@ -5,8 +5,8 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
-use crate::api::error::SubscriptionError;
-use crate::api::{msgs::BinanceResponse, ConnectionError, Error};
+use crate::api::error::{ConnectionError, MessageError, SubscriptionError};
+use crate::api::msgs::BinanceResponse;
 
 pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
 
@@ -135,21 +135,28 @@ impl BinanceWebSocketConnection {
     ///     println!("Received response: {:?}", response);
     /// }
     /// ```
-    pub async fn next(&mut self) -> Result<BinanceResponse, Error> {
+    pub async fn next(&mut self) -> Result<BinanceResponse, MessageError> {
         // Wait for the next message.
         if let Some(result_msg) = self.receiver.next().await {
             // Handle the received message.
             return match result_msg {
                 Ok(Message::Text(msg)) => Ok(serde_json::from_str::<BinanceResponse>(&msg)?),
                 Ok(Message::Ping(_)) => Ok(BinanceResponse::Ping),
-                Ok(Message::Close(_)) => Err(Error::ChannelClosed),
-                _ => Err(Error::UnsupportedMessage),
+                Ok(Message::Close(_)) => Err(MessageError::ChannelClosed),
+                _ => Err(MessageError::UnsupportedMessage),
             };
         }
 
-        Err(Error::ChannelClosed)
+        Err(MessageError::ChannelClosed)
     }
 }
+
+// impl Drop for BinanceWebSocketConnection {
+//     fn drop(&mut self) {
+//         let _ = self.sender.send(Message::Close(None));
+//         self.sender.close().await;
+//     }
+// }
 
 #[cfg(test)]
 pub(crate) mod test {

@@ -15,7 +15,7 @@ pub enum ConnectionError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub enum MessageError {
     #[error("failed to parse message")]
     Parse(#[from] serde_json::Error),
 

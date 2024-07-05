@@ -9,8 +9,9 @@ use tracing::{debug, error, info};
 use bothan_core::store::Store;
 use bothan_core::types::AssetInfo;
 
+use crate::api::error::{MessageError, SubscriptionError};
 use crate::api::msgs::{BinanceResponse, Data};
-use crate::api::{self, BinanceWebSocketConnection, BinanceWebSocketConnector};
+use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::worker::error::ParseError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 use crate::worker::BinanceWorker;
@@ -43,7 +44,7 @@ pub(crate) async fn start_asset_worker(
 async fn subscribe(
     ids: &[String],
     connection: &mut BinanceWebSocketConnection,
-) -> Result<(), api::SubscriptionError> {
+) -> Result<(), SubscriptionError> {
     if !ids.is_empty() {
         connection
             .subscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
@@ -64,7 +65,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSock
 async fn unsubscribe(
     ids: &[String],
     connection: &mut BinanceWebSocketConnection,
-) -> Result<(), api::SubscriptionError> {
+) -> Result<(), SubscriptionError> {
     if !ids.is_empty() {
         connection
             .unsubscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
@@ -149,7 +150,7 @@ async fn process_response(resp: BinanceResponse, store: &Store) {
 }
 
 async fn handle_connection_recv(
-    recv_result: Result<BinanceResponse, api::Error>,
+    recv_result: Result<BinanceResponse, MessageError>,
     connector: &BinanceWebSocketConnector,
     connection: &mut BinanceWebSocketConnection,
     store: &Store,
@@ -158,13 +159,13 @@ async fn handle_connection_recv(
         Ok(resp) => {
             process_response(resp, store).await;
         }
-        Err(api::Error::ChannelClosed) => {
+        Err(MessageError::ChannelClosed) => {
             handle_reconnect(connector, connection, store).await;
         }
-        Err(api::Error::UnsupportedMessage) => {
+        Err(MessageError::UnsupportedMessage) => {
             error!("unsupported message received from binance");
         }
-        Err(api::Error::Parse(..)) => {
+        Err(MessageError::Parse(..)) => {
             error!("unable to parse message from binance");
         }
     }

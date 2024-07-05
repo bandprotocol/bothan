@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tokio::sync::mpsc::Sender;
 use tracing::error;
 
@@ -14,7 +16,7 @@ mod types;
 /// A worker that fetches and stores the asset information from Binance's API.
 pub struct BinanceWorker {
     connector: BinanceWebSocketConnector,
-    store: Store,
+    store: Arc<Store>,
     subscribe_tx: Sender<Vec<String>>,
     unsubscribe_tx: Sender<Vec<String>>,
 }
@@ -23,7 +25,7 @@ impl BinanceWorker {
     /// Create a new worker with the specified connector, store and channels.
     pub fn new(
         connector: BinanceWebSocketConnector,
-        store: Store,
+        store: Arc<Store>,
         subscribe_tx: Sender<Vec<String>>,
         unsubscribe_tx: Sender<Vec<String>>,
     ) -> Self {
