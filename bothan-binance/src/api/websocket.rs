@@ -166,7 +166,7 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_recv_ticker() {
-        // Se up the mock server and the WebSocket connector.
+        // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
         let connector = BinanceWebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
