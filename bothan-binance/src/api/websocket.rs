@@ -1,3 +1,5 @@
+use std::num::Sub;
+
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
@@ -52,15 +54,13 @@ impl BinanceWebSocketConnector {
 
 /// Represents an active WebSocket connection to Binance.
 pub struct BinanceWebSocketConnection {
-    sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
-    receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
 impl BinanceWebSocketConnection {
-    /// Creates a new `BinanceWebSocketConnection` by splitting the WebSocket stream into sender and receiver.
-    pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
-        let (sender, receiver) = web_socket_stream.split();
-        Self { sender, receiver }
+    /// Creates a new `BinanceWebSocketConnection`
+    pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
+        Self { ws_stream }
     }
 
     /// Subscribes to the mini ticker stream for the specified symbol IDs.
@@ -90,7 +90,7 @@ impl BinanceWebSocketConnection {
 
         // Send the subscription message.
         let message = Message::Text(payload.to_string());
-        self.sender.send(message).await?;
+        self.ws_stream.send(message).await?;
         Ok(())
     }
 
@@ -121,7 +121,7 @@ impl BinanceWebSocketConnection {
 
         // Send the unsubscription message.
         let message = Message::Text(payload.to_string());
-        self.sender.send(message).await?;
+        self.ws_stream.send(message).await?;
         Ok(())
     }
 
@@ -137,26 +137,24 @@ impl BinanceWebSocketConnection {
     /// ```
     pub async fn next(&mut self) -> Result<BinanceResponse, MessageError> {
         // Wait for the next message.
-        if let Some(result_msg) = self.receiver.next().await {
+        if let Some(result_msg) = self.ws_stream.next().await {
             // Handle the received message.
-            return match result_msg {
+            match result_msg {
                 Ok(Message::Text(msg)) => Ok(serde_json::from_str::<BinanceResponse>(&msg)?),
                 Ok(Message::Ping(_)) => Ok(BinanceResponse::Ping),
                 Ok(Message::Close(_)) => Err(MessageError::ChannelClosed),
                 _ => Err(MessageError::UnsupportedMessage),
-            };
+            }
+        } else {
+            Err(MessageError::ChannelClosed)
         }
+    }
 
-        Err(MessageError::ChannelClosed)
+    pub async fn close(&mut self) -> Result<(), SubscriptionError> {
+        self.ws_stream.close(None).await?;
+        Ok(())
     }
 }
-
-// impl Drop for BinanceWebSocketConnection {
-//     fn drop(&mut self) {
-//         let _ = self.sender.send(Message::Close(None));
-//         self.sender.close().await;
-//     }
-// }
 
 #[cfg(test)]
 pub(crate) mod test {

@@ -38,6 +38,13 @@ pub(crate) async fn start_asset_worker(
             }
         }
     }
+
+    // Close the connection upon exiting
+    if let Ok(_) = connection.close().await {
+        debug!("asset worker successfully send closed frame")
+    } else {
+        error!("asset worker failed to send close frame")
+    }
     debug!("asset worker exited")
 }
 
