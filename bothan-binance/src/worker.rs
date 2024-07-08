@@ -41,12 +41,12 @@ impl BinanceWorker {
 #[async_trait::async_trait]
 impl AssetWorker for BinanceWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Vec<AssetStatus> {
+    async fn get_assets<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Vec<AssetStatus> {
         self.store.get_assets(ids).await
     }
 
     /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn add_query_ids<T: Into<String> + Send + Sync>(&self, ids: Vec<T>) -> Result<(), Error> {
+    async fn add_query_ids<K: Into<String> + Send + Sync>(&self, ids: Vec<K>) -> Result<(), Error> {
         let to_sub = self.store.add_query_ids(ids).await;
 
         if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
@@ -59,7 +59,7 @@ impl AssetWorker for BinanceWorker {
     }
 
     /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn remove_query_ids<T: AsRef<str> + Send + Sync>(&self, ids: &[T]) -> Result<(), Error> {
+    async fn remove_query_ids<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Result<(), Error> {
         let to_unsub = self.store.remove_query_ids(ids).await;
 
         if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {

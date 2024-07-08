@@ -68,9 +68,9 @@ impl BinanceWebSocketConnection {
     /// let mut connection = connector.connect().await?;
     /// connection.subscribe_mini_ticker_stream(&["btcusdt"]).await?;
     /// ```
-    pub async fn subscribe_mini_ticker_stream<T: AsRef<str>>(
+    pub async fn subscribe_mini_ticker_stream<K: AsRef<str>>(
         &mut self,
-        ids: &[T],
+        ids: &[K],
     ) -> Result<(), SendError> {
         // Format the stream IDs for subscription.
         let stream_ids = ids
@@ -99,9 +99,9 @@ impl BinanceWebSocketConnection {
     /// let mut connection = connector.connect().await?;
     /// connection.unsubscribe_mini_ticker_stream(&["btcusdt"]).await?;
     /// ```
-    pub async fn unsubscribe_mini_ticker_stream<T: AsRef<str>>(
+    pub async fn unsubscribe_mini_ticker_stream<K: AsRef<str>>(
         &mut self,
-        ids: &[T],
+        ids: &[K],
     ) -> Result<(), SendError> {
         // Format the stream IDs for unsubscription.
         let stream_ids = ids
