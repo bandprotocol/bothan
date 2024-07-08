@@ -1,111 +1,164 @@
-use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
-use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
-use tracing::warn;
 
-use crate::api::error::Error;
-use crate::api::types::BinanceResponse;
+use crate::api::error::{ConnectionError, MessageError, SendError};
+use crate::api::msgs::BinanceResponse;
 
-/// Binance WebSocket Connector
+pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
+
+/// A connector for establishing WebSocket connections to Binance.
 pub struct BinanceWebSocketConnector {
     url: String,
 }
 
 impl BinanceWebSocketConnector {
-    /// Create a new BinanceWebSocketConnector
+    /// Creates a new `BinanceWebSocketConnector` with the given URL.
+    ///
+    /// # Examples
+    ///
+    /// ```no_test
+    /// let connector = BinanceWebSocketConnector::new("wss://example.com/socket");
+    /// ```
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
-    /// Creates a new connection to the Binance WebSocket while returning a `BinanceWebSocketConnection`.
-    /// If the connection fails, an `Error` is returned.
-    pub async fn connect(&self) -> Result<BinanceWebSocketConnection, Error> {
+    /// Establishes a WebSocket connection to the Binance server.
+    ///
+    /// # Examples
+    ///
+    /// ```no_test
+    /// let connector = BinanceWebSocketConnector::new("wss://example.com/socket");
+    /// let connection = connector.connect().await?;
+    /// ```
+    pub async fn connect(&self) -> Result<BinanceWebSocketConnection, ConnectionError> {
+        // Attempt to establish a WebSocket connection.
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
+        // Check the HTTP response status.
         let status = resp.status();
-        if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
-            warn!("Failed to connect with response code {}", resp.status());
-            return Err(Error::ConnectionFailure(resp.status()));
+        if status.as_u16() >= 400 {
+            return Err(ConnectionError::UnsuccessfulHttpResponse(status));
         }
 
+        // Return the WebSocket connection.
         Ok(BinanceWebSocketConnection::new(wss))
     }
 }
 
-/// Binance WebSocket Connection
+/// Represents an active WebSocket connection to Binance.
 pub struct BinanceWebSocketConnection {
-    sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
-    receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
 impl BinanceWebSocketConnection {
-    /// Create a new BinanceWebSocketConnection
-    pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
-        let (sender, receiver) = web_socket_stream.split();
-        Self { sender, receiver }
+    /// Creates a new `BinanceWebSocketConnection`
+    pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
+        Self { ws_stream }
     }
 
-    /// Subscribes to a list of symbols. If the subscription fails, an `Error` is returned.
-    /// Equivalent to subscribing to the `miniTicker` stream.
-    pub async fn subscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
+    /// Subscribes to the mini ticker stream for the specified symbol IDs.
+    ///
+    /// # Examples
+    ///
+    /// ```no_test
+    /// let mut connection = connector.connect().await?;
+    /// connection.subscribe_mini_ticker_stream(&["btcusdt"]).await?;
+    /// ```
+    pub async fn subscribe_mini_ticker_stream<K: AsRef<str>>(
+        &mut self,
+        ids: &[K],
+    ) -> Result<(), SendError> {
+        // Format the stream IDs for subscription.
         let stream_ids = ids
             .iter()
-            .map(|id| format!("{}@miniTicker", id))
+            .map(|id| format!("{}@miniTicker", id.as_ref()))
             .collect::<Vec<_>>();
 
+        // Create the subscription payload.
         let payload = json!({
             "method": "SUBSCRIBE",
             "params": stream_ids,
             "id": rand::random::<u32>()
         });
 
+        // Send the subscription message.
         let message = Message::Text(payload.to_string());
-        Ok(self.sender.send(message).await?)
+        self.ws_stream.send(message).await?;
+        Ok(())
     }
 
-    /// Unsubscribes from a list of symbols. If unable to subscribe, an `Error` is returned.
-    /// Equivalent to unsubscribing from the `miniTicker` stream.
-    pub async fn unsubscribe(&mut self, ids: &[&str]) -> Result<(), Error> {
+    /// Unsubscribes from the mini ticker stream for the specified symbol IDs.
+    ///
+    /// # Examples
+    ///
+    /// ```no_test
+    /// let mut connection = connector.connect().await?;
+    /// connection.unsubscribe_mini_ticker_stream(&["btcusdt"]).await?;
+    /// ```
+    pub async fn unsubscribe_mini_ticker_stream<K: AsRef<str>>(
+        &mut self,
+        ids: &[K],
+    ) -> Result<(), SendError> {
+        // Format the stream IDs for unsubscription.
         let stream_ids = ids
             .iter()
-            .map(|id| format!("{}@miniTicker", id))
+            .map(|id| format!("{}@miniTicker", id.as_ref()))
             .collect::<Vec<_>>();
 
+        // Create the unsubscription payload.
         let payload = json!({
             "method": "UNSUBSCRIBE",
             "params": stream_ids,
             "id": rand::random::<u32>()
         });
 
+        // Send the unsubscription message.
         let message = Message::Text(payload.to_string());
-        Ok(self.sender.send(message).await?)
+        self.ws_stream.send(message).await?;
+        Ok(())
     }
 
-    /// Awaits and returns the next message from the WebSocket connection. If the message is
-    /// successfully received, a `BinanceResponse` is returned.
-    pub async fn next(&mut self) -> Result<BinanceResponse, Error> {
-        if let Some(result_msg) = self.receiver.next().await {
-            return match result_msg {
+    /// Retrieves the next message from the WebSocket stream.
+    ///
+    /// # Examples
+    ///
+    /// ```no_test
+    /// let mut connection = connector.connect().await?;
+    /// if let Ok(response) = connection.next().await {
+    ///     println!("Received response: {:?}", response);
+    /// }
+    /// ```
+    pub async fn next(&mut self) -> Result<BinanceResponse, MessageError> {
+        // Wait for the next message.
+        if let Some(result_msg) = self.ws_stream.next().await {
+            // Handle the received message.
+            match result_msg {
                 Ok(Message::Text(msg)) => Ok(serde_json::from_str::<BinanceResponse>(&msg)?),
                 Ok(Message::Ping(_)) => Ok(BinanceResponse::Ping),
-                Ok(Message::Close(_)) => Err(Error::ChannelClosed),
-                _ => Err(Error::UnsupportedMessage),
-            };
+                Ok(Message::Close(_)) => Err(MessageError::ChannelClosed),
+                _ => Err(MessageError::UnsupportedMessage),
+            }
+        } else {
+            Err(MessageError::ChannelClosed)
         }
+    }
 
-        Err(Error::ChannelClosed)
+    pub async fn close(&mut self) -> Result<(), SendError> {
+        self.ws_stream.close(None).await?;
+        Ok(())
     }
 }
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::api::types::{Data, MiniTickerInfo, StreamResponse};
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
+
+    use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
 
     use super::*;
 
@@ -115,9 +168,12 @@ pub(crate) mod test {
 
     #[tokio::test]
     async fn test_recv_ticker() {
+        // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
         let connector = BinanceWebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Create a mock mini ticker response.
         let mock_ticker = MiniTickerInfo {
             event_time: 10000,
             symbol: "BTC".to_string(),
@@ -133,6 +189,7 @@ pub(crate) mod test {
             data: Data::MiniTicker(mock_ticker),
         };
 
+        // Mount the mock WebSocket server and send the mock response.
         WsMock::new()
             .forward_from_channel(mpsc_recv)
             .mount(&server)
@@ -142,46 +199,48 @@ pub(crate) mod test {
             .await
             .unwrap();
 
+        // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
-
         let resp = connection.next().await.unwrap();
         assert_eq!(resp, BinanceResponse::Stream(mock_resp));
     }
 
     #[tokio::test]
     async fn test_recv_ping() {
+        // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
         let connector = BinanceWebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
+        // Mount the mock WebSocket server and send a ping message.
         WsMock::new()
             .forward_from_channel(mpsc_recv)
             .mount(&server)
             .await;
-
         mpsc_send.send(Message::Ping(vec![])).await.unwrap();
 
+        // Connect to the mock WebSocket server and retrieve the ping response.
         let mut connection = connector.connect().await.unwrap();
-
         let resp = connection.next().await.unwrap();
         assert_eq!(resp, BinanceResponse::Ping);
     }
 
     #[tokio::test]
     async fn test_recv_close() {
+        // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
         let connector = BinanceWebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
+        // Mount the mock WebSocket server and send a close message.
         WsMock::new()
             .forward_from_channel(mpsc_recv)
             .mount(&server)
             .await;
-
         mpsc_send.send(Message::Close(None)).await.unwrap();
 
+        // Connect to the mock WebSocket server and verify the connection closure.
         let mut connection = connector.connect().await.unwrap();
-
         let resp = connection.next().await;
         assert!(resp.is_err());
     }

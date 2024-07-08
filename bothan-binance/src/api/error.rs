@@ -1,15 +1,18 @@
-use tokio_tungstenite::tungstenite::{self, http::StatusCode};
+use tokio_tungstenite::tungstenite;
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("failed to connect with response code {0}")]
-    ConnectionFailure(StatusCode),
+pub enum ConnectionError {
+    #[error("failed to connect to endpoint {0}")]
+    ConnectionFailure(#[from] tungstenite::Error),
 
-    #[error("failed to parse")]
+    #[error("received unsuccessful HTTP response: {0}")]
+    UnsuccessfulHttpResponse(tungstenite::http::StatusCode),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum MessageError {
+    #[error("failed to parse message")]
     Parse(#[from] serde_json::Error),
-
-    #[error("tungstenite error")]
-    Tungstenite(#[from] tungstenite::Error),
 
     #[error("channel closed")]
     ChannelClosed,
@@ -17,3 +20,7 @@ pub enum Error {
     #[error("unsupported message")]
     UnsupportedMessage,
 }
+
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct SendError(#[from] tungstenite::Error);

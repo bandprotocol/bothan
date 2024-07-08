@@ -1,18 +1,20 @@
 use tracing_subscriber::fmt::init;
 
-use bothan_binance::BinanceServiceBuilder;
-use bothan_core::service::Service;
+use bothan_binance::BinanceWorkerBuilder;
+use bothan_core::worker::AssetWorker;
 
 #[tokio::main]
 async fn main() {
     init();
-
-    let service = BinanceServiceBuilder::default().build().await;
-    if let Ok(mut service) = service {
-        loop {
-            let data = service.get_price_data(&["btcusdt", "ethusdt"]).await;
-            println!("{:?}", data);
-            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-        }
+    let worker = BinanceWorkerBuilder::default().build().await.unwrap();
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    worker
+        .add_query_ids(vec!["btcusdt", "ethusdt"])
+        .await
+        .unwrap();
+    loop {
+        let data = worker.get_assets(&["btcusdt", "ethusdt"]).await;
+        println!("{:?}", data);
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
     }
 }

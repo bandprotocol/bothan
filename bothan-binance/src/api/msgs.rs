@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct SuccessResponse {
     pub result: Option<String>,
