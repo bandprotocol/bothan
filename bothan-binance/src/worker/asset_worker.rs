@@ -24,8 +24,8 @@ pub(crate) async fn start_asset_worker(
 ) {
     loop {
         select! {
-            Some(id) = subscribe_rx.recv() => handle_subscribe_recv(id, &mut connection).await,
-            Some(id) = unsubscribe_rx.recv() => handle_unsubscribe_recv(id, &mut connection).await,
+            Some(ids) = subscribe_rx.recv() => handle_subscribe_recv(ids, &mut connection).await,
+            Some(ids) = unsubscribe_rx.recv() => handle_unsubscribe_recv(ids, &mut connection).await,
             result = timeout(DEFAULT_TIMEOUT, connection.next()) => {
                 if let Some(worker) = worker.upgrade() {
                     match result {
