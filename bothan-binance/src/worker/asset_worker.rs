@@ -41,7 +41,7 @@ pub(crate) async fn start_asset_worker(
 
     // Close the connection upon exiting
     if connection.close().await.is_ok() {
-        debug!("asset worker successfully send closed frame")
+        debug!("asset worker successfully sent close frame")
     } else {
         error!("asset worker failed to send close frame")
     }
