@@ -9,7 +9,7 @@ use tracing::{debug, error, info};
 use bothan_core::store::Store;
 use bothan_core::types::AssetInfo;
 
-use crate::api::error::{MessageError, SubscriptionError};
+use crate::api::error::{MessageError, SendError};
 use crate::api::msgs::{BinanceResponse, Data};
 use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::worker::error::ParseError;
@@ -40,10 +40,10 @@ pub(crate) async fn start_asset_worker(
     }
 
     // Close the connection upon exiting
-    if connection.close().await.is_ok() {
-        debug!("asset worker successfully sent close frame")
+    if let Err(e) = connection.close().await {
+        error!("asset worker failed to send close frame: {}", e)
     } else {
-        error!("asset worker failed to send close frame")
+        debug!("asset worker successfully sent close frame")
     }
     debug!("asset worker exited")
 }
@@ -51,7 +51,7 @@ pub(crate) async fn start_asset_worker(
 async fn subscribe(
     ids: &[String],
     connection: &mut BinanceWebSocketConnection,
-) -> Result<(), SubscriptionError> {
+) -> Result<(), SendError> {
     if !ids.is_empty() {
         connection
             .subscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
@@ -72,7 +72,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BinanceWebSock
 async fn unsubscribe(
     ids: &[String],
     connection: &mut BinanceWebSocketConnection,
-) -> Result<(), SubscriptionError> {
+) -> Result<(), SendError> {
     if !ids.is_empty() {
         connection
             .unsubscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())

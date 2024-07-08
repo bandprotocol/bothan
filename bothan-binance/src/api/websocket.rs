@@ -4,7 +4,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
-use crate::api::error::{ConnectionError, MessageError, SubscriptionError};
+use crate::api::error::{ConnectionError, MessageError, SendError};
 use crate::api::msgs::BinanceResponse;
 
 pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
@@ -71,7 +71,7 @@ impl BinanceWebSocketConnection {
     pub async fn subscribe_mini_ticker_stream<T: AsRef<str>>(
         &mut self,
         ids: &[T],
-    ) -> Result<(), SubscriptionError> {
+    ) -> Result<(), SendError> {
         // Format the stream IDs for subscription.
         let stream_ids = ids
             .iter()
@@ -102,7 +102,7 @@ impl BinanceWebSocketConnection {
     pub async fn unsubscribe_mini_ticker_stream<T: AsRef<str>>(
         &mut self,
         ids: &[T],
-    ) -> Result<(), SubscriptionError> {
+    ) -> Result<(), SendError> {
         // Format the stream IDs for unsubscription.
         let stream_ids = ids
             .iter()
@@ -147,7 +147,7 @@ impl BinanceWebSocketConnection {
         }
     }
 
-    pub async fn close(&mut self) -> Result<(), SubscriptionError> {
+    pub async fn close(&mut self) -> Result<(), SendError> {
         self.ws_stream.close(None).await?;
         Ok(())
     }
