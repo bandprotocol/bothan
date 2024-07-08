@@ -23,7 +23,4 @@ pub enum MessageError {
 
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
-pub struct SendError {
-    #[from]
-    source: tungstenite::Error,
-}
+pub struct SendError(#[from] tungstenite::Error);

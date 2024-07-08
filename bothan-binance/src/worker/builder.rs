@@ -5,12 +5,12 @@ use tokio::sync::mpsc::channel;
 
 use bothan_core::store::Store;
 
+use crate::api::websocket::BinanceWebSocketConnector;
 use crate::api::websocket::DEFAULT_URL;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::worker::error::BuildError;
 use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 use crate::worker::BinanceWorker;
-use crate::BinanceWebSocketConnector;
 
 /// Options for configuring the `BinanceWorkerBuilder`.
 ///
