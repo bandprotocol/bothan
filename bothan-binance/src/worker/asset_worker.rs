@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use bothan_core::store::Store;
 use bothan_core::types::AssetInfo;
@@ -97,7 +97,7 @@ async fn handle_reconnect(
 ) {
     let mut retry_count: usize = 1;
     loop {
-        error!("reconnecting: attempt {}", retry_count);
+        warn!("reconnecting: attempt {}", retry_count);
 
         if let Ok(new_connection) = connector.connect().await {
             *connection = new_connection;
