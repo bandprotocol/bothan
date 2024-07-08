@@ -3,7 +3,7 @@ use tokio_tungstenite::tungstenite;
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectionError {
     #[error("failed to connect to endpoint {0}")]
-    ConnectionFailure(tungstenite::Error),
+    ConnectionFailure(#[from] tungstenite::Error),
 
     #[error("received unsuccessful HTTP response: {0}")]
     UnsuccessfulHttpResponse(tungstenite::http::StatusCode),
