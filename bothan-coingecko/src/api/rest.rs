@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use reqwest::{Client, RequestBuilder, Response, Url};
+use serde::de::DeserializeOwned;
 
 use crate::api::error::RestAPIError;
-use crate::api::types::{Coin, Market};
+use crate::api::types::{Coin, Market, Order, DEFAULT_ORDER, DEFAULT_PAGE, DEFAULT_PER_PAGE};
 
 /// A client for interacting with the CoinGecko REST API.
 pub struct CoinGeckoRestAPI {
@@ -27,35 +26,35 @@ impl CoinGeckoRestAPI {
     }
 
     /// Retrieves market data for the specified coins from the CoinGecko API.
-    pub async fn get_coins_market(
+    pub async fn get_coins_market<T: AsRef<str>>(
         &self,
-        ids: &[&str],
-        page_size: usize,
-        page: usize,
-    ) -> Result<Vec<Option<Market>>, RestAPIError> {
+        ids: &[T],
+        order: Option<Order>,
+        page_size: Option<usize>,
+        page: Option<usize>,
+    ) -> Result<Vec<Market>, RestAPIError> {
         let url = format!("{}coins/markets", self.url);
+        let ids = ids.iter().map(|id| id.as_ref()).collect::<Vec<&str>>();
+
+        let order = order.unwrap_or(DEFAULT_ORDER).to_string();
+        let page_size = page_size.unwrap_or(DEFAULT_PER_PAGE).to_string();
+        let page = page.unwrap_or(DEFAULT_PAGE).to_string();
+
         let params = vec![
             ("vs_currency", "usd".to_string()),
-            ("per_page", page_size.to_string()),
             ("ids", ids.join(",")),
-            ("page", page.to_string()),
+            ("order", order),
+            ("per_page", page_size),
+            ("page", page),
         ];
 
         let builder_with_query = self.client.get(&url).query(&params);
         let response = send_request(builder_with_query).await?;
-        let market_data = parse_response::<Vec<Market>>(response).await?;
-        let market_data_map: HashMap<String, Market> =
-            HashMap::from_iter(market_data.into_iter().map(|m| (m.id.clone(), m)));
-
-        let markets = ids
-            .iter()
-            .map(|id| market_data_map.get(*id).cloned())
-            .collect();
+        let markets = parse_response::<Vec<Market>>(response).await?;
         Ok(markets)
     }
 }
 
-/// Sends an HTTP request and checks for HTTP errors.
 async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
     let response = request_builder.send().await?;
 
@@ -67,10 +66,7 @@ async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestA
     Ok(response)
 }
 
-/// Parses the HTTP response into the specified type.
-async fn parse_response<T: serde::de::DeserializeOwned>(
-    response: Response,
-) -> Result<T, RestAPIError> {
+async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, RestAPIError> {
     Ok(response.json::<T>().await?)
 }
 
@@ -205,10 +201,11 @@ pub(crate) mod test {
         }];
         let mocks = server.set_successful_coins_market(&["bitcoin"], &coin_markets);
 
-        let result = client.get_coins_market(&["bitcoin"], 250, 1).await;
-        let expected_result = coin_markets.into_iter().map(Some).collect();
+        let result = client
+            .get_coins_market(&["bitcoin"], None, Some(250), Some(1))
+            .await;
         mocks.iter().for_each(|m| m.assert());
-        assert_eq!(result, Ok(expected_result));
+        assert_eq!(result, Ok(coin_markets));
     }
 
     #[tokio::test]
@@ -225,11 +222,10 @@ pub(crate) mod test {
         let ids = &["bitcoin", "abba"];
         let mocks = server.set_successful_coins_market(ids, &coin_markets);
 
-        let result = client.get_coins_market(ids, 250, 1).await;
+        let result = client.get_coins_market(ids, None, Some(250), Some(1)).await;
 
         mocks.iter().for_each(|m| m.assert());
-        let expected_result = vec![Some(coin_markets[0].clone()), None];
-        assert_eq!(result, Ok(expected_result));
+        assert_eq!(result, Ok(coin_markets));
     }
 
     #[tokio::test]
@@ -239,7 +235,7 @@ pub(crate) mod test {
         let ids = &["apple_pie"];
         let mock = server.set_arbitrary_coins_market(ids, "abc");
 
-        let result = client.get_coins_market(ids, 250, 1).await;
+        let result = client.get_coins_market(ids, None, Some(250), Some(1)).await;
 
         mock.assert();
 
@@ -252,7 +248,9 @@ pub(crate) mod test {
         let (mut server, client) = setup().await;
         let mock = server.set_failed_coins_market(&["bitcoin"]);
 
-        let result = client.get_coins_market(&["bitcoin"], 250, 1).await;
+        let result = client
+            .get_coins_market(&["bitcoin"], None, Some(250), Some(1))
+            .await;
         mock.assert();
         assert!(result.is_err());
     }

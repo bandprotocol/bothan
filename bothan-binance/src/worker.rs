@@ -11,6 +11,7 @@ use crate::api::websocket::BinanceWebSocketConnector;
 mod asset_worker;
 pub mod builder;
 pub(crate) mod error;
+pub mod opts;
 mod types;
 
 /// A worker that fetches and stores the asset information from Binance's API.
@@ -70,6 +71,7 @@ impl AssetWorker for BinanceWorker {
             Ok(())
         }
     }
+
     /// Retrieves the current set of queried cryptocurrency IDs.
     async fn get_query_ids(&self) -> Vec<String> {
         self.store.get_query_ids().await

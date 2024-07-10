@@ -1,29 +1,16 @@
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
 /// Errors that can occur while building the `CoinGeckoRestAPI`.
 pub enum BuilderError {
-    /// An error occurred with the `reqwest` client.
-    #[error("reqwest error: {0}")]
-    Reqwest(String),
-
     /// An invalid header value was provided.
-    #[error("invalid header value")]
+    #[error("invalid header value: {0}")]
     InvalidHeaderValue(String),
 
     /// The URL provided is invalid.
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
-}
 
-impl From<reqwest::header::InvalidHeaderValue> for BuilderError {
-    fn from(e: reqwest::header::InvalidHeaderValue) -> Self {
-        BuilderError::InvalidHeaderValue(e.to_string())
-    }
-}
-
-impl From<reqwest::Error> for BuilderError {
-    fn from(e: reqwest::Error) -> Self {
-        BuilderError::Reqwest(e.to_string())
-    }
+    #[error("reqwest error: {0}")]
+    Reqwest(String),
 }
 
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]

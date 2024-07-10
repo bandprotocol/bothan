@@ -1,27 +1,14 @@
 use std::sync::Arc;
 
-use serde::Deserialize;
 use tokio::sync::mpsc::channel;
 
 use bothan_core::store::Store;
 
 use crate::api::websocket::BinanceWebSocketConnector;
-use crate::api::websocket::DEFAULT_URL;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::worker::error::BuildError;
-use crate::worker::types::DEFAULT_CHANNEL_SIZE;
+use crate::worker::opts::BinanceWorkerBuilderOpts;
 use crate::worker::BinanceWorker;
-
-/// Options for configuring the `BinanceWorkerBuilder`.
-///
-/// `BinanceWorkerBuilderOpts` provides a way to specify custom settings for creating a `BinanceWorker`.
-/// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
-/// which will be used during the construction of the `BinanceWorker`.
-#[derive(Clone, Debug, Default, Deserialize)]
-pub struct BinanceWorkerBuilderOpts {
-    pub url: Option<String>,
-    pub internal_ch_size: Option<usize>,
-}
 
 /// Builds a `BinanceWorker` with custom options.
 /// Methods can be chained to set the configuration values and the
@@ -42,35 +29,32 @@ pub struct BinanceWorkerBuilderOpts {
 /// }
 /// ```
 pub struct BinanceWorkerBuilder {
-    url: String,
-    internal_ch_size: usize,
     store: Arc<Store>,
+    opts: BinanceWorkerBuilderOpts,
 }
 
 impl BinanceWorkerBuilder {
     /// Returns a new `BinanceWorkerBuilder` with the given options.
-    pub fn new(opts: BinanceWorkerBuilderOpts, store: Option<Arc<Store>>) -> Self {
-        Self {
-            url: opts.url.unwrap_or(DEFAULT_URL.to_string()),
-            internal_ch_size: opts.internal_ch_size.unwrap_or(DEFAULT_CHANNEL_SIZE),
-            store: store.unwrap_or_default(),
-        }
+    pub fn new(store: Arc<Store>, opts: BinanceWorkerBuilderOpts) -> Self {
+        Self { store, opts }
     }
 
     /// Set the URL for the `BinanceWorker`.
     /// The default URL is `DEFAULT_URL`.
-    pub fn with_url(mut self, url: String) -> Self {
-        self.url = url;
+    pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
+        self.opts.url = url.into();
         self
     }
 
     /// Set the internal channel size for the `BinanceWorker`.
     /// The default size is `DEFAULT_CHANNEL_SIZE`.
     pub fn with_internal_ch_size(mut self, size: usize) -> Self {
-        self.internal_ch_size = size;
+        self.opts.internal_ch_size = size;
         self
     }
 
+    /// Sets the store for the `BinanceWorker`.
+    /// If not set, the store is created and owned by the worker.
     pub fn with_store(mut self, store: Arc<Store>) -> Self {
         self.store = store;
         self
@@ -78,11 +62,14 @@ impl BinanceWorkerBuilder {
 
     /// Creates the configured `BinanceWorker`.
     pub async fn build(self) -> Result<Arc<BinanceWorker>, BuildError> {
-        let connector = BinanceWebSocketConnector::new(self.url);
+        let url = self.opts.url;
+        let ch_size = self.opts.internal_ch_size;
+
+        let connector = BinanceWebSocketConnector::new(url);
         let connection = connector.connect().await?;
 
-        let (sub_tx, sub_rx) = channel(self.internal_ch_size);
-        let (unsub_tx, unsub_rx) = channel(self.internal_ch_size);
+        let (sub_tx, sub_rx) = channel(ch_size);
+        let (unsub_tx, unsub_rx) = channel(ch_size);
 
         let worker = Arc::new(BinanceWorker::new(connector, self.store, sub_tx, unsub_tx));
 
@@ -98,8 +85,11 @@ impl BinanceWorkerBuilder {
 }
 
 impl Default for BinanceWorkerBuilder {
-    /// Create a new `BinanceWorkerBuilder` with the default values.
+    /// Create a new `BinanceWorkerBuilder` with its default values.
     fn default() -> Self {
-        Self::new(BinanceWorkerBuilderOpts::default(), None)
+        Self::new(
+            Arc::new(Store::default()),
+            BinanceWorkerBuilderOpts::default(),
+        )
     }
 }

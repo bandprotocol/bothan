@@ -13,9 +13,11 @@ chrono = { workspace = true }
 futures = { workspace = true }
 humantime-serde = { workspace = true }
 reqwest = { workspace = true }
+rust_decimal = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
+tokio-stream = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 url = { workspace = true }

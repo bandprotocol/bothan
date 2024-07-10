@@ -1,6 +1,6 @@
-pub use service::builder::{CoinGeckoServiceBuilder, CoinGeckoServiceBuilderOpts};
-pub use service::CoinGeckoService;
+pub use worker::builder::CoinGeckoWorkerBuilder;
+pub use worker::opts::CoinGeckoWorkerBuilderOpts;
+pub use worker::CoinGeckoWorker;
 
 pub mod api;
-pub mod service;
-pub mod types;
+pub mod worker;
