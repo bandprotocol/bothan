@@ -32,10 +32,15 @@ pub struct CoinGeckoRestAPIBuilder {
 }
 
 impl CoinGeckoRestAPIBuilder {
-    pub fn new<T: Into<String>>(url: Option<T>, api_key: Option<T>, user_agent: T) -> Self {
+    pub fn new<T, U, V>(url: Option<T>, api_key: Option<U>, user_agent: V) -> Self
+    where
+        T: Into<String>,
+        U: Into<String>,
+        V: Into<String>,
+    {
         CoinGeckoRestAPIBuilder {
-            url: url.map(|v| v.into()),
-            api_key: api_key.map(|v| v.into()),
+            url: url.map(Into::into),
+            api_key: api_key.map(Into::into),
             user_agent: user_agent.into(),
         }
     }
