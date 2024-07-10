@@ -91,7 +91,7 @@ impl CoinGeckoRestAPIBuilder {
 
         let client = match ClientBuilder::new().default_headers(headers).build() {
             Ok(client) => client,
-            Err(e) => return Err(BuilderError::Reqwest(e.to_string())),
+            Err(e) => return Err(BuilderError::BuildFailed(e.to_string())),
         };
 
         Ok(CoinGeckoRestAPI::new(parsed_url, client))

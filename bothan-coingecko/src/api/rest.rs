@@ -1,4 +1,4 @@
-use reqwest::{Client, RequestBuilder, Response, Url};
+use reqwest::{Client, RequestBuilder, Url};
 use serde::de::DeserializeOwned;
 
 use crate::api::error::RestAPIError;
@@ -20,9 +20,8 @@ impl CoinGeckoRestAPI {
     pub async fn get_coins_list(&self) -> Result<Vec<Coin>, RestAPIError> {
         let url = format!("{}coins/list", self.url);
         let builder = self.client.get(url);
-        let response = send_request(builder).await?;
 
-        Ok(response.json::<Vec<Coin>>().await?)
+        request::<Vec<Coin>>(builder).await
     }
 
     /// Retrieves market data for the specified coins from the CoinGecko API.
@@ -49,25 +48,26 @@ impl CoinGeckoRestAPI {
         ];
 
         let builder_with_query = self.client.get(&url).query(&params);
-        let response = send_request(builder_with_query).await?;
-        let markets = parse_response::<Vec<Market>>(response).await?;
-        Ok(markets)
+
+        request::<Vec<Market>>(builder_with_query).await
     }
 }
 
-async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
-    let response = request_builder.send().await?;
+async fn request<T: DeserializeOwned>(request_builder: RequestBuilder) -> Result<T, RestAPIError> {
+    let response = request_builder
+        .send()
+        .await
+        .map_err(|e| RestAPIError::FailedRequest(e.to_string()))?;
 
     let status = response.status();
-    if status.is_client_error() || status.is_server_error() {
-        return Err(RestAPIError::Http(status));
+    if !status.is_success() {
+        return Err(RestAPIError::UnsuccessfulResponse(status));
     }
 
-    Ok(response)
-}
-
-async fn parse_response<T: DeserializeOwned>(response: Response) -> Result<T, RestAPIError> {
-    Ok(response.json::<T>().await?)
+    response
+        .json::<T>()
+        .await
+        .map_err(|e| RestAPIError::ParseFailed(e.to_string()))
 }
 
 #[cfg(test)]
@@ -239,7 +239,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = RestAPIError::Reqwest("error decoding response body".to_string());
+        let expected_err = RestAPIError::ParseFailed("error decoding response body".to_string());
         assert_eq!(result, Err(expected_err));
     }
 
