@@ -102,8 +102,7 @@ impl CoinGeckoWorkerBuilder {
             interval(self.opts.update_interval),
             self.opts.page_size,
             self.opts.page_query_delay,
-        )
-        .await;
+        );
 
         Ok(worker)
     }

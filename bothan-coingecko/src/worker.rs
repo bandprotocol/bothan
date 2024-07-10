@@ -5,8 +5,6 @@ use bothan_core::worker::{AssetStatus, AssetWorker, Error};
 
 use crate::api::CoinGeckoRestAPI;
 
-// use error::Error;
-
 mod asset_worker;
 pub mod builder;
 pub mod error;

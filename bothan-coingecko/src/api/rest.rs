@@ -2,7 +2,7 @@ use reqwest::{Client, RequestBuilder, Url};
 use serde::de::DeserializeOwned;
 
 use crate::api::error::RestAPIError;
-use crate::api::types::{Coin, Market, Order, DEFAULT_ORDER, DEFAULT_PAGE, DEFAULT_PER_PAGE};
+use crate::api::types::{Coin, Market, Order};
 
 /// A client for interacting with the CoinGecko REST API.
 pub struct CoinGeckoRestAPI {
@@ -35,17 +35,19 @@ impl CoinGeckoRestAPI {
         let url = format!("{}coins/markets", self.url);
         let ids = ids.iter().map(|id| id.as_ref()).collect::<Vec<&str>>();
 
-        let order = order.unwrap_or(DEFAULT_ORDER).to_string();
-        let page_size = page_size.unwrap_or(DEFAULT_PER_PAGE).to_string();
-        let page = page.unwrap_or(DEFAULT_PAGE).to_string();
+        let mut params = vec![("vs_currency", "usd".to_string()), ("ids", ids.join(","))];
 
-        let params = vec![
-            ("vs_currency", "usd".to_string()),
-            ("ids", ids.join(",")),
-            ("order", order),
-            ("per_page", page_size),
-            ("page", page),
-        ];
+        if let Some(order) = order {
+            params.push(("order", order.to_string()));
+        }
+
+        if let Some(page_size) = page_size {
+            params.push(("per_page", page_size.to_string()));
+        }
+
+        if let Some(page) = page {
+            params.push(("page", page.to_string()));
+        }
 
         let builder_with_query = self.client.get(&url).query(&params);
 

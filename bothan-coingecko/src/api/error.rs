@@ -15,7 +15,7 @@ pub enum RestAPIError {
     #[error("failed to send request with error: {0}")]
     FailedRequest(String),
 
-    #[error("received status: {0}")]
+    #[error("received non-2xx http status: {0}")]
     UnsuccessfulResponse(reqwest::StatusCode),
 
     #[error("failed to parse with error: {0}")]

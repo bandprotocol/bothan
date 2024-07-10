@@ -8,10 +8,6 @@ pub(crate) const DEFAULT_URL: &str = "https://api.coingecko.com/api/v3/";
 
 pub(crate) const DEFAULT_PRO_URL: &str = "https://pro-api.coingecko.com/api/v3/";
 
-pub(crate) const DEFAULT_ORDER: Order = Order::MarketCapDesc;
-pub(crate) const DEFAULT_PER_PAGE: usize = 100;
-pub(crate) const DEFAULT_PAGE: usize = 1;
-
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Order {
     MarketCapAsc,

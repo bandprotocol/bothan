@@ -15,7 +15,7 @@ use crate::api::types::{Market, Order};
 use crate::worker::error::ParseError;
 use crate::worker::CoinGeckoWorker;
 
-pub(crate) async fn start_asset_worker(
+pub(crate) fn start_asset_worker(
     weak_worker: Weak<CoinGeckoWorker>,
     mut update_interval: Interval,
     page_size: usize,
@@ -26,12 +26,10 @@ pub(crate) async fn start_asset_worker(
             info!("updating asset info");
 
             let ids = worker.store.get_query_ids().await;
-            let store = worker.store.clone();
-            let api = worker.api.clone();
 
             let result = timeout(
                 page_query_delay,
-                update_all_asset_info(&store, &api, ids, page_size, page_query_delay),
+                update_all_asset_info(&worker.store, &worker.api, ids, page_size, page_query_delay),
             )
             .await;
 
@@ -41,6 +39,8 @@ pub(crate) async fn start_asset_worker(
 
             update_interval.tick().await;
         }
+
+        info!("worker has been dropped, stopping asset worker");
     });
 }
 

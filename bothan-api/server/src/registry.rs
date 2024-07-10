@@ -16,11 +16,17 @@ pub type Registry = HashMap<String, Signal>;
 
 /// `Signal` contains the prerequisites, sources, processor, and post-processors for a signal.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct Signals {
+    pub processor: Process,
+    pub post_processors: Vec<PostProcess>,
+    pub signals: Vec<Signals>,
+}
+
+/// `Signal` contains the prerequisites, sources, processor, and post-processors for a signal.
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Signal {
     pub prerequisites: Vec<String>,
     pub sources: Vec<Source>,
-    pub processor: Process,
-    pub post_processors: Vec<PostProcess>,
 }
 
 pub trait Validator {
