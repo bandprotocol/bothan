@@ -44,6 +44,7 @@ impl CoinGeckoRestAPIBuilder {
             user_agent: user_agent.into(),
         }
     }
+
     /// Sets the URL for the API.
     /// If not specified, the default URL is `DEFAULT_URL` when no API key is provided,
     /// and `DEFAULT_PRO_URL` when an API key is provided.

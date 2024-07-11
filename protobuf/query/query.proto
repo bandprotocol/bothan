@@ -9,36 +9,38 @@ option go_package = "bothan-api/query";
 // Query defines the gRPC service.
 service Query {
   // RPC method that returns all prices of requested signal ids.
-  rpc Prices(QueryPricesRequest) returns (QueryPricesResponse) {
-    option (google.api.http).get = "/prices/{signal_ids}";
+  rpc CryptoSpotPrice(CryptoSpotPriceRequest) returns (CryptoSpotPriceResponse) {
+    option (google.api.http).get = "/crypto_spot_price/{signal_ids}";
   }
 }
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesRequest {
+message CryptoSpotPriceRequest {
   repeated string signal_ids = 1;
+  int32 precision = 2;
 }
 
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesResponse {
-  repeated AssetPrice prices = 1;
+message CryptoSpotPriceResponse {
+  repeated SpotPriceInfo spot_price_infos = 1;
 }
 
 // AssetPrice contains the price of a signal ID.
-message AssetPrice {
+message SpotPriceInfo {
   // The asset's signal ID.
   string signal_id = 1;
   // The asset's price.
-  string price = 2;
+  int64 price = 2;
   // The asset's price status.
-  Status status = 3;
+  SpotPriceInfoStatus status = 3;
 }
 
 // Status is the status that defines the AssetPrice result.
-enum Status {
-  UNSUPPORTED = 0;
-  UNAVAILABLE = 1;
-  AVAILABLE = 2;
+enum SpotPriceInfoStatus {
+  UNSPECIFIED = 0;
+  UNSUPPORTED = 1;
+  UNAVAILABLE = 2;
+  AVAILABLE = 3;
 }

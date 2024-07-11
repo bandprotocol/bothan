@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_Prices_FullMethodName = "/query.Query/Prices"
+	Query_CryptoSpotPrice_FullMethodName = "/query.Query/CryptoSpotPrice"
 )
 
 // QueryClient is the client API for Query service.
@@ -27,7 +27,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
 	// RPC method that returns all prices of requested signal ids.
-	Prices(ctx context.Context, in *QueryPricesRequest, opts ...grpc.CallOption) (*QueryPricesResponse, error)
+	CryptoSpotPrice(ctx context.Context, in *CryptoSpotPriceRequest, opts ...grpc.CallOption) (*CryptoSpotPriceResponse, error)
 }
 
 type queryClient struct {
@@ -38,9 +38,9 @@ func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) Prices(ctx context.Context, in *QueryPricesRequest, opts ...grpc.CallOption) (*QueryPricesResponse, error) {
-	out := new(QueryPricesResponse)
-	err := c.cc.Invoke(ctx, Query_Prices_FullMethodName, in, out, opts...)
+func (c *queryClient) CryptoSpotPrice(ctx context.Context, in *CryptoSpotPriceRequest, opts ...grpc.CallOption) (*CryptoSpotPriceResponse, error) {
+	out := new(CryptoSpotPriceResponse)
+	err := c.cc.Invoke(ctx, Query_CryptoSpotPrice_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (c *queryClient) Prices(ctx context.Context, in *QueryPricesRequest, opts .
 // for forward compatibility
 type QueryServer interface {
 	// RPC method that returns all prices of requested signal ids.
-	Prices(context.Context, *QueryPricesRequest) (*QueryPricesResponse, error)
+	CryptoSpotPrice(context.Context, *CryptoSpotPriceRequest) (*CryptoSpotPriceResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -60,8 +60,8 @@ type QueryServer interface {
 type UnimplementedQueryServer struct {
 }
 
-func (UnimplementedQueryServer) Prices(context.Context, *QueryPricesRequest) (*QueryPricesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Prices not implemented")
+func (UnimplementedQueryServer) CryptoSpotPrice(context.Context, *CryptoSpotPriceRequest) (*CryptoSpotPriceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CryptoSpotPrice not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -76,20 +76,20 @@ func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
 	s.RegisterService(&Query_ServiceDesc, srv)
 }
 
-func _Query_Prices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryPricesRequest)
+func _Query_CryptoSpotPrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CryptoSpotPriceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Prices(ctx, in)
+		return srv.(QueryServer).CryptoSpotPrice(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_Prices_FullMethodName,
+		FullMethod: Query_CryptoSpotPrice_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Prices(ctx, req.(*QueryPricesRequest))
+		return srv.(QueryServer).CryptoSpotPrice(ctx, req.(*CryptoSpotPriceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -102,8 +102,8 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Prices",
-			Handler:    _Query_Prices_Handler,
+			MethodName: "CryptoSpotPrice",
+			Handler:    _Query_CryptoSpotPrice_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

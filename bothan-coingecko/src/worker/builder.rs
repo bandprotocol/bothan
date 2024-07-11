@@ -42,21 +42,21 @@ impl CoinGeckoWorkerBuilder {
     /// Set the URL for the `CoinGeckoWorker`.
     /// The default URL is `DEFAULT_URL` when no API key is provided
     /// and is `DEFAULT_PRO_URL` when an API key is provided.
-    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+    pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
         self.opts.url = Some(url.into());
         self
     }
 
     /// Sets the API key for the `CoinGeckoWorker`.
     /// The default api key is `None`.
-    pub fn with_api_key(mut self, api_key: impl Into<String>) -> Self {
+    pub fn with_api_key<T: Into<String>>(mut self, api_key: T) -> Self {
         self.opts.api_key = Some(api_key.into());
         self
     }
 
     /// Sets the User-Agent header for the `CoinGeckoWorker`.
     /// The default user agent is `DEFAULT_USER_AGENT`.
-    pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
+    pub fn with_user_agent<T: Into<String>>(mut self, user_agent: T) -> Self {
         self.opts.user_agent = user_agent.into();
         self
     }

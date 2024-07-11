@@ -28,7 +28,7 @@ pub(crate) fn start_asset_worker(
             let ids = worker.store.get_query_ids().await;
 
             let result = timeout(
-                page_query_delay,
+                update_interval.period(),
                 update_all_asset_info(&worker.store, &worker.api, ids, page_size, page_query_delay),
             )
             .await;
@@ -49,9 +49,9 @@ async fn update_all_asset_info(
     api: &CoinGeckoRestAPI,
     ids: Vec<String>,
     page_size: usize,
-    page_delay: Duration,
+    page_query_delay: Duration,
 ) {
-    let mut interval = interval(page_delay);
+    let mut interval = interval(page_query_delay);
     let queue = Vec::from_iter(ids.chunks(page_size));
     for ids in queue {
         update_asset_info(store, api, ids, page_size).await;
