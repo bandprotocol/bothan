@@ -13,17 +13,14 @@ pub mod types;
 
 /// A worker that fetches and stores the asset information from CoinGecko's API.
 pub struct CoinGeckoWorker {
-    api: Arc<CoinGeckoRestAPI>,
+    api: CoinGeckoRestAPI,
     store: Arc<Store>,
 }
 
 impl CoinGeckoWorker {
     /// Create a new worker with the specified api and store.
     pub fn new(api: CoinGeckoRestAPI, store: Arc<Store>) -> Self {
-        Self {
-            api: Arc::new(api),
-            store,
-        }
+        Self { api, store }
     }
 }
 

@@ -5,7 +5,7 @@ use chrono::NaiveDateTime;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::time::{interval, timeout, Interval};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use bothan_core::store::Store;
 use bothan_core::types::AssetInfo;
@@ -40,7 +40,7 @@ pub(crate) fn start_asset_worker(
             update_interval.tick().await;
         }
 
-        info!("worker has been dropped, stopping asset worker");
+        debug!("asset worker has been dropped, stopping asset worker");
     });
 }
 
@@ -52,9 +52,8 @@ async fn update_all_asset_info(
     page_query_delay: Duration,
 ) {
     let mut interval = interval(page_query_delay);
-    let queue = Vec::from_iter(ids.chunks(page_size));
-    for ids in queue {
-        update_asset_info(store, api, ids, page_size).await;
+    for batched_ids in ids.chunks(page_size) {
+        update_asset_info(store, api, batched_ids, page_size).await;
         interval.tick().await;
     }
 }
@@ -65,25 +64,34 @@ async fn update_asset_info(
     ids: &[String],
     page_size: usize,
 ) {
-    match api
+    let result = api
         .get_coins_market(ids, Some(Order::IdDesc), Some(page_size), Some(1))
-        .await
-    {
+        .await;
+    match result {
         Ok(markets) => {
-            let to_set = markets
-                .into_iter()
-                .filter_map(|market| {
-                    let id = market.id.clone();
-                    match parse_market(market) {
-                        Ok(asset_info) => Some((id, asset_info)),
-                        Err(e) => {
-                            warn!("failed to parse market data for {} with error {}", id, e);
-                            None
+            // Sanity check to assure that the number of markets returned is less than the number of ids
+            if markets.len() <= ids.len() {
+                let to_set = markets
+                    .into_iter()
+                    .filter_map(|market| {
+                        let id = market.id.clone();
+                        match parse_market(market) {
+                            Ok(asset_info) => Some((id, asset_info)),
+                            Err(e) => {
+                                warn!("failed to parse market data for {} with error {}", id, e);
+                                None
+                            }
                         }
-                    }
-                })
-                .collect::<Vec<(String, AssetInfo)>>();
-            store.set_assets(to_set).await;
+                    })
+                    .collect::<Vec<(String, AssetInfo)>>();
+                store.set_assets(to_set).await;
+            } else {
+                warn!(
+                    "received more markets than ids, ids: {}, markets: {}",
+                    ids.len(),
+                    markets.len()
+                );
+            }
         }
         Err(e) => {
             warn!(

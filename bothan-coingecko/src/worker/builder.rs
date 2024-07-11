@@ -92,7 +92,7 @@ impl CoinGeckoWorkerBuilder {
     /// Creates the configured `CoinGeckoWorker`.
     pub async fn build(self) -> Result<Arc<CoinGeckoWorker>, BuilderError> {
         let api =
-            CoinGeckoRestAPIBuilder::new(self.opts.url, self.opts.api_key, self.opts.user_agent)
+            CoinGeckoRestAPIBuilder::new(self.opts.user_agent, self.opts.url, self.opts.api_key)
                 .build()?;
 
         let worker = Arc::new(CoinGeckoWorker::new(api, self.store));

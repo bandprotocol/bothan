@@ -8,6 +8,8 @@ pub(crate) const DEFAULT_URL: &str = "https://api.coingecko.com/api/v3/";
 
 pub(crate) const DEFAULT_PRO_URL: &str = "https://pro-api.coingecko.com/api/v3/";
 
+pub(crate) const API_KEY_HEADER: &str = "x-cg-pro-api-key";
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Order {
     MarketCapAsc,
@@ -21,12 +23,12 @@ pub enum Order {
 impl Display for Order {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            Order::MarketCapAsc => "market_cap_asc".to_string(),
-            Order::MarketCapDesc => "market_cap_desc".to_string(),
-            Order::VolumeAsc => "volume_asc".to_string(),
-            Order::VolumeDesc => "volume_desc".to_string(),
-            Order::IdAsc => "id_asc".to_string(),
-            Order::IdDesc => "id_desc".to_string(),
+            Order::MarketCapAsc => "market_cap_asc",
+            Order::MarketCapDesc => "market_cap_desc",
+            Order::VolumeAsc => "volume_asc",
+            Order::VolumeDesc => "volume_desc",
+            Order::IdAsc => "id_asc",
+            Order::IdDesc => "id_desc",
         };
         write!(f, "{}", str)
     }
