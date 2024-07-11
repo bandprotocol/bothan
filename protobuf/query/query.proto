@@ -9,38 +9,41 @@ option go_package = "bothan-api/query";
 // Query defines the gRPC service.
 service Query {
   // RPC method that returns all prices of requested signal ids.
-  rpc CryptoSpotPrice(CryptoSpotPriceRequest) returns (CryptoSpotPriceResponse) {
-    option (google.api.http).get = "/crypto_spot_price/{signal_ids}";
+  rpc Prices(QueryPricesRequest) returns (QueryPricesResponse) {
+    option (google.api.http).get = "/prices/{signal_ids}";
   }
 }
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
 // method.
-message CryptoSpotPriceRequest {
+message QueryPricesRequest {
   repeated string signal_ids = 1;
-  int32 precision = 2;
 }
 
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 // method.
-message CryptoSpotPriceResponse {
-  repeated SpotPriceInfo spot_price_infos = 1;
+message QueryPricesResponse {
+  repeated PriceData prices = 1;
 }
 
-// AssetPrice contains the price of a signal ID.
-message SpotPriceInfo {
-  // The asset's signal ID.
+// PriceData defines the data of a symbol price.
+message PriceData {
+  // The symbol of the price.
   string signal_id = 1;
-  // The asset's price.
-  int64 price = 2;
-  // The asset's price status.
-  SpotPriceInfoStatus status = 3;
+  // The price of the symbol.
+  string price = 2;
+  // PriceStatus defines the price status of a symbol.
+  PriceStatus price_status = 3;
 }
 
-// Status is the status that defines the AssetPrice result.
-enum SpotPriceInfoStatus {
-  UNSPECIFIED = 0;
-  UNSUPPORTED = 1;
-  UNAVAILABLE = 2;
-  AVAILABLE = 3;
+// PriceOption defines the price option of a price.
+enum PriceStatus {
+  // PRICE_STATUS_UNSPECIFIED defines an unspecified price status.
+  PRICE_STATUS_UNSPECIFIED = 0;
+  // PRICE_STATUS_UNSUPPORTED defines an unsupported price status.
+  PRICE_STATUS_UNSUPPORTED = 1;
+  // PRICE_STATUS_UNAVAILABLE defines an unavailable price status.
+  PRICE_STATUS_UNAVAILABLE = 2;
+  // PRICE_STATUS_AVAILABLE defines an available price status.
+  PRICE_STATUS_AVAILABLE = 3;
 }
