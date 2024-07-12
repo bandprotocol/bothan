@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error)]
-pub enum ParseError {
+pub(crate) enum ParseError {
     #[error("invalid price: {0}")]
     InvalidPrice(f64),
 

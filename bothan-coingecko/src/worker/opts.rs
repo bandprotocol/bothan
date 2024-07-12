@@ -3,7 +3,7 @@ use std::time::Duration;
 use serde::Deserialize;
 
 use crate::api::types::DEFAULT_USER_AGENT;
-use crate::worker::types::{DEFAULT_PAGE_QUERY_DELAY, DEFAULT_PAGE_SIZE, DEFAULT_UPDATE_INTERVAL};
+use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
 
 /// Options for configuring the `CoinGeckoWorkerBuilder`.
 ///
@@ -21,11 +21,6 @@ pub struct CoinGeckoWorkerBuilderOpts {
     #[serde(default = "default_update_interval")]
     #[serde(with = "humantime_serde")]
     pub update_interval: Duration,
-    #[serde(default = "default_page_size")]
-    pub page_size: usize,
-    #[serde(default = "default_page_query_delay")]
-    #[serde(with = "humantime_serde")]
-    pub page_query_delay: Duration,
 }
 
 fn default_user_agent() -> String {
@@ -36,14 +31,6 @@ fn default_update_interval() -> Duration {
     DEFAULT_UPDATE_INTERVAL
 }
 
-fn default_page_size() -> usize {
-    DEFAULT_PAGE_SIZE
-}
-
-fn default_page_query_delay() -> Duration {
-    DEFAULT_PAGE_QUERY_DELAY
-}
-
 impl Default for CoinGeckoWorkerBuilderOpts {
     fn default() -> Self {
         Self {
@@ -51,8 +38,6 @@ impl Default for CoinGeckoWorkerBuilderOpts {
             api_key: None,
             user_agent: default_user_agent(),
             update_interval: default_update_interval(),
-            page_size: default_page_size(),
-            page_query_delay: default_page_query_delay(),
         }
     }
 }

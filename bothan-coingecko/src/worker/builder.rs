@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use tokio::time::{interval, Duration};
+use tokio::time::Duration;
 
 use bothan_core::store::Store;
 
-use crate::api::error::BuilderError;
+use crate::api::error::BuildError;
 use crate::api::CoinGeckoRestAPIBuilder;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::worker::opts::CoinGeckoWorkerBuilderOpts;
@@ -68,20 +68,6 @@ impl CoinGeckoWorkerBuilder {
         self
     }
 
-    /// Sets the page size for the service.
-    /// The default is `DEFAULT_PAGE_SIZE`.
-    pub fn with_page_size(mut self, page_size: usize) -> Self {
-        self.opts.page_size = page_size;
-        self
-    }
-
-    /// Sets the page query delay for the `CoinGeckoWorker`.
-    /// The default delay is `DEFAULT_PAGE_QUERY_DELAY`.
-    pub fn with_page_query_delay(mut self, page_query_delay: Duration) -> Self {
-        self.opts.page_query_delay = page_query_delay;
-        self
-    }
-
     /// Sets the store for the `CoinGeckoWorker`.
     /// If not set, the store is created and owned by the worker.
     pub fn with_store(mut self, store: Arc<Store>) -> Self {
@@ -90,19 +76,14 @@ impl CoinGeckoWorkerBuilder {
     }
 
     /// Creates the configured `CoinGeckoWorker`.
-    pub async fn build(self) -> Result<Arc<CoinGeckoWorker>, BuilderError> {
+    pub async fn build(self) -> Result<Arc<CoinGeckoWorker>, BuildError> {
         let api =
             CoinGeckoRestAPIBuilder::new(self.opts.user_agent, self.opts.url, self.opts.api_key)
                 .build()?;
 
         let worker = Arc::new(CoinGeckoWorker::new(api, self.store));
 
-        start_asset_worker(
-            Arc::downgrade(&worker),
-            interval(self.opts.update_interval),
-            self.opts.page_size,
-            self.opts.page_query_delay,
-        );
+        start_asset_worker(Arc::downgrade(&worker), self.opts.update_interval);
 
         Ok(worker)
     }

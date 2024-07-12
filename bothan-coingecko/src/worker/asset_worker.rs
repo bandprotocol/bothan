@@ -1,26 +1,21 @@
 use std::sync::Weak;
 use std::time::Duration;
 
-use chrono::NaiveDateTime;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
-use tokio::time::{interval, timeout, Interval};
+use tokio::time::{interval, timeout};
 use tracing::{debug, info, warn};
 
 use bothan_core::store::Store;
 use bothan_core::types::AssetInfo;
 
 use crate::api::rest::CoinGeckoRestAPI;
-use crate::api::types::{Market, Order};
+use crate::api::types::Price;
 use crate::worker::error::ParseError;
 use crate::worker::CoinGeckoWorker;
 
-pub(crate) fn start_asset_worker(
-    weak_worker: Weak<CoinGeckoWorker>,
-    mut update_interval: Interval,
-    page_size: usize,
-    page_query_delay: Duration,
-) {
+pub(crate) fn start_asset_worker(weak_worker: Weak<CoinGeckoWorker>, update_interval: Duration) {
+    let mut interval = interval(update_interval);
     tokio::spawn(async move {
         while let Some(worker) = weak_worker.upgrade() {
             info!("updating asset info");
@@ -28,8 +23,8 @@ pub(crate) fn start_asset_worker(
             let ids = worker.store.get_query_ids().await;
 
             let result = timeout(
-                update_interval.period(),
-                update_all_asset_info(&worker.store, &worker.api, ids, page_size, page_query_delay),
+                interval.period(),
+                update_asset_info(&worker.store, &worker.api, &ids),
             )
             .await;
 
@@ -37,50 +32,25 @@ pub(crate) fn start_asset_worker(
                 warn!("updating interval exceeded timeout")
             }
 
-            update_interval.tick().await;
+            interval.tick().await;
         }
 
         debug!("asset worker has been dropped, stopping asset worker");
     });
 }
 
-async fn update_all_asset_info(
-    store: &Store,
-    api: &CoinGeckoRestAPI,
-    ids: Vec<String>,
-    page_size: usize,
-    page_query_delay: Duration,
-) {
-    let mut interval = interval(page_query_delay);
-    for batched_ids in ids.chunks(page_size) {
-        update_asset_info(store, api, batched_ids, page_size).await;
-        interval.tick().await;
-    }
-}
-
-async fn update_asset_info(
-    store: &Store,
-    api: &CoinGeckoRestAPI,
-    ids: &[String],
-    page_size: usize,
-) {
-    let result = api
-        .get_coins_market(ids, Some(Order::IdDesc), Some(page_size), Some(1))
-        .await;
-    match result {
+async fn update_asset_info(store: &Store, api: &CoinGeckoRestAPI, ids: &[String]) {
+    match api.get_simple_price_usd(ids).await {
         Ok(markets) => {
             // Sanity check to assure that the number of markets returned is less than the number of ids
             if markets.len() <= ids.len() {
                 let to_set = markets
                     .into_iter()
-                    .filter_map(|market| {
-                        let id = market.id.clone();
-                        match parse_market(market) {
-                            Ok(asset_info) => Some((id, asset_info)),
-                            Err(e) => {
-                                warn!("failed to parse market data for {} with error {}", id, e);
-                                None
-                            }
+                    .filter_map(|(id, price)| match parse_price(&id, price) {
+                        Ok(asset_info) => Some((id, asset_info)),
+                        Err(e) => {
+                            warn!("failed to parse market data for {} with error {}", id, e);
+                            None
                         }
                     })
                     .collect::<Vec<(String, AssetInfo)>>();
@@ -102,16 +72,13 @@ async fn update_asset_info(
     }
 }
 
-fn parse_market(market: Market) -> Result<AssetInfo, ParseError> {
-    let last_updated = market.last_updated.as_str();
-    let ts = NaiveDateTime::parse_from_str(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ")?
-        .and_utc()
-        .timestamp() as u64;
-
-    let price = Decimal::from_f64(market.current_price)
-        .ok_or(ParseError::InvalidPrice(market.current_price))?;
-
-    Ok(AssetInfo::new(market.id, price, ts))
+fn parse_price<T: Into<String>>(id: T, price: Price) -> Result<AssetInfo, ParseError> {
+    let price_value = Decimal::from_f64(price.usd).ok_or(ParseError::InvalidPrice(price.usd))?;
+    Ok(AssetInfo::new(
+        id.into(),
+        price_value,
+        price.last_updated_at,
+    ))
 }
 
 #[cfg(test)]
@@ -120,14 +87,11 @@ mod test {
 
     #[test]
     fn test_parse_market() {
-        let market = Market {
-            id: "bitcoin".to_string(),
-            symbol: "BTC".to_string(),
-            name: "Bitcoin".to_string(),
-            current_price: 8426.69,
-            last_updated: "2021-01-01T00:00:00.000Z".to_string(),
+        let price = Price {
+            usd: 8426.69,
+            last_updated_at: 1609459200,
         };
-        let result = parse_market(market);
+        let result = parse_price("bitcoin", price);
         let expected = AssetInfo::new(
             "bitcoin".to_string(),
             Decimal::from_str_exact("8426.69").unwrap(),
@@ -138,13 +102,10 @@ mod test {
 
     #[test]
     fn test_parse_market_with_failure() {
-        let market = Market {
-            id: "bitcoin".to_string(),
-            symbol: "BTC".to_string(),
-            name: "Bitcoin".to_string(),
-            current_price: 8426.69,
-            last_updated: "johnny appleseed".to_string(),
+        let price = Price {
+            usd: f64::INFINITY,
+            last_updated_at: 0,
         };
-        assert!(parse_market(market).is_err());
+        assert!(parse_price("bitcoin", price).is_err());
     }
 }

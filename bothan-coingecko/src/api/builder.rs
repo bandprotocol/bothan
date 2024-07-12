@@ -2,7 +2,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::ClientBuilder;
 use url::Url;
 
-use crate::api::error::BuilderError;
+use crate::api::error::BuildError;
 use crate::api::types::{API_KEY_HEADER, DEFAULT_PRO_URL, DEFAULT_URL, DEFAULT_USER_AGENT};
 use crate::api::CoinGeckoRestAPI;
 
@@ -67,11 +67,11 @@ impl CoinGeckoRestAPIBuilder {
     }
 
     /// Builds the `CoinGeckoRestAPI` instance.
-    pub fn build(self) -> Result<CoinGeckoRestAPI, BuilderError> {
+    pub fn build(self) -> Result<CoinGeckoRestAPI, BuildError> {
         let mut headers = HeaderMap::new();
         let agent = match HeaderValue::from_str(&self.user_agent) {
             Ok(agent) => agent,
-            Err(_) => return Err(BuilderError::InvalidHeaderValue(self.user_agent)),
+            Err(_) => return Err(BuildError::InvalidHeaderValue(self.user_agent)),
         };
 
         headers.insert("User-Agent", agent);
@@ -86,7 +86,7 @@ impl CoinGeckoRestAPIBuilder {
         if let Some(key) = &self.api_key {
             let mut api_key = match HeaderValue::from_str(key) {
                 Ok(key) => key,
-                Err(_) => return Err(BuilderError::InvalidHeaderValue(key.clone())),
+                Err(_) => return Err(BuildError::InvalidHeaderValue(key.clone())),
             };
             api_key.set_sensitive(true);
             headers.insert(API_KEY_HEADER, api_key);
@@ -95,7 +95,7 @@ impl CoinGeckoRestAPIBuilder {
         let client = ClientBuilder::new()
             .default_headers(headers)
             .build()
-            .map_err(|e| BuilderError::BuildFailed(e.to_string()))?;
+            .map_err(|e| BuildError::BuildFailed(e.to_string()))?;
 
         Ok(CoinGeckoRestAPI::new(parsed_url, client))
     }

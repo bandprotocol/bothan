@@ -1,5 +1,5 @@
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum BuilderError {
+pub enum BuildError {
     #[error("invalid header value: {0}")]
     InvalidHeaderValue(String),
 
@@ -11,7 +11,7 @@ pub enum BuilderError {
 }
 
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum RestAPIError {
+pub enum SendError {
     #[error("failed to send request with error: {0}")]
     FailedRequest(String),
 
