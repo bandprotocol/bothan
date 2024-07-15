@@ -105,7 +105,7 @@ impl Default for CoinGeckoRestAPIBuilder {
     /// Creates a default `CoinGeckoRestAPIBuilder` instance with default values.
     fn default() -> Self {
         CoinGeckoRestAPIBuilder {
-            url: Some(DEFAULT_URL.into()),
+            url: None,
             api_key: None,
             user_agent: DEFAULT_USER_AGENT.into(),
         }
