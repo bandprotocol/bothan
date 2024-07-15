@@ -31,13 +31,13 @@ impl AssetWorker for CoinGeckoWorker {
         self.store.get_assets(ids).await
     }
 
-    /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    /// Adds the specified cryptocurrency IDs to the query set.
     async fn add_query_ids<K: Into<String> + Send + Sync>(&self, ids: Vec<K>) -> Result<(), Error> {
         self.store.add_query_ids(ids).await;
         Ok(())
     }
 
-    /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    /// Removes the specified cryptocurrency IDs from the query set.
     async fn remove_query_ids<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Result<(), Error> {
         self.store.remove_query_ids(ids).await;
         Ok(())

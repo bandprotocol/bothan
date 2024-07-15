@@ -65,7 +65,7 @@ async fn request<T: DeserializeOwned>(request_builder: RequestBuilder) -> Result
     response
         .json::<T>()
         .await
-        .map_err(|e| SendError::ParseFailed(e.to_string()))
+        .map_err(|e| SendError::ParseResponseFailed(e.to_string()))
 }
 
 #[cfg(test)]
@@ -239,7 +239,8 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = SendError::ParseFailed("error decoding response body".to_string());
+        let expected_err =
+            SendError::ParseResponseFailed("error decoding response body".to_string());
         assert_eq!(result, Err(expected_err));
     }
 

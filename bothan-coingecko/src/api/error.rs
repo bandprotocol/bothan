@@ -18,6 +18,6 @@ pub enum SendError {
     #[error("received non-2xx http status: {0}")]
     UnsuccessfulResponse(reqwest::StatusCode),
 
-    #[error("failed to parse with error: {0}")]
-    ParseFailed(String),
+    #[error("failed to parse response with error: {0}")]
+    ParseResponseFailed(String),
 }
