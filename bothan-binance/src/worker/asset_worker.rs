@@ -45,7 +45,8 @@ pub(crate) async fn start_asset_worker(
     } else {
         debug!("asset worker successfully sent close frame")
     }
-    debug!("asset worker exited")
+
+    debug!("asset worker has been dropped, stopping asset worker");
 }
 
 async fn subscribe(
