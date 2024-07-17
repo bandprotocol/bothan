@@ -84,11 +84,11 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn crypto_spot_price(
+        pub async fn update_registry(
             &mut self,
-            request: impl tonic::IntoRequest<super::CryptoSpotPriceRequest>,
+            request: impl tonic::IntoRequest<super::UpdateRegistryRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::CryptoSpotPriceResponse>,
+            tonic::Response<super::UpdateRegistryResponse>,
             tonic::Status,
         > {
             self.inner
@@ -102,11 +102,55 @@ pub mod query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/query.Query/CryptoSpotPrice",
+                "/query.Query/UpdateRegistry",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("query.Query", "CryptoSpotPrice"));
+                .insert(GrpcMethod::new("query.Query", "UpdateRegistry"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn set_active_signal_id(
+            &mut self,
+            request: impl tonic::IntoRequest<super::SetActiveSignalIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::SetActiveSignalIdResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/query.Query/SetActiveSignalID",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("query.Query", "SetActiveSignalID"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn get_price(
+            &mut self,
+            request: impl tonic::IntoRequest<super::PriceRequest>,
+        ) -> std::result::Result<tonic::Response<super::PriceResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/query.Query/GetPrice");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new("query.Query", "GetPrice"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -118,13 +162,24 @@ pub mod query_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServer.
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
-        async fn crypto_spot_price(
+        async fn update_registry(
             &self,
-            request: tonic::Request<super::CryptoSpotPriceRequest>,
+            request: tonic::Request<super::UpdateRegistryRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::CryptoSpotPriceResponse>,
+            tonic::Response<super::UpdateRegistryResponse>,
             tonic::Status,
         >;
+        async fn set_active_signal_id(
+            &self,
+            request: tonic::Request<super::SetActiveSignalIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::SetActiveSignalIdResponse>,
+            tonic::Status,
+        >;
+        async fn get_price(
+            &self,
+            request: tonic::Request<super::PriceRequest>,
+        ) -> std::result::Result<tonic::Response<super::PriceResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct QueryServer<T: Query> {
@@ -205,25 +260,25 @@ pub mod query_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/query.Query/CryptoSpotPrice" => {
+                "/query.Query/UpdateRegistry" => {
                     #[allow(non_camel_case_types)]
-                    struct CryptoSpotPriceSvc<T: Query>(pub Arc<T>);
+                    struct UpdateRegistrySvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::CryptoSpotPriceRequest>
-                    for CryptoSpotPriceSvc<T> {
-                        type Response = super::CryptoSpotPriceResponse;
+                    > tonic::server::UnaryService<super::UpdateRegistryRequest>
+                    for UpdateRegistrySvc<T> {
+                        type Response = super::UpdateRegistryResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::CryptoSpotPriceRequest>,
+                            request: tonic::Request<super::UpdateRegistryRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as Query>::crypto_spot_price(&inner, request).await
+                                <T as Query>::update_registry(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -235,7 +290,97 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = CryptoSpotPriceSvc(inner);
+                        let method = UpdateRegistrySvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/query.Query/SetActiveSignalID" => {
+                    #[allow(non_camel_case_types)]
+                    struct SetActiveSignalIDSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::SetActiveSignalIdRequest>
+                    for SetActiveSignalIDSvc<T> {
+                        type Response = super::SetActiveSignalIdResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SetActiveSignalIdRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::set_active_signal_id(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = SetActiveSignalIDSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/query.Query/GetPrice" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetPriceSvc<T: Query>(pub Arc<T>);
+                    impl<T: Query> tonic::server::UnaryService<super::PriceRequest>
+                    for GetPriceSvc<T> {
+                        type Response = super::PriceResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::PriceRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::get_price(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetPriceSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
