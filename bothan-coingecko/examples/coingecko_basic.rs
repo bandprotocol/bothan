@@ -12,7 +12,7 @@ async fn main() {
 
     if let Ok(worker) = worker_result {
         worker
-            .add_query_ids(vec!["bitcoin", "ethereum"])
+            .add_query_ids(vec!["bitcoin".to_string(), "ethereum".to_string()])
             .await
             .unwrap();
         loop {

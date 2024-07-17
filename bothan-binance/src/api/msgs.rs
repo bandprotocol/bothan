@@ -23,7 +23,7 @@ pub enum Data {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct MiniTickerInfo {
     #[serde(rename = "E")]
-    pub event_time: u64,
+    pub event_time: i64,
 
     #[serde(rename = "s")]
     pub symbol: String,

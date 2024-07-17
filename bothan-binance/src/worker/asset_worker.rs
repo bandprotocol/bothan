@@ -129,7 +129,7 @@ async fn store_data(data: Data, store: &Store) -> Result<(), ParseError> {
             let asset_info = AssetInfo {
                 id: ticker.symbol.to_lowercase(),
                 price: Decimal::from_str_exact(&ticker.close_price)?,
-                timestamp: ticker.event_time,
+                timestamp: ticker.event_time / 1000,
             };
 
             store.set_asset(asset_info.id.clone(), asset_info).await;

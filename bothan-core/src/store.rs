@@ -32,9 +32,9 @@ impl Store {
         ids.iter()
             .map(
                 |id| match (query_ids.contains(id.as_ref()), data_store.get(id.as_ref())) {
-                    (false, _) => crate::worker::AssetStatus::Unsupported,
-                    (true, Some(asset)) => crate::worker::AssetStatus::Available(asset.clone()),
-                    (true, None) => crate::worker::AssetStatus::Pending,
+                    (false, _) => AssetStatus::Unsupported,
+                    (true, Some(asset)) => AssetStatus::Available(asset.clone()),
+                    (true, None) => AssetStatus::Pending,
                 },
             )
             .collect()
