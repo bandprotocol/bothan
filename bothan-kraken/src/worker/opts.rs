@@ -4,6 +4,10 @@ use crate::api::types::DEFAULT_URL;
 use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 
 /// Options for configuring the `KrakenWorkerBuilder`.
+///
+/// `KrakenWorkerBuilderOpts` provides a way to specify custom settings for creating a `KrakenWorker`.
+/// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
+/// which will be used during the construction of the `KrakenWorker`.
 #[derive(Clone, Debug, Deserialize)]
 pub struct KrakenWorkerBuilderOpts {
     #[serde(default = "default_url")]
