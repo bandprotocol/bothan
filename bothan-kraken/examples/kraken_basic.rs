@@ -1,19 +1,20 @@
 use tracing_subscriber::fmt::init;
 
-use bothan_core::service::Service;
-use bothan_kraken::service::builder::KrakenServiceBuilder;
+use bothan_core::worker::AssetWorker;
+use bothan_kraken::KrakenWorkerBuilder;
 
 #[tokio::main]
 async fn main() {
     init();
-
-    let service = KrakenServiceBuilder::default().build().await;
-
-    if let Ok(mut service) = service {
-        loop {
-            let data = service.get_price_data(&["BTC/USD", "ETH/USD"]).await;
-            println!("{:?}", data);
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        }
+    let worker = KrakenWorkerBuilder::default().build().await.unwrap();
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    worker
+        .add_query_ids(vec!["BTC/USD", "ETH/USD"])
+        .await
+        .unwrap();
+    loop {
+        let data = worker.get_assets(&["BTC/USD", "ETH/USD"]).await;
+        println!("{:?}", data);
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
     }
 }

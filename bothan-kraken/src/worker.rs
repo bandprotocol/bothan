@@ -1,0 +1,79 @@
+use std::sync::Arc;
+
+use tokio::sync::mpsc::Sender;
+use tracing::error;
+
+use bothan_core::store::Store;
+use bothan_core::worker::{AssetStatus, AssetWorker, Error};
+
+use crate::api::websocket::KrakenWebSocketConnector;
+
+mod asset_worker;
+pub mod builder;
+pub(crate) mod error;
+pub mod opts;
+mod types;
+
+/// A worker that fetches and stores the asset information from Kraken's API.
+pub struct KrakenWorker {
+    connector: KrakenWebSocketConnector,
+    store: Arc<Store>,
+    subscribe_tx: Sender<Vec<String>>,
+    unsubscribe_tx: Sender<Vec<String>>,
+}
+
+impl KrakenWorker {
+    /// Create a new worker with the specified connector, store and channels.
+    pub fn new(
+        connector: KrakenWebSocketConnector,
+        store: Arc<Store>,
+        subscribe_tx: Sender<Vec<String>>,
+        unsubscribe_tx: Sender<Vec<String>>,
+    ) -> Self {
+        Self {
+            connector,
+            store,
+            subscribe_tx,
+            unsubscribe_tx,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl AssetWorker for KrakenWorker {
+    /// Fetches the AssetStatus for the given cryptocurrency ids.
+    async fn get_assets<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Vec<AssetStatus> {
+        self.store.get_assets(ids).await
+    }
+
+    /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    async fn add_query_ids<K: Into<String> + Send + Sync>(&self, ids: Vec<K>) -> Result<(), Error> {
+        let to_sub = self.store.add_query_ids(ids).await;
+
+        if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
+            error!("failed to add query ids: {}", e);
+            self.store.remove_query_ids(to_sub.as_slice()).await;
+            Err(Error::ModifyQueryIDsFailed(e.to_string()))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    async fn remove_query_ids<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Result<(), Error> {
+        let to_unsub = self.store.remove_query_ids(ids).await;
+
+        if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {
+            error!("failed to remove query ids: {}", e);
+            self.store.add_query_ids(to_unsub).await;
+            Err(Error::ModifyQueryIDsFailed(e.to_string()))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Retrieves the current set of queried cryptocurrency IDs.
+    async fn get_query_ids(&self) -> Vec<String> {
+        self.store.get_query_ids().await
+    }
+}
