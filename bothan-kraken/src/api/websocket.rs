@@ -138,3 +138,98 @@ fn build_ticker_request(
         snapshot,
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test {
+    use tokio::sync::mpsc;
+    use ws_mock::ws_mock_server::{WsMock, WsMockServer};
+
+    // use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
+    use crate::api::types::{ChannelResponse, KrakenResponse, TickerResponse};
+
+    use super::*;
+
+    pub(crate) async fn setup_mock_server() -> WsMockServer {
+        WsMockServer::start().await
+    }
+
+    #[tokio::test]
+    async fn test_recv_ticker() {
+        // Set up the mock server and the WebSocket connector.
+        let server = setup_mock_server().await;
+        let connector = KrakenWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Create a mock ticker response.
+        let mock_ticker = TickerResponse {
+            symbol: "BTC".to_string(),
+            bid: 42000.00,
+            bid_qty: 50000.00,
+            ask: 42001.00,
+            ask_qty: 50000.00,
+            last: 42000.00,
+            volume: 100000.00,
+            vwap: 42000.00,
+            low: 40000.00,
+            high: 44000.00,
+            change: 2000.00,
+            change_pct: 0.05,
+        };
+        let mock_resp = KrakenResponse::Channel(ChannelResponse::Ticker(vec![mock_ticker]));
+
+        // Mount the mock WebSocket server and send the mock response.
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send
+            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
+            .await
+            .unwrap();
+
+        // Connect to the mock WebSocket server and retrieve the response.
+        let mut connection = connector.connect().await.unwrap();
+        let resp = connection.next().await.unwrap();
+        assert_eq!(resp, mock_resp);
+    }
+
+    #[tokio::test]
+    async fn test_recv_pong() {
+        // Set up the mock server and the WebSocket connector.
+        let server = setup_mock_server().await;
+        let connector = KrakenWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Mount the mock WebSocket server and send a ping message.
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send.send(Message::Pong(vec![])).await.unwrap();
+
+        // Connect to the mock WebSocket server and retrieve the ping response.
+        let mut connection = connector.connect().await.unwrap();
+        let resp = connection.next().await.unwrap();
+        assert_eq!(resp, KrakenResponse::Pong);
+    }
+
+    #[tokio::test]
+    async fn test_recv_close() {
+        // Set up the mock server and the WebSocket connector.
+        let server = setup_mock_server().await;
+        let connector = KrakenWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Mount the mock WebSocket server and send a close message.
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send.send(Message::Close(None)).await.unwrap();
+
+        // Connect to the mock WebSocket server and verify the connection closure.
+        let mut connection = connector.connect().await.unwrap();
+        let resp = connection.next().await;
+        assert!(resp.is_err());
+    }
+}

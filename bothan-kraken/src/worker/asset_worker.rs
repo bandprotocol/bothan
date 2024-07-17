@@ -128,17 +128,32 @@ async fn handle_reconnect(
     }
 }
 
+fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, ParseError> {
+    let price_value =
+        Decimal::from_f64(ticker.last).ok_or(ParseError::InvalidPrice(ticker.last))?;
+    Ok(AssetInfo::new(
+        ticker.symbol,
+        price_value,
+        chrono::Utc::now().timestamp(),
+    ))
+}
+
 async fn store_tickers(tickers: Vec<TickerResponse>, store: &Store) -> Result<(), ParseError> {
-    for ticker in tickers {
-        let asset_info = AssetInfo {
-            id: ticker.symbol,
-            price: Decimal::from_f64(ticker.last).ok_or(ParseError::NaN)?,
-            timestamp: chrono::Utc::now().timestamp(),
-        };
+    let to_set = tickers
+        .into_iter()
+        .filter_map(|ticker| {
+            let id = ticker.symbol.clone();
+            match parse_ticker(ticker) {
+                Ok(asset_info) => Some((id, asset_info)),
+                Err(e) => {
+                    warn!("failed to parse ticker data for {} with error {}", id, e);
+                    None
+                }
+            }
+        })
+        .collect::<Vec<(String, AssetInfo)>>();
 
-        store.set_asset(asset_info.id.clone(), asset_info).await;
-    }
-
+    store.set_assets(to_set).await;
     Ok(())
 }
 
@@ -185,5 +200,57 @@ async fn handle_connection_recv(
         Err(MessageError::Parse(..)) => {
             error!("unable to parse message from kraken");
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::f64::INFINITY;
+
+    use super::*;
+
+    #[test]
+    fn test_parse_market() {
+        let ticker = TickerResponse {
+            symbol: "BTC".to_string(),
+            bid: 42000.00,
+            bid_qty: 50000.00,
+            ask: 42001.00,
+            ask_qty: 50000.00,
+            last: 42000.99,
+            volume: 100000.00,
+            vwap: 42000.00,
+            low: 40000.00,
+            high: 44000.00,
+            change: 2000.00,
+            change_pct: 0.05,
+        };
+        let result = parse_ticker(ticker);
+        let expected = AssetInfo::new(
+            "BTC".to_string(),
+            Decimal::from_str_exact("42000.99").unwrap(),
+            0,
+        );
+        assert_eq!(result.as_ref().unwrap().id, expected.id);
+        assert_eq!(result.unwrap().price, expected.price);
+    }
+
+    #[test]
+    fn test_parse_market_with_failure() {
+        let ticker = TickerResponse {
+            symbol: "BTC".to_string(),
+            bid: 42000.00,
+            bid_qty: 50000.00,
+            ask: 42001.00,
+            ask_qty: 50000.00,
+            last: INFINITY,
+            volume: 100000.00,
+            vwap: 42000.00,
+            low: 40000.00,
+            high: 44000.00,
+            change: 2000.00,
+            change_pct: 0.05,
+        };
+        assert!(parse_ticker(ticker).is_err());
     }
 }

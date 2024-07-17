@@ -4,8 +4,8 @@ use crate::api;
 
 #[derive(Error, Debug)]
 pub(crate) enum ParseError {
-    #[error("value is not a valid decimal")]
-    NaN,
+    #[error("invalid price: {0}")]
+    InvalidPrice(f64),
 }
 
 #[derive(Error, Debug)]
