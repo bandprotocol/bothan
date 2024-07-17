@@ -18,9 +18,9 @@ pub enum Error {
 
 /// The universal trait for all workers that provide asset info.
 #[async_trait::async_trait]
-pub trait AssetWorker {
-    async fn get_assets<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Vec<AssetStatus>;
-    async fn add_query_ids<K: Into<String> + Send + Sync>(&self, ids: Vec<K>) -> Result<(), Error>;
-    async fn remove_query_ids<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Result<(), Error>;
+pub trait AssetWorker: Send + Sync {
+    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus>;
+    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error>;
+    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error>;
     async fn get_query_ids(&self) -> Vec<String>;
 }
