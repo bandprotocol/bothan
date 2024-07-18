@@ -27,18 +27,18 @@ impl CoinGeckoWorker {
 #[async_trait::async_trait]
 impl AssetWorker for CoinGeckoWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Vec<AssetStatus> {
+    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
         self.store.get_assets(ids).await
     }
 
     /// Adds the specified cryptocurrency IDs to the query set.
-    async fn add_query_ids<K: Into<String> + Send + Sync>(&self, ids: Vec<K>) -> Result<(), Error> {
+    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
         self.store.add_query_ids(ids).await;
         Ok(())
     }
 
     /// Removes the specified cryptocurrency IDs from the query set.
-    async fn remove_query_ids<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Result<(), Error> {
+    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
         self.store.remove_query_ids(ids).await;
         Ok(())
     }

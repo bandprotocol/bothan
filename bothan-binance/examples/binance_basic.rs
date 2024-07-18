@@ -9,7 +9,7 @@ async fn main() {
     let worker = BinanceWorkerBuilder::default().build().await.unwrap();
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     worker
-        .add_query_ids(vec!["btcusdt", "ethusdt"])
+        .add_query_ids(vec!["btcusdt".to_string(), "ethusdt".to_string()])
         .await
         .unwrap();
     loop {

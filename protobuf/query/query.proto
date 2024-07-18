@@ -8,37 +8,70 @@ option go_package = "bothan-api/query";
 
 // Query defines the gRPC service.
 service Query {
-  // RPC method that returns all prices of requested signal ids.
-  rpc Prices(QueryPricesRequest) returns (QueryPricesResponse) {
-    option (google.api.http).get = "/prices/{signal_ids}";
+  rpc UpdateRegistry(UpdateRegistryRequest) returns (UpdateRegistryResponse) {
+    option (google.api.http).post = "/registry";
   }
+
+  rpc SetActiveSignalID(SetActiveSignalIDRequest) returns (SetActiveSignalIDResponse) {
+    option (google.api.http).post = "/signal_ids";
+  }
+
+  // RPC method that returns all prices of requested signal ids.
+  rpc GetPrice(PriceRequest) returns (PriceResponse) {
+    option (google.api.http).get = "/signal_ids/{signal_ids}";
+  }
+}
+
+message UpdateRegistryRequest {
+  string ipfs_hash = 1;
+  string version = 2;
+}
+
+enum UpdateStatusCode {
+  OK = 0;
+  UNSUPPORTED_VERSION = 1;
+  INVALID_REGISTRY = 2;
+  FAILED_TO_GET_REGISTRY = 3;
+}
+
+message UpdateRegistryResponse {
+  UpdateStatusCode code = 1;
+}
+
+message SetActiveSignalIDRequest {
+  repeated string signal_ids = 1;
+}
+
+message SetActiveSignalIDResponse {
+  bool success = 1;
 }
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesRequest {
+message PriceRequest {
   repeated string signal_ids = 1;
 }
 
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 // method.
-message QueryPricesResponse {
-  repeated AssetPrice prices = 1;
+message PriceResponse {
+  repeated Price prices = 1;
 }
 
 // AssetPrice contains the price of a signal ID.
-message AssetPrice {
+message Price {
   // The asset's signal ID.
   string signal_id = 1;
   // The asset's price.
-  string price = 2;
+  int64 price = 2;
   // The asset's price status.
-  Status status = 3;
+  PriceStatus status = 3;
 }
 
 // Status is the status that defines the AssetPrice result.
-enum Status {
-  UNSUPPORTED = 0;
-  UNAVAILABLE = 1;
-  AVAILABLE = 2;
+enum PriceStatus {
+  UNSPECIFIED = 0;
+  UNSUPPORTED = 1;
+  UNAVAILABLE = 2;
+  AVAILABLE = 3;
 }
