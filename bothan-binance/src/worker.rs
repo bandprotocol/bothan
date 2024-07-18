@@ -46,7 +46,7 @@ impl AssetWorker for BinanceWorker {
         self.store.get_assets(ids).await
     }
 
-    /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    /// Adds the specified cryptocurrency IDs to the query set.
     async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
         let to_sub = self.store.add_query_ids(ids).await;
 
@@ -59,7 +59,7 @@ impl AssetWorker for BinanceWorker {
         }
     }
 
-    /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    /// Removes the specified cryptocurrency IDs from the query set.
     async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
         let to_unsub = self.store.remove_query_ids(ids).await;
 

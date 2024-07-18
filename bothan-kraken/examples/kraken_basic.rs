@@ -9,7 +9,7 @@ async fn main() {
     let worker = KrakenWorkerBuilder::default().build().await.unwrap();
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     worker
-        .add_query_ids(vec!["BTC/USD", "ETH/USD"])
+        .add_query_ids(vec!["BTC/USD".to_string(), "ETH/USD".to_string()])
         .await
         .unwrap();
     loop {

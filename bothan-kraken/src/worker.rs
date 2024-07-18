@@ -42,12 +42,12 @@ impl KrakenWorker {
 #[async_trait::async_trait]
 impl AssetWorker for KrakenWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Vec<AssetStatus> {
+    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
         self.store.get_assets(ids).await
     }
 
-    /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn add_query_ids<K: Into<String> + Send + Sync>(&self, ids: Vec<K>) -> Result<(), Error> {
+    /// Adds the specified cryptocurrency IDs to the query set.
+    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
         let to_sub = self.store.add_query_ids(ids).await;
 
         if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
@@ -59,8 +59,8 @@ impl AssetWorker for KrakenWorker {
         }
     }
 
-    /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn remove_query_ids<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Result<(), Error> {
+    /// Removes the specified cryptocurrency IDs from the query set.
+    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
         let to_unsub = self.store.remove_query_ids(ids).await;
 
         if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {
