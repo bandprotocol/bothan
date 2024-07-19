@@ -1,7 +1,6 @@
-use enum_dispatch::enum_dispatch;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-pub mod identity;
 pub mod median;
 
 #[derive(Debug, thiserror::Error)]
@@ -20,33 +19,49 @@ pub enum ProcessorError {
 }
 
 /// The Processor trait defines the methods that a processor must implement.
-#[enum_dispatch]
-pub trait Processor {
-    fn process(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Result<f64, ProcessorError>;
+// #[enum_dispatch]
+pub trait Processor<T> {
+    fn process(&self, data: Vec<T>) -> Result<T, ProcessorError>;
 }
 
 /// The Process enum represents the different types of processors that can be used.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
-#[enum_dispatch(Processor)]
+// #[enum_dispatch(Processor)]
 pub enum Process {
     Median(median::MedianProcessor),
-    Identity(identity::IdentityProcessor),
+}
+
+impl Processor<Decimal> for Process {
+    fn process(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessorError> {
+        match self {
+            Process::Median(median) => median.process(data),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn data() -> Vec<Decimal> {
+        vec![
+            Decimal::from(10),
+            Decimal::from(20),
+            Decimal::from(30),
+            Decimal::from(40),
+            Decimal::from(50),
+        ]
+    }
+
     #[test]
     fn test_process_median() {
         let median = Process::Median(median::MedianProcessor {
             min_source_count: 1,
         });
+        let res = median.process(data());
 
-        let res = median.process(vec![10.0, 20.0, 30.0, 40.0, 50.0], vec![]);
-
-        assert_eq!(res.unwrap(), 30.0);
+        assert_eq!(res.unwrap(), Decimal::from(30));
     }
 
     #[test]
@@ -54,8 +69,7 @@ mod tests {
         let median = Process::Median(median::MedianProcessor {
             min_source_count: 0,
         });
-
-        let res = median.process(vec![10.0, 20.0, 30.0, 40.0, 50.0], vec![]);
+        let res = median.process(data());
 
         assert!(res.is_err());
     }

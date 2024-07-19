@@ -1,3 +1,3 @@
-mod price_service;
+pub use crypto_asset_info::CryptoAssetInfoManager;
 
-pub use price_service::manager::PriceServiceManager;
+mod crypto_asset_info;

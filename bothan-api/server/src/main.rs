@@ -1,31 +1,28 @@
 use std::fs::File;
 use std::sync::Arc;
 
-use anyhow::{bail, Result};
+use anyhow::ensure;
+use tokio::sync::RwLock;
 use tonic::transport::Server;
 use tracing::info;
 
 use bothan_api::api::CryptoQueryServer;
+use bothan_api::config::registry::RegistrySource;
 use bothan_api::config::AppConfig;
-use bothan_api::manager::PriceServiceManager;
+use bothan_api::manager::CryptoAssetInfoManager;
 use bothan_api::proto::query::query_server::QueryServer;
 use bothan_api::registry::{Registry, Validator};
-use bothan_api::utils::add_service;
-use bothan_binance::BinanceServiceBuilder;
-use bothan_bybit::BybitServiceBuilder;
-use bothan_coinbase::CoinbaseServiceBuilder;
-use bothan_coingecko::CoinGeckoServiceBuilder;
-use bothan_coinmarketcap::CoinMarketCapServiceBuilder;
-use bothan_cryptocompare::CryptoCompareServiceBuilder;
-use bothan_htx::HtxServiceBuilder;
-use bothan_kraken::KrakenServiceBuilder;
-use bothan_okx::OkxServiceBuilder;
+use bothan_api::utils::add_worker;
+use bothan_binance::BinanceWorkerBuilder;
+use bothan_coingecko::CoinGeckoWorkerBuilder;
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() {
     let config = AppConfig::new().expect("Failed to load configuration");
     tracing_subscriber::fmt()
-        .with_env_filter(format!("bothan_api={}", config.logging.level))
+        .with_env_filter(format!("bothan_api={}", config.log.level))
         .init();
 
     let crypto_query_server = init_crypto_server(&config)
@@ -41,29 +38,43 @@ async fn main() {
         .await;
 }
 
-async fn init_crypto_server(config: &AppConfig) -> Result<CryptoQueryServer> {
-    let file = File::open(config.registry.crypto_price.source.clone())?;
-    let registry = Arc::new(serde_json::from_reader::<_, Registry>(file)?);
-    if !registry.validate() {
-        bail!("registry validation failed".to_string());
-    }
-    let mut manager = PriceServiceManager::new(registry, config.manager.stale_threshold)
-        .expect("cannot build price service manager with registry");
+async fn init_crypto_server(config: &AppConfig) -> anyhow::Result<CryptoQueryServer> {
+    let registry = match &config.registry.crypto_assets {
+        RegistrySource::Local(local) => {
+            let file = File::open(&local.path)?;
+            serde_json::from_reader::<_, Registry>(file)?
+        }
+        RegistrySource::Ipfs(_) => {
+            // TODO: implement ipfs
+            todo!()
+        }
+    };
 
-    init_crypto_services(config, &mut manager).await;
+    ensure!(
+        registry.validate(),
+        "registry validation failed".to_string()
+    );
 
-    Ok(CryptoQueryServer::new(manager))
+    let mut manager = CryptoAssetInfoManager::new(
+        Arc::new(RwLock::new(registry)),
+        config.manager.crypto.stale_threshold,
+    );
+
+    init_crypto_workers(config, &mut manager).await;
+
+    Ok(CryptoQueryServer::new(manager, config.ipfs.url.clone()))
 }
 
-#[rustfmt::skip]
-async fn init_crypto_services(config: &AppConfig, manager: &mut PriceServiceManager) {
-    add_service!(manager, BinanceServiceBuilder, config.source.binance);
-    add_service!(manager, BybitServiceBuilder, config.source.bybit);
-    add_service!(manager, CoinbaseServiceBuilder, config.source.coinbase);
-    add_service!(manager, CoinGeckoServiceBuilder, config.source.coingecko);
-    add_service!(manager, CoinMarketCapServiceBuilder, config.source.coinmarketcap);
-    add_service!(manager, CryptoCompareServiceBuilder, config.source.cryptocompare);
-    add_service!(manager, HtxServiceBuilder, config.source.htx);
-    add_service!(manager, KrakenServiceBuilder, config.source.kraken);
-    add_service!(manager, OkxServiceBuilder, config.source.okx);
+async fn init_crypto_workers(config: &AppConfig, manager: &mut CryptoAssetInfoManager) {
+    add_worker!(manager, BinanceWorkerBuilder, config.source.binance);
+    add_worker!(manager, CoinGeckoWorkerBuilder, config.source.coingecko);
+
+    // TODO: reimplement other workers
+    // add_worker!(manager, BybitWorkerBuilder, config.source.bybit);
+    // add_worker!(manager, CoinbaseWorkerBuilder, config.source.coinbase);
+    // add_worker!(manager, CoinMarketCapWorkerBuilder, config.source.coinmarketcap);
+    // add_worker!(manager, CryptoCompareWorkerBuilder, config.source.cryptocompare);
+    // add_worker!(manager, HtxWorkerBuilder, config.source.htx);
+    // add_worker!(manager, KrakenWorkerBuilder, config.source.kraken);
+    // add_worker!(manager, OkxWorkerBuilder, config.source.okx);
 }

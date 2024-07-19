@@ -1,6 +1,7 @@
-use crate::post_processor::PostProcessor;
-use crate::processor::Processor;
-use crate::registry::Signal;
+use crate::registry::post_processor::{PostProcessor, PostProcessorError};
+use crate::registry::processor::{Processor, ProcessorError};
+use crate::registry::signal::Signal;
+use rust_decimal::Decimal;
 
 /// `SignalTask` represents the tasks to processes a signal.
 /// It contains a `signal_id` which is a unique identifier for the signal value and `signal`,
@@ -29,16 +30,19 @@ impl SignalTask {
 
     /// Executes and processes the signal task given the data and prerequisites and returns out
     /// output. If the processing fails, it returns `None`.
-    pub fn execute_processor(&self, data: Vec<f64>, prerequisites: Vec<f64>) -> Option<f64> {
-        self.signal.processor.process(data, prerequisites).ok()
+    pub fn execute_processor(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessorError> {
+        self.signal.processor.process(data)
     }
 
     /// Executes and post processes the signal task given the processed data and returns out
     /// output. If the processing fails, it returns `None`.
-    pub fn execute_post_processors(&self, processed: f64) -> Option<f64> {
+    pub fn execute_post_processors(
+        &self,
+        processed: Decimal,
+    ) -> Result<Decimal, PostProcessorError> {
         self.signal
             .post_processors
             .iter()
-            .try_fold(processed, |acc, post| post.process(acc).ok())
+            .try_fold(processed, |acc, post| post.process(acc))
     }
 }

@@ -1,3 +1,5 @@
+use std::ops::{Add, Div, Mul, Sub};
+
 use serde::{Deserialize, Serialize};
 
 /// Enum representing the possible operations that can be performed.
@@ -14,8 +16,11 @@ pub enum Operation {
 }
 
 impl Operation {
-    /// Executes the operation on two f64 numbers and returns the result.
-    pub fn execute(&self, a: f64, b: f64) -> f64 {
+    /// Executes the operation on two numbers and returns the result.
+    pub fn execute<T>(&self, a: T, b: T) -> T
+    where
+        T: Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Div<Output = T> + Copy,
+    {
         match self {
             Operation::Add => a + b,
             Operation::Subtract => a - b,
@@ -29,8 +34,8 @@ impl Operation {
 /// For example, if the sequence is [a, b, c] and the operations are [+, *, -], the result
 /// would be (((input + a) * b) - c).
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct Route {
-    /// The signal id.
+pub struct OperationRoute {
+    /// The signal id of the value to be used in the operation.
     pub signal_id: String,
     /// The operation to be performed.
     pub operation: Operation,
@@ -38,11 +43,12 @@ pub struct Route {
 
 /// Struct representing a source.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct Source {
+pub struct SourceQuery {
     /// The source id.
     pub source_id: String,
-    /// The id.
-    pub id: String,
-    /// The routes associated with the source.
-    pub routes: Vec<Route>,
+    /// The id to query the source.
+    #[serde(rename = "id")]
+    pub query_id: String,
+    /// The operation routes to execute on the source query results.
+    pub routes: Vec<OperationRoute>,
 }

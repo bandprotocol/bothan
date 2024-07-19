@@ -9,30 +9,27 @@ use crate::tasks::error::Error;
 use crate::tasks::signal_task::SignalTask;
 use crate::tasks::source_task::SourceTask;
 
-pub(crate) type SourceMap = HashMap<String, HashSet<String>>;
+pub type SourceMap = HashMap<String, HashSet<String>>;
 
 /// Takes a registry and returns the sequential order of tasks to be executed
-pub(crate) fn get_tasks(
-    registry: &Registry,
-) -> Result<(Vec<Vec<SignalTask>>, Vec<SourceTask>), Error> {
+pub fn get_tasks(registry: &Registry) -> Result<(Vec<SignalTask>, Vec<SourceTask>), Error> {
     let graph = build_graph(registry)?;
     let source_tasks = get_source_tasks(registry)?;
-    let batched_signal_ids = batching_toposort(&graph)?;
-    let batched_signal_tasks = batched_signal_ids
+    let sorted_signal_ids = batching_topo_sort(&graph)?;
+    let signal_tasks = sorted_signal_ids
         .into_iter()
-        .map(|batch| {
-            batch
-                .into_iter()
-                .map(|signal_id| {
-                    registry
-                        .get(&signal_id)
-                        .map(|signal| SignalTask::new(signal_id, signal.clone()))
-                })
-                .collect::<Option<Vec<SignalTask>>>()
-        })
-        .collect::<Option<Vec<Vec<SignalTask>>>>()
-        .ok_or(Error::MissingNode())?;
-    Ok((batched_signal_tasks, source_tasks))
+        .map(|id| registry.get(&id).map(|s| SignalTask::new(id, s.clone())))
+        .collect::<Option<Vec<SignalTask>>>()
+        .ok_or(Error::MissingNode)?;
+    //
+    // signal.sources.iter().all(|source| {
+    //     source
+    //         .routes
+    //         .iter()
+    //         .all(|route| signal.prerequisites.contains(&route.signal_id))
+    // })
+
+    Ok((signal_tasks, source_tasks))
 }
 
 // Builds a directed graph from the registry
@@ -42,17 +39,21 @@ fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
     let mut seen = HashSet::new();
 
     while let Some(signal_id) = queue.pop_front() {
-        if let Some(signal) = registry.get(signal_id) {
-            graph.add_node(signal_id);
-            for pid in &signal.prerequisites {
-                graph.add_edge(pid, signal_id, ());
-                if !seen.contains(pid) {
-                    queue.push_back(pid);
-                    seen.insert(pid);
-                }
+        let signal = registry.get(signal_id).ok_or(Error::MissingNode)?;
+
+        graph.add_node(signal_id);
+        let prerequisites = signal
+            .source_queries
+            .iter()
+            .flat_map(|s| s.routes.iter().map(|r| &r.signal_id))
+            .collect::<Vec<&String>>();
+
+        for pid in prerequisites {
+            graph.add_edge(pid, signal_id, ());
+            if !seen.contains(pid) {
+                queue.push_back(pid);
+                seen.insert(pid);
             }
-        } else {
-            return Err(Error::MissingNode());
         }
     }
 
@@ -63,21 +64,17 @@ fn build_graph(registry: &Registry) -> Result<DiGraphMap<&String, ()>, Error> {
 fn get_source_tasks(registry: &Registry) -> Result<Vec<SourceTask>, Error> {
     let mut source_map: SourceMap = HashMap::new();
 
-    for signal_id in registry.keys() {
-        if let Some(signal) = registry.get(signal_id) {
-            for source in &signal.sources {
-                match source_map.entry(source.source_id.clone()) {
-                    Entry::Occupied(mut entry) => {
-                        entry.get_mut().insert(source.id.clone());
-                    }
-                    Entry::Vacant(entry) => {
-                        let set = HashSet::from([source.id.clone()]);
-                        entry.insert(set);
-                    }
+    for signal in registry.values() {
+        for source in &signal.source_queries {
+            match source_map.entry(source.source_id.clone()) {
+                Entry::Occupied(mut entry) => {
+                    entry.get_mut().insert(source.query_id.clone());
+                }
+                Entry::Vacant(entry) => {
+                    let set = HashSet::from([source.query_id.clone()]);
+                    entry.insert(set);
                 }
             }
-        } else {
-            return Err(Error::MissingNode());
         }
     }
 
@@ -89,47 +86,45 @@ fn get_source_tasks(registry: &Registry) -> Result<Vec<SourceTask>, Error> {
     Ok(source_tasks)
 }
 
-fn batching_toposort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<Vec<String>>, Error> {
+fn batching_topo_sort(graph: &DiGraphMap<&String, ()>) -> Result<Vec<String>, Error> {
     let mut in_degree_counts = HashMap::new();
-    let mut result = Vec::new();
+    let mut result = Vec::with_capacity(graph.node_count());
     let mut roots = Vec::new();
 
     // Create a map of incoming edges for each node
-    graph.nodes().for_each(|n| {
-        let in_degree_count = graph.neighbors_directed(n, Direction::Incoming).count();
-        in_degree_counts.insert(n.clone(), in_degree_count);
+    for node in graph.nodes() {
+        let in_degree_count = graph.neighbors_directed(node, Direction::Incoming).count();
+        in_degree_counts.insert(node.clone(), in_degree_count);
         if in_degree_count == 0 {
-            roots.push(n.clone());
+            roots.push(node.clone());
         }
-    });
+    }
 
     // Perform Kahn's algorithm to find the topological order
     while !roots.is_empty() {
-        result.push(roots.clone());
+        result.append(&mut roots.clone());
 
         let mut new_roots = Vec::new();
-        roots.iter().for_each(|root| {
-            graph
-                .neighbors_directed(root, Direction::Outgoing)
-                .for_each(|dep| {
-                    // Unwrap here as map is must contain this value
-                    // If not, function is not working as expected
-                    let count = in_degree_counts.get_mut(dep).unwrap();
-                    *count -= 1;
-                    if *count == 0 {
-                        new_roots.push(dep.clone());
-                    }
-                })
-        });
+        for root in roots.iter() {
+            for dep in graph.neighbors_directed(root, Direction::Outgoing) {
+                // Unwrap here as map is must contain this value
+                // If not, function is not working as expected
+                let count = in_degree_counts.get_mut(dep).unwrap();
+                *count -= 1;
+                if *count == 0 {
+                    new_roots.push(dep.clone());
+                }
+            }
+        }
 
         roots = new_roots;
     }
 
     if in_degree_counts.values().any(|&v| v > 0) {
-        return Err(Error::CycleDetected());
+        Err(Error::CycleDetected)
+    } else {
+        Ok(result)
     }
-
-    Ok(result)
 }
 
 #[cfg(test)]
@@ -147,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn test_batching_toposort() {
+    fn test_batching_topo_sort() {
         let nodes = vec![
             ("A".to_string(), "B".to_string()),
             ("A".to_string(), "C".to_string()),
@@ -157,12 +152,14 @@ mod tests {
         ];
         let graph = mock_graph(&nodes);
 
-        let batches = batching_toposort(&graph);
+        let batches = batching_topo_sort(&graph);
         let expected = vec![
-            vec!["A".to_string()],
-            vec!["B".to_string(), "C".to_string()],
-            vec!["D".to_string(), "E".to_string()],
-            vec!["F".to_string()],
+            "A".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+            "D".to_string(),
+            "E".to_string(),
+            "F".to_string(),
         ];
         // Assert that the returned depths match the expected values
         assert_eq!(batches.unwrap(), expected);
@@ -180,12 +177,14 @@ mod tests {
         ];
         let graph = mock_graph(&nodes);
 
-        let batches = batching_toposort(&graph);
+        let batches = batching_topo_sort(&graph);
         let expected = vec![
-            vec!["F".to_string(), "D".to_string(), "B".to_string()],
-            vec!["E".to_string()],
-            vec!["C".to_string()],
-            vec!["A".to_string()],
+            "F".to_string(),
+            "D".to_string(),
+            "B".to_string(),
+            "E".to_string(),
+            "C".to_string(),
+            "A".to_string(),
         ];
         assert_eq!(batches.unwrap(), expected);
     }
@@ -203,16 +202,15 @@ mod tests {
         let sole_node = "G".to_string();
         graph.add_node(&sole_node);
 
-        let batches = batching_toposort(&graph);
+        let batches = batching_topo_sort(&graph);
         let expected = vec![
-            vec![
-                "A".to_string(),
-                "B".to_string(),
-                "C".to_string(),
-                "G".to_string(),
-            ],
-            vec!["D".to_string(), "E".to_string()],
-            vec!["F".to_string()],
+            "A".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+            "G".to_string(),
+            "D".to_string(),
+            "E".to_string(),
+            "F".to_string(),
         ];
         assert_eq!(batches.unwrap(), expected);
     }

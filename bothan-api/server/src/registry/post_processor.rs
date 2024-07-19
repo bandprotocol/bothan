@@ -1,4 +1,4 @@
-use enum_dispatch::enum_dispatch;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 pub mod tick;
@@ -10,29 +10,43 @@ pub enum PostProcessorError {
 }
 
 /// The PostProcessor trait defines the methods that a post-processor must implement.
-#[enum_dispatch]
-pub trait PostProcessor {
-    fn process(&self, data: f64) -> Result<f64, PostProcessorError>;
+// #[enum_dispatch]
+pub trait PostProcessor<T> {
+    fn process(&self, data: T) -> Result<T, PostProcessorError>;
 }
 
 /// The PostProcess enum represents the different types of post-processors that can be used.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
-#[enum_dispatch(PostProcessor)]
+// #[enum_dispatch(PostProcessor)]
 pub enum PostProcess {
     TickConvertor(tick::TickPostProcessor),
 }
 
+impl PostProcessor<Decimal> for PostProcess {
+    fn process(&self, data: Decimal) -> Result<Decimal, PostProcessorError> {
+        match self {
+            PostProcess::TickConvertor(tick) => tick.process(data),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use num_traits::FromPrimitive;
+
+    use tick::TickPostProcessor;
+
     use super::*;
-    use crate::post_processor::tick::TickPostProcessor;
 
     #[test]
     fn test_process() {
         let tick_convertor = PostProcess::TickConvertor(TickPostProcessor {});
-        let result = tick_convertor.process(10.0);
-        assert_eq!(result.unwrap(), 285171.0022033022);
+        let result = tick_convertor.process(Decimal::from(10));
+        assert_eq!(
+            result.unwrap(),
+            Decimal::from_str_exact("285171.00220329970405837917374").unwrap()
+        );
     }
 
     #[test]

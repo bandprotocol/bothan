@@ -1,32 +1,20 @@
 [grpc]
 addr = "0.0.0.0:50051"
 
-[manager]
+[manager.crypto]
 stale_threshold = 300
-
-[logging]
-level = "info"
+no_update = "true"
 
 [source.binance]
 
-[source.bybit]
-
-[source.coinbase]
-
 [source.coingecko]
 
-[source.coinmarketcap]
-api_key = ""
+[registry.crypto_assets]
+type = "local"
+path = "registry/crypto.json"
 
-[source.cryptocompare]
-api_key = ""
+[ipfs]
+url = ""
 
-[source.htx]
-
-[source.kraken]
-
-[source.okx]
-
-[registry.crypto_price]
-source = "registry/crypto_price.json"
-version = "1.0"
+[log]
+level = "debug"

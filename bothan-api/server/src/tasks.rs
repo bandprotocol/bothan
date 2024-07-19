@@ -7,7 +7,7 @@ use crate::tasks::utils::get_tasks;
 pub mod error;
 pub mod signal_task;
 pub mod source_task;
-pub(crate) mod utils;
+mod utils;
 
 /// Tasks contain the tasks to be executed. It is represented by a vector of `SourceTask` and a
 /// vector `BatchedSignalTask` which contains SignalTask.
@@ -29,12 +29,12 @@ pub(crate) mod utils;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Tasks {
     source_tasks: Vec<SourceTask>,
-    batched_signal_tasks: Vec<Vec<SignalTask>>,
+    batched_signal_tasks: Vec<SignalTask>,
 }
 
 impl Tasks {
     /// Creates a new `Tasks` given a vector of `SourceTask` and a vector of `BatchedSignalTask`.
-    pub fn new(source_tasks: Vec<SourceTask>, batched_signal_tasks: Vec<Vec<SignalTask>>) -> Self {
+    pub fn new(source_tasks: Vec<SourceTask>, batched_signal_tasks: Vec<SignalTask>) -> Self {
         Tasks {
             source_tasks,
             batched_signal_tasks,
@@ -43,18 +43,16 @@ impl Tasks {
 
     /// Generates a new `Tasks` from a given `Registry`. If the registry contains invalid tasks this
     /// function will return an error.
-    pub fn from_registry(registry: &Registry) -> Result<Self, Error> {
-        let (batched_signal_tasks, source_tasks) = get_tasks(registry)?;
-        Ok(Tasks::new(source_tasks, batched_signal_tasks))
+    pub fn take_tasks(self) -> (Vec<SourceTask>, Vec<SignalTask>) {
+        (self.source_tasks, self.batched_signal_tasks)
     }
+}
 
-    /// Returns the source tasks.
-    pub fn source_tasks(&self) -> &Vec<SourceTask> {
-        &self.source_tasks
-    }
+impl TryFrom<Registry> for Tasks {
+    type Error = Error;
 
-    /// Returns the batched signal tasks.
-    pub fn batched_signal_tasks(&self) -> &Vec<Vec<SignalTask>> {
-        &self.batched_signal_tasks
+    fn try_from(registry: Registry) -> Result<Self, Self::Error> {
+        let (signal_tasks, source_tasks) = get_tasks(&registry)?;
+        Ok(Tasks::new(source_tasks, signal_tasks))
     }
 }
