@@ -10,7 +10,6 @@ pub enum PostProcessorError {
 }
 
 /// The PostProcessor trait defines the methods that a post-processor must implement.
-// #[enum_dispatch]
 pub trait PostProcessor<T> {
     fn process(&self, data: T) -> Result<T, PostProcessorError>;
 }
@@ -33,8 +32,6 @@ impl PostProcessor<Decimal> for PostProcess {
 
 #[cfg(test)]
 mod tests {
-    use num_traits::FromPrimitive;
-
     use tick::TickPostProcessor;
 
     use super::*;

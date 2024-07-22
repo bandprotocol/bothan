@@ -7,7 +7,7 @@ use tracing::debug;
 use bothan_core::worker::AssetWorker;
 
 use crate::manager::crypto_asset_info::price::tasks::{create_reduced_registry, execute_tasks};
-use crate::manager::crypto_asset_info::price::utils::{get_price_id, partition_supported_ids};
+use crate::manager::crypto_asset_info::price::utils::get_price_id;
 use crate::proto::query::Price;
 use crate::registry::Registry;
 use crate::tasks::Tasks;
@@ -28,7 +28,11 @@ pub async fn get_prices(
     // Split the signals into those that exist and those that do not.
     // Signal that are not available will return UNSUPPORTED
     debug!("Processing {} signals", ids.len());
-    let (supported, unsupported) = partition_supported_ids::<Vec<String>>(ids.clone(), registry);
+    let (supported, unsupported): (Vec<String>, Vec<String>) = ids
+        .iter()
+        .cloned()
+        .partition(|id| registry.contains_key(id));
+
     debug!("Supported signals: {:?}", supported);
     debug!("Unsupported signals: {:?}", unsupported);
 

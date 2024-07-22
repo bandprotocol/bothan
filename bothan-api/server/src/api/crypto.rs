@@ -1,5 +1,9 @@
 use std::sync::Arc;
 
+use tokio::sync::Mutex;
+use tonic::{Request, Response, Status};
+use tracing::error;
+
 use crate::manager::CryptoAssetInfoManager;
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
@@ -7,23 +11,20 @@ use crate::proto::query::{
     UpdateRegistryRequest, UpdateRegistryResponse,
 };
 use crate::utils::arc_mutex;
-use tokio::sync::Mutex;
-use tonic::{Request, Response, Status};
-use tracing::error;
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
     manager: Arc<Mutex<CryptoAssetInfoManager>>,
-    // TODO: For future use
-    _ipfs_base_url: String,
+    // TODO: placeholder for future implementation
+    ipfs_client: Option<()>,
 }
 
 impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: CryptoAssetInfoManager, ipfs_base_url: String) -> Self {
+    pub fn new(manager: CryptoAssetInfoManager, ipfs_client: Option<()>) -> Self {
         CryptoQueryServer {
             manager: arc_mutex!(manager),
-            _ipfs_base_url: ipfs_base_url,
+            ipfs_client,
         }
     }
 }
@@ -34,7 +35,11 @@ impl Query for CryptoQueryServer {
         &self,
         _: Request<UpdateRegistryRequest>,
     ) -> Result<Response<UpdateRegistryResponse>, Status> {
-        todo!()
+        // TODO: Implement
+        match self.ipfs_client {
+            Some(_) => Err(Status::unimplemented("IPFS client is not implemented")),
+            None => Err(Status::not_found("registry update is disabled")),
+        }
     }
 
     async fn set_active_signal_id(
@@ -43,10 +48,15 @@ impl Query for CryptoQueryServer {
     ) -> Result<Response<SetActiveSignalIdResponse>, Status> {
         let update_registry_request = request.into_inner();
         let mut manager = self.manager.lock().await;
-        manager
+
+        let set_result = manager
             .set_active_signal_ids(update_registry_request.signal_ids)
             .await;
-        Ok(Response::new(SetActiveSignalIdResponse { success: true }))
+
+        match set_result {
+            Ok(_) => Ok(Response::new(SetActiveSignalIdResponse { success: true })),
+            Err(_) => Ok(Response::new(SetActiveSignalIdResponse { success: false })),
+        }
     }
 
     async fn get_price(

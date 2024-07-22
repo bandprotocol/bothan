@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Sub};
 
 use num_traits::FromPrimitive;
 use rust_decimal::Decimal;
@@ -14,6 +14,13 @@ pub struct MedianProcessor {
     pub min_source_count: usize,
 }
 
+impl MedianProcessor {
+    /// Creates a new `MedianProcessor`.
+    pub fn new(min_source_count: usize) -> Self {
+        MedianProcessor { min_source_count }
+    }
+}
+
 impl Processor<Decimal> for MedianProcessor {
     /// Processes the given data and returns the median. If there are not enough sources, it
     /// returns an error.
@@ -25,22 +32,16 @@ impl Processor<Decimal> for MedianProcessor {
         }
 
         if data.len() < self.min_source_count {
-            return Err(ProcessorError::NotEnoughSources);
+            Err(ProcessorError::NotEnoughSources)
+        } else {
+            Ok(median(data))
         }
-        Ok(median(data))
     }
 }
 
-// TODO: improve traits
 fn median<T>(mut data: Vec<T>) -> T
 where
-    T: Ord
-        + Add<Output = T>
-        + Sub<Output = T>
-        + Mul<Output = T>
-        + Div<Output = T>
-        + Copy
-        + FromPrimitive,
+    T: Ord + Copy + FromPrimitive + Add<Output = T> + Div<Output = T> + Sub<Output = T>,
 {
     data.sort();
     let mid = data.len() / 2;

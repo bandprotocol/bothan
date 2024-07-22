@@ -41,6 +41,16 @@ pub struct OperationRoute {
     pub operation: Operation,
 }
 
+impl OperationRoute {
+    /// Creates a new OperationRoute.
+    pub fn new<T: Into<String>>(signal_id: T, operation: Operation) -> Self {
+        OperationRoute {
+            signal_id: signal_id.into(),
+            operation,
+        }
+    }
+}
+
 /// Struct representing a source.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct SourceQuery {
@@ -51,4 +61,19 @@ pub struct SourceQuery {
     pub query_id: String,
     /// The operation routes to execute on the source query results.
     pub routes: Vec<OperationRoute>,
+}
+
+impl SourceQuery {
+    /// Creates a new SourceQuery.
+    pub fn new<T, U>(source_id: T, query_id: U, routes: Vec<OperationRoute>) -> Self
+    where
+        T: Into<String>,
+        U: Into<String>,
+    {
+        SourceQuery {
+            source_id: source_id.into(),
+            query_id: query_id.into(),
+            routes,
+        }
+    }
 }

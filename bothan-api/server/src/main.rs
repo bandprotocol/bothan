@@ -7,6 +7,7 @@ use tonic::transport::Server;
 use tracing::info;
 
 use bothan_api::api::CryptoQueryServer;
+use bothan_api::config::manager::CryptoSources;
 use bothan_api::config::registry::RegistrySource;
 use bothan_api::config::AppConfig;
 use bothan_api::manager::CryptoAssetInfoManager;
@@ -25,9 +26,12 @@ async fn main() {
         .with_env_filter(format!("bothan_api={}", config.log.level))
         .init();
 
-    let crypto_query_server = init_crypto_server(&config)
-        .await
-        .expect("cannot initialize crypto server");
+    let crypto_query_server = match init_crypto_server(&config).await {
+        Ok(server) => server,
+        Err(e) => {
+            panic!("Failed to initialize crypto server: {:?}", e);
+        }
+    };
 
     let addr = config.grpc.addr.clone().parse().unwrap();
 
@@ -39,7 +43,7 @@ async fn main() {
 }
 
 async fn init_crypto_server(config: &AppConfig) -> anyhow::Result<CryptoQueryServer> {
-    let registry = match &config.registry.crypto_assets {
+    let registry = match &config.manager.crypto.registry {
         RegistrySource::Local(local) => {
             let file = File::open(&local.path)?;
             serde_json::from_reader::<_, Registry>(file)?
@@ -50,24 +54,21 @@ async fn init_crypto_server(config: &AppConfig) -> anyhow::Result<CryptoQuerySer
         }
     };
 
-    ensure!(
-        registry.validate(),
-        "registry validation failed".to_string()
-    );
+    ensure!(registry.validate(), "invalid registry".to_string());
 
     let mut manager = CryptoAssetInfoManager::new(
         Arc::new(RwLock::new(registry)),
         config.manager.crypto.stale_threshold,
     );
 
-    init_crypto_workers(config, &mut manager).await;
+    init_crypto_workers(&config.manager.crypto.source, &mut manager).await;
 
-    Ok(CryptoQueryServer::new(manager, config.ipfs.url.clone()))
+    Ok(CryptoQueryServer::new(manager, None))
 }
 
-async fn init_crypto_workers(config: &AppConfig, manager: &mut CryptoAssetInfoManager) {
-    add_worker!(manager, BinanceWorkerBuilder, config.source.binance);
-    add_worker!(manager, CoinGeckoWorkerBuilder, config.source.coingecko);
+async fn init_crypto_workers(source: &CryptoSources, manager: &mut CryptoAssetInfoManager) {
+    add_worker!(manager, BinanceWorkerBuilder, source.binance);
+    add_worker!(manager, CoinGeckoWorkerBuilder, source.coingecko);
 
     // TODO: reimplement other workers
     // add_worker!(manager, BybitWorkerBuilder, config.source.bybit);

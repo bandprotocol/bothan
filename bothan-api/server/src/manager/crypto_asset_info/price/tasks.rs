@@ -11,7 +11,7 @@ use tracing::debug;
 use bothan_core::types::AssetInfo;
 use bothan_core::worker::{AssetStatus, AssetWorker};
 
-use crate::manager::crypto_asset_info::price::utils::filter_stale_assets;
+use crate::manager::crypto_asset_info::price::utils::is_stale;
 use crate::manager::crypto_asset_info::utils::into_key;
 use crate::registry::source::{OperationRoute, SourceQuery};
 use crate::registry::Registry;
@@ -55,7 +55,7 @@ pub async fn execute_tasks(
     current_time: i64,
     stale_threshold: i64,
 ) -> anyhow::Result<HashMap<String, Decimal>> {
-    let (source_tasks, signal_tasks) = tasks.take_tasks();
+    let (source_tasks, signal_tasks) = tasks.split();
 
     let results_size = source_tasks
         .iter()
@@ -107,15 +107,17 @@ async fn process_source_tasks_results(
         match res {
             Ok((source_id, asset_statuses)) => asset_statuses
                 .into_iter()
-                .filter_map(|s| match s {
-                    AssetStatus::Available(asset_info) => {
-                        filter_stale_assets(asset_info, current_time, stale_threshold)
+                .filter_map(|status| match status {
+                    AssetStatus::Available(info)
+                        if is_stale(info.timestamp, current_time, stale_threshold) =>
+                    {
+                        Some(info)
                     }
                     _ => None,
                 })
-                .for_each(|a| {
-                    let key = into_key(&source_id, &a.id);
-                    results.insert(key, a);
+                .for_each(|info| {
+                    let key = into_key(&source_id, &info.id);
+                    results.insert(key, info);
                 }),
             Err(e) => warn!("Error fetching assets from source with error: {}", e),
         };

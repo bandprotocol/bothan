@@ -41,9 +41,8 @@ impl Tasks {
         }
     }
 
-    /// Generates a new `Tasks` from a given `Registry`. If the registry contains invalid tasks this
-    /// function will return an error.
-    pub fn take_tasks(self) -> (Vec<SourceTask>, Vec<SignalTask>) {
+    /// Splits the task into its constituent parts.
+    pub fn split(self) -> (Vec<SourceTask>, Vec<SignalTask>) {
         (self.source_tasks, self.batched_signal_tasks)
     }
 }

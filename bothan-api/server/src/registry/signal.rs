@@ -11,3 +11,18 @@ pub struct Signal {
     pub processor: Process,
     pub post_processors: Vec<PostProcess>,
 }
+
+impl Signal {
+    /// Creates a new Signal.
+    pub fn new(
+        source_queries: Vec<SourceQuery>,
+        processor: Process,
+        post_processors: Vec<PostProcess>,
+    ) -> Self {
+        Signal {
+            source_queries,
+            processor,
+            post_processors,
+        }
+    }
+}

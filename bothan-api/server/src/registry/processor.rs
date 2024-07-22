@@ -19,7 +19,6 @@ pub enum ProcessorError {
 }
 
 /// The Processor trait defines the methods that a processor must implement.
-// #[enum_dispatch]
 pub trait Processor<T> {
     fn process(&self, data: Vec<T>) -> Result<T, ProcessorError>;
 }

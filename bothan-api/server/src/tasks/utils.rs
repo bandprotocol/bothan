@@ -21,13 +21,6 @@ pub fn get_tasks(registry: &Registry) -> Result<(Vec<SignalTask>, Vec<SourceTask
         .map(|id| registry.get(&id).map(|s| SignalTask::new(id, s.clone())))
         .collect::<Option<Vec<SignalTask>>>()
         .ok_or(Error::MissingNode)?;
-    //
-    // signal.sources.iter().all(|source| {
-    //     source
-    //         .routes
-    //         .iter()
-    //         .all(|route| signal.prerequisites.contains(&route.signal_id))
-    // })
 
     Ok((signal_tasks, source_tasks))
 }

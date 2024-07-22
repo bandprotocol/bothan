@@ -5,23 +5,18 @@ use crate::config::grpc::GrpcConfig;
 use crate::config::ipfs::IpfsConfig;
 use crate::config::log::LogConfig;
 use crate::config::manager::ManagerConfig;
-use crate::config::registry::RegistryConfig;
-use crate::config::source::SourceConfig;
 
 pub mod grpc;
 pub mod ipfs;
 pub mod log;
 pub mod manager;
 pub mod registry;
-pub mod source;
 
 /// The main application configuration.
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
     pub manager: ManagerConfig,
-    pub source: SourceConfig,
-    pub registry: RegistryConfig,
     pub ipfs: IpfsConfig,
     pub log: LogConfig,
 }
