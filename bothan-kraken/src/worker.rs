@@ -6,7 +6,7 @@ use tracing::error;
 use bothan_core::store::Store;
 use bothan_core::worker::{AssetStatus, AssetWorker, Error};
 
-use crate::api::websocket::BinanceWebSocketConnector;
+use crate::api::websocket::KrakenWebSocketConnector;
 
 mod asset_worker;
 pub mod builder;
@@ -14,18 +14,18 @@ pub(crate) mod error;
 pub mod opts;
 mod types;
 
-/// A worker that fetches and stores the asset information from Binance's API.
-pub struct BinanceWorker {
-    connector: BinanceWebSocketConnector,
+/// A worker that fetches and stores the asset information from Kraken's API.
+pub struct KrakenWorker {
+    connector: KrakenWebSocketConnector,
     store: Arc<Store>,
     subscribe_tx: Sender<Vec<String>>,
     unsubscribe_tx: Sender<Vec<String>>,
 }
 
-impl BinanceWorker {
+impl KrakenWorker {
     /// Create a new worker with the specified connector, store and channels.
     pub fn new(
-        connector: BinanceWebSocketConnector,
+        connector: KrakenWebSocketConnector,
         store: Arc<Store>,
         subscribe_tx: Sender<Vec<String>>,
         unsubscribe_tx: Sender<Vec<String>>,
@@ -40,7 +40,7 @@ impl BinanceWorker {
 }
 
 #[async_trait::async_trait]
-impl AssetWorker for BinanceWorker {
+impl AssetWorker for KrakenWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
     async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
         self.store.get_assets(ids).await
