@@ -1,30 +1,29 @@
 use std::sync::Arc;
 
+use semver::Version;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 use tracing::error;
 
+use crate::manager::crypto_asset_info::error::SetRegistryError;
 use crate::manager::CryptoAssetInfoManager;
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
     PriceRequest, PriceResponse, SetActiveSignalIdRequest, SetActiveSignalIdResponse,
-    UpdateRegistryRequest, UpdateRegistryResponse,
+    UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
 };
 use crate::utils::arc_mutex;
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
     manager: Arc<Mutex<CryptoAssetInfoManager>>,
-    // TODO: placeholder for future implementation
-    ipfs_client: Option<()>,
 }
 
 impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: CryptoAssetInfoManager, ipfs_client: Option<()>) -> Self {
+    pub fn new(manager: CryptoAssetInfoManager) -> Self {
         CryptoQueryServer {
             manager: arc_mutex!(manager),
-            ipfs_client,
         }
     }
 }
@@ -33,13 +32,35 @@ impl CryptoQueryServer {
 impl Query for CryptoQueryServer {
     async fn update_registry(
         &self,
-        _: Request<UpdateRegistryRequest>,
+        request: Request<UpdateRegistryRequest>,
     ) -> Result<Response<UpdateRegistryResponse>, Status> {
-        // TODO: Implement
-        match self.ipfs_client {
-            Some(_) => Err(Status::unimplemented("IPFS client is not implemented")),
-            None => Err(Status::not_found("registry update is disabled")),
-        }
+        let update_registry_request = request.into_inner();
+
+        let version = Version::parse(&update_registry_request.version).map_err(|e| {
+            error!("Failed to parse version: {:?}", e);
+            Status::invalid_argument("Version given is not properly formatted")
+        })?;
+
+        let mut manager = self.manager.lock().await;
+        manager
+            .set_registry(&update_registry_request.ipfs_hash, version)
+            .await
+            .map(|_| {
+                Response::new(UpdateRegistryResponse {
+                    code: UpdateStatusCode::Ok.into(),
+                })
+            })
+            .or_else(|e| match e {
+                SetRegistryError::UnsupportedVersion => Ok(Response::new(UpdateRegistryResponse {
+                    code: UpdateStatusCode::UnsupportedVersion.into(),
+                })),
+                SetRegistryError::InvalidRegistry => Ok(Response::new(UpdateRegistryResponse {
+                    code: UpdateStatusCode::InvalidRegistry.into(),
+                })),
+                SetRegistryError::FailedToRetrieve => Ok(Response::new(UpdateRegistryResponse {
+                    code: UpdateStatusCode::FailedToGetRegistry.into(),
+                })),
+            })
     }
 
     async fn set_active_signal_id(

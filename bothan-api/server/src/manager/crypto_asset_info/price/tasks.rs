@@ -24,7 +24,7 @@ pub fn create_reduced_registry(
     registry: &Registry,
 ) -> anyhow::Result<Registry> {
     let mut queue = VecDeque::from(signal_ids);
-    let mut reduced_registry: Registry = HashMap::new();
+    let mut reduced_registry = HashMap::new();
 
     while let Some(signal_id) = queue.pop_front() {
         let signal = registry
@@ -46,7 +46,7 @@ pub fn create_reduced_registry(
             });
     }
 
-    Ok(reduced_registry)
+    Ok(Registry::new(reduced_registry))
 }
 
 pub async fn execute_tasks(

@@ -10,7 +10,6 @@ pub mod grpc;
 pub mod ipfs;
 pub mod log;
 pub mod manager;
-pub mod registry;
 
 /// The main application configuration.
 #[derive(Clone, Debug, Deserialize)]

@@ -1,20 +1,19 @@
 [grpc]
 addr = "0.0.0.0:50051"
 
+[ipfs]
+
+[log]
+level = "debug"
+
 [manager.crypto]
 stale_threshold = 300
 no_update = "true"
 
-[source.binance]
-
-[source.coingecko]
-
-[registry.crypto_assets]
+[manager.crypto.registry]
 type = "local"
 path = "registry/crypto.json"
 
-[ipfs]
-url = ""
+[manager.crypto.source.binance]
 
-[log]
-level = "debug"
+[manager.crypto.source.coingecko]

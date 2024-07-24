@@ -1,44 +1,43 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use semver::Version;
 use tokio::sync::RwLock;
 
 use bothan_core::worker::AssetWorker;
 
+use crate::config::ipfs::IpfsConfig;
+use crate::manager::crypto_asset_info::error::SetRegistryError;
 use crate::manager::crypto_asset_info::price::get_prices;
 use crate::manager::crypto_asset_info::signal_ids::{
     add_worker_query_ids, remove_worker_query_ids,
 };
+use crate::manager::crypto_asset_info::utils::valid_version;
 use crate::proto::query::Price;
 use crate::registry::Registry;
 
 pub struct CryptoAssetInfoManager {
     workers: RwLock<HashMap<String, Arc<dyn AssetWorker>>>,
     active_signal_ids: Arc<RwLock<HashSet<String>>>,
-    registry: Arc<RwLock<Registry>>,
     stale_threshold: i64,
+    registry: Arc<RwLock<Registry>>,
+    ipfs_config: IpfsConfig,
 }
 
 impl CryptoAssetInfoManager {
-    /// Creates a new `CryptoAssetInfoManager` from the given registry and stale threshold.
-    pub fn new(registry: Arc<RwLock<Registry>>, stale_threshold: i64) -> Self {
+    pub fn new(stale_threshold: i64, registry: Registry, ipfs_config: IpfsConfig) -> Self {
         CryptoAssetInfoManager {
             workers: RwLock::new(HashMap::new()),
             active_signal_ids: Arc::new(RwLock::new(HashSet::new())),
-            registry,
             stale_threshold,
+            registry: Arc::new(RwLock::new(registry)),
+            ipfs_config,
         }
     }
 
     /// Adds a worker with an assigned name.
     pub async fn add_worker(&mut self, name: String, worker: Arc<dyn AssetWorker>) {
         self.workers.write().await.insert(name, worker);
-    }
-
-    /// Sets the registry of the manager.
-    pub async fn set_registry(&mut self, registry: Registry) {
-        let mut writer = self.registry.write().await;
-        *writer = registry;
     }
 
     /// Sets the active signal ids of the manager.
@@ -58,5 +57,32 @@ impl CryptoAssetInfoManager {
         let registry = self.registry.read().await;
         let workers = self.workers.write().await;
         get_prices(ids, &registry, &workers, self.stale_threshold).await
+    }
+
+    pub async fn set_registry(
+        &mut self,
+        hash: &str,
+        version: Version,
+    ) -> Result<(), SetRegistryError> {
+        if !valid_version(version) {
+            return Err(SetRegistryError::UnsupportedVersion);
+        }
+
+        let config = &self.ipfs_config;
+        let new_registry =
+            Registry::try_from_ipfs(&config.endpoint, hash, &config.authentication).await;
+
+        let reg = match new_registry {
+            Ok(reg) => reg,
+            Err(_) => return Err(SetRegistryError::InvalidRegistry),
+        };
+
+        if !reg.is_valid() {
+            return Err(SetRegistryError::InvalidRegistry);
+        }
+
+        let mut registry = self.registry.write().await;
+        *registry = reg;
+        Ok(())
     }
 }

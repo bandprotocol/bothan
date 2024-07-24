@@ -1,23 +1,18 @@
-use std::fs::File;
 use std::sync::Arc;
 
-use anyhow::ensure;
-use tokio::sync::RwLock;
 use tonic::transport::Server;
 use tracing::info;
 
 use bothan_api::api::CryptoQueryServer;
-use bothan_api::config::manager::CryptoSources;
-use bothan_api::config::registry::RegistrySource;
+use bothan_api::config::manager::crypto_info::registry::RegistrySeedConfig;
+use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
 use bothan_api::manager::CryptoAssetInfoManager;
 use bothan_api::proto::query::query_server::QueryServer;
-use bothan_api::registry::{Registry, Validator};
+use bothan_api::registry::Registry;
 use bothan_api::utils::add_worker;
 use bothan_binance::BinanceWorkerBuilder;
 use bothan_coingecko::CoinGeckoWorkerBuilder;
-
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() {
@@ -43,30 +38,26 @@ async fn main() {
 }
 
 async fn init_crypto_server(config: &AppConfig) -> anyhow::Result<CryptoQueryServer> {
-    let registry = match &config.manager.crypto.registry {
-        RegistrySource::Local(local) => {
-            let file = File::open(&local.path)?;
-            serde_json::from_reader::<_, Registry>(file)?
-        }
-        RegistrySource::Ipfs(_) => {
-            // TODO: implement ipfs
-            todo!()
+    let ipfs_config = config.ipfs.clone();
+
+    let seed_registry = match &config.manager.crypto.registry {
+        RegistrySeedConfig::Local { path } => Registry::try_from_path(path)?,
+        RegistrySeedConfig::Ipfs { hash } => {
+            Registry::try_from_ipfs(&ipfs_config.endpoint, hash, &ipfs_config.authentication)
+                .await?
         }
     };
 
-    ensure!(registry.validate(), "invalid registry".to_string());
+    let stale_threshold = config.manager.crypto.stale_threshold;
+    let mut manager = CryptoAssetInfoManager::new(stale_threshold, seed_registry, ipfs_config);
 
-    let mut manager = CryptoAssetInfoManager::new(
-        Arc::new(RwLock::new(registry)),
-        config.manager.crypto.stale_threshold,
-    );
+    let source_config = &config.manager.crypto.source;
+    init_crypto_workers(source_config, &mut manager).await;
 
-    init_crypto_workers(&config.manager.crypto.source, &mut manager).await;
-
-    Ok(CryptoQueryServer::new(manager, None))
+    Ok(CryptoQueryServer::new(manager))
 }
 
-async fn init_crypto_workers(source: &CryptoSources, manager: &mut CryptoAssetInfoManager) {
+async fn init_crypto_workers(source: &CryptoSourceConfigs, manager: &mut CryptoAssetInfoManager) {
     add_worker!(manager, BinanceWorkerBuilder, source.binance);
     add_worker!(manager, CoinGeckoWorkerBuilder, source.coingecko);
 

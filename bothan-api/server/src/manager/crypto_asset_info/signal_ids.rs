@@ -92,7 +92,7 @@ mod tests {
     use super::*;
 
     fn mock_registry() -> Registry {
-        HashMap::from_iter([
+        let registry = HashMap::from_iter([
             (
                 "CS:BTC-USD".to_string(),
                 Signal::new(
@@ -117,7 +117,9 @@ mod tests {
                     vec![],
                 ),
             ),
-        ])
+        ]);
+
+        Registry::new(registry)
     }
 
     #[test]
