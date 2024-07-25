@@ -1,25 +1,26 @@
-use tokio_tungstenite::tungstenite::{self, http::StatusCode};
+use tokio_tungstenite::tungstenite;
 
-/// Represents various errors that can occur in the application.
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
-    /// Indicates a failure to connect, with the given response status code.
-    #[error("failed to connect with response code {0}")]
-    ConnectionFailure(StatusCode),
+pub enum ConnectionError {
+    #[error("failed to connect to endpoint {0}")]
+    ConnectionFailure(#[from] tungstenite::Error),
 
-    /// Indicates a failure to parse a message.
-    #[error("failed to parse")]
+    #[error("received unsuccessful HTTP response: {0}")]
+    UnsuccessfulHttpResponse(tungstenite::http::StatusCode),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum MessageError {
+    #[error("failed to parse message")]
     Parse(#[from] serde_json::Error),
 
-    /// Represents an error from the Tungstenite library.
-    #[error("tungstenite error")]
-    Tungstenite(#[from] tungstenite::Error),
-
-    /// Indicates that the channel was closed unexpectedly.
     #[error("channel closed")]
     ChannelClosed,
 
-    /// Indicates that an unsupported message was received.
     #[error("unsupported message")]
     UnsupportedMessage,
 }
+
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct SendError(#[from] tungstenite::Error);

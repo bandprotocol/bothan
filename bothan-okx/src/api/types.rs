@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::api::types::channel::ChannelResponse;
-use crate::api::types::message::WebSocketMessageResponse;
+pub use channel::{ChannelResponse, TickerData};
+pub use message::WebSocketMessageResponse;
 
 pub mod channel;
 pub mod message;
