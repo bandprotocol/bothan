@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub use channel::{ChannelResponse, TickerData};
+pub use channel::{ChannelArgument, ChannelResponse, PushData, TickerData};
 pub use message::WebSocketMessageResponse;
 
 pub mod channel;
@@ -9,7 +9,7 @@ pub mod message;
 pub const DEFAULT_URL: &str = "wss://ws.okx.com:8443/ws/v5/public";
 
 /// Represents the different types of responses from the OKX WebSocket API.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum OkxResponse {
     /// A response from a WebSocket message.

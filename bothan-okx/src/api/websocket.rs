@@ -123,3 +123,87 @@ fn build_ticker_arguments(inst_ids: &[&str]) -> Vec<PriceRequestArgument> {
         })
         .collect()
 }
+
+#[cfg(test)]
+pub(crate) mod test {
+    use tokio::sync::mpsc;
+    use ws_mock::ws_mock_server::{WsMock, WsMockServer};
+
+    use crate::api::types::{ChannelArgument, ChannelResponse, OkxResponse, PushData, TickerData};
+
+    use super::*;
+
+    pub(crate) async fn setup_mock_server() -> WsMockServer {
+        WsMockServer::start().await
+    }
+
+    #[tokio::test]
+    async fn test_recv_ticker() {
+        // Set up the mock server and the WebSocket connector.
+        let server = setup_mock_server().await;
+        let connector = OkxWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Create a mock ticker data.
+        let mock_ticker = TickerData {
+            inst_type: "SPOT".to_string(),
+            inst_id: "BTC-USDT".to_string(),
+            last: "10000".to_string(),
+            last_sz: "5000".to_string(),
+            ask_px: "10001".to_string(),
+            ask_sz: "5000".to_string(),
+            bid_px: "9999".to_string(),
+            bid_sz: "5000".to_string(),
+            open_24h: "10000".to_string(),
+            high_24h: "10000".to_string(),
+            low_24h: "10000".to_string(),
+            vol_ccy_24h: "10000".to_string(),
+            vol_24h: "10000".to_string(),
+            sod_utc0: "10000".to_string(),
+            sod_utc8: "10000".to_string(),
+            ts: "10000".to_string(),
+        };
+        let mock_resp = OkxResponse::ChannelResponse(ChannelResponse::Ticker(PushData {
+            arg: ChannelArgument {
+                channel: "tickers".to_string(),
+                inst_id: "BTC-USDT".to_string(),
+            },
+            data: vec![mock_ticker],
+        }));
+
+        // Mount the mock WebSocket server and send the mock response.
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send
+            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
+            .await
+            .unwrap();
+
+        // Connect to the mock WebSocket server and retrieve the response.
+        let mut connection = connector.connect().await.unwrap();
+        let resp = connection.next().await.unwrap();
+        assert_eq!(resp, mock_resp);
+    }
+
+    #[tokio::test]
+    async fn test_recv_close() {
+        // Set up the mock server and the WebSocket connector.
+        let server = setup_mock_server().await;
+        let connector = OkxWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Mount the mock WebSocket server and send a close message.
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send.send(Message::Close(None)).await.unwrap();
+
+        // Connect to the mock WebSocket server and verify the connection closure.
+        let mut connection = connector.connect().await.unwrap();
+        let resp = connection.next().await;
+        assert!(resp.is_err());
+    }
+}

@@ -189,3 +189,61 @@ async fn handle_connection_recv(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parse_market() {
+        let ticker = TickerData {
+            inst_type: "SPOT".to_string(),
+            inst_id: "BTC-USDT".to_string(),
+            last: "42000.99".to_string(),
+            last_sz: "5000".to_string(),
+            ask_px: "10001".to_string(),
+            ask_sz: "5000".to_string(),
+            bid_px: "9999".to_string(),
+            bid_sz: "5000".to_string(),
+            open_24h: "10000".to_string(),
+            high_24h: "10000".to_string(),
+            low_24h: "10000".to_string(),
+            vol_ccy_24h: "10000".to_string(),
+            vol_24h: "10000".to_string(),
+            sod_utc0: "10000".to_string(),
+            sod_utc8: "10000".to_string(),
+            ts: "10000".to_string(),
+        };
+        let result = parse_ticker(ticker);
+        let expected = AssetInfo::new(
+            "BTC-USDT".to_string(),
+            Decimal::from_str_exact("42000.99").unwrap(),
+            0,
+        );
+        assert_eq!(result.as_ref().unwrap().id, expected.id);
+        assert_eq!(result.unwrap().price, expected.price);
+    }
+
+    #[test]
+    fn test_parse_market_with_failure() {
+        let ticker = TickerData {
+            inst_type: "SPOT".to_string(),
+            inst_id: "BTC-USDT".to_string(),
+            last: f64::INFINITY.to_string(),
+            last_sz: "5000".to_string(),
+            ask_px: "10001".to_string(),
+            ask_sz: "5000".to_string(),
+            bid_px: "9999".to_string(),
+            bid_sz: "5000".to_string(),
+            open_24h: "10000".to_string(),
+            high_24h: "10000".to_string(),
+            low_24h: "10000".to_string(),
+            vol_ccy_24h: "10000".to_string(),
+            vol_24h: "10000".to_string(),
+            sod_utc0: "10000".to_string(),
+            sod_utc8: "10000".to_string(),
+            ts: "10000".to_string(),
+        };
+        assert!(parse_ticker(ticker).is_err());
+    }
+}

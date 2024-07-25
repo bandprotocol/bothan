@@ -26,7 +26,7 @@ pub struct WebSocketMessage<T> {
 }
 
 /// Represents a response to a WebSocket message.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct WebSocketMessageResponse {
     /// The event name.

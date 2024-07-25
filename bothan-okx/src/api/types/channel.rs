@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents a response from a channel subscription.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum ChannelResponse {
     /// Ticker data response.
