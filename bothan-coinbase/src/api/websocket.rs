@@ -124,3 +124,81 @@ impl CoinbaseWebSocketConnection {
         Ok(())
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test {
+    use tokio::sync::mpsc;
+    use ws_mock::ws_mock_server::{WsMock, WsMockServer};
+
+    use crate::api::types::{CoinbaseResponse, Ticker};
+
+    use super::*;
+
+    pub(crate) async fn setup_mock_server() -> WsMockServer {
+        WsMockServer::start().await
+    }
+
+    #[tokio::test]
+    async fn test_recv_ticker() {
+        // Set up the mock server and the WebSocket connector.
+        let server = setup_mock_server().await;
+        let connector = CoinbaseWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Create a mock ticker response.
+        let mock_ticker = Ticker {
+            sequence: 1,
+            product_id: "BTC-USD".to_string(),
+            price: "10000.00".to_string(),
+            open_24h: "9000.00".to_string(),
+            volume_24h: "1000.00".to_string(),
+            low_24h: "9500.00".to_string(),
+            high_24h: "10500.00".to_string(),
+            volume_30d: "30000.00".to_string(),
+            best_bid: "9999.00".to_string(),
+            best_bid_size: "0.01".to_string(),
+            best_ask: "10001.00".to_string(),
+            best_ask_size: "0.01".to_string(),
+            side: "buy".to_string(),
+            time: "2021-01-01T00:00:00.000Z".to_string(),
+            trade_id: 1,
+            last_size: "0.01".to_string(),
+        };
+        let mock_resp = CoinbaseResponse::Ticker(Box::new(mock_ticker));
+
+        // Mount the mock WebSocket server and send the mock response.
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send
+            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
+            .await
+            .unwrap();
+
+        // Connect to the mock WebSocket server and retrieve the response.
+        let mut connection = connector.connect().await.unwrap();
+        let resp = connection.next().await.unwrap();
+        assert_eq!(resp, mock_resp);
+    }
+
+    #[tokio::test]
+    async fn test_recv_close() {
+        // Set up the mock server and the WebSocket connector.
+        let server = setup_mock_server().await;
+        let connector = CoinbaseWebSocketConnector::new(server.uri().await);
+        let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
+
+        // Mount the mock WebSocket server and send a close message.
+        WsMock::new()
+            .forward_from_channel(mpsc_recv)
+            .mount(&server)
+            .await;
+        mpsc_send.send(Message::Close(None)).await.unwrap();
+
+        // Connect to the mock WebSocket server and verify the connection closure.
+        let mut connection = connector.connect().await.unwrap();
+        let resp = connection.next().await;
+        assert!(resp.is_err());
+    }
+}

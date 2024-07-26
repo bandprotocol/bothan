@@ -10,7 +10,7 @@ pub mod request;
 pub const DEFAULT_URL: &str = "wss://ws-feed.exchange.coinbase.com";
 
 /// Represents the possible responses from the Coinbase feed.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum CoinbaseResponse {
     /// A ticker update.

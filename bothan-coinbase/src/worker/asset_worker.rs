@@ -186,3 +186,61 @@ async fn handle_connection_recv(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parse_market() {
+        let ticker = Ticker {
+            sequence: 1,
+            product_id: "BTC-USD".to_string(),
+            price: "42000.99".to_string(),
+            open_24h: "9000.00".to_string(),
+            volume_24h: "1000.00".to_string(),
+            low_24h: "9500.00".to_string(),
+            high_24h: "10500.00".to_string(),
+            volume_30d: "30000.00".to_string(),
+            best_bid: "9999.00".to_string(),
+            best_bid_size: "0.01".to_string(),
+            best_ask: "10001.00".to_string(),
+            best_ask_size: "0.01".to_string(),
+            side: "buy".to_string(),
+            time: "2021-01-01T00:00:00.000Z".to_string(),
+            trade_id: 1,
+            last_size: "0.01".to_string(),
+        };
+        let result = parse_ticker(&ticker);
+        let expected = AssetInfo::new(
+            "BTC-USD".to_string(),
+            Decimal::from_str_exact("42000.99").unwrap(),
+            0,
+        );
+        assert_eq!(result.as_ref().unwrap().id, expected.id);
+        assert_eq!(result.unwrap().price, expected.price);
+    }
+
+    #[test]
+    fn test_parse_market_with_failure() {
+        let ticker = Ticker {
+            sequence: 1,
+            product_id: "BTC-USD".to_string(),
+            price: f64::INFINITY.to_string(),
+            open_24h: "9000.00".to_string(),
+            volume_24h: "1000.00".to_string(),
+            low_24h: "9500.00".to_string(),
+            high_24h: "10500.00".to_string(),
+            volume_30d: "30000.00".to_string(),
+            best_bid: "9999.00".to_string(),
+            best_bid_size: "0.01".to_string(),
+            best_ask: "10001.00".to_string(),
+            best_ask_size: "0.01".to_string(),
+            side: "buy".to_string(),
+            time: "2021-01-01T00:00:00.000Z".to_string(),
+            trade_id: 1,
+            last_size: "0.01".to_string(),
+        };
+        assert!(parse_ticker(&ticker).is_err());
+    }
+}
