@@ -13,21 +13,6 @@ use crate::worker::BinanceWorker;
 /// Builds a `BinanceWorker` with custom options.
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](BinanceWorkerBuilder::build) method.
-/// # Example
-/// ```no_run
-/// use bothan_binance::BinanceWorkerBuilder;
-///
-///
-/// #[tokio::main]
-/// async fn main() {
-///     let worker = BinanceWorkerBuilder::default()
-///         .build()
-///         .await
-///         .unwrap();
-///
-///     // use worker ...
-/// }
-/// ```
 pub struct BinanceWorkerBuilder {
     store: Arc<WorkerStore>,
     opts: BinanceWorkerBuilderOpts,

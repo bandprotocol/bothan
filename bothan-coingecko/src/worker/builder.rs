@@ -13,21 +13,6 @@ use crate::worker::CoinGeckoWorker;
 /// Builds a `CoinGeckoWorker` with custom options.
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](CoinGeckoWorker::build) method.
-/// # Example
-/// ```no_run
-/// use bothan_coingecko::CoinGeckoWorkerBuilder;
-///
-///
-/// #[tokio::main]
-/// async fn main() {
-///     let worker = CoinGeckoWorkerBuilder::default()
-///         .build()
-///         .await
-///         .unwrap();
-///
-///     // use worker ...
-/// }
-/// ```
 pub struct CoinGeckoWorkerBuilder {
     store: Arc<WorkerStore>,
     opts: CoinGeckoWorkerBuilderOpts,

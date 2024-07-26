@@ -53,7 +53,7 @@ mod tests {
 
     #[test]
     fn test_process_median() {
-        let median = Process::Median(median::MedianProcessor {
+        let median = Processor::Median(median::MedianProcessor {
             min_source_count: 1,
         });
         let res = median.process(data());
@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_process_median_with_invalid_parameter() {
-        let median = Process::Median(median::MedianProcessor {
+        let median = Processor::Median(median::MedianProcessor {
             min_source_count: 0,
         });
         let res = median.process(data());
