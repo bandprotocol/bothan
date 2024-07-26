@@ -1,90 +1,81 @@
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 
-use tokio::sync::{Mutex, RwLock};
+pub use manager::ManagerStore;
+use rust_rocksdb::{Options, DB};
+use serde::Serialize;
+use tokio::sync::RwLock;
+use tracing::info;
+pub use worker::WorkerStore;
 
+use crate::registry::Registry;
+use crate::store::errors::Error;
 use crate::types::AssetInfo;
-use crate::worker::AssetStatus;
 
-// TODO: Store should have namespace for different sources
+pub mod errors;
+mod manager;
+mod worker;
+
 pub struct Store {
     asset_store: RwLock<HashMap<String, AssetInfo>>,
-    query_ids: Mutex<HashSet<String>>,
-}
-
-impl Default for Store {
-    fn default() -> Self {
-        Store::new()
-    }
+    query_ids: RwLock<HashMap<String, HashSet<String>>>,
+    active_signal_ids: RwLock<HashSet<String>>,
+    registry: RwLock<Registry>,
+    db: DB,
 }
 
 impl Store {
-    pub fn new() -> Self {
-        Self {
+    /// Create a new store with the given registry and flush path. If the store already exists at the
+    /// given path, it will be restored and the registry will be overwritten.
+    pub async fn new(registry: Registry, flush_path: &Path) -> Result<Self, Error> {
+        let mut opts = Options::default();
+        opts.create_if_missing(true);
+
+        let db = DB::open(&opts, flush_path)?;
+
+        let mut store = Self {
             asset_store: RwLock::new(HashMap::new()),
-            query_ids: Mutex::new(HashSet::new()),
+            query_ids: RwLock::new(HashMap::new()),
+            active_signal_ids: RwLock::new(HashSet::new()),
+            registry: RwLock::new(registry),
+            db,
+        };
+
+        store.restore();
+
+        Ok(store)
+    }
+
+    fn restore(&mut self) {
+        if let Ok(Some(bytes)) = self.db.get("asset_store") {
+            if let Ok(Some(asset_store)) = bincode::deserialize(bytes.as_slice()) {
+                self.asset_store = RwLock::new(asset_store);
+            }
+        }
+
+        if let Ok(Some(bytes)) = self.db.get("query_ids") {
+            if let Ok(Some(query_ids)) = bincode::deserialize(bytes.as_slice()) {
+                self.query_ids = RwLock::new(query_ids);
+            }
+        }
+
+        if let Ok(Some(bytes)) = self.db.get("active_signal_ids") {
+            if let Ok(Some(active_signal_ids)) = bincode::deserialize(bytes.as_slice()) {
+                self.active_signal_ids = RwLock::new(active_signal_ids);
+            }
         }
     }
 
-    pub async fn get_assets<K: AsRef<str> + Send + Sync>(&self, ids: &[K]) -> Vec<AssetStatus> {
-        let data_store = self.asset_store.read().await;
-        let query_ids = self.query_ids.lock().await;
-
-        ids.iter()
-            .map(
-                |id| match (query_ids.contains(id.as_ref()), data_store.get(id.as_ref())) {
-                    (false, _) => AssetStatus::Unsupported,
-                    (true, Some(asset)) => AssetStatus::Available(asset.clone()),
-                    (true, None) => AssetStatus::Pending,
-                },
-            )
-            .collect()
-    }
-
-    pub async fn get_all_assets(&self) -> Vec<AssetInfo> {
-        self.asset_store.read().await.values().cloned().collect()
-    }
-
-    pub async fn set_asset<K: Into<String>>(&self, id: K, asset_info: AssetInfo) {
-        let mut data_store = self.asset_store.write().await;
-        data_store.insert(id.into(), asset_info);
-    }
-
-    pub async fn set_assets<K: Into<String>>(&self, assets: Vec<(K, AssetInfo)>) {
-        let mut data_store = self.asset_store.write().await;
-        for (id, asset) in assets {
-            data_store.insert(id.into(), asset);
-        }
-    }
-
-    pub async fn add_query_ids<K: Into<String>>(&self, ids: Vec<K>) -> Vec<String> {
-        let mut query_ids = self.query_ids.lock().await;
-        ids.into_iter()
-            .filter_map(|id| {
-                let id = id.into();
-                if query_ids.insert(id.clone()) {
-                    Some(id)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    pub async fn remove_query_ids<K: AsRef<str>>(&self, ids: &[K]) -> Vec<String> {
-        let mut query_ids = self.query_ids.lock().await;
-        ids.iter()
-            .filter_map(|id| {
-                let id = id.as_ref();
-                if query_ids.remove(id) {
-                    Some(id.to_string())
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    pub async fn get_query_ids(&self) -> Vec<String> {
-        self.query_ids.lock().await.iter().cloned().collect()
+    fn save_state<K, V>(&self, key: K, val: &V) -> Result<(), Error>
+    where
+        K: AsRef<[u8]>,
+        V: Serialize + ?Sized,
+    {
+        info!("saving state");
+        let serialized = bincode::serialize(&val)?;
+        self.db.put(key, serialized)?;
+        self.db.flush()?;
+        info!("saved state");
+        Ok(())
     }
 }

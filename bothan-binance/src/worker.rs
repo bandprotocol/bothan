@@ -3,8 +3,8 @@ use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tracing::error;
 
-use bothan_core::store::Store;
-use bothan_core::worker::{AssetStatus, AssetWorker, Error};
+use bothan_core::store::WorkerStore;
+use bothan_core::worker::{AssetState, AssetWorker, Error};
 
 use crate::api::websocket::BinanceWebSocketConnector;
 
@@ -17,7 +17,7 @@ mod types;
 /// A worker that fetches and stores the asset information from Binance's API.
 pub struct BinanceWorker {
     connector: BinanceWebSocketConnector,
-    store: Arc<Store>,
+    store: Arc<WorkerStore>,
     subscribe_tx: Sender<Vec<String>>,
     unsubscribe_tx: Sender<Vec<String>>,
 }
@@ -26,7 +26,7 @@ impl BinanceWorker {
     /// Create a new worker with the specified connector, store and channels.
     pub fn new(
         connector: BinanceWebSocketConnector,
-        store: Arc<Store>,
+        store: Arc<WorkerStore>,
         subscribe_tx: Sender<Vec<String>>,
         unsubscribe_tx: Sender<Vec<String>>,
     ) -> Self {
@@ -42,7 +42,7 @@ impl BinanceWorker {
 #[async_trait::async_trait]
 impl AssetWorker for BinanceWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
+    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetState> {
         self.store.get_assets(ids).await
     }
 
@@ -50,17 +50,14 @@ impl AssetWorker for BinanceWorker {
     async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
         let to_sub = self.store.add_query_ids(ids).await;
 
-        if let Err(e) = self.subscribe_tx.send(to_sub.clone()).await {
-            error!("failed to add query ids: {}", e);
-            self.store.remove_query_ids(to_sub.as_slice()).await;
-            Err(Error::ModifyQueryIDsFailed(e.to_string()))
-        } else {
-            Ok(())
-        }
+        self.subscribe_tx
+            .send(to_sub.clone())
+            .await
+            .map_err(|e| Error::ModifyQueryIDsFailed(e.to_string()))
     }
 
     /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
+    async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
         let to_unsub = self.store.remove_query_ids(ids).await;
 
         if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {
@@ -70,10 +67,5 @@ impl AssetWorker for BinanceWorker {
         } else {
             Ok(())
         }
-    }
-
-    /// Retrieves the current set of queried cryptocurrency IDs.
-    async fn get_query_ids(&self) -> Vec<String> {
-        self.store.get_query_ids().await
     }
 }

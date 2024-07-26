@@ -6,12 +6,9 @@ pub const DEFAULT_IPFS_ENDPOINT: &str = "https://ipfs.io";
 pub enum IpfsAuthentication {
     #[default]
     None,
-    Bearer {
-        token: String,
-    },
-    Basic {
-        username: String,
-        password: String,
+    Header {
+        key: String,
+        value: String,
     },
 }
 

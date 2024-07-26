@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use bothan_core::store::Store;
-use bothan_core::worker::{AssetStatus, AssetWorker, Error};
+use bothan_core::store::WorkerStore;
+use bothan_core::worker::{AssetState, AssetWorker, Error};
 
 use crate::api::CoinGeckoRestAPI;
 
@@ -14,12 +14,12 @@ pub mod types;
 /// A worker that fetches and stores the asset information from CoinGecko's API.
 pub struct CoinGeckoWorker {
     api: CoinGeckoRestAPI,
-    store: Arc<Store>,
+    store: Arc<WorkerStore>,
 }
 
 impl CoinGeckoWorker {
     /// Create a new worker with the specified api and store.
-    pub fn new(api: CoinGeckoRestAPI, store: Arc<Store>) -> Self {
+    pub fn new(api: CoinGeckoRestAPI, store: Arc<WorkerStore>) -> Self {
         Self { api, store }
     }
 }
@@ -27,7 +27,7 @@ impl CoinGeckoWorker {
 #[async_trait::async_trait]
 impl AssetWorker for CoinGeckoWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
+    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetState> {
         self.store.get_assets(ids).await
     }
 
@@ -38,13 +38,8 @@ impl AssetWorker for CoinGeckoWorker {
     }
 
     /// Removes the specified cryptocurrency IDs from the query set.
-    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
+    async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
         self.store.remove_query_ids(ids).await;
         Ok(())
-    }
-
-    /// Retrieves the current set of queried cryptocurrency IDs.
-    async fn get_query_ids(&self) -> Vec<String> {
-        self.get_query_ids().await
     }
 }

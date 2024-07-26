@@ -1,12 +1,19 @@
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 pub mod tick;
 
-#[derive(Debug, thiserror::Error)]
-pub enum PostProcessorError {
-    #[error("price out of bound")]
-    OutOfBound,
+#[derive(Debug, Error, PartialEq, Clone)]
+#[error("{msg}")]
+pub struct PostProcessorError {
+    msg: String,
+}
+
+impl PostProcessorError {
+    pub fn new<T: Into<String>>(msg: T) -> Self {
+        PostProcessorError { msg: msg.into() }
+    }
 }
 
 /// The PostProcessor trait defines the methods that a post-processor must implement.

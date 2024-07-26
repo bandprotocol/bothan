@@ -1,19 +1,17 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use anyhow::anyhow;
-use tracing::{error, info};
-
-use bothan_core::worker::AssetWorker;
-
+use crate::manager::crypto_asset_info::error::MissingSignalError;
 use crate::registry::Registry;
+use crate::worker::AssetWorker;
+use tracing::{error, info};
 
 pub async fn add_worker_query_ids(
     workers: &HashMap<String, Arc<dyn AssetWorker>>,
     current_active_set: &HashSet<String>,
     new_active_set: &HashSet<String>,
     registry: &Registry,
-) -> anyhow::Result<()> {
+) -> Result<(), MissingSignalError> {
     let ids_to_add = new_active_set
         .difference(current_active_set)
         .cloned()
@@ -39,7 +37,7 @@ pub async fn remove_worker_query_ids(
     current_active_set: &HashSet<String>,
     new_active_set: &HashSet<String>,
     registry: &Registry,
-) -> anyhow::Result<()> {
+) -> Result<(), MissingSignalError> {
     let ids_to_rem = current_active_set
         .difference(new_active_set)
         .cloned()
@@ -48,8 +46,7 @@ pub async fn remove_worker_query_ids(
     let mut query_ids = get_source_batched_query_ids(ids_to_rem.as_slice(), registry)?;
     for (source, ids) in query_ids.drain() {
         if let Some(worker) = workers.get(&source) {
-            let ids = ids.iter().map(|id| id.as_str()).collect::<Vec<&str>>();
-            match worker.remove_query_ids(&ids).await {
+            match worker.remove_query_ids(ids).await {
                 Ok(_) => info!("Removed query ids from {} worker", source),
                 Err(e) => error!("Worker {} failed to remove query ids: {}", source, e),
             }
@@ -64,13 +61,13 @@ pub async fn remove_worker_query_ids(
 fn get_source_batched_query_ids(
     signal_ids: &[String],
     registry: &Registry,
-) -> anyhow::Result<HashMap<String, Vec<String>>> {
+) -> Result<HashMap<String, Vec<String>>, MissingSignalError> {
     let mut query_ids: HashMap<String, Vec<String>> = HashMap::new();
 
     for signal_id in signal_ids.iter() {
-        let signal = registry
-            .get(signal_id)
-            .ok_or(anyhow!("Signal not found: {}", signal_id))?;
+        let signal = registry.get(signal_id).ok_or(MissingSignalError {
+            signal_id: signal_id.to_owned(),
+        })?;
         for source in signal.source_queries.iter() {
             query_ids
                 .entry(source.source_id.clone())
@@ -85,7 +82,7 @@ fn get_source_batched_query_ids(
 #[cfg(test)]
 mod tests {
     use crate::registry::processor::median::MedianProcessor;
-    use crate::registry::processor::Process;
+    use crate::registry::processor::Processor;
     use crate::registry::signal::Signal;
     use crate::registry::source::SourceQuery;
 
@@ -101,7 +98,7 @@ mod tests {
                         SourceQuery::new("coingecko", "bitcoin", vec![]),
                         SourceQuery::new("coinmarketcap", "bitcoin", vec![]),
                     ],
-                    Process::Median(MedianProcessor::new(1)),
+                    Processor::Median(MedianProcessor::new(1)),
                     vec![],
                 ),
             ),
@@ -113,13 +110,13 @@ mod tests {
                         SourceQuery::new("coingecko", "ethereum", vec![]),
                         SourceQuery::new("coinmarketcap", "ethereum", vec![]),
                     ],
-                    Process::Median(MedianProcessor::new(1)),
+                    Processor::Median(MedianProcessor::new(1)),
                     vec![],
                 ),
             ),
         ]);
 
-        Registry::new(registry)
+        registry
     }
 
     #[test]

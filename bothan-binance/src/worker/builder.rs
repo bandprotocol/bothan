@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::channel;
 
-use bothan_core::store::Store;
+use bothan_core::store::WorkerStore;
 
 use crate::api::websocket::BinanceWebSocketConnector;
 use crate::worker::asset_worker::start_asset_worker;
@@ -29,13 +29,13 @@ use crate::worker::BinanceWorker;
 /// }
 /// ```
 pub struct BinanceWorkerBuilder {
-    store: Arc<Store>,
+    store: Arc<WorkerStore>,
     opts: BinanceWorkerBuilderOpts,
 }
 
 impl BinanceWorkerBuilder {
     /// Returns a new `BinanceWorkerBuilder` with the given options.
-    pub fn new(store: Arc<Store>, opts: BinanceWorkerBuilderOpts) -> Self {
+    pub fn new(store: Arc<WorkerStore>, opts: BinanceWorkerBuilderOpts) -> Self {
         Self { store, opts }
     }
 
@@ -55,7 +55,7 @@ impl BinanceWorkerBuilder {
 
     /// Sets the store for the `BinanceWorker`.
     /// If not set, the store is created and owned by the worker.
-    pub fn with_store(mut self, store: Arc<Store>) -> Self {
+    pub fn with_store(mut self, store: Arc<WorkerStore>) -> Self {
         self.store = store;
         self
     }
@@ -81,15 +81,5 @@ impl BinanceWorkerBuilder {
         ));
 
         Ok(worker)
-    }
-}
-
-impl Default for BinanceWorkerBuilder {
-    /// Create a new `BinanceWorkerBuilder` with its default values.
-    fn default() -> Self {
-        Self::new(
-            Arc::new(Store::default()),
-            BinanceWorkerBuilderOpts::default(),
-        )
     }
 }

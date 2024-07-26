@@ -6,6 +6,9 @@ addr = "0.0.0.0:50051"
 [log]
 level = "debug"
 
+[store]
+path = ".bothan"
+
 [manager.crypto]
 stale_threshold = 300
 no_update = "true"

@@ -1,16 +1,15 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use anyhow::Context;
 use tracing::debug;
 
-use bothan_core::worker::AssetWorker;
-
+use crate::manager::crypto_asset_info::error::GetPriceError;
 use crate::manager::crypto_asset_info::price::tasks::{create_reduced_registry, execute_tasks};
-use crate::manager::crypto_asset_info::price::utils::get_price_id;
-use crate::proto::query::Price;
+use crate::manager::crypto_asset_info::price::utils::get_price_state;
+use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::Registry;
 use crate::tasks::Tasks;
+use crate::worker::AssetWorker;
 
 mod tasks;
 mod utils;
@@ -18,11 +17,11 @@ mod utils;
 const PRECISION: u32 = 9;
 
 pub async fn get_prices(
-    ids: Vec<String>,
+    ids: &[String],
     registry: &Registry,
     workers: &HashMap<String, Arc<dyn AssetWorker>>,
     stale_threshold: i64,
-) -> anyhow::Result<Vec<Price>> {
+) -> Result<Vec<PriceState>, GetPriceError> {
     let current_time = chrono::Utc::now().timestamp();
 
     // Split the signals into those that exist and those that do not.
@@ -38,19 +37,21 @@ pub async fn get_prices(
 
     let unsupported_ids = unsupported.into_iter().collect::<HashSet<String>>();
     let reduced_registry = create_reduced_registry(supported.clone(), registry)
-        .with_context(|| format!("Failed to create registry with signals: {:?}", supported))?;
+        .map_err(|e| GetPriceError::RegistryCreation(e.to_string()))?;
 
     let tasks = Tasks::try_from(reduced_registry)
-        .with_context(|| "Failed to create tasks from registry")?;
+        .map_err(|e| GetPriceError::TaskCreation(e.to_string()))?;
 
     let available = execute_tasks(tasks, workers, current_time, stale_threshold)
         .await
-        .with_context(|| "Failed to execute tasks")?;
+        .map_err(|e| GetPriceError::TaskExecution(e.to_string()))?;
 
-    let prices = ids
-        .into_iter()
-        .map(|id| get_price_id(id, &available, &unsupported_ids))
-        .collect::<Vec<Price>>();
+    let price_states = ids
+        .iter()
+        .map(|id| get_price_state(id, &available, &unsupported_ids))
+        .collect::<Vec<PriceState>>();
 
-    Ok(prices)
+    debug!("Prices: {:?}", price_states);
+
+    Ok(price_states)
 }

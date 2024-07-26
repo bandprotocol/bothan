@@ -1,7 +1,8 @@
 use derive_more::Display;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Debug, Display)]
+#[derive(Clone, PartialEq, Debug, Display, Serialize, Deserialize)]
 #[display("AssetInfo{{id: {id}, price: {price}, timestamp: {timestamp}}}")]
 pub struct AssetInfo {
     pub id: String,

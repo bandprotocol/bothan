@@ -25,7 +25,7 @@ impl PostProcessor<Decimal> for TickPostProcessor {
 
         let result = (data.log10() / tick.log10()) + mid_tick;
         if !(min_tick..=max_tick).contains(&result) {
-            return Err(PostProcessorError::OutOfBound);
+            return Err(PostProcessorError::new("Tick value out of bound"));
         }
 
         Ok(result)

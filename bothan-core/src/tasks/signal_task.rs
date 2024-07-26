@@ -1,5 +1,5 @@
 use crate::registry::post_processor::{PostProcessor, PostProcessorError};
-use crate::registry::processor::{Processor, ProcessorError};
+use crate::registry::processor::{Process, ProcessError};
 use crate::registry::signal::Signal;
 use rust_decimal::Decimal;
 
@@ -30,7 +30,7 @@ impl SignalTask {
 
     /// Executes and processes the signal task given the data and prerequisites and returns out
     /// output. If the processing fails, it returns `None`.
-    pub fn execute_processor(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessorError> {
+    pub fn execute_processor(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessError> {
         self.signal.processor.process(data)
     }
 

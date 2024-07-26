@@ -3,16 +3,17 @@ use std::sync::Arc;
 use semver::Version;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
-use tracing::error;
+use tracing::{error, info};
 
-use crate::manager::crypto_asset_info::error::SetRegistryError;
-use crate::manager::CryptoAssetInfoManager;
+use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
+use bothan_core::manager::crypto_asset_info::types::PriceState;
+use bothan_core::manager::CryptoAssetInfoManager;
+
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
-    PriceRequest, PriceResponse, SetActiveSignalIdRequest, SetActiveSignalIdResponse,
-    UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
+    Price, PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest,
+    SetActiveSignalIdResponse, UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
 };
-use crate::utils::arc_mutex;
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
@@ -23,7 +24,7 @@ impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
     pub fn new(manager: CryptoAssetInfoManager) -> Self {
         CryptoQueryServer {
-            manager: arc_mutex!(manager),
+            manager: Arc::new(Mutex::new(manager)),
         }
     }
 }
@@ -36,44 +37,48 @@ impl Query for CryptoQueryServer {
     ) -> Result<Response<UpdateRegistryResponse>, Status> {
         let update_registry_request = request.into_inner();
 
-        let version = Version::parse(&update_registry_request.version).map_err(|e| {
-            error!("Failed to parse version: {:?}", e);
-            Status::invalid_argument("Version given is not properly formatted")
-        })?;
+        let version = Version::parse(&update_registry_request.version)
+            .map_err(|_| Status::invalid_argument("Invalid version string"))?;
 
         let mut manager = self.manager.lock().await;
-        manager
-            .set_registry(&update_registry_request.ipfs_hash, version)
-            .await
-            .map(|_| {
-                Response::new(UpdateRegistryResponse {
-                    code: UpdateStatusCode::Ok.into(),
-                })
-            })
-            .or_else(|e| match e {
-                SetRegistryError::UnsupportedVersion => Ok(Response::new(UpdateRegistryResponse {
-                    code: UpdateStatusCode::UnsupportedVersion.into(),
-                })),
+        let set_registry_result = manager
+            .set_registry_from_ipfs(&update_registry_request.ipfs_hash, version)
+            .await;
+
+        match set_registry_result {
+            Ok(_) => Ok(Response::new(UpdateRegistryResponse {
+                code: UpdateStatusCode::Ok.into(),
+            })),
+            Err(e) => match e {
                 SetRegistryError::InvalidRegistry => Ok(Response::new(UpdateRegistryResponse {
                     code: UpdateStatusCode::InvalidRegistry.into(),
                 })),
-                SetRegistryError::FailedToRetrieve => Ok(Response::new(UpdateRegistryResponse {
-                    code: UpdateStatusCode::FailedToGetRegistry.into(),
+                SetRegistryError::FailedToRetrieve(_) => {
+                    Ok(Response::new(UpdateRegistryResponse {
+                        code: UpdateStatusCode::FailedToGetRegistry.into(),
+                    }))
+                }
+                SetRegistryError::UnsupportedVersion => Ok(Response::new(UpdateRegistryResponse {
+                    code: UpdateStatusCode::UnsupportedVersion.into(),
                 })),
-            })
+                SetRegistryError::FailedToParse => Err(Status::invalid_argument(
+                    "Registry is incorrectly formatted",
+                )),
+                SetRegistryError::InvalidHash => Err(Status::invalid_argument("Invalid IPFS hash")),
+            },
+        }
     }
 
     async fn set_active_signal_id(
         &self,
         request: Request<SetActiveSignalIdRequest>,
     ) -> Result<Response<SetActiveSignalIdResponse>, Status> {
+        info!("received set active signal id request");
         let update_registry_request = request.into_inner();
         let mut manager = self.manager.lock().await;
-
         let set_result = manager
             .set_active_signal_ids(update_registry_request.signal_ids)
             .await;
-
         match set_result {
             Ok(_) => Ok(Response::new(SetActiveSignalIdResponse { success: true })),
             Err(_) => Ok(Response::new(SetActiveSignalIdResponse { success: false })),
@@ -86,8 +91,33 @@ impl Query for CryptoQueryServer {
     ) -> Result<Response<PriceResponse>, Status> {
         let price_request = request.into_inner();
         let mut manager = self.manager.lock().await;
-        match manager.get_prices(price_request.signal_ids).await {
-            Ok(prices) => Ok(Response::new(PriceResponse { prices })),
+        match manager.get_prices(&price_request.signal_ids).await {
+            Ok(price_states) => {
+                let prices = price_request
+                    .signal_ids
+                    .into_iter()
+                    .zip(price_states)
+                    .map(|(id, state)| match state {
+                        PriceState::Available(price) => Price {
+                            signal_id: id.clone(),
+                            status: PriceStatus::Available.into(),
+                            price,
+                        },
+                        PriceState::Unavailable => Price {
+                            signal_id: id.clone(),
+                            status: PriceStatus::Unavailable.into(),
+                            price: 0,
+                        },
+                        PriceState::Unsupported => Price {
+                            signal_id: id.clone(),
+                            status: PriceStatus::Unsupported.into(),
+                            price: 0,
+                        },
+                    })
+                    .collect();
+
+                Ok(Response::new(PriceResponse { prices }))
+            }
             Err(e) => {
                 error!("Failed to get prices: {:?}", e);
                 Err(Status::internal("Failed to get prices"))

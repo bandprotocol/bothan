@@ -1,16 +1,14 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use itertools::Itertools;
-use log::warn;
 use rust_decimal::Decimal;
 use tokio::task::JoinSet;
-use tracing::debug;
+use tracing::{debug, warn};
 
-use bothan_core::types::AssetInfo;
-use bothan_core::worker::{AssetStatus, AssetWorker};
-
+use crate::manager::crypto_asset_info::error::{
+    MissingSignalError, SignalTaskError, SourceRoutingError,
+};
 use crate::manager::crypto_asset_info::price::utils::is_stale;
 use crate::manager::crypto_asset_info::utils::into_key;
 use crate::registry::source::{OperationRoute, SourceQuery};
@@ -18,18 +16,20 @@ use crate::registry::Registry;
 use crate::tasks::signal_task::SignalTask;
 use crate::tasks::source_task::SourceTask;
 use crate::tasks::Tasks;
+use crate::types::AssetInfo;
+use crate::worker::{AssetState, AssetWorker};
 
 pub fn create_reduced_registry(
     signal_ids: Vec<String>,
     registry: &Registry,
-) -> anyhow::Result<Registry> {
+) -> Result<Registry, MissingSignalError> {
     let mut queue = VecDeque::from(signal_ids);
     let mut reduced_registry = HashMap::new();
 
     while let Some(signal_id) = queue.pop_front() {
-        let signal = registry
-            .get(&signal_id)
-            .ok_or(anyhow!("Missing signal with id: {}", signal_id))?;
+        let signal = registry.get(&signal_id).ok_or(MissingSignalError {
+            signal_id: signal_id.to_owned(),
+        })?;
 
         reduced_registry.insert(signal_id.clone(), signal.clone());
 
@@ -46,7 +46,7 @@ pub fn create_reduced_registry(
             });
     }
 
-    Ok(Registry::new(reduced_registry))
+    Ok(reduced_registry)
 }
 
 pub async fn execute_tasks(
@@ -54,7 +54,7 @@ pub async fn execute_tasks(
     workers: &HashMap<String, Arc<dyn AssetWorker>>,
     current_time: i64,
     stale_threshold: i64,
-) -> anyhow::Result<HashMap<String, Decimal>> {
+) -> Result<HashMap<String, Decimal>, MissingSignalError> {
     let (source_tasks, signal_tasks) = tasks.split();
 
     let results_size = source_tasks
@@ -83,7 +83,7 @@ pub async fn execute_tasks(
 fn start_source_tasks(
     tasks: Vec<SourceTask>,
     workers: &HashMap<String, Arc<dyn AssetWorker>>,
-) -> JoinSet<(String, Vec<AssetStatus>)> {
+) -> JoinSet<(String, Vec<AssetState>)> {
     let mut join_set = JoinSet::new();
     for task in tasks {
         let source_id = task.source_name().to_string();
@@ -96,7 +96,7 @@ fn start_source_tasks(
 }
 
 async fn process_source_tasks_results(
-    mut join_set: JoinSet<(String, Vec<AssetStatus>)>,
+    mut join_set: JoinSet<(String, Vec<AssetState>)>,
     current_time: i64,
     stale_threshold: i64,
     results_size: usize,
@@ -108,7 +108,7 @@ async fn process_source_tasks_results(
             Ok((source_id, asset_statuses)) => asset_statuses
                 .into_iter()
                 .filter_map(|status| match status {
-                    AssetStatus::Available(info)
+                    AssetState::Available(info)
                         if is_stale(info.timestamp, current_time, stale_threshold) =>
                     {
                         Some(info)
@@ -130,13 +130,13 @@ fn execute_signal_task(
     task: SignalTask,
     source_results: &HashMap<String, AssetInfo>,
     signal_results: &HashMap<String, Decimal>,
-) -> anyhow::Result<(String, Decimal)> {
+) -> Result<(String, Decimal), SignalTaskError> {
     let routed_source_prices = task
         .signal()
         .source_queries
         .iter()
         .map(|s| compute_routed_source_price(s, source_results, signal_results))
-        .collect::<anyhow::Result<Vec<Decimal>>>()?;
+        .collect::<Result<Vec<Decimal>, SourceRoutingError>>()?;
 
     let signal_id = task.signal_id();
     let processed_price = task.execute_processor(routed_source_prices)?;
@@ -149,21 +149,21 @@ fn compute_routed_source_price(
     source: &SourceQuery,
     source_results: &HashMap<String, AssetInfo>,
     signal_results: &HashMap<String, Decimal>,
-) -> anyhow::Result<Decimal> {
+) -> Result<Decimal, SourceRoutingError> {
     let source_id = &source.source_id;
     let id = &source.query_id;
     let key = into_key(source_id, id);
 
     let asset_info = source_results
         .get(&key)
-        .ok_or(anyhow!("no data found for {}", key))?;
+        .ok_or(SourceRoutingError::MissingSource(key.to_owned()))?;
 
     let values = source
         .routes
         .iter()
         .map(|r| signal_results.get(&r.signal_id).cloned())
         .collect::<Option<Vec<Decimal>>>()
-        .ok_or(anyhow!("incomplete sources for {}", key))?;
+        .ok_or(SourceRoutingError::IncompletePrerequisites(key))?;
 
     let routed_price = compute_source_routes(asset_info.price, &source.routes, values);
     Ok(routed_price)

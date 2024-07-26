@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::time::Duration;
 
-use bothan_core::store::Store;
+use bothan_core::store::WorkerStore;
 
 use crate::api::error::BuildError;
 use crate::api::CoinGeckoRestAPIBuilder;
@@ -29,13 +29,13 @@ use crate::worker::CoinGeckoWorker;
 /// }
 /// ```
 pub struct CoinGeckoWorkerBuilder {
-    store: Arc<Store>,
+    store: Arc<WorkerStore>,
     opts: CoinGeckoWorkerBuilderOpts,
 }
 
 impl CoinGeckoWorkerBuilder {
     /// Returns a new `CoinGeckoWorkerBuilder` with the given options.
-    pub fn new(store: Arc<Store>, opts: CoinGeckoWorkerBuilderOpts) -> Self {
+    pub fn new(store: Arc<WorkerStore>, opts: CoinGeckoWorkerBuilderOpts) -> Self {
         Self { store, opts }
     }
 
@@ -70,7 +70,7 @@ impl CoinGeckoWorkerBuilder {
 
     /// Sets the store for the `CoinGeckoWorker`.
     /// If not set, the store is created and owned by the worker.
-    pub fn with_store(mut self, store: Arc<Store>) -> Self {
+    pub fn with_store(mut self, store: Arc<WorkerStore>) -> Self {
         self.store = store;
         self
     }
@@ -86,15 +86,5 @@ impl CoinGeckoWorkerBuilder {
         start_asset_worker(Arc::downgrade(&worker), self.opts.update_interval);
 
         Ok(worker)
-    }
-}
-
-impl Default for CoinGeckoWorkerBuilder {
-    /// Creates a new `CoinGeckoWorkerBuilder` with its default values.
-    fn default() -> Self {
-        Self::new(
-            Arc::new(Store::default()),
-            CoinGeckoWorkerBuilderOpts::default(),
-        )
     }
 }
