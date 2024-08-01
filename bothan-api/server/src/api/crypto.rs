@@ -17,12 +17,12 @@ use crate::proto::query::{
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
-    manager: Arc<Mutex<CryptoAssetInfoManager>>,
+    manager: Arc<Mutex<CryptoAssetInfoManager<'static>>>,
 }
 
 impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: CryptoAssetInfoManager) -> Self {
+    pub fn new(manager: CryptoAssetInfoManager<'static>) -> Self {
         CryptoQueryServer {
             manager: Arc::new(Mutex::new(manager)),
         }
@@ -79,9 +79,16 @@ impl Query for CryptoQueryServer {
         let set_result = manager
             .set_active_signal_ids(update_registry_request.signal_ids)
             .await;
+
         match set_result {
-            Ok(_) => Ok(Response::new(SetActiveSignalIdResponse { success: true })),
-            Err(_) => Ok(Response::new(SetActiveSignalIdResponse { success: false })),
+            Ok(_) => {
+                info!("successfully set active signal ids");
+                Ok(Response::new(SetActiveSignalIdResponse { success: true }))
+            }
+            Err(e) => {
+                error!("failed to set active signal ids: {}", e);
+                Ok(Response::new(SetActiveSignalIdResponse { success: false }))
+            }
         }
     }
 

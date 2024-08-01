@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Arc;
 
-use dirs::home_dir;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::VersionReq;
 use tokio::fs::{create_dir_all, File};
@@ -16,14 +14,14 @@ use bothan_api::config::manager::crypto_info::registry::RegistrySeedConfig;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
 use bothan_api::proto::query::query_server::QueryServer;
-use bothan_api::utils::add_worker;
 use bothan_api::VERSION;
 use bothan_binance::BinanceWorkerBuilder;
 use bothan_coingecko::CoinGeckoWorkerBuilder;
 use bothan_core::ipfs::IpfsClientBuilder;
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::registry::Registry;
-use bothan_core::store::{ManagerStore, Store};
+use bothan_core::store::Store;
+use bothan_core::worker::AssetWorkerBuilder;
 
 #[tokio::main]
 async fn main() {
@@ -34,9 +32,7 @@ async fn main() {
         .init();
 
     // Create root directory
-    let root = home_dir()
-        .expect("Failed to get home directory")
-        .join(config.store.path.as_str());
+    let root = PathBuf::from_str(&config.store.path).expect("Failed to parse store path");
 
     if !root.is_dir() {
         create_dir_all(&root)
@@ -63,7 +59,7 @@ async fn main() {
 
 async fn init_crypto_server(
     config: &AppConfig,
-    root: PathBuf,
+    save_dir: PathBuf,
 ) -> anyhow::Result<CryptoQueryServer> {
     let ipfs_builder = IpfsClientBuilder::new(config.ipfs.endpoint.clone());
     let ipfs_builder = match &config.ipfs.authentication {
@@ -95,12 +91,16 @@ async fn init_crypto_server(
         }
     };
 
-    let store = Arc::new(
-        Store::new(seed_registry, root.as_path())
-            .await
-            .expect("Failed to create store"),
-    );
-    let manager_store = ManagerStore::from(store.clone());
+    let mut store = Store::new(seed_registry, save_dir.as_path())
+        .await
+        .expect("Failed to create store");
+
+    match store.restore().await {
+        Ok(_) => info!("Store restored successfully"),
+        Err(e) => info!("Failed to restore store: {}", e),
+    }
+
+    let manager_store = Store::create_manager_store(&store);
 
     let stale_threshold = config.manager.crypto.stale_threshold;
     let version_req = VersionReq::from_str(&format!("<={}", VERSION))
@@ -108,20 +108,22 @@ async fn init_crypto_server(
     let mut manager =
         CryptoAssetInfoManager::new(manager_store, ipfs_client, stale_threshold, version_req);
 
-    init_crypto_workers(&mut manager, store, &config.manager.crypto.source).await;
+    init_crypto_workers(&mut manager, &store, &config.manager.crypto.source).await;
 
     Ok(CryptoQueryServer::new(manager))
 }
 
-#[rustfmt::skip]
 async fn init_crypto_workers(
-    manager: &mut CryptoAssetInfoManager,
-    store: Arc<Store>,
+    manager: &mut CryptoAssetInfoManager<'static>,
+    store: &Store,
     source: &CryptoSourceConfigs,
 ) {
-    add_worker!(manager, store.clone(), BinanceWorkerBuilder, source.binance);
-    add_worker!(manager, store.clone(), CoinGeckoWorkerBuilder, source.coingecko);
-    
+    type Binance = BinanceWorkerBuilder;
+    type CoinGecko = CoinGeckoWorkerBuilder;
+
+    add_worker::<Binance>(manager, store, "binance", source.binance.clone()).await;
+    add_worker::<CoinGecko>(manager, store, "coingecko", source.coingecko.clone()).await;
+
     // TODO: reimplement other workers
     // add_worker!(manager, store.clone(), BybitWorkerBuilder, source.bybit);
     // add_worker!(manager, store.clone(), CoinbaseWorkerBuilder, source.coinbase);
@@ -130,4 +132,21 @@ async fn init_crypto_workers(
     // add_worker!(manager, store.clone(), HtxWorkerBuilder, source.htx);
     // add_worker!(manager, store.clone(), KrakenWorkerBuilder, source.kraken);
     // add_worker!(manager, store.clone(), OkxWorkerBuilder, source.okx);
+}
+
+async fn add_worker<B>(
+    manager: &mut CryptoAssetInfoManager<'static>,
+    store: &Store,
+    worker_name: &str,
+    opts: B::Opts,
+) where
+    B: AssetWorkerBuilder<'static>,
+{
+    let worker_store = Store::create_worker_store(store, worker_name);
+    let worker = B::new(worker_store, opts)
+        .build()
+        .await
+        .expect("Failed to build worker");
+
+    manager.add_worker(worker_name.to_string(), worker).await;
 }

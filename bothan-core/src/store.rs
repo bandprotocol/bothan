@@ -1,11 +1,12 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+use std::sync::Arc;
 
-pub use manager::ManagerStore;
 use rust_rocksdb::{Options, DB};
 use serde::Serialize;
-use tokio::sync::RwLock;
-use tracing::info;
+use tokio::sync::Mutex;
+
+pub use manager::ManagerStore;
 pub use worker::WorkerStore;
 
 use crate::registry::Registry;
@@ -16,12 +17,17 @@ pub mod errors;
 mod manager;
 mod worker;
 
+#[derive(Clone)]
 pub struct Store {
-    asset_store: RwLock<HashMap<String, AssetInfo>>,
-    query_ids: RwLock<HashMap<String, HashSet<String>>>,
-    active_signal_ids: RwLock<HashSet<String>>,
-    registry: RwLock<Registry>,
-    db: DB,
+    inner: Arc<Mutex<StoreInner>>,
+    db: Arc<DB>,
+}
+
+struct StoreInner {
+    asset_store: HashMap<String, AssetInfo>,
+    query_ids: HashMap<String, HashSet<String>>,
+    active_signal_ids: HashSet<String>,
+    registry: Registry,
 }
 
 impl Store {
@@ -31,51 +37,85 @@ impl Store {
         let mut opts = Options::default();
         opts.create_if_missing(true);
 
-        let db = DB::open(&opts, flush_path)?;
+        let db = Arc::new(DB::open(&opts, flush_path)?);
 
-        let mut store = Self {
-            asset_store: RwLock::new(HashMap::new()),
-            query_ids: RwLock::new(HashMap::new()),
-            active_signal_ids: RwLock::new(HashSet::new()),
-            registry: RwLock::new(registry),
+        let inner = StoreInner {
+            asset_store: HashMap::new(),
+            query_ids: HashMap::new(),
+            active_signal_ids: HashSet::new(),
+            registry,
+        };
+        let store = Self {
+            inner: Arc::new(Mutex::new(inner)),
             db,
         };
-
-        store.restore();
 
         Ok(store)
     }
 
-    fn restore(&mut self) {
-        if let Ok(Some(bytes)) = self.db.get("asset_store") {
-            if let Ok(Some(asset_store)) = bincode::deserialize(bytes.as_slice()) {
-                self.asset_store = RwLock::new(asset_store);
-            }
+    pub async fn restore(&mut self) -> Result<(), Error> {
+        let asset_store = self
+            .db
+            .get("asset_store")?
+            .map(|b| bincode::deserialize(b.as_slice()))
+            .transpose()?;
+        let query_ids = self
+            .db
+            .get("query_ids")?
+            .map(|b| bincode::deserialize(b.as_slice()))
+            .transpose()?;
+        let active_signal_ids = self
+            .db
+            .get("active_signal_ids")?
+            .map(|b| bincode::deserialize(b.as_slice()))
+            .transpose()?;
+        let registry = self
+            .db
+            .get("registry")?
+            .map(|b| bincode::deserialize(b.as_slice()))
+            .transpose()?;
+
+        let mut inner = self.inner.lock().await;
+        if let Some(query_ids) = query_ids {
+            inner.query_ids = query_ids;
+        }
+        if let Some(asset_store) = asset_store {
+            inner.asset_store = asset_store;
+        }
+        if let Some(active_signal_ids) = active_signal_ids {
+            inner.active_signal_ids = active_signal_ids;
+        }
+        if let Some(registry) = registry {
+            inner.registry = registry;
         }
 
-        if let Ok(Some(bytes)) = self.db.get("query_ids") {
-            if let Ok(Some(query_ids)) = bincode::deserialize(bytes.as_slice()) {
-                self.query_ids = RwLock::new(query_ids);
-            }
-        }
-
-        if let Ok(Some(bytes)) = self.db.get("active_signal_ids") {
-            if let Ok(Some(active_signal_ids)) = bincode::deserialize(bytes.as_slice()) {
-                self.active_signal_ids = RwLock::new(active_signal_ids);
-            }
-        }
+        Ok(())
     }
 
-    fn save_state<K, V>(&self, key: K, val: &V) -> Result<(), Error>
+    async fn save_state<K, V>(&self, key: K, val: &V) -> Result<(), Error>
     where
         K: AsRef<[u8]>,
         V: Serialize + ?Sized,
     {
-        info!("saving state");
         let serialized = bincode::serialize(&val)?;
+
         self.db.put(key, serialized)?;
         self.db.flush()?;
-        info!("saved state");
+
         Ok(())
+    }
+
+    pub fn create_manager_store(this: &Self) -> ManagerStore {
+        ManagerStore::new(this.clone())
+    }
+
+    pub fn create_worker_store<T: Into<String>>(this: &Self, prefix: T) -> WorkerStore {
+        WorkerStore::new(this.clone(), prefix.into())
+    }
+}
+
+impl PartialEq for Store {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.inner, &other.inner) && Arc::ptr_eq(&self.db, &other.db)
     }
 }

@@ -3,8 +3,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use rust_decimal::Decimal;
-use tokio::task::JoinSet;
-use tracing::{debug, warn};
+use tracing::debug;
 
 use crate::manager::crypto_asset_info::error::{
     MissingSignalError, SignalTaskError, SourceRoutingError,
@@ -15,7 +14,7 @@ use crate::registry::source::{OperationRoute, SourceQuery};
 use crate::registry::Registry;
 use crate::tasks::signal_task::SignalTask;
 use crate::tasks::source_task::SourceTask;
-use crate::tasks::Tasks;
+use crate::tasks::TaskSet;
 use crate::types::AssetInfo;
 use crate::worker::{AssetState, AssetWorker};
 
@@ -49,21 +48,16 @@ pub fn create_reduced_registry(
     Ok(reduced_registry)
 }
 
-pub async fn execute_tasks(
-    tasks: Tasks,
-    workers: &HashMap<String, Arc<dyn AssetWorker>>,
+pub async fn execute_task_set<'a>(
+    task_set: TaskSet,
+    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
     current_time: i64,
     stale_threshold: i64,
 ) -> Result<HashMap<String, Decimal>, MissingSignalError> {
-    let (source_tasks, signal_tasks) = tasks.split();
+    let (source_tasks, signal_tasks) = task_set.split();
 
-    let results_size = source_tasks
-        .iter()
-        .fold(0, |acc, task| acc + task.source_ids().len());
-
-    let join_set = start_source_tasks(source_tasks, workers);
     let source_result =
-        process_source_tasks_results(join_set, current_time, stale_threshold, results_size).await;
+        execute_source_tasks(source_tasks, workers, current_time, stale_threshold).await;
 
     debug!("Processing signal tasks");
     let mut res = HashMap::<String, Decimal>::with_capacity(signal_tasks.len());
@@ -80,32 +74,23 @@ pub async fn execute_tasks(
     Ok(res)
 }
 
-fn start_source_tasks(
-    tasks: Vec<SourceTask>,
-    workers: &HashMap<String, Arc<dyn AssetWorker>>,
-) -> JoinSet<(String, Vec<AssetState>)> {
-    let mut join_set = JoinSet::new();
-    for task in tasks {
-        let source_id = task.source_name().to_string();
-        if let Some(worker) = workers.get(&source_id).cloned() {
-            join_set.spawn(async move { (source_id, worker.get_assets(&task.source_ids()).await) });
-        }
-    }
-
-    join_set
-}
-
-async fn process_source_tasks_results(
-    mut join_set: JoinSet<(String, Vec<AssetState>)>,
+async fn execute_source_tasks<'a>(
+    source_tasks: Vec<SourceTask>,
+    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
     current_time: i64,
     stale_threshold: i64,
-    results_size: usize,
 ) -> HashMap<String, AssetInfo> {
+    let results_size = source_tasks
+        .iter()
+        .fold(0, |acc, task| acc + task.source_ids().len());
     let mut results = HashMap::with_capacity(results_size);
 
-    while let Some(res) = join_set.join_next().await {
-        match res {
-            Ok((source_id, asset_statuses)) => asset_statuses
+    for source_task in source_tasks {
+        let source_id = source_task.source_name().to_string();
+        if let Some(worker) = workers.get(&source_id) {
+            worker
+                .get_assets(&source_task.source_ids())
+                .await
                 .into_iter()
                 .filter_map(|status| match status {
                     AssetState::Available(info)
@@ -118,29 +103,28 @@ async fn process_source_tasks_results(
                 .for_each(|info| {
                     let key = into_key(&source_id, &info.id);
                     results.insert(key, info);
-                }),
-            Err(e) => warn!("Error fetching assets from source with error: {}", e),
-        };
+                });
+        }
     }
 
     results
 }
 
 fn execute_signal_task(
-    task: SignalTask,
+    signal_task: SignalTask,
     source_results: &HashMap<String, AssetInfo>,
     signal_results: &HashMap<String, Decimal>,
 ) -> Result<(String, Decimal), SignalTaskError> {
-    let routed_source_prices = task
+    let routed_source_prices = signal_task
         .signal()
         .source_queries
         .iter()
         .map(|s| compute_routed_source_price(s, source_results, signal_results))
         .collect::<Result<Vec<Decimal>, SourceRoutingError>>()?;
 
-    let signal_id = task.signal_id();
-    let processed_price = task.execute_processor(routed_source_prices)?;
-    let post_processed_price = task.execute_post_processors(processed_price)?;
+    let signal_id = signal_task.signal_id();
+    let processed_price = signal_task.execute_processor(routed_source_prices)?;
+    let post_processed_price = signal_task.execute_post_processors(processed_price)?;
 
     Ok((signal_id.to_string(), post_processed_price))
 }

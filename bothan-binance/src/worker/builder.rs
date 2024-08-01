@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::channel;
 
 use bothan_core::store::WorkerStore;
+use bothan_core::worker::AssetWorkerBuilder;
 
 use crate::api::websocket::BinanceWebSocketConnector;
 use crate::worker::asset_worker::start_asset_worker;
@@ -14,16 +15,11 @@ use crate::worker::BinanceWorker;
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](BinanceWorkerBuilder::build) method.
 pub struct BinanceWorkerBuilder {
-    store: Arc<WorkerStore>,
+    store: WorkerStore,
     opts: BinanceWorkerBuilderOpts,
 }
 
 impl BinanceWorkerBuilder {
-    /// Returns a new `BinanceWorkerBuilder` with the given options.
-    pub fn new(store: Arc<WorkerStore>, opts: BinanceWorkerBuilderOpts) -> Self {
-        Self { store, opts }
-    }
-
     /// Set the URL for the `BinanceWorker`.
     /// The default URL is `DEFAULT_URL`.
     pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
@@ -40,13 +36,25 @@ impl BinanceWorkerBuilder {
 
     /// Sets the store for the `BinanceWorker`.
     /// If not set, the store is created and owned by the worker.
-    pub fn with_store(mut self, store: Arc<WorkerStore>) -> Self {
+    pub fn with_store(mut self, store: WorkerStore) -> Self {
         self.store = store;
         self
     }
+}
+
+#[async_trait::async_trait]
+impl<'a> AssetWorkerBuilder<'a> for BinanceWorkerBuilder {
+    type Opts = BinanceWorkerBuilderOpts;
+    type Worker = BinanceWorker;
+    type Error = BuildError;
+
+    /// Returns a new `BinanceWorkerBuilder` with the given options.
+    fn new(store: WorkerStore, opts: Self::Opts) -> Self {
+        Self { store, opts }
+    }
 
     /// Creates the configured `BinanceWorker`.
-    pub async fn build(self) -> Result<Arc<BinanceWorker>, BuildError> {
+    async fn build(self) -> Result<Arc<Self::Worker>, Self::Error> {
         let url = self.opts.url;
         let ch_size = self.opts.internal_ch_size;
 
@@ -55,6 +63,12 @@ impl BinanceWorkerBuilder {
 
         let (sub_tx, sub_rx) = channel(ch_size);
         let (unsub_tx, unsub_rx) = channel(ch_size);
+
+        let to_sub = Vec::from_iter(self.store.get_query_ids().await.into_iter());
+        if !to_sub.is_empty() {
+            // Unwrap here as the channel is guaranteed to be open
+            sub_tx.send(to_sub).await.unwrap();
+        }
 
         let worker = Arc::new(BinanceWorker::new(connector, self.store, sub_tx, unsub_tx));
 

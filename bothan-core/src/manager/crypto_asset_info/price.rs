@@ -4,11 +4,11 @@ use std::sync::Arc;
 use tracing::debug;
 
 use crate::manager::crypto_asset_info::error::GetPriceError;
-use crate::manager::crypto_asset_info::price::tasks::{create_reduced_registry, execute_tasks};
+use crate::manager::crypto_asset_info::price::tasks::{create_reduced_registry, execute_task_set};
 use crate::manager::crypto_asset_info::price::utils::get_price_state;
 use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::Registry;
-use crate::tasks::Tasks;
+use crate::tasks::TaskSet;
 use crate::worker::AssetWorker;
 
 mod tasks;
@@ -16,10 +16,10 @@ mod utils;
 
 const PRECISION: u32 = 9;
 
-pub async fn get_prices(
+pub async fn get_prices<'a>(
     ids: &[String],
     registry: &Registry,
-    workers: &HashMap<String, Arc<dyn AssetWorker>>,
+    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
     stale_threshold: i64,
 ) -> Result<Vec<PriceState>, GetPriceError> {
     let current_time = chrono::Utc::now().timestamp();
@@ -39,10 +39,10 @@ pub async fn get_prices(
     let reduced_registry = create_reduced_registry(supported.clone(), registry)
         .map_err(|e| GetPriceError::RegistryCreation(e.to_string()))?;
 
-    let tasks = Tasks::try_from(reduced_registry)
+    let task_set = TaskSet::try_from(reduced_registry)
         .map_err(|e| GetPriceError::TaskCreation(e.to_string()))?;
 
-    let available = execute_tasks(tasks, workers, current_time, stale_threshold)
+    let available = execute_task_set(task_set, workers, current_time, stale_threshold)
         .await
         .map_err(|e| GetPriceError::TaskExecution(e.to_string()))?;
 

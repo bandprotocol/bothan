@@ -15,27 +15,27 @@ mod utils;
 /// The tasks can be represented as:
 ///
 /// `source_tasks` = [SourceTask1, SourceTask2, ...]
-/// `batched_signal_tasks` = [[SignalTask1, SignalTask2, ...], [SignalTask3, SignalTask4, ...], ...]
+/// `batched_signal_tasks` = [SignalTask1, SignalTask2, ...]
 ///
 /// where given the following example:
 /// `source_tasks` = [SourceTask1, SourceTask2]
-/// `batched_signal_tasks` = [[SignalTask1, SignalTask2], [SignalTask3, SignalTask4]]
+/// `batched_signal_tasks` = [SignalTask1, SignalTask2, SignalTask3, SignalTask4]
 ///
-/// the execution order would be:
+/// where the execution order would be:
 ///
 /// 1. SourceTask1, SourceTask2
 /// 2. SignalTask1, SignalTask2
 /// 3. SignalTask3, SignalTask4
 #[derive(Debug, Clone, PartialEq)]
-pub struct Tasks {
+pub struct TaskSet {
     source_tasks: Vec<SourceTask>,
     batched_signal_tasks: Vec<SignalTask>,
 }
 
-impl Tasks {
+impl TaskSet {
     /// Creates a new `Tasks` given a vector of `SourceTask` and a vector of `BatchedSignalTask`.
     pub fn new(source_tasks: Vec<SourceTask>, batched_signal_tasks: Vec<SignalTask>) -> Self {
-        Tasks {
+        TaskSet {
             source_tasks,
             batched_signal_tasks,
         }
@@ -47,11 +47,11 @@ impl Tasks {
     }
 }
 
-impl TryFrom<Registry> for Tasks {
+impl TryFrom<Registry> for TaskSet {
     type Error = Error;
 
     fn try_from(registry: Registry) -> Result<Self, Self::Error> {
         let (signal_tasks, source_tasks) = get_tasks(&registry)?;
-        Ok(Tasks::new(source_tasks, signal_tasks))
+        Ok(TaskSet::new(source_tasks, signal_tasks))
     }
 }

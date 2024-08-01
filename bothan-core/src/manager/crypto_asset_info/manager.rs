@@ -15,18 +15,18 @@ use crate::manager::crypto_asset_info::signal_ids::{
 use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::Registry;
 use crate::store::ManagerStore;
-use crate::tasks::Tasks;
+use crate::tasks::TaskSet;
 use crate::worker::AssetWorker;
 
-pub struct CryptoAssetInfoManager {
-    workers: RwLock<HashMap<String, Arc<dyn AssetWorker>>>,
+pub struct CryptoAssetInfoManager<'a> {
+    workers: RwLock<HashMap<String, Arc<dyn AssetWorker + 'a>>>,
     store: Arc<ManagerStore>,
     stale_threshold: i64,
     ipfs_client: IpfsClient,
     version_req: VersionReq,
 }
 
-impl CryptoAssetInfoManager {
+impl<'a> CryptoAssetInfoManager<'a> {
     pub fn new(
         store: ManagerStore,
         ipfs_client: IpfsClient,
@@ -43,7 +43,7 @@ impl CryptoAssetInfoManager {
     }
 
     /// Adds a worker with an assigned name.
-    pub async fn add_worker(&mut self, name: String, worker: Arc<dyn AssetWorker>) {
+    pub async fn add_worker(&mut self, name: String, worker: Arc<dyn AssetWorker + 'a>) {
         self.workers.write().await.insert(name, worker);
     }
 
@@ -87,7 +87,7 @@ impl CryptoAssetInfoManager {
                 let registry: Registry =
                     serde_json::from_str(&text).map_err(|_| SetRegistryError::FailedToParse)?;
 
-                if Tasks::try_from(registry.clone()).is_err() {
+                if TaskSet::try_from(registry.clone()).is_err() {
                     self.store.set_registry(registry).await;
                     Ok(())
                 } else {

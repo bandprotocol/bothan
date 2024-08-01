@@ -7,9 +7,7 @@ exclude = [".github/"]
 
 
 [workspace]
-#members = ["bothan-*", "bothan-api/server"]
-members = ["bothan-api/server", "bothan-core", "bothan-binance", "bothan-coingecko"]
-#members = ["bothan-core", "bothan-binance", "bothan-coingecko"]
+members = ["bothan-core", "bothan-binance", "bothan-coingecko", "bothan-api/server"]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
 
@@ -37,14 +35,14 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = "2.5.0"
 
-bothan-core = { version = "0.1.0", path = "bothan-core" }
+bothan-core = { path = "bothan-core" }
 
-bothan-binance = { version = "0.1.0", path = "bothan-binance" }
-bothan-bybit = { version = "0.1.0", path = "bothan-bybit" }
-bothan-coinbase = { version = "0.1.0", path = "bothan-coinbase" }
-bothan-coingecko = { version = "0.1.0", path = "bothan-coingecko" }
-bothan-coinmarketcap = { version = "0.1.0", path = "bothan-coinmarketcap" }
-bothan-cryptocompare = { version = "0.1.0", path = "bothan-cryptocompare" }
-bothan-htx = { version = "0.1.0", path = "bothan-htx" }
-bothan-kraken = { version = "0.1.0", path = "bothan-kraken" }
-bothan-okx = { version = "0.1.0", path = "bothan-okx" }
+bothan-binance = { path = "bothan-binance" }
+#bothan-bybit = { path = "bothan-bybit" }
+#bothan-coinbase = { path = "bothan-coinbase" }
+bothan-coingecko = { path = "bothan-coingecko" }
+#bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
+#bothan-cryptocompare = { path = "bothan-cryptocompare" }
+#bothan-htx = { path = "bothan-htx" }
+#bothan-kraken = { path = "bothan-kraken" }
+#bothan-okx = { path = "bothan-okx" }

@@ -1,5 +1,5 @@
 use bothan_core::registry::Registry;
-use bothan_core::tasks::Tasks;
+use bothan_core::tasks::TaskSet;
 use glob::glob;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
@@ -14,6 +14,6 @@ async fn test_registry_validity() {
 
         let registry =
             serde_json::from_str::<Registry>(&buffer).expect("Failed to parse registry file");
-        Tasks::try_from(registry).expect("Failed to create tasks from registry");
+        TaskSet::try_from(registry).expect("Failed to create tasks from registry");
     }
 }

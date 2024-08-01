@@ -7,7 +7,7 @@ macro_rules! add_worker {
             parts.last().unwrap().to_string()
         };
 
-        let worker_store = Arc::new(bothan_core::store::WorkerStore::from_store(
+        let worker_store = Arc::new(bothan_core::store::Store::create_worker_store(
             $store,
             &worker_name,
         ));

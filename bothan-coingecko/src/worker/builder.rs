@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 use bothan_core::store::WorkerStore;
+use bothan_core::worker::AssetWorkerBuilder;
 
 use crate::api::error::BuildError;
 use crate::api::CoinGeckoRestAPIBuilder;
@@ -14,16 +15,11 @@ use crate::worker::CoinGeckoWorker;
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](CoinGeckoWorker::build) method.
 pub struct CoinGeckoWorkerBuilder {
-    store: Arc<WorkerStore>,
+    store: WorkerStore,
     opts: CoinGeckoWorkerBuilderOpts,
 }
 
 impl CoinGeckoWorkerBuilder {
-    /// Returns a new `CoinGeckoWorkerBuilder` with the given options.
-    pub fn new(store: Arc<WorkerStore>, opts: CoinGeckoWorkerBuilderOpts) -> Self {
-        Self { store, opts }
-    }
-
     /// Set the URL for the `CoinGeckoWorker`.
     /// The default URL is `DEFAULT_URL` when no API key is provided
     /// and is `DEFAULT_PRO_URL` when an API key is provided.
@@ -55,13 +51,24 @@ impl CoinGeckoWorkerBuilder {
 
     /// Sets the store for the `CoinGeckoWorker`.
     /// If not set, the store is created and owned by the worker.
-    pub fn with_store(mut self, store: Arc<WorkerStore>) -> Self {
+    pub fn with_store(mut self, store: WorkerStore) -> Self {
         self.store = store;
         self
     }
+}
 
+#[async_trait::async_trait]
+impl<'a> AssetWorkerBuilder<'a> for CoinGeckoWorkerBuilder {
+    type Opts = CoinGeckoWorkerBuilderOpts;
+    type Worker = CoinGeckoWorker;
+    type Error = BuildError;
+
+    /// Returns a new `CoinGeckoWorkerBuilder` with the given options.
+    fn new(store: WorkerStore, opts: Self::Opts) -> Self {
+        Self { store, opts }
+    }
     /// Creates the configured `CoinGeckoWorker`.
-    pub async fn build(self) -> Result<Arc<CoinGeckoWorker>, BuildError> {
+    async fn build(self) -> Result<Arc<Self::Worker>, Self::Error> {
         let api =
             CoinGeckoRestAPIBuilder::new(self.opts.user_agent, self.opts.url, self.opts.api_key)
                 .build()?;

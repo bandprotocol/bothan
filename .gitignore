@@ -20,3 +20,4 @@ Cargo.lock
 
 /bothan-api/server/config.toml
 /bothan-api-proxy/config.toml
+.bothan

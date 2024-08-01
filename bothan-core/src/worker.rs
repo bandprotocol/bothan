@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use crate::store::WorkerStore;
 use crate::types::AssetInfo;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -22,4 +25,15 @@ pub trait AssetWorker: Send + Sync {
     async fn get_assets(&self, ids: &[&str]) -> Vec<AssetState>;
     async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error>;
     async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), Error>;
+}
+
+#[async_trait::async_trait]
+pub trait AssetWorkerBuilder<'a> {
+    type Opts;
+    type Worker: AssetWorker + 'a;
+    type Error: std::error::Error;
+
+    fn new(store: WorkerStore, opts: Self::Opts) -> Self;
+
+    async fn build(self) -> Result<Arc<Self::Worker>, Self::Error>;
 }

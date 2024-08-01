@@ -1,13 +1,14 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use tracing::{error, info};
+
 use crate::manager::crypto_asset_info::error::MissingSignalError;
 use crate::registry::Registry;
 use crate::worker::AssetWorker;
-use tracing::{error, info};
 
-pub async fn add_worker_query_ids(
-    workers: &HashMap<String, Arc<dyn AssetWorker>>,
+pub async fn add_worker_query_ids<'a>(
+    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
     current_active_set: &HashSet<String>,
     new_active_set: &HashSet<String>,
     registry: &Registry,
@@ -32,8 +33,8 @@ pub async fn add_worker_query_ids(
     Ok(())
 }
 
-pub async fn remove_worker_query_ids(
-    workers: &HashMap<String, Arc<dyn AssetWorker>>,
+pub async fn remove_worker_query_ids<'a>(
+    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
     current_active_set: &HashSet<String>,
     new_active_set: &HashSet<String>,
     registry: &Registry,
