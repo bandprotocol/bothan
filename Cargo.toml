@@ -7,7 +7,7 @@ exclude = [".github/"]
 
 
 [workspace]
-members = ["bothan-core", "bothan-binance", "bothan-coingecko", "bothan-api/server"]
+members = ["bothan-core", "bothan-binance", "bothan-coingecko", "bothan-api/server", "bothan-api/server-cli"]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
 
@@ -36,6 +36,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = "2.5.0"
 
 bothan-core = { path = "bothan-core" }
+bothan-api = { path = "bothan-api/server" }
 
 bothan-binance = { path = "bothan-binance" }
 #bothan-bybit = { path = "bothan-bybit" }

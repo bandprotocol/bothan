@@ -1,16 +1,30 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 /// The configuration for all bothan-api's manager.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct StoreConfig {
-    #[serde(default = "default_path")]
-    pub path: String,
+    #[serde(default = "default_path", deserialize_with = "deserialize_path")]
+    pub path: PathBuf,
 }
 
-fn default_path() -> String {
+fn default_path() -> PathBuf {
     let home = dirs::home_dir().expect("Failed to get home directory");
-    let path = home.join(".bothan");
-    let path_str = path.to_str().expect("Failed to convert path to string");
+    home.join(".bothan")
+}
 
-    path_str.to_string()
+fn deserialize_path<'de, D>(deserializer: D) -> Result<PathBuf, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(PathBuf::from(s))
+}
+
+impl Default for StoreConfig {
+    fn default() -> Self {
+        StoreConfig {
+            path: default_path(),
+        }
+    }
 }

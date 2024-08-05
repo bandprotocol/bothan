@@ -9,16 +9,10 @@ name = "bothan-api"
 path = "src/main.rs"
 
 [dependencies]
-bothan-binance = { workspace = true }
-#bothan-bybit = { workspace = true }
-#bothan-coinbase = { workspace = true }
-bothan-coingecko = { workspace = true }
-#bothan-coinmarketcap = { workspace = true }
 bothan-core = { workspace = true }
-#bothan-cryptocompare = { workspace = true }
-#bothan-htx = { workspace = true }
-#bothan-kraken = { workspace = true }
-#bothan-okx = { workspace = true }
+
+bothan-binance = { workspace = true }
+bothan-coingecko = { workspace = true }
 
 chrono = { workspace = true }
 humantime-serde = { workspace = true }
@@ -30,7 +24,6 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
 anyhow = "1.0.86"
 async-trait = "0.1.81"
@@ -41,6 +34,7 @@ prost = "0.13.1"
 protoc-gen-prost = "0.3.1"
 protoc-gen-tonic = "0.4.0"
 tonic = "0.12.1"
+clap = { version = "4.5.13", features = ["derive"] }
 
 [build-dependencies]
 tonic-build = "0.12.1"

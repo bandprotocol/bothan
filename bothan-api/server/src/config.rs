@@ -1,5 +1,5 @@
-use config::Config;
-use serde::Deserialize;
+use config::{Config, ConfigError};
+use serde::{Deserialize, Serialize};
 
 use crate::config::grpc::GrpcConfig;
 use crate::config::ipfs::IpfsConfig;
@@ -14,7 +14,7 @@ pub mod manager;
 pub mod store;
 
 /// The main application configuration.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
     pub log: LogConfig,
@@ -25,9 +25,18 @@ pub struct AppConfig {
 
 impl AppConfig {
     /// Creates a new `AppConfig` using the configuration file.
-    pub fn new() -> Result<Self, config::ConfigError> {
+    pub fn with_name<N: AsRef<str>>(name: N) -> Result<Self, ConfigError> {
         let config = Config::builder()
-            .add_source(config::File::with_name("config"))
+            .add_source(config::File::with_name(name.as_ref()))
+            .build()?;
+
+        // Deserialize the configuration
+        config.try_deserialize()
+    }
+
+    pub fn from<P: AsRef<std::path::Path>>(path: P) -> Result<Self, ConfigError> {
+        let config = Config::builder()
+            .add_source(config::File::from(path.as_ref()))
             .build()?;
 
         // Deserialize the configuration
