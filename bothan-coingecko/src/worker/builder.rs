@@ -24,7 +24,7 @@ impl CoinGeckoWorkerBuilder {
     /// The default URL is `DEFAULT_URL` when no API key is provided
     /// and is `DEFAULT_PRO_URL` when an API key is provided.
     pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
-        self.opts.url = Some(url.into());
+        self.opts.url = url.into();
         self
     }
 
@@ -67,6 +67,7 @@ impl<'a> AssetWorkerBuilder<'a> for CoinGeckoWorkerBuilder {
     fn new(store: WorkerStore, opts: Self::Opts) -> Self {
         Self { store, opts }
     }
+
     /// Creates the configured `CoinGeckoWorker`.
     async fn build(self) -> Result<Arc<Self::Worker>, Self::Error> {
         let api =
