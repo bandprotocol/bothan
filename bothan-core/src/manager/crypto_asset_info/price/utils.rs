@@ -4,6 +4,7 @@ use rust_decimal::{Decimal, RoundingStrategy};
 
 use crate::manager::crypto_asset_info::price::PRECISION;
 use crate::manager::crypto_asset_info::types::PriceState;
+
 pub fn get_price_state<T: AsRef<str>>(
     id: T,
     signal_results: &HashMap<String, Decimal>,

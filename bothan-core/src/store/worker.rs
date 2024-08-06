@@ -3,6 +3,7 @@ use std::collections::HashSet;
 
 use tracing::{error, info};
 
+use crate::store::types::{ASSET_STORE_KEY, QUERY_IDS_KEY};
 use crate::store::Store;
 use crate::types::AssetInfo;
 use crate::worker::AssetState;
@@ -50,7 +51,7 @@ impl WorkerStore {
 
         let save_result = self
             .store
-            .save_state("asset_store", &store.asset_store)
+            .save_state(ASSET_STORE_KEY, &store.asset_store)
             .await;
 
         match save_result {
@@ -67,7 +68,7 @@ impl WorkerStore {
 
         let save_result = self
             .store
-            .save_state("asset_store", &store.asset_store)
+            .save_state(ASSET_STORE_KEY, &store.asset_store)
             .await;
 
         match save_result {
@@ -96,7 +97,7 @@ impl WorkerStore {
             }
         };
 
-        let save_result = self.store.save_state("query_ids", &store.query_ids).await;
+        let save_result = self.store.save_state(QUERY_IDS_KEY, &store.query_ids).await;
 
         match save_result {
             Ok(_) => info!("query_ids state saved successfully"),
@@ -123,7 +124,7 @@ impl WorkerStore {
             Entry::Vacant(_) => vec![],
         };
 
-        let save_result = self.store.save_state("query_ids", &store.query_ids).await;
+        let save_result = self.store.save_state(QUERY_IDS_KEY, &store.query_ids).await;
 
         match save_result {
             Ok(_) => info!("query_ids state saved successfully"),

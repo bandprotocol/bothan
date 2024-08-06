@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+
+use serde::{Deserialize, Serialize};
 
 /// The configuration for bothan-api's gRPC server.
 #[derive(Clone, Debug, Deserialize, Serialize)]

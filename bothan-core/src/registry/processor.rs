@@ -24,7 +24,6 @@ pub trait Process<T> {
 /// The Process enum represents the different types of processors that can be used.
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
-// #[enum_dispatch(Processor)]
 pub enum Processor {
     Median(median::MedianProcessor),
 }

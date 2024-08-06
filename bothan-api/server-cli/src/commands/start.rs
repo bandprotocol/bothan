@@ -27,15 +27,15 @@ use crate::commands::CliExec;
 
 #[derive(Parser)]
 pub struct StartCli {
-    /// The path to the config file to use
+    /// The config file to use with bothan
     #[arg(long)]
     config: Option<PathBuf>,
 
-    /// Flag to choose to reset the store values
+    /// A flag to choose whether to start bothan as a fresh instance or not
     #[arg(short, long)]
     reset: bool,
 
-    /// The registry file to use on startup
+    /// An optional registry file to use on startup. If not provided, an empty registry will be created.
     #[arg(long)]
     registry: Option<PathBuf>,
 }
@@ -80,10 +80,10 @@ async fn start_server(
     let ipfs_client = init_ipfs_client(&app_config).await?;
     let crypto_server = init_crypto_server(&app_config, store, ipfs_client).await?;
 
-    let _ = Server::builder()
+    Server::builder()
         .add_service(QueryServer::new(crypto_server))
         .serve(app_config.grpc.addr)
-        .await;
+        .await?;
 
     Ok(())
 }
@@ -109,16 +109,18 @@ async fn init_store(config: &AppConfig, registry: Registry, reset: bool) -> anyh
 
 async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
     let ipfs_builder = IpfsClientBuilder::new(config.ipfs.endpoint.clone());
-    let ipfs_builder = match &config.ipfs.authentication {
+    let ipfs_client = match &config.ipfs.authentication {
         IpfsAuthentication::Header { key, value } => {
             let header_name = HeaderName::from_str(key)?;
             let header_value = HeaderValue::from_str(value)?;
-            ipfs_builder.with_header(header_name, header_value)
+            ipfs_builder
+                .with_header(header_name, header_value)
+                .build()?
         }
-        IpfsAuthentication::None => ipfs_builder,
+        IpfsAuthentication::None => ipfs_builder.build()?,
     };
 
-    Ok(ipfs_builder.build()?)
+    Ok(ipfs_client)
 }
 
 async fn init_crypto_server(

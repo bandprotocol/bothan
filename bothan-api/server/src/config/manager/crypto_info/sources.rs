@@ -1,8 +1,9 @@
-use bothan_binance::BinanceWorkerBuilderOpts;
-use bothan_coingecko::CoinGeckoWorkerBuilderOpts;
 use serde::{Deserialize, Serialize};
 
-/// The configuration for bothan-api's manager.
+use bothan_binance::BinanceWorkerBuilderOpts;
+use bothan_coingecko::CoinGeckoWorkerBuilderOpts;
+
+/// The configuration for the worker sources.
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct CryptoSourceConfigs {
     pub binance: BinanceWorkerBuilderOpts,

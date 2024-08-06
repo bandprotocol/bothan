@@ -1,6 +1,7 @@
+use thiserror::Error;
+
 use crate::registry::post_processor::PostProcessorError;
 use crate::registry::processor::ProcessError;
-use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Clone)]
 pub enum SetRegistryError {

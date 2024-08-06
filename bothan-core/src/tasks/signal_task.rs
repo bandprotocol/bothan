@@ -1,7 +1,8 @@
+use rust_decimal::Decimal;
+
 use crate::registry::post_processor::{PostProcessor, PostProcessorError};
 use crate::registry::processor::{Process, ProcessError};
 use crate::registry::signal::Signal;
-use rust_decimal::Decimal;
 
 /// `SignalTask` represents the tasks to processes a signal.
 /// It contains a `signal_id` which is a unique identifier for the signal value and `signal`,

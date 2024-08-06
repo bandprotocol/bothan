@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::manager::crypto_info::sources::CryptoSourceConfigs;
 
-pub mod registry;
 pub mod sources;
 
 /// The configuration for bothan-api's crypto asset info manager.

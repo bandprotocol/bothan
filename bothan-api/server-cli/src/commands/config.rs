@@ -1,5 +1,5 @@
+use std::fs;
 use std::path::PathBuf;
-use std::{fs, path};
 
 use clap::{Parser, Subcommand};
 
@@ -16,7 +16,7 @@ pub struct ConfigCli {
 #[derive(Subcommand)]
 enum ConfigSubCommands {
     Init {
-        /// The path to the config file to generate
+        /// The path to where to initialize the configuration file (defaults to ./config.toml).
         #[arg(short, long)]
         path: Option<PathBuf>,
     },
@@ -29,8 +29,7 @@ impl CliExec for ConfigCli {
             ConfigSubCommands::Init { path } => {
                 let config_path = match path {
                     Some(p) => p.clone(),
-                    // Unwrap here as this should never fail
-                    None => path::PathBuf::from("./config.toml"),
+                    None => PathBuf::from("./config.toml"),
                 };
 
                 if let Some(parent) = config_path.parent() {

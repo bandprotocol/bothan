@@ -28,4 +28,5 @@ tonic = "0.12.1"
 chrono = "0.4.38"
 serde_json = "1.0.120"
 log = "0.4.22"
+anyhow = "1.0.86"
 

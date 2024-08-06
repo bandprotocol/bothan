@@ -2,9 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use semver::{Version, VersionReq};
+use serde_json::from_str;
 use tokio::sync::RwLock;
 
-use crate::ipfs::{errors as ipfs_errors, IpfsClient};
+use crate::ipfs::{errors::Error as IpfsError, IpfsClient};
 use crate::manager::crypto_asset_info::error::{
     GetPriceError, MissingSignalError, SetRegistryError,
 };
@@ -82,27 +83,24 @@ impl<'a> CryptoAssetInfoManager<'a> {
             return Err(SetRegistryError::UnsupportedVersion);
         };
 
-        match self.ipfs_client.get_ipfs(&hash).await {
-            Ok(text) => {
-                let registry: Registry =
-                    serde_json::from_str(&text).map_err(|_| SetRegistryError::FailedToParse)?;
+        let text = self
+            .ipfs_client
+            .get_ipfs(&hash)
+            .await
+            .map_err(|e| match e {
+                IpfsError::DoesNotExist => SetRegistryError::InvalidHash,
+                IpfsError::NonZeroStatus(code) => SetRegistryError::FailedToRetrieve(format!(
+                    "failed to get registry with non-zero status code: {code}"
+                )),
+                IpfsError::RequestFailed(e) => SetRegistryError::FailedToRetrieve(format!(
+                    "failed to get registry with error: {e}"
+                )),
+            })?;
 
-                if TaskSet::try_from(registry.clone()).is_err() {
-                    self.store.set_registry(registry).await;
-                    Ok(())
-                } else {
-                    Err(SetRegistryError::InvalidRegistry)
-                }
-            }
-            Err(e) => match e {
-                ipfs_errors::Error::DoesNotExist => Err(SetRegistryError::InvalidHash),
-                ipfs_errors::Error::NonZeroStatus(code) => Err(SetRegistryError::FailedToRetrieve(
-                    format!("failed to get registry with non-zero status code: {}", code),
-                )),
-                ipfs_errors::Error::RequestFailed(e) => Err(SetRegistryError::FailedToRetrieve(
-                    format!("failed to get registry with error: {}", e),
-                )),
-            },
-        }
+        let registry: Registry = from_str(&text).map_err(|_| SetRegistryError::FailedToParse)?;
+
+        TaskSet::try_from(registry.clone()).map_err(|_| SetRegistryError::InvalidRegistry)?;
+        self.store.set_registry(registry).await;
+        Ok(())
     }
 }

@@ -1,8 +1,9 @@
-use bothan_core::registry::Registry;
-use bothan_core::tasks::TaskSet;
 use glob::glob;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+
+use bothan_core::registry::Registry;
+use bothan_core::tasks::TaskSet;
 
 #[tokio::test]
 async fn test_registry_validity() {

@@ -11,10 +11,12 @@ pub use worker::WorkerStore;
 
 use crate::registry::Registry;
 use crate::store::errors::Error;
+use crate::store::types::{ACTIVE_SIGNAL_IDS_KEY, ASSET_STORE_KEY, QUERY_IDS_KEY, REGISTRY_KEY};
 use crate::types::AssetInfo;
 
 pub mod errors;
 mod manager;
+mod types;
 mod worker;
 
 #[derive(Clone)]
@@ -45,6 +47,7 @@ impl Store {
             active_signal_ids: HashSet::new(),
             registry,
         };
+
         let store = Self {
             inner: Arc::new(Mutex::new(inner)),
             db,
@@ -56,22 +59,22 @@ impl Store {
     pub async fn restore(&mut self) -> Result<(), Error> {
         let asset_store = self
             .db
-            .get("asset_store")?
+            .get(ASSET_STORE_KEY)?
             .map(|b| bincode::deserialize(b.as_slice()))
             .transpose()?;
         let query_ids = self
             .db
-            .get("query_ids")?
+            .get(QUERY_IDS_KEY)?
             .map(|b| bincode::deserialize(b.as_slice()))
             .transpose()?;
         let active_signal_ids = self
             .db
-            .get("active_signal_ids")?
+            .get(ACTIVE_SIGNAL_IDS_KEY)?
             .map(|b| bincode::deserialize(b.as_slice()))
             .transpose()?;
         let registry = self
             .db
-            .get("registry")?
+            .get(REGISTRY_KEY)?
             .map(|b| bincode::deserialize(b.as_slice()))
             .transpose()?;
 

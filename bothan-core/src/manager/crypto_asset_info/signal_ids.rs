@@ -20,13 +20,12 @@ pub async fn add_worker_query_ids<'a>(
 
     let mut query_ids = get_source_batched_query_ids(ids_to_add.as_slice(), registry)?;
     for (source_id, query_ids) in query_ids.drain() {
-        if let Some(worker) = workers.get(&source_id) {
-            match worker.add_query_ids(query_ids).await {
+        match workers.get(&source_id) {
+            Some(worker) => match worker.add_query_ids(query_ids).await {
                 Ok(_) => info!("Added query ids to {} worker", source_id),
                 Err(e) => error!("Worker {} failed to add query ids: {}", source_id, e),
-            }
-        } else {
-            info!("Worker {} not found", source_id);
+            },
+            None => info!("Worker {} not found", source_id),
         }
     }
 
@@ -46,13 +45,12 @@ pub async fn remove_worker_query_ids<'a>(
 
     let mut query_ids = get_source_batched_query_ids(ids_to_rem.as_slice(), registry)?;
     for (source, ids) in query_ids.drain() {
-        if let Some(worker) = workers.get(&source) {
-            match worker.remove_query_ids(ids).await {
+        match workers.get(&source) {
+            Some(worker) => match worker.remove_query_ids(ids).await {
                 Ok(_) => info!("Removed query ids from {} worker", source),
                 Err(e) => error!("Worker {} failed to remove query ids: {}", source, e),
-            }
-        } else {
-            info!("Worker {} not found", source);
+            },
+            None => info!("Worker {} not found", source),
         }
     }
 

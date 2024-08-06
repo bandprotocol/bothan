@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use tracing::{error, info};
 
 use crate::registry::Registry;
+use crate::store::types::{ACTIVE_SIGNAL_IDS_KEY, REGISTRY_KEY};
 use crate::store::Store;
 
 pub struct ManagerStore {
@@ -20,7 +21,7 @@ impl ManagerStore {
 
         let save_result = self
             .store
-            .save_state("active_signal_ids", &store.active_signal_ids)
+            .save_state(ACTIVE_SIGNAL_IDS_KEY, &store.active_signal_ids)
             .await;
 
         match save_result {
@@ -37,7 +38,7 @@ impl ManagerStore {
     pub async fn set_registry(&self, registry: Registry) {
         let mut store = self.store.inner.lock().await;
 
-        let save_result = self.store.save_state("registry", &store.registry).await;
+        let save_result = self.store.save_state(REGISTRY_KEY, &store.registry).await;
 
         match save_result {
             Ok(_) => info!("registry state saved successfully"),

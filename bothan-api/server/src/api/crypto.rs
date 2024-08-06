@@ -9,10 +9,11 @@ use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
 use bothan_core::manager::crypto_asset_info::types::PriceState;
 use bothan_core::manager::CryptoAssetInfoManager;
 
+use crate::api::utils::{price, registry_resp};
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
-    Price, PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest,
-    SetActiveSignalIdResponse, UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
+    PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest, SetActiveSignalIdResponse,
+    UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
 };
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
@@ -46,26 +47,22 @@ impl Query for CryptoQueryServer {
             .await;
 
         match set_registry_result {
-            Ok(_) => Ok(Response::new(UpdateRegistryResponse {
-                code: UpdateStatusCode::Ok.into(),
-            })),
-            Err(e) => match e {
-                SetRegistryError::InvalidRegistry => Ok(Response::new(UpdateRegistryResponse {
-                    code: UpdateStatusCode::InvalidRegistry.into(),
-                })),
-                SetRegistryError::FailedToRetrieve(_) => {
-                    Ok(Response::new(UpdateRegistryResponse {
-                        code: UpdateStatusCode::FailedToGetRegistry.into(),
-                    }))
-                }
-                SetRegistryError::UnsupportedVersion => Ok(Response::new(UpdateRegistryResponse {
-                    code: UpdateStatusCode::UnsupportedVersion.into(),
-                })),
-                SetRegistryError::FailedToParse => Err(Status::invalid_argument(
-                    "Registry is incorrectly formatted",
-                )),
-                SetRegistryError::InvalidHash => Err(Status::invalid_argument("Invalid IPFS hash")),
-            },
+            Ok(_) => Ok(registry_resp(UpdateStatusCode::Ok)),
+            Err(SetRegistryError::InvalidRegistry) => {
+                Ok(registry_resp(UpdateStatusCode::InvalidRegistry))
+            }
+            Err(SetRegistryError::FailedToRetrieve(_)) => {
+                Ok(registry_resp(UpdateStatusCode::FailedToGetRegistry))
+            }
+            Err(SetRegistryError::UnsupportedVersion) => {
+                Ok(registry_resp(UpdateStatusCode::UnsupportedVersion))
+            }
+            Err(SetRegistryError::FailedToParse) => Err(Status::invalid_argument(
+                "Registry is incorrectly formatted",
+            )),
+            Err(SetRegistryError::InvalidHash) => {
+                Err(Status::invalid_argument("Invalid IPFS hash"))
+            }
         }
     }
 
@@ -98,37 +95,25 @@ impl Query for CryptoQueryServer {
     ) -> Result<Response<PriceResponse>, Status> {
         let price_request = request.into_inner();
         let mut manager = self.manager.lock().await;
-        match manager.get_prices(&price_request.signal_ids).await {
-            Ok(price_states) => {
-                let prices = price_request
-                    .signal_ids
-                    .into_iter()
-                    .zip(price_states)
-                    .map(|(id, state)| match state {
-                        PriceState::Available(price) => Price {
-                            signal_id: id.clone(),
-                            status: PriceStatus::Available.into(),
-                            price,
-                        },
-                        PriceState::Unavailable => Price {
-                            signal_id: id.clone(),
-                            status: PriceStatus::Unavailable.into(),
-                            price: 0,
-                        },
-                        PriceState::Unsupported => Price {
-                            signal_id: id.clone(),
-                            status: PriceStatus::Unsupported.into(),
-                            price: 0,
-                        },
-                    })
-                    .collect();
-
-                Ok(Response::new(PriceResponse { prices }))
-            }
-            Err(e) => {
+        let price_states = manager
+            .get_prices(&price_request.signal_ids)
+            .await
+            .map_err(|e| {
                 error!("Failed to get prices: {:?}", e);
-                Err(Status::internal("Failed to get prices"))
-            }
-        }
+                Status::internal("Failed to get prices")
+            })?;
+
+        let prices = price_request
+            .signal_ids
+            .into_iter()
+            .zip(price_states)
+            .map(|(id, state)| match state {
+                PriceState::Available(p) => price(&id, PriceStatus::Available, p),
+                PriceState::Unavailable => price(&id, PriceStatus::Unavailable, 0),
+                PriceState::Unsupported => price(&id, PriceStatus::Unsupported, 0),
+            })
+            .collect();
+
+        Ok(Response::new(PriceResponse { prices }))
     }
 }
