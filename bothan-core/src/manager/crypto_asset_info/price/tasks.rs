@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use rust_decimal::Decimal;
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::manager::crypto_asset_info::error::{
     MissingSignalError, SignalTaskError, SourceRoutingError,
@@ -104,6 +104,8 @@ async fn execute_source_tasks<'a>(
                     let key = into_key(&source_id, &info.id);
                     results.insert(key, info);
                 });
+        } else {
+            warn!("Worker \"{}\" not found", source_id);
         }
     }
 

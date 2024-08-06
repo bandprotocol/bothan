@@ -5,7 +5,7 @@ use crate::config::manager::crypto_info::sources::CryptoSourceConfigs;
 pub mod sources;
 
 /// The configuration for bothan-api's crypto asset info manager.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CryptoInfoManagerConfig {
     /// The source configuration for the crypto asset info manager.
     pub source: CryptoSourceConfigs,

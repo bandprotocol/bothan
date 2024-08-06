@@ -14,7 +14,7 @@ pub mod manager;
 pub mod store;
 
 /// The main application configuration.
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
     pub log: LogConfig,

@@ -20,34 +20,32 @@ use bothan_coingecko::CoinGeckoWorkerBuilder;
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::registry::Registry;
-use bothan_core::store::Store;
+use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
-
-use crate::commands::CliExec;
 
 #[derive(Parser)]
 pub struct StartCli {
     /// The config file to use with bothan
     #[arg(long)]
-    config: Option<PathBuf>,
+    #[clap(default_value = "config.toml")]
+    config: PathBuf,
 
     /// A flag to choose whether to start bothan as a fresh instance or not
     #[arg(short, long)]
-    reset: bool,
+    unsafe_reset: bool,
 
-    /// An optional registry file to use on startup. If not provided, an empty registry will be created.
-    #[arg(long)]
+    /// Turn on dev mode
+    #[arg(short, long)]
+    dev: bool,
+
+    /// An optional initial registry state to use on startup to be used for testing purposes only.
+    #[arg(long, requires = "dev")]
     registry: Option<PathBuf>,
 }
 
-#[async_trait::async_trait]
-impl CliExec for StartCli {
-    async fn run(&self) {
-        let app_config = match &self.config {
-            Some(p) => AppConfig::from(p),
-            None => AppConfig::with_name("config"),
-        }
-        .expect("Failed to load config");
+impl StartCli {
+    pub async fn run(&self) {
+        let app_config = AppConfig::from(&self.config).expect("Failed to load config");
 
         let registry = match &self.registry {
             Some(p) => {
@@ -60,8 +58,8 @@ impl CliExec for StartCli {
             None => Registry::default(),
         };
 
-        if let Err(e) = start_server(app_config, registry, self.reset).await {
-            println!("Failed to start server: {}", e);
+        if let Err(e) = start_server(app_config, registry, self.unsafe_reset).await {
+            panic!("Failed to start server: {}", e);
         }
     }
 }
@@ -88,12 +86,16 @@ async fn start_server(
     Ok(())
 }
 
-async fn init_store(config: &AppConfig, registry: Registry, reset: bool) -> anyhow::Result<Store> {
+async fn init_store(
+    config: &AppConfig,
+    registry: Registry,
+    reset: bool,
+) -> anyhow::Result<SharedStore> {
     if !config.store.path.is_dir() {
         create_dir_all(&config.store.path).with_context(|| "Failed to create home directory")?;
     }
 
-    let mut store = Store::new(registry, &config.store.path)
+    let mut store = SharedStore::new(registry, &config.store.path)
         .await
         .with_context(|| "Failed to create store")?;
 
@@ -125,10 +127,10 @@ async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
 
 async fn init_crypto_server(
     config: &AppConfig,
-    store: Store,
+    store: SharedStore,
     ipfs_client: IpfsClient,
 ) -> anyhow::Result<CryptoQueryServer> {
-    let manager_store = Store::create_manager_store(&store);
+    let manager_store = SharedStore::create_manager_store(&store);
 
     let stale_threshold = config.manager.crypto.stale_threshold;
     let version_req = VersionReq::from_str(&format!("<={}", VERSION))
@@ -143,29 +145,37 @@ async fn init_crypto_server(
 
 async fn init_crypto_workers(
     manager: &mut CryptoAssetInfoManager<'static>,
-    store: &Store,
+    store: &SharedStore,
     source: &CryptoSourceConfigs,
 ) -> anyhow::Result<()> {
     type Binance = BinanceWorkerBuilder;
     type CoinGecko = CoinGeckoWorkerBuilder;
 
-    add_worker::<Binance>(manager, store, "binance", source.binance.clone()).await?;
-    add_worker::<CoinGecko>(manager, store, "coingecko", source.coingecko.clone()).await?;
+    if !source.binance.skip {
+        add_worker::<Binance>(manager, store, "binance", &source.binance.builder_opts).await?;
+    }
+
+    if !source.coingecko.skip {
+        add_worker::<CoinGecko>(manager, store, "coingecko", &source.coingecko.builder_opts)
+            .await?;
+    }
+
     Ok(())
 }
 
 async fn add_worker<B>(
     manager: &mut CryptoAssetInfoManager<'static>,
-    store: &Store,
+    store: &SharedStore,
     worker_name: &str,
-    opts: B::Opts,
+    opts: &B::Opts,
 ) -> anyhow::Result<()>
 where
     B: AssetWorkerBuilder<'static>,
     B::Error: Send + Sync + 'static,
+    B::Opts: Clone,
 {
-    let worker_store = Store::create_worker_store(store, worker_name);
-    let worker = B::new(worker_store, opts)
+    let worker_store = SharedStore::create_worker_store(store, worker_name);
+    let worker = B::new(worker_store, opts.clone())
         .build()
         .await
         .with_context(|| format!("Failed to build {} worker", worker_name))?;

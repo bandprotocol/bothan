@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// The configuration for bothan-api's logging.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LogConfig {
     /// The log level to use for the application.
     #[serde(default = "default_level")]

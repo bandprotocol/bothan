@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use semver::Version;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
@@ -18,14 +18,14 @@ use crate::proto::query::{
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
-    manager: Arc<Mutex<CryptoAssetInfoManager<'static>>>,
+    manager: Arc<RwLock<CryptoAssetInfoManager<'static>>>,
 }
 
 impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
     pub fn new(manager: CryptoAssetInfoManager<'static>) -> Self {
         CryptoQueryServer {
-            manager: Arc::new(Mutex::new(manager)),
+            manager: Arc::new(RwLock::new(manager)),
         }
     }
 }
@@ -41,7 +41,7 @@ impl Query for CryptoQueryServer {
         let version = Version::parse(&update_registry_request.version)
             .map_err(|_| Status::invalid_argument("Invalid version string"))?;
 
-        let mut manager = self.manager.lock().await;
+        let mut manager = self.manager.write().await;
         let set_registry_result = manager
             .set_registry_from_ipfs(&update_registry_request.ipfs_hash, version)
             .await;
@@ -72,7 +72,7 @@ impl Query for CryptoQueryServer {
     ) -> Result<Response<SetActiveSignalIdResponse>, Status> {
         info!("received set active signal id request");
         let update_registry_request = request.into_inner();
-        let mut manager = self.manager.lock().await;
+        let mut manager = self.manager.write().await;
         let set_result = manager
             .set_active_signal_ids(update_registry_request.signal_ids)
             .await;
@@ -94,7 +94,7 @@ impl Query for CryptoQueryServer {
         request: Request<PriceRequest>,
     ) -> Result<Response<PriceResponse>, Status> {
         let price_request = request.into_inner();
-        let mut manager = self.manager.lock().await;
+        let manager = self.manager.read().await;
         let price_states = manager
             .get_prices(&price_request.signal_ids)
             .await

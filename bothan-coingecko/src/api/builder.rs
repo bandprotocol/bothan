@@ -31,6 +31,7 @@ pub struct CoinGeckoRestAPIBuilder {
     user_agent: String,
     url: String,
     api_key: Option<String>,
+    // Flag to determine if the URL was modified by the user.
     mod_url: bool,
 }
 

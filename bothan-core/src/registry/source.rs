@@ -3,7 +3,7 @@ use std::ops::{Add, Div, Mul, Sub};
 use serde::{Deserialize, Serialize};
 
 /// Enum representing the possible operations that can be performed.
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Operation {
     #[serde(rename = "+")]
     Add,
@@ -52,7 +52,7 @@ impl OperationRoute {
 }
 
 /// Struct representing a source.
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SourceQuery {
     /// The source id.
     pub source_id: String,

@@ -68,9 +68,9 @@ impl<'a> CryptoAssetInfoManager<'a> {
     }
 
     /// Gets the `Price` of the given signal ids.
-    pub async fn get_prices(&mut self, ids: &[String]) -> Result<Vec<PriceState>, GetPriceError> {
+    pub async fn get_prices(&self, ids: &[String]) -> Result<Vec<PriceState>, GetPriceError> {
         let registry = self.store.get_registry().await;
-        let workers = self.workers.write().await;
+        let workers = self.workers.read().await;
         get_prices(ids, &registry, &workers, self.stale_threshold).await
     }
 

@@ -96,7 +96,7 @@ async fn handle_unsubscribe_recv(
         Ok(_) => info!("unsubscribed to ids {:?}", to_unsub),
         Err(e) => {
             error!("failed to unsubscribe to ids {:?}: {}", to_unsub, e);
-            worker_store.remove_query_ids(to_unsub).await;
+            worker_store.add_query_ids(to_unsub).await;
         }
     }
 }

@@ -8,7 +8,7 @@ use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 /// `BinanceWorkerBuilderOpts` provides a way to specify custom settings for creating a `BinanceWorker`.
 /// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
 /// which will be used during the construction of the `BinanceWorker`.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BinanceWorkerBuilderOpts {
     #[serde(default = "default_url")]
     pub url: String,

@@ -5,7 +5,7 @@ use tokio::time::sleep;
 use tracing_subscriber::fmt::init;
 
 use bothan_binance::{BinanceWorkerBuilder, BinanceWorkerBuilderOpts};
-use bothan_core::store::{Store, WorkerStore};
+use bothan_core::store::{SharedStore, WorkerStore};
 use bothan_core::worker::AssetWorker;
 
 #[tokio::main]
@@ -13,7 +13,7 @@ async fn main() {
     init();
     let path = std::env::current_dir().unwrap();
     let store = Arc::new(
-        Store::new(Default::default(), path.as_path())
+        SharedStore::new(Default::default(), path.as_path())
             .await
             .unwrap(),
     );

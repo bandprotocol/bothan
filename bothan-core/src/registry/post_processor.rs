@@ -22,7 +22,7 @@ pub trait PostProcessor<T> {
 }
 
 /// The PostProcess enum represents the different types of post-processors that can be used.
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
 pub enum PostProcess {
     TickConvertor(tick::TickPostProcessor),

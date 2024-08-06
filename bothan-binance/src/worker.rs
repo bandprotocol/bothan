@@ -1,5 +1,4 @@
 use tokio::sync::mpsc::Sender;
-use tracing::error;
 
 use bothan_core::store::WorkerStore;
 use bothan_core::worker::{AssetState, AssetWorker, Error};
@@ -49,7 +48,7 @@ impl AssetWorker for BinanceWorker {
         let to_sub = self.store.add_query_ids(ids).await;
 
         self.subscribe_tx
-            .send(to_sub.clone())
+            .send(to_sub)
             .await
             .map_err(|e| Error::ModifyQueryIDsFailed(e.to_string()))
     }
@@ -58,12 +57,9 @@ impl AssetWorker for BinanceWorker {
     async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
         let to_unsub = self.store.remove_query_ids(ids).await;
 
-        if let Err(e) = self.unsubscribe_tx.send(to_unsub.clone()).await {
-            error!("failed to remove query ids: {}", e);
-            self.store.add_query_ids(to_unsub).await;
-            Err(Error::ModifyQueryIDsFailed(e.to_string()))
-        } else {
-            Ok(())
-        }
+        self.unsubscribe_tx
+            .send(to_unsub.clone())
+            .await
+            .map_err(|e| Error::ModifyQueryIDsFailed(e.to_string()))
     }
 }

@@ -10,7 +10,7 @@ const MAX_TICK: f64 = 524287.0;
 const MIN_TICK: f64 = 1.0;
 
 /// `TickPostProcessor` processes the given data into its tick value.
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TickPostProcessor {}
 
 impl PostProcessor<Decimal> for TickPostProcessor {

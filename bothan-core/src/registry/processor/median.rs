@@ -9,7 +9,7 @@ use crate::registry::processor::{Process, ProcessError};
 /// The `MedianProcessor` finds the median of a given data set. It also has a `min_source_count` which
 /// is the minimum number of sources required to calculate the median. If the given data set has less
 /// than `min_source_count` sources, it returns an error.
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MedianProcessor {
     pub min_source_count: usize,
 }

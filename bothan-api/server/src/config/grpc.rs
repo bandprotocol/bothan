@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use serde::{Deserialize, Serialize};
 
 /// The configuration for bothan-api's gRPC server.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GrpcConfig {
     /// The address to bind the gRPC server too.
     #[serde(default = "default_addr")]

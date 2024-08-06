@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_IPFS_ENDPOINT: &str = "https://ipfs.io";
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub enum IpfsAuthentication {
     #[default]
     None,
@@ -13,7 +13,7 @@ pub enum IpfsAuthentication {
 }
 
 /// A IPFS registry source configuration.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IpfsConfig {
     #[serde(default = "default_endpoint")]
     pub endpoint: String,

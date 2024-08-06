@@ -3,51 +3,44 @@ use std::collections::HashSet;
 use tracing::{error, info};
 
 use crate::registry::Registry;
-use crate::store::types::{ACTIVE_SIGNAL_IDS_KEY, REGISTRY_KEY};
-use crate::store::Store;
+use crate::store::types::Key;
+use crate::store::SharedStore;
 
 pub struct ManagerStore {
-    store: Store,
+    store: SharedStore,
 }
 
 impl ManagerStore {
-    pub fn new(store: Store) -> Self {
+    pub fn new(store: SharedStore) -> Self {
         Self { store }
     }
 
     pub async fn set_active_signal_ids(&self, signal_ids: Vec<String>) {
-        let mut store = self.store.inner.lock().await;
         let new_active_set = signal_ids.into_iter().collect::<HashSet<String>>();
+        self.store.set_active_signal_ids(new_active_set).await;
 
-        let save_result = self
-            .store
-            .save_state(ACTIVE_SIGNAL_IDS_KEY, &store.active_signal_ids)
-            .await;
-
-        match save_result {
-            Ok(_) => info!("active_signal_ids state saved successfully"),
-            Err(e) => error!("failed to save active_signal_ids state: {}", e),
+        let key = Key::ActiveSignalIDs;
+        match self.store.save_state(&key).await {
+            Ok(_) => info!("saved {} state successfully", key),
+            Err(e) => error!("failed to save {} state: {}", key, e),
         }
-        store.active_signal_ids = new_active_set;
     }
 
     pub async fn get_active_signal_ids(&self) -> HashSet<String> {
-        self.store.inner.lock().await.active_signal_ids.clone()
+        self.store.get_active_signal_ids().await
     }
 
     pub async fn set_registry(&self, registry: Registry) {
-        let mut store = self.store.inner.lock().await;
+        self.store.set_registry(registry).await;
 
-        let save_result = self.store.save_state(REGISTRY_KEY, &store.registry).await;
-
-        match save_result {
-            Ok(_) => info!("registry state saved successfully"),
-            Err(e) => error!("failed to save registry state: {}", e),
+        let key = Key::Registry;
+        match self.store.save_state(&key).await {
+            Ok(_) => info!("saved {} state successfully", key),
+            Err(e) => error!("failed to save {} state: {}", key, e),
         }
-        store.registry = registry;
     }
 
     pub async fn get_registry(&self) -> Registry {
-        self.store.inner.lock().await.registry.clone()
+        self.store.get_registry().await
     }
 }
