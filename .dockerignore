@@ -1,4 +1,12 @@
-bothan-api/server/config.toml
-bothan-api-proxy/config.toml
-target
-.bothan
+debug/
+target/
+
+Cargo.lock
+
+.vscode/
+.idea/
+
+.DS_Store
+
+**/config.toml
+**/.bothan

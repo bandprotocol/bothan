@@ -18,5 +18,5 @@ Cargo.lock
 
 .DS_Store
 
-**/*/config.toml
-**/*/.bothan
+**/config.toml
+**/.bothan
