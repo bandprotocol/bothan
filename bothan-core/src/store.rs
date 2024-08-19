@@ -4,11 +4,12 @@ use std::sync::Arc;
 
 use rust_rocksdb::{Options, DB};
 use tokio::sync::RwLock;
+use tracing::debug;
 
 pub use manager::ManagerStore;
 pub use worker::WorkerStore;
 
-use crate::registry::Registry;
+use crate::registry::{Registry, Valid};
 use crate::store::errors::Error;
 use crate::store::types::Key;
 use crate::types::AssetInfo;
@@ -23,25 +24,23 @@ pub struct SharedStore {
     inner: Arc<RwLock<Inner>>,
 }
 
+pub type AssetStore = HashMap<String, AssetInfo>;
+pub type QueryIds = HashSet<String>;
+pub type ActiveSignalIDs = HashSet<String>;
+
 struct Inner {
-    asset_store: HashMap<String, AssetInfo>,
-    query_ids: HashMap<String, HashSet<String>>,
-    active_signal_ids: HashSet<String>,
-    registry: Registry,
+    registry: Registry<Valid>,
     db: DB,
 }
 
 impl SharedStore {
     /// Create a new shared store with the given registry and flush path. If the store already exists at the
     /// given path, it will be restored and the registry will be overwritten.
-    pub async fn new(registry: Registry, flush_path: &Path) -> Result<Self, Error> {
+    pub async fn new(registry: Registry<Valid>, flush_path: &Path) -> Result<Self, Error> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
 
         let inner = Inner {
-            asset_store: HashMap::new(),
-            query_ids: HashMap::new(),
-            active_signal_ids: HashSet::new(),
             registry,
             db: DB::open(&opts, flush_path)?,
         };
@@ -56,168 +55,197 @@ impl SharedStore {
     pub async fn restore(&mut self) -> Result<(), Error> {
         let mut inner = self.inner.write().await;
 
-        let asset_store = inner
-            .db
-            .get(Key::AssetStore.as_bytes())?
-            .map(|b| bincode::deserialize(b.as_slice()))
-            .transpose()?;
-        let query_ids = inner
-            .db
-            .get(Key::QueryIds.as_bytes())?
-            .map(|b| bincode::deserialize(b.as_slice()))
-            .transpose()?;
-        let active_signal_ids = inner
-            .db
-            .get(Key::ActiveSignalIDs.as_bytes())?
-            .map(|b| bincode::deserialize(b.as_slice()))
-            .transpose()?;
         let registry = inner
             .db
-            .get(Key::Registry.as_bytes())?
+            .get(Key::Registry.to_prefixed_bytes())?
             .map(|b| bincode::deserialize(b.as_slice()))
             .transpose()?;
 
-        if let Some(query_ids) = query_ids {
-            inner.query_ids = query_ids;
-        }
-        if let Some(asset_store) = asset_store {
-            inner.asset_store = asset_store;
-        }
-        if let Some(active_signal_ids) = active_signal_ids {
-            inner.active_signal_ids = active_signal_ids;
-        }
         if let Some(registry) = registry {
+            debug!("Loaded registry");
             inner.registry = registry;
         }
 
         Ok(())
     }
 
-    pub fn create_manager_store(this: &Self) -> ManagerStore {
-        ManagerStore::new(this.clone())
+    pub fn create_manager_store(&self) -> ManagerStore {
+        ManagerStore::new(self.clone())
     }
 
-    pub fn create_worker_store<T: Into<String>>(this: &Self, prefix: T) -> WorkerStore {
-        WorkerStore::new(this.clone(), prefix.into())
+    pub fn create_worker_store<T: Into<String>>(&self, prefix: T) -> WorkerStore {
+        WorkerStore::new(self.clone(), prefix.into())
     }
 
-    async fn save_state(&self, key: &Key) -> Result<(), Error> {
-        let inner = self.inner.write().await;
+    async fn get_active_signal_ids(&self) -> Result<Option<ActiveSignalIDs>, Error> {
+        let serialized = self
+            .inner
+            .read()
+            .await
+            .db
+            .get(Key::ActiveSignalIDs.to_prefixed_bytes())?;
+        let active_signal_ids = serialized
+            .map(|b| bincode::deserialize(b.as_slice()))
+            .transpose()?;
+        Ok(active_signal_ids)
+    }
 
-        let serialized = match key {
-            Key::AssetStore => bincode::serialize(&inner.asset_store),
-            Key::QueryIds => bincode::serialize(&inner.query_ids),
-            Key::ActiveSignalIDs => bincode::serialize(&inner.active_signal_ids),
-            Key::Registry => bincode::serialize(&inner.registry),
-        }?;
-
-        inner.db.put(key.as_bytes(), serialized)?;
-        inner.db.flush()?;
-
+    async fn set_active_signal_ids(&self, signal_ids: HashSet<String>) -> Result<(), Error> {
+        let serialized = bincode::serialize(&signal_ids)?;
+        self.inner
+            .write()
+            .await
+            .db
+            .put(Key::ActiveSignalIDs.to_prefixed_bytes(), serialized)?;
         Ok(())
     }
 
-    async fn get_active_signal_ids(&self) -> HashSet<String> {
-        self.inner.read().await.active_signal_ids.clone()
-    }
-
-    async fn set_active_signal_ids(&self, signal_ids: HashSet<String>) {
-        let mut inner = self.inner.write().await;
-        inner.active_signal_ids = signal_ids;
-    }
-
-    async fn get_registry(&self) -> Registry {
+    async fn get_registry(&self) -> Registry<Valid> {
         self.inner.read().await.registry.clone()
     }
 
-    async fn set_registry(&self, registry: Registry) {
+    async fn set_registry(&self, registry: Registry<Valid>) -> Result<(), Error> {
         let mut inner = self.inner.write().await;
+        let serialized = bincode::serialize(&registry)?;
+        inner
+            .db
+            .put(Key::Registry.to_prefixed_bytes(), serialized)?;
         inner.registry = registry;
+        Ok(())
     }
 
-    async fn get_query_ids<P: AsRef<str>>(&self, prefix: &P) -> HashSet<String> {
-        self.inner
-            .read()
-            .await
-            .query_ids
-            .get(prefix.as_ref())
-            .cloned()
-            .unwrap_or_default()
+    async fn get_query_ids<S: AsRef<str>>(&self, source_id: &S) -> Result<Option<QueryIds>, Error> {
+        let key = Key::QueryIds {
+            source_id: source_id.as_ref(),
+        };
+
+        let serialized = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
+        let query_ids = serialized
+            .map(|b| bincode::deserialize(b.as_slice()))
+            .transpose()?;
+        Ok(query_ids)
     }
 
-    async fn contains_query_id<P, K>(&self, prefix: &P, id: &K) -> bool
+    async fn contains_query_id<S, I>(&self, source_id: &S, id: &I) -> Result<bool, Error>
     where
-        P: AsRef<str>,
-        K: AsRef<str>,
+        S: AsRef<str>,
+        I: AsRef<str>,
     {
-        self.inner
-            .read()
-            .await
-            .query_ids
-            .get(prefix.as_ref())
-            .map_or(false, |s| s.contains(id.as_ref()))
-    }
-
-    async fn insert_query_ids<P, K>(&self, prefix: P, ids: Vec<K>) -> Vec<bool>
-    where
-        P: Into<String>,
-        K: Into<String>,
-    {
-        let mut inner = self.inner.write().await;
-        let inner_query_id_map = inner
-            .query_ids
-            .entry(prefix.into())
-            .or_insert_with(HashSet::new);
-
-        ids.into_iter()
-            .map(|id| inner_query_id_map.insert(id.into()))
-            .collect()
-    }
-
-    async fn remove_query_ids<P, K>(&self, prefix: &P, ids: &[K]) -> Vec<bool>
-    where
-        P: AsRef<str>,
-        K: AsRef<str>,
-    {
-        let mut inner = self.inner.write().await;
-        if let Some(inner_query_id_map) = inner.query_ids.get_mut(prefix.as_ref()) {
-            ids.iter()
-                .map(|id| inner_query_id_map.remove(id.as_ref()))
-                .collect()
-        } else {
-            vec![false; ids.len()]
+        match self.get_query_ids(source_id).await {
+            Ok(Some(query_ids)) => Ok(query_ids.contains(id.as_ref())),
+            Ok(None) => Ok(false),
+            Err(e) => Err(e),
         }
     }
 
-    async fn get_asset_info<P, K>(&self, prefix: &P, key: K) -> Option<AssetInfo>
-    where
-        P: AsRef<str>,
-        K: AsRef<str>,
-    {
-        let key = format!("{}+{}", prefix.as_ref(), key.as_ref());
-        self.inner.read().await.asset_store.get(&key).cloned()
+    async fn set_query_ids<S: AsRef<str>>(
+        &self,
+        source_id: &S,
+        query_ids: QueryIds,
+    ) -> Result<(), Error> {
+        let key = Key::QueryIds {
+            source_id: source_id.as_ref(),
+        };
+
+        let serialized = bincode::serialize(&query_ids)?;
+        self.inner
+            .write()
+            .await
+            .db
+            .put(key.to_prefixed_bytes(), serialized)?;
+        Ok(())
     }
 
-    async fn insert_asset_info<P, K>(&self, prefix: &P, key: K, value: AssetInfo)
+    async fn insert_query_ids<S, I>(&self, source_id: &S, ids: Vec<I>) -> Result<Vec<bool>, Error>
     where
-        P: AsRef<str>,
-        K: AsRef<str>,
+        S: AsRef<str>,
+        I: Into<String>,
     {
-        let mut inner = self.inner.write().await;
-        let key = format!("{}+{}", prefix.as_ref(), key.as_ref());
-        inner.asset_store.insert(key, value);
+        let mut query_ids = self.get_query_ids(&source_id).await?.unwrap_or_default();
+        let inserted = ids
+            .into_iter()
+            .map(|id| query_ids.insert(id.into()))
+            .collect();
+
+        self.set_query_ids(&source_id, query_ids).await?;
+        Ok(inserted)
     }
 
-    async fn insert_asset_infos<P, K>(&self, prefix: &P, assets: Vec<(K, AssetInfo)>)
+    async fn remove_query_ids<S, I>(&self, source_id: &S, ids: &[I]) -> Result<Vec<bool>, Error>
     where
-        P: AsRef<str>,
-        K: AsRef<str>,
+        S: AsRef<str>,
+        I: AsRef<str>,
     {
-        let mut inner = self.inner.write().await;
-        for (id, asset) in assets {
-            let key = format!("{}+{}", prefix.as_ref(), id.as_ref());
-            inner.asset_store.insert(key, asset);
+        let mut current_set = self.get_query_ids(&source_id).await?.unwrap_or_default();
+        let removed = ids
+            .iter()
+            .map(|id| current_set.remove(id.as_ref()))
+            .collect();
+
+        self.set_query_ids(&source_id, current_set).await?;
+        Ok(removed)
+    }
+
+    async fn get_asset_info<S, I>(&self, source_id: &S, id: &I) -> Result<Option<AssetInfo>, Error>
+    where
+        S: AsRef<str>,
+        I: AsRef<str>,
+    {
+        let key = Key::AssetStore {
+            source_id: source_id.as_ref(),
+            id: id.as_ref(),
+        };
+
+        let serialized = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
+        let asset_info = serialized
+            .map(|b| bincode::deserialize(b.as_slice()))
+            .transpose()?;
+        Ok(asset_info)
+    }
+
+    async fn insert_asset_info<S, I>(
+        &self,
+        source_id: &S,
+        id: &I,
+        asset_info: AssetInfo,
+    ) -> Result<(), Error>
+    where
+        S: AsRef<str>,
+        I: AsRef<str>,
+    {
+        let key = Key::AssetStore {
+            source_id: source_id.as_ref(),
+            id: id.as_ref(),
+        };
+
+        let serialized = bincode::serialize(&asset_info)?;
+        self.inner
+            .write()
+            .await
+            .db
+            .put(key.to_prefixed_bytes(), serialized)?;
+        Ok(())
+    }
+
+    async fn insert_asset_infos<S, I>(
+        &self,
+        source_id: &S,
+        assets: Vec<(I, AssetInfo)>,
+    ) -> Result<(), Error>
+    where
+        S: AsRef<str>,
+        I: AsRef<str>,
+    {
+        let inner = self.inner.write().await;
+        for (id, asset_info) in assets {
+            let key = Key::AssetStore {
+                source_id: source_id.as_ref(),
+                id: id.as_ref(),
+            };
+            let serialized = bincode::serialize(&asset_info)?;
+            inner.db.put(key.to_prefixed_bytes(), serialized)?;
         }
+        Ok(())
     }
 }
 

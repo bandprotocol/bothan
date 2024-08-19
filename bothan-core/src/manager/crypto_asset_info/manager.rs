@@ -7,21 +7,20 @@ use tokio::sync::RwLock;
 
 use crate::ipfs::{errors::Error as IpfsError, IpfsClient};
 use crate::manager::crypto_asset_info::error::{
-    GetPriceError, MissingSignalError, SetRegistryError,
+    GetPriceError, SetActiveSignalError, SetRegistryError,
 };
 use crate::manager::crypto_asset_info::price::get_prices;
 use crate::manager::crypto_asset_info::signal_ids::{
     add_worker_query_ids, remove_worker_query_ids,
 };
 use crate::manager::crypto_asset_info::types::PriceState;
-use crate::registry::Registry;
+use crate::registry::{Invalid, Registry};
 use crate::store::ManagerStore;
-use crate::tasks::TaskSet;
 use crate::worker::AssetWorker;
 
 pub struct CryptoAssetInfoManager<'a> {
     workers: RwLock<HashMap<String, Arc<dyn AssetWorker + 'a>>>,
-    store: Arc<ManagerStore>,
+    store: ManagerStore,
     stale_threshold: i64,
     ipfs_client: IpfsClient,
     version_req: VersionReq,
@@ -36,7 +35,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
     ) -> Self {
         CryptoAssetInfoManager {
             workers: RwLock::new(HashMap::new()),
-            store: Arc::new(store),
+            store,
             stale_threshold,
             ipfs_client,
             version_req,
@@ -52,8 +51,8 @@ impl<'a> CryptoAssetInfoManager<'a> {
     pub async fn set_active_signal_ids(
         &mut self,
         signal_ids: Vec<String>,
-    ) -> Result<(), MissingSignalError> {
-        let curr_active_set = self.store.get_active_signal_ids().await;
+    ) -> Result<(), SetActiveSignalError> {
+        let curr_active_set = self.store.get_active_signal_ids().await?;
         let new_active_set = signal_ids.iter().cloned().collect::<HashSet<String>>();
 
         let workers = self.workers.write().await;
@@ -62,16 +61,16 @@ impl<'a> CryptoAssetInfoManager<'a> {
         add_worker_query_ids(&workers, &curr_active_set, &new_active_set, &registry).await?;
         remove_worker_query_ids(&workers, &curr_active_set, &new_active_set, &registry).await?;
 
-        self.store.set_active_signal_ids(signal_ids).await;
+        self.store.set_active_signal_ids(signal_ids).await?;
 
         Ok(())
     }
 
     /// Gets the `Price` of the given signal ids.
-    pub async fn get_prices(&self, ids: &[String]) -> Result<Vec<PriceState>, GetPriceError> {
+    pub async fn get_prices(&self, ids: Vec<String>) -> Result<Vec<PriceState>, GetPriceError> {
         let registry = self.store.get_registry().await;
         let workers = self.workers.read().await;
-        get_prices(ids, &registry, &workers, self.stale_threshold).await
+        Ok(get_prices(ids, &registry, &workers, self.stale_threshold).await)
     }
 
     pub async fn set_registry_from_ipfs(
@@ -97,10 +96,13 @@ impl<'a> CryptoAssetInfoManager<'a> {
                 )),
             })?;
 
-        let registry: Registry = from_str(&text).map_err(|_| SetRegistryError::FailedToParse)?;
+        let unchecked_registry =
+            from_str::<Registry<Invalid>>(&text).map_err(|_| SetRegistryError::FailedToParse)?;
+        let registry = unchecked_registry
+            .validate()
+            .map_err(|_| SetRegistryError::FailedToParse)?;
 
-        TaskSet::try_from(registry.clone()).map_err(|_| SetRegistryError::InvalidRegistry)?;
-        self.store.set_registry(registry).await;
+        self.store.set_registry(registry).await?;
         Ok(())
     }
 }

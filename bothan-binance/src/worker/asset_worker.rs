@@ -63,12 +63,13 @@ async fn handle_subscribe_recv(
     worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
 ) {
-    let to_sub = worker_store.add_query_ids(ids).await;
+    // TODO: remove unwrap
+    let to_sub = worker_store.add_query_ids(ids).await.unwrap();
     match subscribe(&to_sub, connection).await {
         Ok(_) => info!("subscribed to ids {:?}", to_sub),
         Err(e) => {
             error!("failed to subscribe to ids {:?}: {}", to_sub, e);
-            worker_store.remove_query_ids(to_sub).await;
+            worker_store.remove_query_ids(to_sub).await.unwrap();
         }
     }
 }
@@ -91,12 +92,13 @@ async fn handle_unsubscribe_recv(
     worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
 ) {
-    let to_unsub = worker_store.remove_query_ids(ids).await;
+    let to_unsub = worker_store.remove_query_ids(ids).await.unwrap();
     match unsubscribe(&to_unsub, connection).await {
         Ok(_) => info!("unsubscribed to ids {:?}", to_unsub),
         Err(e) => {
             error!("failed to unsubscribe to ids {:?}: {}", to_unsub, e);
-            worker_store.add_query_ids(to_unsub).await;
+            // TODO remove unwrap
+            worker_store.add_query_ids(to_unsub).await.unwrap();
         }
     }
 }
@@ -114,9 +116,11 @@ async fn handle_reconnect(
             *connection = new_connection;
 
             // Resubscribe to all ids
+            // TODO: fix unwrap
             let ids = query_ids
                 .get_query_ids()
                 .await
+                .unwrap()
                 .into_iter()
                 .collect::<Vec<String>>();
             match subscribe(&ids, connection).await {
@@ -146,7 +150,7 @@ async fn store_data(data: Data, store: &WorkerStore) -> Result<(), ParseError> {
                 timestamp: ticker.event_time / 1000,
             };
 
-            store.set_asset(asset_info.id.clone(), asset_info).await;
+            store.set_asset(&asset_info.id.clone(), asset_info).await?;
         }
     }
 

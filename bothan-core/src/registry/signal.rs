@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::registry::post_processor::PostProcess;
+use crate::registry::post_processor::PostProcessor;
 use crate::registry::processor::Processor;
 use crate::registry::source::SourceQuery;
 
@@ -10,7 +10,7 @@ pub struct Signal {
     #[serde(rename = "sources")]
     pub source_queries: Vec<SourceQuery>,
     pub processor: Processor,
-    pub post_processors: Vec<PostProcess>,
+    pub post_processors: Vec<PostProcessor>,
 }
 
 impl Signal {
@@ -18,7 +18,7 @@ impl Signal {
     pub fn new(
         source_queries: Vec<SourceQuery>,
         processor: Processor,
-        post_processors: Vec<PostProcess>,
+        post_processors: Vec<PostProcessor>,
     ) -> Self {
         Signal {
             source_queries,

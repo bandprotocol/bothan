@@ -1,165 +1,159 @@
-use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
+use std::collections::VecDeque;
+use std::time::Duration;
 
-use itertools::Itertools;
 use rust_decimal::Decimal;
-use tracing::{debug, warn};
+use thiserror::Error;
+use tokio::time::timeout;
+use tracing::{error, info, warn};
 
-use crate::manager::crypto_asset_info::error::{
-    MissingSignalError, SignalTaskError, SourceRoutingError,
-};
-use crate::manager::crypto_asset_info::price::utils::is_stale;
-use crate::manager::crypto_asset_info::utils::into_key;
-use crate::registry::source::{OperationRoute, SourceQuery};
-use crate::registry::Registry;
-use crate::tasks::signal_task::SignalTask;
-use crate::tasks::source_task::SourceTask;
-use crate::tasks::TaskSet;
-use crate::types::AssetInfo;
-use crate::worker::{AssetState, AssetWorker};
+use crate::manager::crypto_asset_info::price::cache::PriceCache;
+use crate::manager::crypto_asset_info::types::{PriceState, WorkerMap};
+use crate::registry::post_processor::{PostProcess, PostProcessError};
+use crate::registry::processor::{Process, ProcessError};
+use crate::registry::signal::Signal;
+use crate::registry::source::OperationRoute;
+use crate::registry::{Registry, Valid};
+use crate::worker::AssetState;
 
-pub fn create_reduced_registry(
-    signal_ids: Vec<String>,
-    registry: &Registry,
-) -> Result<Registry, MissingSignalError> {
-    let mut queue = VecDeque::from(signal_ids);
-    let mut reduced_registry = HashMap::new();
+#[derive(Debug, Error)]
+enum Error {
+    #[error("Signal does not exist")]
+    InvalidSignal,
 
-    while let Some(signal_id) = queue.pop_front() {
-        let signal = registry.get(&signal_id).ok_or(MissingSignalError {
-            signal_id: signal_id.to_owned(),
-        })?;
+    #[error("Prerequisites required: {0:?}")]
+    PrerequisiteRequired(Vec<String>),
 
-        reduced_registry.insert(signal_id.clone(), signal.clone());
+    #[error("Failed to process signal: {0}")]
+    FailedToProcessSignal(#[from] ProcessError),
 
-        // Add the prerequisite signal_ids to the queue
-        signal
-            .source_queries
-            .iter()
-            .flat_map(|s| s.routes.iter().map(|r| &r.signal_id))
-            .dedup()
-            .for_each(|id| {
-                if !reduced_registry.contains_key(id) {
-                    queue.push_back(id.clone());
-                }
-            });
-    }
-
-    Ok(reduced_registry)
+    #[error("Failed to post process signal: {0}")]
+    FailedToProcessPostSignal(#[from] PostProcessError),
 }
 
-pub async fn execute_task_set<'a>(
-    task_set: TaskSet,
-    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
-    current_time: i64,
-    stale_threshold: i64,
-) -> Result<HashMap<String, Decimal>, MissingSignalError> {
-    let (source_tasks, signal_tasks) = task_set.split();
+pub async fn get_signal_price_states<'a>(
+    ids: Vec<String>,
+    workers: &WorkerMap<'a>,
+    registry: &Registry<Valid>,
+    stale_cutoff: i64,
+) -> Vec<PriceState> {
+    let mut cache = PriceCache::new();
 
-    let source_result =
-        execute_source_tasks(source_tasks, workers, current_time, stale_threshold).await;
+    let mut queue = VecDeque::from(ids.clone());
+    while let Some(id) = queue.pop_front() {
+        if cache.contains(&id) {
+            continue;
+        }
 
-    debug!("Processing signal tasks");
-    let mut res = HashMap::<String, Decimal>::with_capacity(signal_tasks.len());
-    for signal_task in signal_tasks {
-        match execute_signal_task(signal_task, &source_result, &res) {
-            Ok((signal_id, price)) => {
-                debug!("Processed signal task with signal_id: {}", signal_id);
-                res.insert(signal_id, price);
+        match compute_signal_result(&id, workers, registry, stale_cutoff, &cache).await {
+            Ok(price) => {
+                info!("Signal {}: {} ", id, price);
+                cache.set_available(id, price);
             }
-            Err(e) => debug!("Error processing signal task with error: {}", e),
+            Err(Error::PrerequisiteRequired(prereqs)) => {
+                info!("Prerequisites required for signal {}: {:?}", id, prereqs);
+                queue.extend(prereqs);
+                queue.push_back(id);
+            }
+            Err(Error::InvalidSignal) => {
+                warn!("Signal with id {} is not supported", id);
+                cache.set_unsupported(id);
+            }
+            Err(Error::FailedToProcessSignal(e)) => {
+                warn!("Error while processing signal id {}: {}", id, e);
+                cache.set_unavailable(id);
+            }
+            Err(Error::FailedToProcessPostSignal(e)) => {
+                warn!("Error while post processing signal id {}: {}", id, e);
+                cache.set_unavailable(id);
+            }
         }
     }
 
-    Ok(res)
+    ids.iter()
+        .map(|id| cache.get(id).cloned().unwrap()) // This should never fail
+        .collect()
 }
 
-async fn execute_source_tasks<'a>(
-    source_tasks: Vec<SourceTask>,
-    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
-    current_time: i64,
-    stale_threshold: i64,
-) -> HashMap<String, AssetInfo> {
-    let results_size = source_tasks
-        .iter()
-        .fold(0, |acc, task| acc + task.source_ids().len());
-    let mut results = HashMap::with_capacity(results_size);
+async fn compute_signal_result<'a>(
+    id: &str,
+    workers: &WorkerMap<'a>,
+    registry: &Registry<Valid>,
+    stale_cutoff: i64,
+    cache: &PriceCache<String>,
+) -> Result<Decimal, Error> {
+    match registry.get(id) {
+        Some(signal) => {
+            // Check if all prerequisites are available, if not add the missing ones to the queue
+            // and continue to the next signal
+            let prereq_values = get_prerequisites(signal, cache)?;
 
-    for source_task in source_tasks {
-        let source_id = source_task.source_name().to_string();
-        if let Some(worker) = workers.get(&source_id) {
-            worker
-                .get_assets(&source_task.source_ids())
-                .await
-                .into_iter()
-                .filter_map(|status| match status {
-                    AssetState::Available(info)
-                        if is_stale(info.timestamp, current_time, stale_threshold) =>
-                    {
-                        Some(info)
+            let mut source_results = Vec::with_capacity(signal.source_queries.len());
+            for source_query in &signal.source_queries {
+                if let Some(w) = workers.get(&source_query.source_id) {
+                    // TODO move duration and add error
+                    let aa = Duration::new(1, 0);
+                    let future = async {
+                        match w.get_asset(&source_query.query_id).await {
+                            Ok(AssetState::Available(a)) => {
+                                a.timestamp.ge(&stale_cutoff).then(|| {
+                                    compute_source_routes(
+                                        a.price,
+                                        &source_query.routes,
+                                        &prereq_values,
+                                    )
+                                })
+                            }
+                            _ => None,
+                        }
+                    };
+                    match timeout(aa, future).await {
+                        Ok(Some(price)) => source_results.push(price),
+                        Ok(None) => error!("error while querying sources"),
+                        Err(_) => error!("timed out while querying sources"),
                     }
-                    _ => None,
-                })
-                .for_each(|info| {
-                    let key = into_key(&source_id, &info.id);
-                    results.insert(key, info);
-                });
-        } else {
-            warn!("Worker \"{}\" not found", source_id);
-        }
-    }
+                }
+            }
 
-    results
+            let processed_signal = signal.processor.process(source_results)?;
+            let post_processed_signal = signal
+                .post_processors
+                .iter()
+                .try_fold(processed_signal, |acc, post| post.process(acc))?;
+
+            Ok(post_processed_signal)
+        }
+        None => Err(Error::InvalidSignal),
+    }
 }
 
-fn execute_signal_task(
-    signal_task: SignalTask,
-    source_results: &HashMap<String, AssetInfo>,
-    signal_results: &HashMap<String, Decimal>,
-) -> Result<(String, Decimal), SignalTaskError> {
-    let routed_source_prices = signal_task
-        .signal()
+// Note: The registry must not contain any cycles or this will loop forever
+fn get_prerequisites(signal: &Signal, cache: &PriceCache<String>) -> Result<Vec<Decimal>, Error> {
+    let pids = signal
         .source_queries
         .iter()
-        .map(|s| compute_routed_source_price(s, source_results, signal_results))
-        .collect::<Result<Vec<Decimal>, SourceRoutingError>>()?;
+        .flat_map(|s| s.routes.iter().map(|r| r.signal_id.clone()))
+        .collect::<Vec<String>>();
 
-    let signal_id = signal_task.signal_id();
-    let processed_price = signal_task.execute_processor(routed_source_prices)?;
-    let post_processed_price = signal_task.execute_post_processors(processed_price)?;
-
-    Ok((signal_id.to_string(), post_processed_price))
+    let mut prereq_values = Vec::with_capacity(pids.len());
+    let mut prereq_required = Vec::new();
+    for pid in pids {
+        match cache.get(&pid) {
+            Some(PriceState::Available(p)) => prereq_values.push(*p),
+            None => {
+                // Add the prerequisite to the front of the queue
+                prereq_required.push(pid.clone());
+            }
+            Some(_) => {}
+        }
+    }
+    if !prereq_required.is_empty() {
+        Err(Error::PrerequisiteRequired(prereq_required))
+    } else {
+        Ok(prereq_values)
+    }
 }
 
-fn compute_routed_source_price(
-    source: &SourceQuery,
-    source_results: &HashMap<String, AssetInfo>,
-    signal_results: &HashMap<String, Decimal>,
-) -> Result<Decimal, SourceRoutingError> {
-    let source_id = &source.source_id;
-    let id = &source.query_id;
-    let key = into_key(source_id, id);
-
-    let asset_info = source_results
-        .get(&key)
-        .ok_or(SourceRoutingError::MissingSource(key.to_owned()))?;
-
-    let values = source
-        .routes
-        .iter()
-        .map(|r| signal_results.get(&r.signal_id).cloned())
-        .collect::<Option<Vec<Decimal>>>()
-        .ok_or(SourceRoutingError::IncompletePrerequisites(key))?;
-
-    let routed_price = compute_source_routes(asset_info.price, &source.routes, values);
-    Ok(routed_price)
-}
-
-fn compute_source_routes(
-    start: Decimal,
-    routes: &[OperationRoute],
-    values: Vec<Decimal>,
-) -> Decimal {
+fn compute_source_routes(start: Decimal, routes: &[OperationRoute], values: &[Decimal]) -> Decimal {
     (0..routes.len()).fold(start, |acc, idx| {
         routes[idx].operation.execute(acc, values[idx])
     })

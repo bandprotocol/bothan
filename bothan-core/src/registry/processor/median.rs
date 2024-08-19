@@ -51,3 +51,55 @@ where
         data.swap_remove(mid)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_median_with_odd_count() {
+        let median = MedianProcessor::new(1);
+        let data = vec![
+            Decimal::from(510),
+            Decimal::from(202),
+            Decimal::from(10),
+            Decimal::from(4300),
+            Decimal::from(501),
+        ];
+        let res = median.process(data);
+
+        assert_eq!(res.unwrap(), Decimal::from(501));
+    }
+
+    #[test]
+    fn test_median_with_even_count() {
+        let median = MedianProcessor::new(1);
+        let data = vec![
+            Decimal::from(101000878),
+            Decimal::from(210),
+            Decimal::from(333120),
+            Decimal::from(4000),
+            Decimal::from(50120),
+            Decimal::from(50122),
+        ];
+        let res = median.process(data);
+
+        assert_eq!(res.unwrap(), Decimal::from(50121));
+    }
+
+    #[test]
+    fn test_median_with_invalid_parameter() {
+        let median = MedianProcessor::new(0);
+        let data = vec![
+            Decimal::from(101000878),
+            Decimal::from(210),
+            Decimal::from(333120),
+            Decimal::from(4000),
+            Decimal::from(50120),
+            Decimal::from(50122),
+        ];
+        let res = median.process(data);
+
+        assert!(res.is_err());
+    }
+}

@@ -3,16 +3,17 @@ use std::sync::Arc;
 
 use tracing::{error, info};
 
-use crate::manager::crypto_asset_info::error::MissingSignalError;
-use crate::registry::Registry;
+use crate::manager::crypto_asset_info::error::SetActiveSignalError;
+use crate::registry::{Registry, Valid};
+use crate::store::QueryIds;
 use crate::worker::AssetWorker;
 
 pub async fn add_worker_query_ids<'a>(
     workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
-    current_active_set: &HashSet<String>,
-    new_active_set: &HashSet<String>,
-    registry: &Registry,
-) -> Result<(), MissingSignalError> {
+    current_active_set: &QueryIds,
+    new_active_set: &QueryIds,
+    registry: &Registry<Valid>,
+) -> Result<(), SetActiveSignalError> {
     let ids_to_add = new_active_set
         .difference(current_active_set)
         .cloned()
@@ -36,8 +37,8 @@ pub async fn remove_worker_query_ids<'a>(
     workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
     current_active_set: &HashSet<String>,
     new_active_set: &HashSet<String>,
-    registry: &Registry,
-) -> Result<(), MissingSignalError> {
+    registry: &Registry<Valid>,
+) -> Result<(), SetActiveSignalError> {
     let ids_to_rem = current_active_set
         .difference(new_active_set)
         .cloned()
@@ -59,14 +60,14 @@ pub async fn remove_worker_query_ids<'a>(
 
 fn get_source_batched_query_ids(
     signal_ids: &[String],
-    registry: &Registry,
-) -> Result<HashMap<String, Vec<String>>, MissingSignalError> {
+    registry: &Registry<Valid>,
+) -> Result<HashMap<String, Vec<String>>, SetActiveSignalError> {
     let mut query_ids: HashMap<String, Vec<String>> = HashMap::new();
 
     for signal_id in signal_ids.iter() {
-        let signal = registry.get(signal_id).ok_or(MissingSignalError {
-            signal_id: signal_id.to_owned(),
-        })?;
+        let signal = registry
+            .get(signal_id)
+            .ok_or(SetActiveSignalError::MissingSignal(signal_id.clone()))?;
         for source in signal.source_queries.iter() {
             query_ids
                 .entry(source.source_id.clone())
@@ -80,54 +81,25 @@ fn get_source_batched_query_ids(
 
 #[cfg(test)]
 mod tests {
-    use crate::registry::processor::median::MedianProcessor;
-    use crate::registry::processor::Processor;
-    use crate::registry::signal::Signal;
-    use crate::registry::source::SourceQuery;
+    use crate::registry::Invalid;
 
     use super::*;
 
-    fn mock_registry() -> Registry {
-        let registry = HashMap::from_iter([
-            (
-                "CS:BTC-USD".to_string(),
-                Signal::new(
-                    vec![
-                        SourceQuery::new("binance", "btcusdt", vec![]),
-                        SourceQuery::new("coingecko", "bitcoin", vec![]),
-                        SourceQuery::new("coinmarketcap", "bitcoin", vec![]),
-                    ],
-                    Processor::Median(MedianProcessor::new(1)),
-                    vec![],
-                ),
-            ),
-            (
-                "CS:ETH-USD".to_string(),
-                Signal::new(
-                    vec![
-                        SourceQuery::new("binance", "ethusdt", vec![]),
-                        SourceQuery::new("coingecko", "ethereum", vec![]),
-                        SourceQuery::new("coinmarketcap", "ethereum", vec![]),
-                    ],
-                    Processor::Median(MedianProcessor::new(1)),
-                    vec![],
-                ),
-            ),
-        ]);
-
-        registry
+    fn mock_registry() -> Registry<Valid> {
+        let registry_str = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"coingecko\",\"id\":\"tether\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:BTC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"btcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]},{\"source_id\":\"coingecko\",\"id\":\"bitcoin\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
+        let registry = serde_json::from_str::<Registry<Invalid>>(registry_str).unwrap();
+        registry.validate().unwrap()
     }
 
     #[test]
     fn test_get_source_batched_query_ids() {
         let registry = mock_registry();
 
-        let signal_ids = vec!["CS:ETH-USD".to_string()];
+        let signal_ids = vec!["CS:BTC-USD".to_string()];
         let diff = get_source_batched_query_ids(&signal_ids, &registry);
         let expected = HashMap::from_iter([
-            ("binance".to_string(), vec!["ethusdt".to_string()]),
-            ("coinmarketcap".to_string(), vec!["ethereum".to_string()]),
-            ("coingecko".to_string(), vec!["ethereum".to_string()]),
+            ("binance".to_string(), vec!["btcusdt".to_string()]),
+            ("coingecko".to_string(), vec!["bitcoin".to_string()]),
         ]);
         assert_eq!(diff.unwrap(), expected);
     }

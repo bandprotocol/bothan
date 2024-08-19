@@ -21,4 +21,5 @@ anyhow = "1.0.86"
 clap = { version = "4.5.13", features = ["derive"] }
 toml = "0.8.19"
 tonic = "0.12.1"
+log = "0.4.22"
 

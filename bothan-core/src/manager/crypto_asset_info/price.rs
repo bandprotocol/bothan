@@ -1,57 +1,18 @@
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
+use crate::manager::crypto_asset_info::types::{PriceState, WorkerMap};
+use crate::registry::{Registry, Valid};
 
-use tracing::debug;
-
-use crate::manager::crypto_asset_info::error::GetPriceError;
-use crate::manager::crypto_asset_info::price::tasks::{create_reduced_registry, execute_task_set};
-use crate::manager::crypto_asset_info::price::utils::get_price_state;
-use crate::manager::crypto_asset_info::types::PriceState;
-use crate::registry::Registry;
-use crate::tasks::TaskSet;
-use crate::worker::AssetWorker;
-
-mod tasks;
-mod utils;
-
-const PRECISION: u32 = 9;
+pub(crate) mod cache;
+pub(crate) mod tasks;
 
 pub async fn get_prices<'a>(
-    ids: &[String],
-    registry: &Registry,
-    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
+    ids: Vec<String>,
+    registry: &Registry<Valid>,
+    workers: &WorkerMap<'a>,
     stale_threshold: i64,
-) -> Result<Vec<PriceState>, GetPriceError> {
+) -> Vec<PriceState> {
     let current_time = chrono::Utc::now().timestamp();
+    let stale_cutoff = current_time - stale_threshold;
 
-    // Split the signals into those that exist and those that do not.
-    // Signal that are not available will return UNSUPPORTED
-    debug!("Processing {} signals", ids.len());
-    let (supported, unsupported): (Vec<String>, Vec<String>) = ids
-        .iter()
-        .cloned()
-        .partition(|id| registry.contains_key(id));
-
-    debug!("Supported signals: {:?}", supported);
-    debug!("Unsupported signals: {:?}", unsupported);
-
-    let unsupported_ids = unsupported.into_iter().collect::<HashSet<String>>();
-    let reduced_registry = create_reduced_registry(supported.clone(), registry)
-        .map_err(|e| GetPriceError::RegistryCreation(e.to_string()))?;
-
-    let task_set = TaskSet::try_from(reduced_registry)
-        .map_err(|e| GetPriceError::TaskCreation(e.to_string()))?;
-
-    let available = execute_task_set(task_set, workers, current_time, stale_threshold)
-        .await
-        .map_err(|e| GetPriceError::TaskExecution(e.to_string()))?;
-
-    let price_states = ids
-        .iter()
-        .map(|id| get_price_state(id, &available, &unsupported_ids))
-        .collect::<Vec<PriceState>>();
-
-    debug!("Prices: {:?}", price_states);
-
-    Ok(price_states)
+    get_signal_price_states(ids.to_vec(), workers, registry, stale_cutoff).await
 }

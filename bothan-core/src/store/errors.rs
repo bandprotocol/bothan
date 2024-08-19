@@ -1,6 +1,6 @@
 use bincode::ErrorKind;
 
-#[derive(Clone, Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Clone, Debug, thiserror::Error, PartialEq)]
 #[error("An error occurred while storing the data: {message}")]
 pub struct Error {
     message: String,

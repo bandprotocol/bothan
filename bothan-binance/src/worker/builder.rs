@@ -63,8 +63,13 @@ impl<'a> AssetWorkerBuilder<'a> for BinanceWorkerBuilder {
 
         let (sub_tx, sub_rx) = channel(ch_size);
         let (unsub_tx, unsub_rx) = channel(ch_size);
+        let to_sub = self
+            .store
+            .get_query_ids()
+            .await?
+            .into_iter()
+            .collect::<Vec<String>>();
 
-        let to_sub = Vec::from_iter(self.store.get_query_ids().await.into_iter());
         if !to_sub.is_empty() {
             // Unwrap here as the channel is guaranteed to be open
             sub_tx.send(to_sub).await.unwrap();

@@ -1,10 +1,6 @@
-use std::collections::HashSet;
-
-use tracing::{error, info};
-
-use crate::registry::Registry;
-use crate::store::types::Key;
-use crate::store::SharedStore;
+use crate::registry::{Registry, Valid};
+use crate::store::errors::Error;
+use crate::store::{ActiveSignalIDs, SharedStore};
 
 pub struct ManagerStore {
     store: SharedStore,
@@ -15,32 +11,26 @@ impl ManagerStore {
         Self { store }
     }
 
-    pub async fn set_active_signal_ids(&self, signal_ids: Vec<String>) {
-        let new_active_set = signal_ids.into_iter().collect::<HashSet<String>>();
-        self.store.set_active_signal_ids(new_active_set).await;
-
-        let key = Key::ActiveSignalIDs;
-        match self.store.save_state(&key).await {
-            Ok(_) => info!("saved {} state successfully", key),
-            Err(e) => error!("failed to save {} state: {}", key, e),
-        }
+    pub async fn set_active_signal_ids(&self, signal_ids: Vec<String>) -> Result<(), Error> {
+        self.store
+            .set_active_signal_ids(signal_ids.into_iter().collect())
+            .await
     }
 
-    pub async fn get_active_signal_ids(&self) -> HashSet<String> {
-        self.store.get_active_signal_ids().await
+    pub async fn get_active_signal_ids(&self) -> Result<ActiveSignalIDs, Error> {
+        let active_signal_ids = self
+            .store
+            .get_active_signal_ids()
+            .await?
+            .unwrap_or_default();
+        Ok(active_signal_ids)
     }
 
-    pub async fn set_registry(&self, registry: Registry) {
-        self.store.set_registry(registry).await;
-
-        let key = Key::Registry;
-        match self.store.save_state(&key).await {
-            Ok(_) => info!("saved {} state successfully", key),
-            Err(e) => error!("failed to save {} state: {}", key, e),
-        }
+    pub async fn set_registry(&self, registry: Registry<Valid>) -> Result<(), Error> {
+        self.store.set_registry(registry).await
     }
 
-    pub async fn get_registry(&self) -> Registry {
+    pub async fn get_registry(&self) -> Registry<Valid> {
         self.store.get_registry().await
     }
 }

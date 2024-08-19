@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use rust_decimal::RoundingStrategy;
 use semver::Version;
 use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
@@ -15,6 +16,8 @@ use crate::proto::query::{
     PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest, SetActiveSignalIdResponse,
     UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
 };
+
+pub const PRECISION: u32 = 9;
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
@@ -36,6 +39,7 @@ impl Query for CryptoQueryServer {
         &self,
         request: Request<UpdateRegistryRequest>,
     ) -> Result<Response<UpdateRegistryResponse>, Status> {
+        info!("received update registry request");
         let update_registry_request = request.into_inner();
 
         let version = Version::parse(&update_registry_request.version)
@@ -57,11 +61,19 @@ impl Query for CryptoQueryServer {
             Err(SetRegistryError::UnsupportedVersion) => {
                 Ok(registry_resp(UpdateStatusCode::UnsupportedVersion))
             }
-            Err(SetRegistryError::FailedToParse) => Err(Status::invalid_argument(
-                "Registry is incorrectly formatted",
-            )),
+            Err(SetRegistryError::FailedToParse) => {
+                error!("Failed to parse registry");
+                Err(Status::invalid_argument(
+                    "Registry is incorrectly formatted",
+                ))
+            }
             Err(SetRegistryError::InvalidHash) => {
+                error!("Invalid IPFS hash");
                 Err(Status::invalid_argument("Invalid IPFS hash"))
+            }
+            Err(SetRegistryError::FailedToSetRegistry(_)) => {
+                error!("Failed to set registry");
+                Err(Status::internal("Failed to set registry"))
             }
         }
     }
@@ -93,10 +105,11 @@ impl Query for CryptoQueryServer {
         &self,
         request: Request<PriceRequest>,
     ) -> Result<Response<PriceResponse>, Status> {
+        info!("received get price request");
         let price_request = request.into_inner();
         let manager = self.manager.read().await;
         let price_states = manager
-            .get_prices(&price_request.signal_ids)
+            .get_prices(price_request.signal_ids.clone())
             .await
             .map_err(|e| {
                 error!("Failed to get prices: {:?}", e);
@@ -108,7 +121,15 @@ impl Query for CryptoQueryServer {
             .into_iter()
             .zip(price_states)
             .map(|(id, state)| match state {
-                PriceState::Available(p) => price(&id, PriceStatus::Available, p),
+                PriceState::Available(raw_price) => {
+                    let mantissa_price = raw_price
+                        .round_dp_with_strategy(PRECISION, RoundingStrategy::ToZero)
+                        .mantissa();
+                    match i64::try_from(mantissa_price) {
+                        Ok(p) => price(&id, PriceStatus::Available, p),
+                        Err(_) => price(&id, PriceStatus::Unavailable, 0),
+                    }
+                }
                 PriceState::Unavailable => price(&id, PriceStatus::Unavailable, 0),
                 PriceState::Unsupported => price(&id, PriceStatus::Unsupported, 0),
             })

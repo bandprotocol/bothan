@@ -1,5 +1,6 @@
+use bothan_core::store::errors::Error as StoreError;
 use bothan_core::store::WorkerStore;
-use bothan_core::worker::{AssetState, AssetWorker, Error};
+use bothan_core::worker::{AssetState, AssetWorker, SetQueryIDError};
 
 use crate::api::CoinGeckoRestAPI;
 
@@ -25,19 +26,25 @@ impl CoinGeckoWorker {
 #[async_trait::async_trait]
 impl AssetWorker for CoinGeckoWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetState> {
-        self.store.get_assets(ids).await
+    async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError> {
+        self.store.get_asset(&id).await
     }
 
     /// Adds the specified cryptocurrency IDs to the query set.
-    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
-        self.store.add_query_ids(ids).await;
+    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
+        self.store
+            .add_query_ids(ids)
+            .await
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
         Ok(())
     }
 
     /// Removes the specified cryptocurrency IDs from the query set.
-    async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
-        self.store.remove_query_ids(ids).await;
+    async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
+        self.store
+            .remove_query_ids(ids)
+            .await
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
         Ok(())
     }
 }

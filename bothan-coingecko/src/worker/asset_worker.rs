@@ -4,7 +4,7 @@ use std::time::Duration;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::time::{interval, timeout};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
@@ -20,12 +20,13 @@ pub(crate) fn start_asset_worker(weak_worker: Weak<CoinGeckoWorker>, update_inte
         while let Some(worker) = weak_worker.upgrade() {
             info!("updating asset info");
 
-            let ids = worker
-                .store
-                .get_query_ids()
-                .await
-                .into_iter()
-                .collect::<Vec<String>>();
+            let ids = match worker.store.get_query_ids().await {
+                Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
+                Err(e) => {
+                    error!("failed to get query ids with error: {}", e);
+                    Vec::new()
+                }
+            };
 
             let result = timeout(
                 interval.period(),
@@ -59,7 +60,9 @@ async fn update_asset_info<T: AsRef<str>>(store: &WorkerStore, api: &CoinGeckoRe
                         }
                     })
                     .collect::<Vec<(String, AssetInfo)>>();
-                store.set_assets(to_set).await;
+                if let Err(e) = store.set_assets(to_set).await {
+                    error!("failed to set asset info with error: {}", e);
+                }
             } else {
                 warn!(
                     "received more markets than ids, ids: {}, markets: {}",

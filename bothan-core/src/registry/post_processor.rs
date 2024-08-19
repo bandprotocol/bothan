@@ -6,32 +6,32 @@ pub mod tick;
 
 #[derive(Debug, Error, PartialEq, Clone)]
 #[error("{msg}")]
-pub struct PostProcessorError {
+pub struct PostProcessError {
     msg: String,
 }
 
-impl PostProcessorError {
+impl PostProcessError {
     pub fn new<T: Into<String>>(msg: T) -> Self {
-        PostProcessorError { msg: msg.into() }
+        PostProcessError { msg: msg.into() }
     }
 }
 
 /// The PostProcessor trait defines the methods that a post-processor must implement.
-pub trait PostProcessor<T> {
-    fn process(&self, data: T) -> Result<T, PostProcessorError>;
+pub trait PostProcess<T> {
+    fn process(&self, data: T) -> Result<T, PostProcessError>;
 }
 
 /// The PostProcess enum represents the different types of post-processors that can be used.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
-pub enum PostProcess {
+pub enum PostProcessor {
     TickConvertor(tick::TickPostProcessor),
 }
 
-impl PostProcessor<Decimal> for PostProcess {
-    fn process(&self, data: Decimal) -> Result<Decimal, PostProcessorError> {
+impl PostProcess<Decimal> for PostProcessor {
+    fn process(&self, data: Decimal) -> Result<Decimal, PostProcessError> {
         match self {
-            PostProcess::TickConvertor(tick) => tick.process(data),
+            PostProcessor::TickConvertor(tick) => tick.process(data),
         }
     }
 }
@@ -44,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_process() {
-        let tick_convertor = PostProcess::TickConvertor(TickPostProcessor {});
+        let tick_convertor = PostProcessor::TickConvertor(TickPostProcessor {});
         let result = tick_convertor.process(Decimal::from(10));
         assert_eq!(
             result.unwrap(),
@@ -55,9 +55,9 @@ mod tests {
     #[test]
     fn test_deserialize() {
         let json_str = r#"{ "function": "tick_convertor", "params": { } }"#;
-        let expected_function = PostProcess::TickConvertor(TickPostProcessor {});
+        let expected_function = PostProcessor::TickConvertor(TickPostProcessor {});
 
-        let deserialized = serde_json::from_str::<PostProcess>(json_str);
+        let deserialized = serde_json::from_str::<PostProcessor>(json_str);
         assert_eq!(deserialized.unwrap(), expected_function);
     }
 
@@ -65,7 +65,7 @@ mod tests {
     fn test_deserialize_with_invalid_parameter() {
         let json_str = r#"{ "function": "median", "params": { "test": "Jesus" } }"#;
 
-        let deserialized = serde_json::from_str::<PostProcess>(json_str);
+        let deserialized = serde_json::from_str::<PostProcessor>(json_str);
         assert!(deserialized.is_err());
     }
 }

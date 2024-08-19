@@ -14,6 +14,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Config
     Config(ConfigCli),
     /// Starts the bothan-api server
     Start(StartCli),
@@ -21,11 +22,22 @@ enum Command {
 
 #[tokio::main]
 async fn main() {
-    let cli = Cli::try_parse().unwrap();
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
 
-    match &cli.command {
+    let r = match &cli.command {
         Some(Command::Config(cli)) => cli.run().await,
         Some(Command::Start(cli)) => cli.run().await,
-        None => {}
+        None => Ok(()), // Placeholder
+    };
+
+    if let Err(e) = r {
+        eprintln!("{}", e);
+        std::process::exit(1);
     }
 }

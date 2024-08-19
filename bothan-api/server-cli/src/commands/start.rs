@@ -1,13 +1,14 @@
 use std::fs::{create_dir_all, File};
-use std::io::Read;
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::VersionReq;
 use tonic::transport::Server;
+use tracing::{debug, info};
 
 use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
@@ -19,7 +20,7 @@ use bothan_binance::BinanceWorkerBuilder;
 use bothan_coingecko::CoinGeckoWorkerBuilder;
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
 use bothan_core::manager::CryptoAssetInfoManager;
-use bothan_core::registry::Registry;
+use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
 
@@ -44,29 +45,34 @@ pub struct StartCli {
 }
 
 impl StartCli {
-    pub async fn run(&self) {
-        let app_config = AppConfig::from(&self.config).expect("Failed to load config");
+    pub async fn run(&self) -> anyhow::Result<()> {
+        let app_config = AppConfig::from(&self.config)?;
 
         let registry = match &self.registry {
             Some(p) => {
-                let mut file = File::open(p).expect("Failed to open registry file");
-                let mut buffer = String::new();
-                file.read_to_string(&mut buffer)
-                    .expect("Failed to read registry file");
-                serde_json::from_str(&buffer).expect("Failed to parse registry file")
+                let file = File::open(p).map_err(|_| anyhow!("Failed to open registry file"))?;
+                let reader = BufReader::new(file);
+                serde_json::from_reader(reader)
+                    .map_err(|_| anyhow!("Failed to parse registry file"))?
             }
             None => Registry::default(),
         };
 
-        if let Err(e) = start_server(app_config, registry, self.unsafe_reset).await {
-            panic!("Failed to start server: {}", e);
+        let valid_registry = registry
+            .validate()
+            .map_err(|_| anyhow!("Invalid registry"))?;
+
+        if let Err(e) = start_server(app_config, valid_registry, self.unsafe_reset).await {
+            eprintln!("Failed to start server: {}", e);
+            std::process::exit(1);
         }
+        Ok(())
     }
 }
 
 async fn start_server(
     app_config: AppConfig,
-    registry: Registry,
+    registry: Registry<Valid>,
     reset: bool,
 ) -> anyhow::Result<()> {
     let log_level = &app_config.log.level;
@@ -88,7 +94,7 @@ async fn start_server(
 
 async fn init_store(
     config: &AppConfig,
-    registry: Registry,
+    registry: Registry<Valid>,
     reset: bool,
 ) -> anyhow::Result<SharedStore> {
     if !config.store.path.is_dir() {
@@ -98,6 +104,7 @@ async fn init_store(
     let mut store = SharedStore::new(registry, &config.store.path)
         .await
         .with_context(|| "Failed to create store")?;
+    debug!("Store created successfully at \"{:?}\"", &config.store.path);
 
     if !reset {
         store
@@ -151,13 +158,12 @@ async fn init_crypto_workers(
     type Binance = BinanceWorkerBuilder;
     type CoinGecko = CoinGeckoWorkerBuilder;
 
-    if !source.binance.skip {
-        add_worker::<Binance>(manager, store, "binance", &source.binance.builder_opts).await?;
+    if let Some(opts) = &source.binance {
+        add_worker::<Binance>(manager, store, "binance", opts).await?;
     }
 
-    if !source.coingecko.skip {
-        add_worker::<CoinGecko>(manager, store, "coingecko", &source.coingecko.builder_opts)
-            .await?;
+    if let Some(opts) = &source.coingecko {
+        add_worker::<CoinGecko>(manager, store, "coingecko", opts).await?;
     }
 
     Ok(())
@@ -181,5 +187,6 @@ where
         .with_context(|| format!("Failed to build {} worker", worker_name))?;
 
     manager.add_worker(worker_name.to_string(), worker).await;
+    info!("Loaded {} worker", worker_name);
     Ok(())
 }

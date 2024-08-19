@@ -1,10 +1,14 @@
 use thiserror::Error;
 
-use crate::registry::post_processor::PostProcessorError;
+use crate::registry::post_processor::PostProcessError;
 use crate::registry::processor::ProcessError;
+use crate::store::errors::Error as StoreError;
 
 #[derive(Debug, Error, PartialEq, Clone)]
 pub enum SetRegistryError {
+    #[error("Failed to set registry: {0}")]
+    FailedToSetRegistry(#[from] StoreError),
+
     #[error("Failed to get registry from IPFS")]
     FailedToRetrieve(String),
 
@@ -23,8 +27,12 @@ pub enum SetRegistryError {
 
 #[derive(Debug, Error, PartialEq, Clone)]
 #[error("Signal {signal_id} doesnt exist in the registry")]
-pub struct MissingSignalError {
-    pub signal_id: String,
+pub enum SetActiveSignalError {
+    #[error("Signal \"{0}\" doesnt exist in the registry")]
+    MissingSignal(String),
+
+    #[error("Failed to set active signal ids")]
+    FailedToSetActiveSignalIds(#[from] StoreError),
 }
 
 #[derive(Debug, Error, PartialEq, Clone)]
@@ -57,5 +65,5 @@ pub enum SignalTaskError {
     FailedProcessExecution(#[from] ProcessError),
 
     #[error("Failed to post process signal task: {0}")]
-    FailedPostProcessExecution(#[from] PostProcessorError),
+    FailedPostProcessExecution(#[from] PostProcessError),
 }

@@ -6,13 +6,15 @@ use bothan_coingecko::CoinGeckoWorkerBuilderOpts;
 /// The configuration for the worker sources.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CryptoSourceConfigs {
-    pub binance: SourceConfig<BinanceWorkerBuilderOpts>,
-    pub coingecko: SourceConfig<CoinGeckoWorkerBuilderOpts>,
+    pub binance: Option<BinanceWorkerBuilderOpts>,
+    pub coingecko: Option<CoinGeckoWorkerBuilderOpts>,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct SourceConfig<T> {
-    #[serde(flatten)]
-    pub builder_opts: T,
-    pub skip: bool,
+impl CryptoSourceConfigs {
+    pub fn with_default_sources() -> Self {
+        CryptoSourceConfigs {
+            binance: Some(BinanceWorkerBuilderOpts::default()),
+            coingecko: Some(CoinGeckoWorkerBuilderOpts::default()),
+        }
+    }
 }
