@@ -26,7 +26,7 @@ use bothan_core::worker::AssetWorkerBuilder;
 
 #[derive(Parser)]
 pub struct StartCli {
-    /// The config file to use with bothan
+    /// The configuration file to use with bothan
     #[arg(long)]
     #[clap(default_value = "config.toml")]
     config: PathBuf,
@@ -35,7 +35,7 @@ pub struct StartCli {
     #[arg(short, long)]
     unsafe_reset: bool,
 
-    /// Turn on dev mode
+    /// Flag to turn on dev mode
     #[arg(short, long)]
     dev: bool,
 

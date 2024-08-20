@@ -15,6 +15,7 @@ pub struct ConfigCli {
 
 #[derive(Subcommand)]
 enum ConfigSubCommand {
+    /// Initialize the configuration file.
     Init {
         /// The path to where to initialize the configuration file (defaults to ./config.toml).
         #[arg(short, long)]
