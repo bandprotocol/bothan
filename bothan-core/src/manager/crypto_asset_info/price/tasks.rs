@@ -7,11 +7,11 @@ use tracing::{error, info, warn};
 
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
 use crate::manager::crypto_asset_info::types::{PriceState, WorkerMap};
-use crate::registry::{Registry, Valid};
 use crate::registry::post_processor::{PostProcess, PostProcessError};
 use crate::registry::processor::{Process, ProcessError};
 use crate::registry::signal::Signal;
 use crate::registry::source::OperationRoute;
+use crate::registry::{Registry, Valid};
 use crate::worker::AssetState;
 
 #[derive(Debug, Error)]

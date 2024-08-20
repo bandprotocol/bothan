@@ -9,12 +9,12 @@ use tracing::{debug, error, info, warn};
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
-use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::api::error::{MessageError, SendError};
 use crate::api::msgs::{BinanceResponse, Data};
-use crate::worker::BinanceWorker;
+use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::worker::error::ParseError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
+use crate::worker::BinanceWorker;
 
 pub(crate) async fn start_asset_worker(
     worker: Weak<BinanceWorker>,
@@ -132,7 +132,7 @@ async fn handle_reconnect(
             };
 
             let ids_vec = ids.into_iter().collect::<Vec<String>>();
-            
+
             if subscribe(&ids_vec, connection).await.is_ok() {
                 info!("resubscribed to all ids");
             } else {
