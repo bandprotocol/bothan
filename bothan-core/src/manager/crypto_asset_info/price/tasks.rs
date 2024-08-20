@@ -3,16 +3,15 @@ use std::time::Duration;
 
 use rust_decimal::Decimal;
 use thiserror::Error;
-use tokio::time::timeout;
 use tracing::{error, info, warn};
 
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
 use crate::manager::crypto_asset_info::types::{PriceState, WorkerMap};
+use crate::registry::{Registry, Valid};
 use crate::registry::post_processor::{PostProcess, PostProcessError};
 use crate::registry::processor::{Process, ProcessError};
 use crate::registry::signal::Signal;
 use crate::registry::source::OperationRoute;
-use crate::registry::{Registry, Valid};
 use crate::worker::AssetState;
 
 #[derive(Debug, Error)]
@@ -70,7 +69,7 @@ pub async fn get_signal_price_states<'a>(
     }
 
     ids.iter()
-        .map(|id| cache.get(id).cloned().unwrap()) // This should never fail
+        .map(|id| cache.get(id).cloned().unwrap()) // This should never fail as all values of ids should be inserted into the cache
         .collect()
 }
 
@@ -90,26 +89,25 @@ async fn compute_signal_result<'a>(
             let mut source_results = Vec::with_capacity(signal.source_queries.len());
             for source_query in &signal.source_queries {
                 if let Some(w) = workers.get(&source_query.source_id) {
-                    // TODO move duration and add error
-                    let aa = Duration::new(1, 0);
-                    let future = async {
-                        match w.get_asset(&source_query.query_id).await {
-                            Ok(AssetState::Available(a)) => {
-                                a.timestamp.ge(&stale_cutoff).then(|| {
-                                    compute_source_routes(
-                                        a.price,
-                                        &source_query.routes,
-                                        &prereq_values,
-                                    )
-                                })
+                    let query_id = &source_query.query_id;
+                    let source_id = &source_query.source_id;
+                    match w.get_asset(&source_query.query_id).await {
+                        Ok(AssetState::Available(a)) => {
+                            if a.timestamp.ge(&stale_cutoff) {
+                                let price = compute_source_routes(
+                                    a.price,
+                                    &source_query.routes,
+                                    &prereq_values,
+                                );
+                                source_results.push(price);
+                            } else {
+                                warn!("asset {query_id} from {source_id} is stale",);
                             }
-                            _ => None,
                         }
-                    };
-                    match timeout(aa, future).await {
-                        Ok(Some(price)) => source_results.push(price),
-                        Ok(None) => error!("error while querying sources"),
-                        Err(_) => error!("timed out while querying sources"),
+                        Ok(_) => {
+                            warn!("asset state for {query_id} from {source_id} is unavailable")
+                        }
+                        Err(_) => warn!("error while querying source {source_id} for {query_id}"),
                     }
                 }
             }
@@ -126,7 +124,6 @@ async fn compute_signal_result<'a>(
     }
 }
 
-// Note: The registry must not contain any cycles or this will loop forever
 fn get_prerequisites(signal: &Signal, cache: &PriceCache<String>) -> Result<Vec<Decimal>, Error> {
     let pids = signal
         .source_queries

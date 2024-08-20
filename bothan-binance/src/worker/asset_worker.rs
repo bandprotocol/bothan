@@ -9,12 +9,12 @@ use tracing::{debug, error, info, warn};
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
+use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
 use crate::api::error::{MessageError, SendError};
 use crate::api::msgs::{BinanceResponse, Data};
-use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
+use crate::worker::BinanceWorker;
 use crate::worker::error::ParseError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::BinanceWorker;
 
 pub(crate) async fn start_asset_worker(
     worker: Weak<BinanceWorker>,
@@ -63,13 +63,18 @@ async fn handle_subscribe_recv(
     worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
 ) {
-    // TODO: remove unwrap
-    let to_sub = worker_store.add_query_ids(ids).await.unwrap();
+    let Ok(to_sub) = worker_store.add_query_ids(ids).await else {
+        error!("failed to add query ids to store");
+        return;
+    };
+
     match subscribe(&to_sub, connection).await {
         Ok(_) => info!("subscribed to ids {:?}", to_sub),
         Err(e) => {
             error!("failed to subscribe to ids {:?}: {}", to_sub, e);
-            worker_store.remove_query_ids(to_sub).await.unwrap();
+            if worker_store.remove_query_ids(to_sub).await.is_err() {
+                error!("failed to remove query ids from store")
+            }
         }
     }
 }
@@ -92,13 +97,18 @@ async fn handle_unsubscribe_recv(
     worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
 ) {
-    let to_unsub = worker_store.remove_query_ids(ids).await.unwrap();
+    let Ok(to_unsub) = worker_store.remove_query_ids(ids).await else {
+        error!("failed to remove query ids from store");
+        return;
+    };
+
     match unsubscribe(&to_unsub, connection).await {
         Ok(_) => info!("unsubscribed to ids {:?}", to_unsub),
         Err(e) => {
             error!("failed to unsubscribe to ids {:?}: {}", to_unsub, e);
-            // TODO remove unwrap
-            worker_store.add_query_ids(to_unsub).await.unwrap();
+            if worker_store.remove_query_ids(to_unsub).await.is_err() {
+                error!("failed to remove query ids from store")
+            }
         }
     }
 }
@@ -116,21 +126,17 @@ async fn handle_reconnect(
             *connection = new_connection;
 
             // Resubscribe to all ids
-            // TODO: fix unwrap
-            let ids = query_ids
-                .get_query_ids()
-                .await
-                .unwrap()
-                .into_iter()
-                .collect::<Vec<String>>();
-            match subscribe(&ids, connection).await {
-                Ok(_) => {
-                    info!("resubscribed to all ids");
-                    return;
-                }
-                Err(_) => {
-                    error!("failed to resubscribe to all ids");
-                }
+            let Ok(ids) = query_ids.get_query_ids().await else {
+                error!("failed to get query ids from store");
+                return;
+            };
+
+            let ids_vec = ids.into_iter().collect::<Vec<String>>();
+            
+            if subscribe(&ids_vec, connection).await.is_ok() {
+                info!("resubscribed to all ids");
+            } else {
+                error!("failed to resubscribe to all ids");
             }
         } else {
             error!("failed to reconnect to binance");
