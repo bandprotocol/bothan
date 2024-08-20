@@ -9,7 +9,8 @@ pub mod sources;
 pub struct CryptoInfoManagerConfig {
     /// The source configuration for the crypto asset info manager.
     pub source: CryptoSourceConfigs,
-    /// The stale threshold for the crypto asset info.
+    /// The stale threshold for the crypto asset info. Any source that has not been updated in this
+    /// amount of time relative to the call will be considered stale.
     #[serde(default = "default_stale_threshold")]
     pub stale_threshold: i64,
 }

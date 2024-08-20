@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::time::Duration;
 
 use rust_decimal::Decimal;
 use thiserror::Error;
@@ -45,24 +44,24 @@ pub async fn get_signal_price_states<'a>(
 
         match compute_signal_result(&id, workers, registry, stale_cutoff, &cache).await {
             Ok(price) => {
-                info!("Signal {}: {} ", id, price);
+                info!("signal {}: {} ", id, price);
                 cache.set_available(id, price);
             }
             Err(Error::PrerequisiteRequired(prereqs)) => {
-                info!("Prerequisites required for signal {}: {:?}", id, prereqs);
+                info!("prerequisites required for signal {}: {:?}", id, prereqs);
                 queue.extend(prereqs);
                 queue.push_back(id);
             }
             Err(Error::InvalidSignal) => {
-                warn!("Signal with id {} is not supported", id);
+                warn!("signal with id {} is not supported", id);
                 cache.set_unsupported(id);
             }
             Err(Error::FailedToProcessSignal(e)) => {
-                warn!("Error while processing signal id {}: {}", id, e);
+                warn!("error while processing signal id {}: {}", id, e);
                 cache.set_unavailable(id);
             }
             Err(Error::FailedToProcessPostSignal(e)) => {
-                warn!("Error while post processing signal id {}: {}", id, e);
+                warn!("error while post processing signal id {}: {}", id, e);
                 cache.set_unavailable(id);
             }
         }

@@ -27,8 +27,7 @@ impl SetQueryIDError {
 #[async_trait::async_trait]
 pub trait AssetWorker: Send + Sync {
     async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError>;
-    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError>;
-    async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError>;
+    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError>;
 }
 
 #[async_trait::async_trait]

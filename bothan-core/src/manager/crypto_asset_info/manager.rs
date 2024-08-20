@@ -6,13 +6,9 @@ use serde_json::from_str;
 use tokio::sync::RwLock;
 
 use crate::ipfs::{errors::Error as IpfsError, IpfsClient};
-use crate::manager::crypto_asset_info::error::{
-    GetPriceError, SetActiveSignalError, SetRegistryError,
-};
+use crate::manager::crypto_asset_info::error::{SetActiveSignalError, SetRegistryError};
 use crate::manager::crypto_asset_info::price::get_prices;
-use crate::manager::crypto_asset_info::signal_ids::{
-    add_worker_query_ids, remove_worker_query_ids,
-};
+use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::{Invalid, Registry};
 use crate::store::ManagerStore;
@@ -52,25 +48,22 @@ impl<'a> CryptoAssetInfoManager<'a> {
         &mut self,
         signal_ids: Vec<String>,
     ) -> Result<(), SetActiveSignalError> {
-        let curr_active_set = self.store.get_active_signal_ids().await?;
-        let new_active_set = signal_ids.iter().cloned().collect::<HashSet<String>>();
+        let new_active_signal_ids = signal_ids.iter().cloned().collect::<HashSet<String>>();
 
         let workers = self.workers.write().await;
         let registry = self.store.get_registry().await;
 
-        add_worker_query_ids(&workers, &curr_active_set, &new_active_set, &registry).await?;
-        remove_worker_query_ids(&workers, &curr_active_set, &new_active_set, &registry).await?;
-
+        set_workers_query_ids(&workers, &new_active_signal_ids, &registry).await?;
         self.store.set_active_signal_ids(signal_ids).await?;
 
         Ok(())
     }
 
     /// Gets the `Price` of the given signal ids.
-    pub async fn get_prices(&self, ids: Vec<String>) -> Result<Vec<PriceState>, GetPriceError> {
+    pub async fn get_prices(&self, ids: Vec<String>) -> Vec<PriceState> {
         let registry = self.store.get_registry().await;
         let workers = self.workers.read().await;
-        Ok(get_prices(ids, &registry, &workers, self.stale_threshold).await)
+        get_prices(ids, &registry, &workers, self.stale_threshold).await
     }
 
     pub async fn set_registry_from_ipfs(

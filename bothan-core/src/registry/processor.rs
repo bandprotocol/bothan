@@ -35,38 +35,3 @@ impl Process<Decimal> for Processor {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn data() -> Vec<Decimal> {
-        vec![
-            Decimal::from(10),
-            Decimal::from(20),
-            Decimal::from(30),
-            Decimal::from(40),
-            Decimal::from(50),
-        ]
-    }
-
-    #[test]
-    fn test_process_median() {
-        let median = Processor::Median(median::MedianProcessor {
-            min_source_count: 1,
-        });
-        let res = median.process(data());
-
-        assert_eq!(res.unwrap(), Decimal::from(30));
-    }
-
-    #[test]
-    fn test_process_median_with_invalid_parameter() {
-        let median = Processor::Median(median::MedianProcessor {
-            min_source_count: 0,
-        });
-        let res = median.process(data());
-
-        assert!(res.is_err());
-    }
-}

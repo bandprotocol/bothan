@@ -5,53 +5,27 @@ use tracing::{error, info};
 
 use crate::manager::crypto_asset_info::error::SetActiveSignalError;
 use crate::registry::{Registry, Valid};
-use crate::store::QueryIds;
 use crate::worker::AssetWorker;
 
-pub async fn add_worker_query_ids<'a>(
+pub async fn set_workers_query_ids<'a>(
     workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
-    current_active_set: &QueryIds,
-    new_active_set: &QueryIds,
+    new_active_signal_ids: &HashSet<String>,
     registry: &Registry<Valid>,
 ) -> Result<(), SetActiveSignalError> {
-    let ids_to_add = new_active_set
-        .difference(current_active_set)
-        .cloned()
-        .collect::<Vec<String>>();
-
-    let mut query_ids = get_source_batched_query_ids(ids_to_add.as_slice(), registry)?;
-    for (source_id, query_ids) in query_ids.drain() {
-        match workers.get(&source_id) {
-            Some(worker) => match worker.add_query_ids(query_ids).await {
-                Ok(_) => info!("Added query ids to {} worker", source_id),
-                Err(e) => error!("Worker {} failed to add query ids: {}", source_id, e),
-            },
-            None => info!("Worker {} not found", source_id),
-        }
-    }
-
-    Ok(())
-}
-
-pub async fn remove_worker_query_ids<'a>(
-    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
-    current_active_set: &HashSet<String>,
-    new_active_set: &HashSet<String>,
-    registry: &Registry<Valid>,
-) -> Result<(), SetActiveSignalError> {
-    let ids_to_rem = current_active_set
-        .difference(new_active_set)
-        .cloned()
-        .collect::<Vec<String>>();
-
-    let mut query_ids = get_source_batched_query_ids(ids_to_rem.as_slice(), registry)?;
-    for (source, ids) in query_ids.drain() {
+    let mut query_ids = get_source_batched_query_ids(
+        &new_active_signal_ids
+            .iter()
+            .cloned()
+            .collect::<Vec<String>>(),
+        registry,
+    )?;
+    for (source, query_ids) in query_ids.drain() {
         match workers.get(&source) {
-            Some(worker) => match worker.remove_query_ids(ids).await {
-                Ok(_) => info!("Removed query ids from {} worker", source),
-                Err(e) => error!("Worker {} failed to remove query ids: {}", source, e),
+            Some(worker) => match worker.set_query_ids(query_ids).await {
+                Ok(_) => info!("removed query ids from {} worker", source),
+                Err(e) => error!("worker {} failed to remove query ids: {}", source, e),
             },
-            None => info!("Worker {} not found", source),
+            None => info!("worker {} not found", source),
         }
     }
 
@@ -65,9 +39,9 @@ fn get_source_batched_query_ids(
     let mut query_ids: HashMap<String, Vec<String>> = HashMap::new();
 
     for signal_id in signal_ids.iter() {
-        let signal = registry
-            .get(signal_id)
-            .ok_or(SetActiveSignalError::MissingSignal(signal_id.clone()))?;
+        let Some(signal) = registry.get(signal_id) else {
+            return Err(SetActiveSignalError::MissingSignal(signal_id.clone()));
+        };
         for source in signal.source_queries.iter() {
             query_ids
                 .entry(source.source_id.clone())

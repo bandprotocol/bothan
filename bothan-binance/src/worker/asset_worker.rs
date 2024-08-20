@@ -147,7 +147,7 @@ async fn handle_reconnect(
     }
 }
 
-async fn store_data(data: Data, store: &WorkerStore) -> Result<(), ParseError> {
+async fn store_data(store: &WorkerStore, data: Data) -> Result<(), ParseError> {
     match data {
         Data::MiniTicker(ticker) => {
             let asset_info = AssetInfo {
@@ -163,9 +163,9 @@ async fn store_data(data: Data, store: &WorkerStore) -> Result<(), ParseError> {
     Ok(())
 }
 
-async fn process_response(resp: BinanceResponse, store: &WorkerStore) {
+async fn process_response(store: &WorkerStore, resp: BinanceResponse) {
     match resp {
-        BinanceResponse::Stream(resp) => match store_data(resp.data, store).await {
+        BinanceResponse::Stream(resp) => match store_data(store, resp.data).await {
             Ok(_) => info!("saved data"),
             Err(e) => error!("failed to save data: {}", e),
         },
@@ -189,7 +189,7 @@ async fn handle_connection_recv(
 ) {
     match recv_result {
         Ok(resp) => {
-            process_response(resp, store).await;
+            process_response(store, resp).await;
         }
         Err(MessageError::ChannelClosed) => {
             handle_reconnect(connector, connection, store).await;

@@ -35,10 +35,10 @@ impl ConfigCli {
 
                 let mut app_config = AppConfig::default();
                 app_config.manager.crypto.source = CryptoSourceConfigs::with_default_sources();
-                let string_cfg =
+                let config_string =
                     toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;
 
-                fs::write(path, string_cfg).with_context(|| "Failed to write config")?;
+                fs::write(path, config_string).with_context(|| "Failed to write config")?;
                 println!("Initialized default config at: {:?}", path);
                 Ok(())
             }

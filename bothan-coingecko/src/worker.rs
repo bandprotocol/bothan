@@ -31,18 +31,9 @@ impl AssetWorker for CoinGeckoWorker {
     }
 
     /// Adds the specified cryptocurrency IDs to the query set.
-    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
+    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
         self.store
-            .add_query_ids(ids)
-            .await
-            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
-        Ok(())
-    }
-
-    /// Removes the specified cryptocurrency IDs from the query set.
-    async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
-        self.store
-            .remove_query_ids(ids)
+            .set_query_ids(ids)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
         Ok(())

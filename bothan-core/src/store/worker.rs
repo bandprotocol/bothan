@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::store::errors::Error;
 use crate::store::{QueryIds, SharedStore};
 use crate::types::AssetInfo;
@@ -42,6 +44,27 @@ impl WorkerStore {
         assets: Vec<(K, AssetInfo)>,
     ) -> Result<(), Error> {
         self.store.insert_asset_infos(&self.prefix, assets).await
+    }
+
+    pub async fn set_query_ids<K>(&self, ids: Vec<K>) -> Result<(Vec<String>, Vec<String>), Error>
+    where
+        K: Into<String> + Clone,
+    {
+        let current_ids = self.get_query_ids().await?;
+        let new_ids: QueryIds = HashSet::from_iter(ids.into_iter().map(Into::into));
+
+        let added = new_ids
+            .difference(&current_ids)
+            .cloned()
+            .collect::<Vec<String>>();
+        let removed = current_ids
+            .difference(&new_ids)
+            .cloned()
+            .collect::<Vec<String>>();
+
+        self.store.set_query_ids(&self.prefix, new_ids).await?;
+
+        Ok((added, removed))
     }
 
     pub async fn add_query_ids<K>(&self, ids: Vec<K>) -> Result<Vec<K>, Error>

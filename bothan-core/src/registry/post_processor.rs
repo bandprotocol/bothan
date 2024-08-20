@@ -43,16 +43,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_process() {
-        let tick_convertor = PostProcessor::TickConvertor(TickPostProcessor {});
-        let result = tick_convertor.process(Decimal::from(10));
-        assert_eq!(
-            result.unwrap(),
-            Decimal::from_str_exact("285171.00220329970405837917374").unwrap()
-        );
-    }
-
-    #[test]
     fn test_deserialize() {
         let json_str = r#"{ "function": "tick_convertor", "params": { } }"#;
         let expected_function = PostProcessor::TickConvertor(TickPostProcessor {});

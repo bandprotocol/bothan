@@ -4,7 +4,7 @@ use crate::registry::post_processor::PostProcessor;
 use crate::registry::processor::Processor;
 use crate::registry::source::SourceQuery;
 
-/// `Signal` contains the prerequisites, sources, processor, and post-processors for a signal.
+/// `Signal` contains the sources, processor, and post-processors for a signal.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Signal {
     #[serde(rename = "sources")]

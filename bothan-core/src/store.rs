@@ -34,8 +34,7 @@ struct Inner {
 }
 
 impl SharedStore {
-    /// Create a new shared store with the given registry and flush path. If the store already exists at the
-    /// given path, it will be restored and the registry will be overwritten.
+    /// Create a new shared store with the given registry and flush path.
     pub async fn new(registry: Registry<Valid>, flush_path: &Path) -> Result<Self, Error> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
@@ -52,6 +51,7 @@ impl SharedStore {
         Ok(store)
     }
 
+    /// Restore the store's registry from the database
     pub async fn restore(&mut self) -> Result<(), Error> {
         let mut inner = self.inner.write().await;
 
@@ -62,7 +62,7 @@ impl SharedStore {
             .transpose()?;
 
         if let Some(registry) = registry {
-            debug!("Loaded registry");
+            debug!("loaded registry");
             inner.registry = registry;
         }
 

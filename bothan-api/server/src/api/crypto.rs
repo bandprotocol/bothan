@@ -108,13 +108,7 @@ impl Query for CryptoQueryServer {
         info!("received get price request");
         let price_request = request.into_inner();
         let manager = self.manager.read().await;
-        let price_states = manager
-            .get_prices(price_request.signal_ids.clone())
-            .await
-            .map_err(|e| {
-                error!("Failed to get prices: {:?}", e);
-                Status::internal("Failed to get prices")
-            })?;
+        let price_states = manager.get_prices(price_request.signal_ids.clone()).await;
 
         let prices = price_request
             .signal_ids

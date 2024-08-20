@@ -44,31 +44,50 @@ impl AssetWorker for BinanceWorker {
         self.store.get_asset(&id).await
     }
 
-    /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
-        let to_sub = self
+    /// Sets the specified cryptocurrency IDs to the query. If the ids are already in the query set,
+    /// it will not be resubscribed.
+    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
+        let (to_sub, to_unsub) = self
             .store
-            .add_query_ids(ids)
+            .set_query_ids(ids)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
-
         self.subscribe_tx
             .send(to_sub)
             .await
-            .map_err(|e| SetQueryIDError::new(e.to_string()))
-    }
-
-    /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
-    async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
-        let to_unsub = self
-            .store
-            .remove_query_ids(ids)
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+        self.unsubscribe_tx
+            .send(to_unsub)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
-
-        self.unsubscribe_tx
-            .send(to_unsub.clone())
-            .await
-            .map_err(|e| SetQueryIDError::new(e.to_string()))
+        Ok(())
     }
+    //
+    // /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    // async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
+    //     let to_sub = self
+    //         .store
+    //         .add_query_ids(ids)
+    //         .await
+    //         .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+    //
+    //     self.subscribe_tx
+    //         .send(to_sub)
+    //         .await
+    //         .map_err(|e| SetQueryIDError::new(e.to_string()))
+    // }
+    //
+    // /// Removes the specified cryptocurrency IDs to the query set and subscribes to their updates.
+    // async fn remove_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
+    //     let to_unsub = self
+    //         .store
+    //         .remove_query_ids(ids)
+    //         .await
+    //         .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+    //
+    //     self.unsubscribe_tx
+    //         .send(to_unsub.clone())
+    //         .await
+    //         .map_err(|e| SetQueryIDError::new(e.to_string()))
+    // }
 }

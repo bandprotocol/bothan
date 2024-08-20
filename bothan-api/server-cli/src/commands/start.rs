@@ -97,6 +97,10 @@ async fn init_store(
     registry: Registry<Valid>,
     reset: bool,
 ) -> anyhow::Result<SharedStore> {
+    if reset {
+        let _ = std::fs::remove_dir_all(&config.store.path);
+    }
+
     if !config.store.path.is_dir() {
         create_dir_all(&config.store.path).with_context(|| "Failed to create home directory")?;
     }

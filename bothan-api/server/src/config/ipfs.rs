@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 pub const DEFAULT_IPFS_ENDPOINT: &str = "https://ipfs.io";
 
@@ -17,8 +18,8 @@ pub enum IpfsAuthentication {
 pub struct IpfsConfig {
     #[serde(default = "default_endpoint")]
     pub endpoint: String,
-    #[serde(default)]
     pub authentication: IpfsAuthentication,
+    pub timeout: Option<Duration>,
 }
 
 fn default_endpoint() -> String {
@@ -30,6 +31,7 @@ impl Default for IpfsConfig {
         IpfsConfig {
             endpoint: default_endpoint(),
             authentication: IpfsAuthentication::default(),
+            timeout: None,
         }
     }
 }
