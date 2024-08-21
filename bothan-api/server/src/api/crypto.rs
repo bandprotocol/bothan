@@ -52,7 +52,8 @@ impl Query for CryptoQueryServer {
 
         match set_registry_result {
             Ok(_) => Ok(registry_resp(UpdateStatusCode::Ok)),
-            Err(SetRegistryError::InvalidRegistry) => {
+            Err(SetRegistryError::InvalidRegistry(e)) => {
+                error!("Invalid registry: {}", e);
                 Ok(registry_resp(UpdateStatusCode::InvalidRegistry))
             }
             Err(SetRegistryError::FailedToRetrieve(_)) => {
@@ -63,9 +64,7 @@ impl Query for CryptoQueryServer {
             }
             Err(SetRegistryError::FailedToParse) => {
                 error!("Failed to parse registry");
-                Err(Status::invalid_argument(
-                    "Registry is incorrectly formatted",
-                ))
+                Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::InvalidHash) => {
                 error!("Invalid IPFS hash");
