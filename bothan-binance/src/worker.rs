@@ -39,10 +39,6 @@ impl BinanceWorker {
 
 #[async_trait::async_trait]
 impl AssetWorker for BinanceWorker {
-    fn name() -> &'static str {
-        "binance"
-    }
-
     /// Fetches the AssetStatus for the given cryptocurrency id.
     async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError> {
         self.store.get_asset(&id).await

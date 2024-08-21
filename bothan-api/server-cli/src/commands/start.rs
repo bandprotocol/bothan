@@ -49,17 +49,18 @@ impl StartCli {
 
         let registry = match &self.registry {
             Some(p) => {
-                let file = File::open(p).map_err(|_| anyhow!("Failed to open registry file"))?;
+                let file =
+                    File::open(p).map_err(|e| anyhow!("Failed to open registry file: {e}"))?;
                 let reader = BufReader::new(file);
                 serde_json::from_reader(reader)
-                    .map_err(|_| anyhow!("Failed to parse registry file"))?
+                    .map_err(|e| anyhow!("Failed to parse registry file: {e}"))?
             }
             None => Registry::default(),
         };
 
         let valid_registry = registry
             .validate()
-            .map_err(|_| anyhow!("Invalid registry"))?;
+            .map_err(|e| anyhow!("Invalid registry: {e}"))?;
 
         if let Err(e) = start_server(app_config, valid_registry, self.unsafe_reset).await {
             eprintln!("Failed to start server: {}", e);

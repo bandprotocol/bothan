@@ -68,6 +68,11 @@ impl<'a> AssetWorkerBuilder<'a> for CoinGeckoWorkerBuilder {
         Self { store, opts }
     }
 
+    /// Returns the name of the worker.
+    fn worker_name() -> &'static str {
+        "coingecko"
+    }
+
     /// Creates the configured `CoinGeckoWorker`.
     async fn build(self) -> Result<Arc<Self::Worker>, Self::Error> {
         let api =

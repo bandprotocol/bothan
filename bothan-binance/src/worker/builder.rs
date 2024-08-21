@@ -53,6 +53,11 @@ impl<'a> AssetWorkerBuilder<'a> for BinanceWorkerBuilder {
         Self { store, opts }
     }
 
+    /// Returns the name of the worker.
+    fn worker_name() -> &'static str {
+        "binance"
+    }
+
     /// Creates the configured `BinanceWorker`.
     async fn build(self) -> Result<Arc<Self::Worker>, Self::Error> {
         let url = self.opts.url;
