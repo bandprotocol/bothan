@@ -16,8 +16,8 @@ pub enum SetRegistryError {
     #[error("Failed to parse into registry")]
     FailedToParse,
 
-    #[error("Registry is invalid")]
-    InvalidRegistry,
+    #[error("Registry is invalid: {0}")]
+    InvalidRegistry(String),
 
     #[error("Invalid ipfs hash")]
     InvalidHash,

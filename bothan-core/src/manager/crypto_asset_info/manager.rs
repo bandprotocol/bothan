@@ -97,7 +97,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
             from_str::<Registry<Invalid>>(&text).map_err(|_| SetRegistryError::FailedToParse)?;
         let registry = unchecked_registry
             .validate()
-            .map_err(|_| SetRegistryError::FailedToParse)?;
+            .map_err(|e| SetRegistryError::InvalidRegistry(e.to_string()))?;
 
         self.store.set_registry(registry).await?;
         Ok(())
