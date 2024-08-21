@@ -1,7 +1,6 @@
-use std::collections::{HashSet, VecDeque};
-
 use num_traits::Zero;
 use rust_decimal::Decimal;
+use std::collections::{HashSet, VecDeque};
 use thiserror::Error;
 use tracing::{error, info, warn};
 
