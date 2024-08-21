@@ -10,11 +10,11 @@ use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
 use bothan_core::manager::crypto_asset_info::types::PriceState;
 use bothan_core::manager::CryptoAssetInfoManager;
 
-use crate::api::utils::{price, registry_resp};
+use crate::api::utils::registry_resp;
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
-    PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest, SetActiveSignalIdResponse,
-    UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
+    Price, PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest,
+    SetActiveSignalIdResponse, UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
 };
 
 pub const PRECISION: u32 = 9;
@@ -119,15 +119,15 @@ impl Query for CryptoQueryServer {
                         .round_dp_with_strategy(PRECISION, RoundingStrategy::ToZero)
                         .mantissa();
                     match i64::try_from(mantissa_price) {
-                        Ok(p) => price(&id, PriceStatus::Available, p),
+                        Ok(p) => Price::new(id, p, PriceStatus::Available),
                         Err(_) => {
                             warn!("Failed to convert {mantissa_price} to i64 for id {id}");
-                            price(&id, PriceStatus::Unavailable, 0)
+                            Price::new(id, 0, PriceStatus::Unavailable)
                         }
                     }
                 }
-                PriceState::Unavailable => price(&id, PriceStatus::Unavailable, 0),
-                PriceState::Unsupported => price(&id, PriceStatus::Unsupported, 0),
+                PriceState::Unavailable => Price::new(id, 0, PriceStatus::Unavailable),
+                PriceState::Unsupported => Price::new(id, 0, PriceStatus::Unsupported),
             })
             .collect();
 

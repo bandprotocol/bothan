@@ -25,7 +25,7 @@ impl CoinGeckoWorker {
 
 #[async_trait::async_trait]
 impl AssetWorker for CoinGeckoWorker {
-    fn name(&self) -> &str {
+    fn name() -> &'static str {
         "coingecko"
     }
 

@@ -164,11 +164,11 @@ async fn init_crypto_workers(
     type CoinGecko = CoinGeckoWorkerBuilder;
 
     if let Some(opts) = &source.binance {
-        add_worker::<Binance>(manager, store, "binance", opts).await?;
+        add_worker::<Binance>(manager, store, opts).await?;
     }
 
     if let Some(opts) = &source.coingecko {
-        add_worker::<CoinGecko>(manager, store, "coingecko", opts).await?;
+        add_worker::<CoinGecko>(manager, store, opts).await?;
     }
 
     Ok(())
@@ -177,7 +177,6 @@ async fn init_crypto_workers(
 async fn add_worker<B>(
     manager: &mut CryptoAssetInfoManager<'static>,
     store: &SharedStore,
-    worker_name: &str,
     opts: &B::Opts,
 ) -> anyhow::Result<()>
 where
@@ -185,11 +184,12 @@ where
     B::Error: Send + Sync + 'static,
     B::Opts: Clone,
 {
+    let worker_name = B::worker_name();
     let worker_store = SharedStore::create_worker_store(store, worker_name);
     let worker = B::new(worker_store, opts.clone())
         .build()
         .await
-        .with_context(|| format!("Failed to build {} worker", worker_name))?;
+        .with_context(|| format!("Failed to build worker {worker_name}"))?;
 
     manager.add_worker(worker_name.to_string(), worker).await;
     println!("Loaded {} worker", worker_name);

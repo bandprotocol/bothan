@@ -39,7 +39,7 @@ impl BinanceWorker {
 
 #[async_trait::async_trait]
 impl AssetWorker for BinanceWorker {
-    fn name(&self) -> &str {
+    fn name() -> &'static str {
         "binance"
     }
 

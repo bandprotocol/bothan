@@ -26,7 +26,9 @@ impl SetQueryIDError {
 /// The universal trait for all workers that provide asset info.
 #[async_trait::async_trait]
 pub trait AssetWorker: Send + Sync {
-    fn name(&self) -> &str;
+    fn name() -> &'static str
+    where
+        Self: Sized;
     async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError>;
     async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError>;
 }
@@ -38,6 +40,13 @@ pub trait AssetWorkerBuilder<'a> {
     type Error: std::error::Error;
 
     fn new(store: WorkerStore, opts: Self::Opts) -> Self;
+
+    fn worker_name() -> &'static str
+    where
+        Self: Sized,
+    {
+        Self::Worker::name()
+    }
 
     async fn build(self) -> Result<Arc<Self::Worker>, Self::Error>;
 }
