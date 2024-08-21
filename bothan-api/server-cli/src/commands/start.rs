@@ -8,7 +8,6 @@ use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::VersionReq;
 use tonic::transport::Server;
-use tracing::{debug, info};
 
 use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
@@ -98,7 +97,9 @@ async fn init_store(
     reset: bool,
 ) -> anyhow::Result<SharedStore> {
     if reset {
-        let _ = std::fs::remove_dir_all(&config.store.path);
+        if let Err(e) = std::fs::remove_dir_all(&config.store.path) {
+            eprintln!("Failed to remove store directory: {}", e);
+        }
     }
 
     if !config.store.path.is_dir() {
@@ -108,7 +109,7 @@ async fn init_store(
     let mut store = SharedStore::new(registry, &config.store.path)
         .await
         .with_context(|| "Failed to create store")?;
-    debug!("Store created successfully at \"{:?}\"", &config.store.path);
+    println!("Store created successfully at \"{:?}\"", &config.store.path);
 
     if !reset {
         store
@@ -191,6 +192,6 @@ where
         .with_context(|| format!("Failed to build {} worker", worker_name))?;
 
     manager.add_worker(worker_name.to_string(), worker).await;
-    info!("Loaded {} worker", worker_name);
+    println!("Loaded {} worker", worker_name);
     Ok(())
 }

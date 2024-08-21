@@ -433,6 +433,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "chrono",
+ "clap",
  "derive_more",
  "futures",
  "itertools 0.13.0",

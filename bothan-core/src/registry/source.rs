@@ -1,5 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
-
+use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use serde::{Deserialize, Serialize};
 
 /// Enum representing the possible operations that can be performed.
@@ -17,15 +16,15 @@ pub enum Operation {
 
 impl Operation {
     /// Executes the operation on two numbers and returns the result.
-    pub fn execute<T>(&self, a: T, b: T) -> T
+    pub fn execute<T>(&self, a: T, b: T) -> Option<T>
     where
-        T: Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Div<Output = T> + Copy,
+        T: CheckedAdd + CheckedSub + CheckedMul + CheckedDiv + Copy,
     {
         match self {
-            Operation::Add => a + b,
-            Operation::Subtract => a - b,
-            Operation::Multiply => a * b,
-            Operation::Divide => a / b,
+            Operation::Add => a.checked_add(&b),
+            Operation::Subtract => a.checked_sub(&b),
+            Operation::Multiply => a.checked_mul(&b),
+            Operation::Divide => a.checked_div(&b),
         }
     }
 }

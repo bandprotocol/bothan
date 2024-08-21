@@ -26,6 +26,7 @@ impl SetQueryIDError {
 /// The universal trait for all workers that provide asset info.
 #[async_trait::async_trait]
 pub trait AssetWorker: Send + Sync {
+    fn name(&self) -> &str;
     async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError>;
     async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError>;
 }

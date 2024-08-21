@@ -4,7 +4,7 @@ use rust_decimal::RoundingStrategy;
 use semver::Version;
 use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
 use bothan_core::manager::crypto_asset_info::types::PriceState;
@@ -121,7 +121,10 @@ impl Query for CryptoQueryServer {
                         .mantissa();
                     match i64::try_from(mantissa_price) {
                         Ok(p) => price(&id, PriceStatus::Available, p),
-                        Err(_) => price(&id, PriceStatus::Unavailable, 0),
+                        Err(_) => {
+                            warn!("Failed to convert {mantissa_price} to i64 for id {id}");
+                            price(&id, PriceStatus::Unavailable, 0)
+                        }
                     }
                 }
                 PriceState::Unavailable => price(&id, PriceStatus::Unavailable, 0),

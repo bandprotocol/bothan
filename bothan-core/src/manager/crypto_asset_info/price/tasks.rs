@@ -1,5 +1,6 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 
+use num_traits::Zero;
 use rust_decimal::Decimal;
 use thiserror::Error;
 use tracing::{error, info, warn};
@@ -49,7 +50,9 @@ pub async fn get_signal_price_states<'a>(
             }
             Err(Error::PrerequisiteRequired(prereqs)) => {
                 info!("prerequisites required for signal {}: {:?}", id, prereqs);
-                queue.extend(prereqs);
+                for prereq in prereqs {
+                    queue.push_front(prereq)
+                }
                 queue.push_back(id);
             }
             Err(Error::InvalidSignal) => {
@@ -81,36 +84,8 @@ async fn compute_signal_result<'a>(
 ) -> Result<Decimal, Error> {
     match registry.get(id) {
         Some(signal) => {
-            // Check if all prerequisites are available, if not add the missing ones to the queue
-            // and continue to the next signal
-            let prereq_values = get_prerequisites(signal, cache)?;
-
-            let mut source_results = Vec::with_capacity(signal.source_queries.len());
-            for source_query in &signal.source_queries {
-                if let Some(w) = workers.get(&source_query.source_id) {
-                    let query_id = &source_query.query_id;
-                    let source_id = &source_query.source_id;
-                    match w.get_asset(&source_query.query_id).await {
-                        Ok(AssetState::Available(a)) => {
-                            if a.timestamp.ge(&stale_cutoff) {
-                                let price = compute_source_routes(
-                                    a.price,
-                                    &source_query.routes,
-                                    &prereq_values,
-                                );
-                                source_results.push(price);
-                            } else {
-                                warn!("asset {query_id} from {source_id} is stale",);
-                            }
-                        }
-                        Ok(_) => {
-                            warn!("asset state for {query_id} from {source_id} is unavailable")
-                        }
-                        Err(_) => warn!("error while querying source {source_id} for {query_id}"),
-                    }
-                }
-            }
-
+            let source_results =
+                compute_source_result(signal, workers, cache, stale_cutoff).await?;
             let processed_signal = signal.processor.process(source_results)?;
             let post_processed_signal = signal
                 .post_processors
@@ -123,34 +98,73 @@ async fn compute_signal_result<'a>(
     }
 }
 
-fn get_prerequisites(signal: &Signal, cache: &PriceCache<String>) -> Result<Vec<Decimal>, Error> {
-    let pids = signal
-        .source_queries
-        .iter()
-        .flat_map(|s| s.routes.iter().map(|r| r.signal_id.clone()))
-        .collect::<Vec<String>>();
+async fn compute_source_result<'a>(
+    signal: &Signal,
+    workers: &WorkerMap<'a>,
+    cache: &PriceCache<String>,
+    stale_cutoff: i64,
+) -> Result<Vec<Decimal>, Error> {
+    // Check if all prerequisites are available, if not add the missing ones to the queue
+    // and continue to the next signal
+    let mut source_results = Vec::with_capacity(signal.source_queries.len());
+    let mut missing_pids = HashSet::new();
+    for source_query in &signal.source_queries {
+        if let Some(w) = workers.get(&source_query.source_id) {
+            let qid = &source_query.query_id;
+            let sid = &source_query.source_id;
 
-    let mut prereq_values = Vec::with_capacity(pids.len());
-    let mut prereq_required = Vec::new();
-    for pid in pids {
-        match cache.get(&pid) {
-            Some(PriceState::Available(p)) => prereq_values.push(*p),
-            None => {
-                // Add the prerequisite to the front of the queue
-                prereq_required.push(pid.clone());
+            match w.get_asset(qid).await {
+                Ok(AssetState::Available(a)) => {
+                    if a.timestamp.ge(&stale_cutoff) {
+                        match compute_source_routes(&source_query.routes, a.price, cache) {
+                            Ok(Some(price)) => source_results.push(price),
+                            Ok(None) => {} // If unable to calculate the price, ignore the source
+                            Err(Error::PrerequisiteRequired(ids)) => missing_pids.extend(ids),
+                            Err(e) => return Err(e),
+                        }
+                    } else {
+                        warn!("asset {qid} from {sid} is stale");
+                    }
+                }
+                Ok(_) => warn!("asset state for {qid} from {sid} is unavailable"),
+                Err(_) => warn!("error while querying source {sid} for {qid}"),
             }
-            Some(_) => {}
         }
     }
-    if !prereq_required.is_empty() {
-        Err(Error::PrerequisiteRequired(prereq_required))
-    } else {
-        Ok(prereq_values)
+
+    if !missing_pids.len().is_zero() {
+        return Err(Error::PrerequisiteRequired(
+            missing_pids.into_iter().collect(),
+        ));
     }
+
+    Ok(source_results)
 }
 
-fn compute_source_routes(start: Decimal, routes: &[OperationRoute], values: &[Decimal]) -> Decimal {
-    (0..routes.len()).fold(start, |acc, idx| {
+fn compute_source_routes(
+    routes: &Vec<OperationRoute>,
+    start: Decimal,
+    cache: &PriceCache<String>,
+) -> Result<Option<Decimal>, Error> {
+    // Get all pre requisites
+    let mut missing = Vec::with_capacity(routes.len());
+    let mut values = Vec::with_capacity(routes.len());
+    for route in routes {
+        match cache.get(&route.signal_id) {
+            Some(PriceState::Available(p)) => values.push(*p),
+            None => missing.push(route.signal_id.clone()),
+            Some(_) => return Ok(None), // If the value is not available, return None
+        }
+    }
+
+    // If there are missing prerequisites, return an error
+    if !missing.len().is_zero() {
+        return Err(Error::PrerequisiteRequired(missing));
+    }
+
+    // Calculate the routed price
+    let price = (0..routes.len()).try_fold(start, |acc, idx| {
         routes[idx].operation.execute(acc, values[idx])
-    })
+    });
+    Ok(price)
 }

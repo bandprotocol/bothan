@@ -25,6 +25,10 @@ impl CoinGeckoWorker {
 
 #[async_trait::async_trait]
 impl AssetWorker for CoinGeckoWorker {
+    fn name(&self) -> &str {
+        "coingecko"
+    }
+
     /// Fetches the AssetStatus for the given cryptocurrency ids.
     async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError> {
         self.store.get_asset(&id).await

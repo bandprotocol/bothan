@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 
 use crate::ipfs::{errors::Error as IpfsError, IpfsClient};
 use crate::manager::crypto_asset_info::error::{SetActiveSignalError, SetRegistryError};
-use crate::manager::crypto_asset_info::price::get_prices;
+use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::{Invalid, Registry};
@@ -63,7 +63,11 @@ impl<'a> CryptoAssetInfoManager<'a> {
     pub async fn get_prices(&self, ids: Vec<String>) -> Vec<PriceState> {
         let registry = self.store.get_registry().await;
         let workers = self.workers.read().await;
-        get_prices(ids, &registry, &workers, self.stale_threshold).await
+
+        let current_time = chrono::Utc::now().timestamp();
+        let stale_cutoff = current_time - self.stale_threshold;
+
+        get_signal_price_states(ids, &workers, &registry, stale_cutoff).await
     }
 
     pub async fn set_registry_from_ipfs(
