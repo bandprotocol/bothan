@@ -21,7 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Query_UpdateRegistry_FullMethodName    = "/query.Query/UpdateRegistry"
 	Query_SetActiveSignalID_FullMethodName = "/query.Query/SetActiveSignalID"
-	Query_GetPrice_FullMethodName          = "/query.Query/GetPrice"
+	Query_GetPrices_FullMethodName         = "/query.Query/GetPrices"
 )
 
 // QueryClient is the client API for Query service.
@@ -31,7 +31,7 @@ type QueryClient interface {
 	UpdateRegistry(ctx context.Context, in *UpdateRegistryRequest, opts ...grpc.CallOption) (*UpdateRegistryResponse, error)
 	SetActiveSignalID(ctx context.Context, in *SetActiveSignalIDRequest, opts ...grpc.CallOption) (*SetActiveSignalIDResponse, error)
 	// RPC method that returns all prices of requested signal ids.
-	GetPrice(ctx context.Context, in *PriceRequest, opts ...grpc.CallOption) (*PriceResponse, error)
+	GetPrices(ctx context.Context, in *PriceRequest, opts ...grpc.CallOption) (*PriceResponse, error)
 }
 
 type queryClient struct {
@@ -60,9 +60,9 @@ func (c *queryClient) SetActiveSignalID(ctx context.Context, in *SetActiveSignal
 	return out, nil
 }
 
-func (c *queryClient) GetPrice(ctx context.Context, in *PriceRequest, opts ...grpc.CallOption) (*PriceResponse, error) {
+func (c *queryClient) GetPrices(ctx context.Context, in *PriceRequest, opts ...grpc.CallOption) (*PriceResponse, error) {
 	out := new(PriceResponse)
-	err := c.cc.Invoke(ctx, Query_GetPrice_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetPrices_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ type QueryServer interface {
 	UpdateRegistry(context.Context, *UpdateRegistryRequest) (*UpdateRegistryResponse, error)
 	SetActiveSignalID(context.Context, *SetActiveSignalIDRequest) (*SetActiveSignalIDResponse, error)
 	// RPC method that returns all prices of requested signal ids.
-	GetPrice(context.Context, *PriceRequest) (*PriceResponse, error)
+	GetPrices(context.Context, *PriceRequest) (*PriceResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -90,8 +90,8 @@ func (UnimplementedQueryServer) UpdateRegistry(context.Context, *UpdateRegistryR
 func (UnimplementedQueryServer) SetActiveSignalID(context.Context, *SetActiveSignalIDRequest) (*SetActiveSignalIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetActiveSignalID not implemented")
 }
-func (UnimplementedQueryServer) GetPrice(context.Context, *PriceRequest) (*PriceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPrice not implemented")
+func (UnimplementedQueryServer) GetPrices(context.Context, *PriceRequest) (*PriceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPrices not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -142,20 +142,20 @@ func _Query_SetActiveSignalID_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_GetPrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetPrices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PriceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetPrice(ctx, in)
+		return srv.(QueryServer).GetPrices(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_GetPrice_FullMethodName,
+		FullMethod: Query_GetPrices_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetPrice(ctx, req.(*PriceRequest))
+		return srv.(QueryServer).GetPrices(ctx, req.(*PriceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -176,8 +176,8 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_SetActiveSignalID_Handler,
 		},
 		{
-			MethodName: "GetPrice",
-			Handler:    _Query_GetPrice_Handler,
+			MethodName: "GetPrices",
+			Handler:    _Query_GetPrices_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

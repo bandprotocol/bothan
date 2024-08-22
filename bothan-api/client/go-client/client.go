@@ -5,5 +5,5 @@ import (
 )
 
 type Client interface {
-	QueryPrices(signalIDs []string) ([]*bothanproto.PriceData, error)
+	QueryPrices(signalIDs []string) ([]*bothanproto.Price, error)
 }

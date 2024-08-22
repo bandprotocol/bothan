@@ -100,7 +100,7 @@ impl Query for CryptoQueryServer {
         }
     }
 
-    async fn get_price(
+    async fn get_prices(
         &self,
         request: Request<PriceRequest>,
     ) -> Result<Response<PriceResponse>, Status> {

@@ -134,7 +134,7 @@ pub mod query_client {
                 .insert(GrpcMethod::new("query.Query", "SetActiveSignalID"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn get_price(
+        pub async fn get_prices(
             &mut self,
             request: impl tonic::IntoRequest<super::PriceRequest>,
         ) -> std::result::Result<tonic::Response<super::PriceResponse>, tonic::Status> {
@@ -148,9 +148,9 @@ pub mod query_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/query.Query/GetPrice");
+            let path = http::uri::PathAndQuery::from_static("/query.Query/GetPrices");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new("query.Query", "GetPrice"));
+            req.extensions_mut().insert(GrpcMethod::new("query.Query", "GetPrices"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -176,7 +176,7 @@ pub mod query_server {
             tonic::Response<super::SetActiveSignalIdResponse>,
             tonic::Status,
         >;
-        async fn get_price(
+        async fn get_prices(
             &self,
             request: tonic::Request<super::PriceRequest>,
         ) -> std::result::Result<tonic::Response<super::PriceResponse>, tonic::Status>;
@@ -352,11 +352,11 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/query.Query/GetPrice" => {
+                "/query.Query/GetPrices" => {
                     #[allow(non_camel_case_types)]
-                    struct GetPriceSvc<T: Query>(pub Arc<T>);
+                    struct GetPricesSvc<T: Query>(pub Arc<T>);
                     impl<T: Query> tonic::server::UnaryService<super::PriceRequest>
-                    for GetPriceSvc<T> {
+                    for GetPricesSvc<T> {
                         type Response = super::PriceResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
@@ -368,7 +368,7 @@ pub mod query_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as Query>::get_price(&inner, request).await
+                                <T as Query>::get_prices(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -380,7 +380,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = GetPriceSvc(inner);
+                        let method = GetPricesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -1,6 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 
+use itertools::Itertools;
 use tracing::{error, info};
 
 use crate::manager::crypto_asset_info::error::SetActiveSignalError;
@@ -19,9 +20,11 @@ pub async fn set_workers_query_ids<'a>(
             .collect::<Vec<String>>(),
         registry,
     )?;
-    for (source, query_ids) in query_ids.drain() {
+
+    // Find diff between current worker query ids and new query ids
+    for (source, mut query_ids) in query_ids.drain() {
         match workers.get(&source) {
-            Some(worker) => match worker.set_query_ids(query_ids).await {
+            Some(worker) => match worker.set_query_ids(query_ids.drain().collect()).await {
                 Ok(_) => info!("removed query ids from {} worker", source),
                 Err(e) => error!("worker {} failed to remove query ids: {}", source, e),
             },
@@ -35,22 +38,35 @@ pub async fn set_workers_query_ids<'a>(
 fn get_source_batched_query_ids(
     signal_ids: &[String],
     registry: &Registry<Valid>,
-) -> Result<HashMap<String, Vec<String>>, SetActiveSignalError> {
-    let mut query_ids: HashMap<String, Vec<String>> = HashMap::new();
+) -> Result<HashMap<String, HashSet<String>>, SetActiveSignalError> {
+    let mut source_query_ids: HashMap<String, HashSet<String>> = HashMap::new();
+    // Seen signal_ids
+    let seen = HashSet::<String>::new();
 
-    for signal_id in signal_ids.iter() {
-        let Some(signal) = registry.get(signal_id) else {
-            return Err(SetActiveSignalError::MissingSignal(signal_id.clone()));
-        };
-        for source in signal.source_queries.iter() {
-            query_ids
+    let mut queue = VecDeque::from_iter(signal_ids);
+    while let Some(signal_id) = queue.pop_front() {
+        if seen.contains(signal_id) {
+            continue;
+        }
+
+        let signal = registry
+            .get(signal_id)
+            .ok_or(SetActiveSignalError::MissingSignal(signal_id.clone()))?;
+        for source in &signal.source_queries {
+            source_query_ids
                 .entry(source.source_id.clone())
                 .or_default()
-                .push(source.query_id.clone());
+                .insert(source.query_id.clone());
+
+            for route in &source.routes {
+                if seen.contains(&route.signal_id) {
+                    continue;
+                }
+                queue.push_front(&route.signal_id);
+            }
         }
     }
-
-    Ok(query_ids)
+    Ok(source_query_ids)
 }
 
 #[cfg(test)]
@@ -72,8 +88,14 @@ mod tests {
         let signal_ids = vec!["CS:BTC-USD".to_string()];
         let diff = get_source_batched_query_ids(&signal_ids, &registry);
         let expected = HashMap::from_iter([
-            ("binance".to_string(), vec!["btcusdt".to_string()]),
-            ("coingecko".to_string(), vec!["bitcoin".to_string()]),
+            (
+                "binance".to_string(),
+                HashSet::from(["btcusdt".to_string()]),
+            ),
+            (
+                "coingecko".to_string(),
+                HashSet::from(["bitcoin".to_string(), "tether".to_string()]),
+            ),
         ]);
         assert_eq!(diff.unwrap(), expected);
     }

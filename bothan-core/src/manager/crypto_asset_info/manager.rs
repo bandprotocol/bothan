@@ -66,7 +66,9 @@ impl<'a> CryptoAssetInfoManager<'a> {
 
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
+        let active_signals = self.store.get_active_signal_ids().await;
 
+        // TODO: filter on active_signals as well
         get_signal_price_states(ids, &workers, &registry, stale_cutoff).await
     }
 

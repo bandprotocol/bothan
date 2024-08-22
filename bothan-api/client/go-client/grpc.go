@@ -25,13 +25,13 @@ func NewGRPC(url string, timeout time.Duration) (*GRPC, error) {
 	return &GRPC{connection, timeout}, nil
 }
 
-func (c *GRPC) QueryPrices(signalIds []string) ([]*proto.PriceData, error) {
+func (c *GRPC) QueryPrices(signalID string) ([]*proto.Price, error) {
 	// Create a client instance using the connection.
 	client := proto.NewQueryClient(c.connection)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
-	response, err := client.Prices(ctx, &proto.QueryPricesRequest{SignalIds: signalIds})
+	response, err := client.GetPrices(ctx, &proto.QueryPricesRequest{SignalIDs: signalIds})
 	if err != nil {
 		return nil, err
 	}

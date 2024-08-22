@@ -52,16 +52,19 @@ impl AssetWorker for BinanceWorker {
             .set_query_ids(ids)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
         self.subscribe_tx
             .send(to_sub)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
         self.unsubscribe_tx
             .send(to_unsub)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
         Ok(())
     }
+
     //
     // /// Adds the specified cryptocurrency IDs to the query set and subscribes to their updates.
     // async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {

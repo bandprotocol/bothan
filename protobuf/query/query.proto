@@ -17,7 +17,7 @@ service Query {
   }
 
   // RPC method that returns all prices of requested signal ids.
-  rpc GetPrice(PriceRequest) returns (PriceResponse) {
+  rpc GetPrices(PriceRequest) returns (PriceResponse) {
     option (google.api.http).get = "/signal_ids/{signal_ids}";
   }
 }

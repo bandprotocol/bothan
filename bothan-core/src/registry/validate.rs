@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use thiserror::Error;
 
@@ -7,9 +7,6 @@ use crate::registry::Registry;
 
 #[derive(Clone, Debug, Error, PartialEq)]
 pub enum ValidationError {
-    #[error("All signals are part of a cycle")]
-    CompleteCycleDetected,
-
     #[error("Signal {0} contains a cycle")]
     CycleDetected(String),
 
@@ -17,16 +14,26 @@ pub enum ValidationError {
     InvalidDependency(String),
 }
 
+pub enum VisitState {
+    InProgress,
+    Complete,
+}
+
 pub(crate) fn dfs(
     signal_id: &str,
     signal: &Signal,
-    visited: &mut HashSet<String>,
+    visited: &mut HashMap<String, VisitState>,
     registry: &Registry,
 ) -> Result<(), ValidationError> {
-    if visited.contains(signal_id) {
-        return Err(ValidationError::CycleDetected(signal_id.to_string()));
+    match visited.get(signal_id) {
+        Some(VisitState::InProgress) => {
+            return Err(ValidationError::CycleDetected(signal_id.to_string()))
+        }
+        Some(VisitState::Complete) => return Ok(()),
+        None => {
+            visited.insert(signal_id.to_string(), VisitState::InProgress);
+        }
     }
-    visited.insert(signal_id.to_string());
 
     for source_query in signal.source_queries.iter() {
         for route in source_query.routes.iter() {
@@ -38,6 +45,8 @@ pub(crate) fn dfs(
             dfs(prereq_signal_id, prereq_signal, visited, registry)?;
         }
     }
+
+    visited.insert(signal_id.to_string(), VisitState::Complete);
 
     Ok(())
 }
