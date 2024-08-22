@@ -13,7 +13,7 @@ pub(crate) enum ParseError {
 
 #[derive(Debug, Error)]
 pub enum BuildError {
-    #[error("value is not a valid decimal: {0}")]
+    #[error("failed to connect: {0}")]
     FailedToConnect(#[from] api::ConnectionError),
 
     #[error("failed to get data from the store: {0}")]
