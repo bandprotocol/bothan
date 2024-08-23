@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents the status information of the Kraken API.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Status {
     /// The API version.
     pub api_version: String,

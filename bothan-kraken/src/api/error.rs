@@ -1,26 +1,26 @@
-use serde_json::Error as SerdeError;
-use tokio_tungstenite::tungstenite::{self, http::StatusCode};
+use tokio_tungstenite::tungstenite;
 
-/// Represents the various errors that can occur.
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
-    /// Error indicating a connection failure with a specific status code.
-    #[error("failed to connect with response code {0}")]
-    ConnectionFailure(StatusCode),
+pub enum ConnectionError {
+    #[error("failed to connect to endpoint {0}")]
+    ConnectionFailure(#[from] tungstenite::Error),
 
-    /// Error indicating a failure to parse a JSON response.
-    #[error("failed to parse")]
-    Parse(#[from] SerdeError),
+    #[error("received unsuccessful HTTP response: {0}")]
+    UnsuccessfulHttpResponse(tungstenite::http::StatusCode),
+}
 
-    /// Error indicating an issue with the Tungstenite WebSocket library.
-    #[error("tungstenite error")]
-    Tungstenite(#[from] tungstenite::Error),
+#[derive(Debug, thiserror::Error)]
+pub enum MessageError {
+    #[error("failed to parse message")]
+    Parse(#[from] serde_json::Error),
 
-    /// Error indicating that the WebSocket channel has closed.
     #[error("channel closed")]
     ChannelClosed,
 
-    /// Error indicating that the message is unsupported.
     #[error("unsupported message")]
     UnsupportedMessage,
 }
+
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct SendError(#[from] tungstenite::Error);
