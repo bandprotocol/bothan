@@ -69,8 +69,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
         let stale_cutoff = current_time - self.stale_threshold;
         let active_signals = self.store.get_active_signal_ids().await?;
 
-        // TODO: filter on active_signals as well
-        get_signal_price_states(ids, active_signals, &workers, &registry, stale_cutoff).await
+        Ok(get_signal_price_states(ids, &workers, &registry, &active_signals, stale_cutoff).await)
     }
 
     pub async fn set_registry_from_ipfs(

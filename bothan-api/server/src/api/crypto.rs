@@ -10,7 +10,7 @@ use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
 use bothan_core::manager::crypto_asset_info::types::PriceState;
 use bothan_core::manager::CryptoAssetInfoManager;
 
-use crate::api::utils::registry_resp;
+use crate::api::utils::{parse_price_state, registry_resp};
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
     Price, PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest,
@@ -107,28 +107,19 @@ impl Query for CryptoQueryServer {
         info!("received get price request");
         let price_request = request.into_inner();
         let manager = self.manager.read().await;
-        let price_states = manager.get_prices(price_request.signal_ids.clone()).await;
+        let price_states = manager
+            .get_prices(price_request.signal_ids.clone())
+            .await
+            .map_err(|e| {
+                error!("failed to get prices: {}", e);
+                Status::internal("Failed to get prices")
+            })?;
 
         let prices = price_request
             .signal_ids
             .into_iter()
             .zip(price_states)
-            .map(|(id, state)| match state {
-                PriceState::Available(raw_price) => {
-                    let mantissa_price = raw_price
-                        .round_dp_with_strategy(PRECISION, RoundingStrategy::ToZero)
-                        .mantissa();
-                    match i64::try_from(mantissa_price) {
-                        Ok(p) => Price::new(id, p, PriceStatus::Available),
-                        Err(_) => {
-                            warn!("Failed to convert {mantissa_price} to i64 for id {id}");
-                            Price::new(id, 0, PriceStatus::Unavailable)
-                        }
-                    }
-                }
-                PriceState::Unavailable => Price::new(id, 0, PriceStatus::Unavailable),
-                PriceState::Unsupported => Price::new(id, 0, PriceStatus::Unsupported),
-            })
+            .map(|(id, state)| parse_price_state(id, state))
             .collect();
 
         Ok(Response::new(PriceResponse { prices }))

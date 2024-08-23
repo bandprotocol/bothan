@@ -32,8 +32,8 @@ enum Error {
 pub async fn get_signal_price_states<'a>(
     ids: Vec<String>,
     workers: &WorkerMap<'a>,
-    active_signal_ids: ActiveSignalIDs,
     registry: &Registry<Valid>,
+    active_signal_ids: &ActiveSignalIDs,
     stale_cutoff: i64,
 ) -> Vec<PriceState> {
     let mut cache = PriceCache::new();
