@@ -24,7 +24,7 @@ async fn main() {
         .unwrap();
 
     worker
-        .add_query_ids(vec!["btcusdt".to_string(), "ethusdt".to_string()])
+        .set_query_ids(vec!["btcusdt".to_string(), "ethusdt".to_string()])
         .await
         .unwrap();
 

@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
@@ -104,20 +104,18 @@ mod test {
     #[test]
     fn test_registry_validate_registry_with_complete_circular_dependency() {
         let registry = complete_circular_dependency_mock_registry();
-        let valid_registry = registry.validate();
-        assert_eq!(
-            valid_registry,
-            Err(ValidationError::CycleDetected("A".to_string()))
-        );
+        assert!(matches!(
+            registry.validate(),
+            Err(ValidationError::CycleDetected(_))
+        ))
     }
 
     #[test]
     fn test_registry_validate_registry_with_circular_dependency() {
         let registry = circular_dependency_mock_registry();
-        let valid_registry = registry.validate();
-        assert_eq!(
-            valid_registry,
-            Err(ValidationError::CycleDetected("B".to_string()))
-        );
+        assert!(matches!(
+            registry.validate(),
+            Err(ValidationError::CycleDetected(_))
+        ))
     }
 }

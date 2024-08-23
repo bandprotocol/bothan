@@ -63,16 +63,11 @@ async fn handle_subscribe_recv(
     worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
 ) {
-    let Ok(to_sub) = worker_store.add_query_ids(ids).await else {
-        error!("failed to add query ids to store");
-        return;
-    };
-
-    match subscribe(&to_sub, connection).await {
-        Ok(_) => info!("subscribed to ids {:?}", to_sub),
+    match subscribe(&ids, connection).await {
+        Ok(_) => info!("subscribed to ids {:?}", ids),
         Err(e) => {
-            error!("failed to subscribe to ids {:?}: {}", to_sub, e);
-            if worker_store.remove_query_ids(to_sub).await.is_err() {
+            error!("failed to subscribe to ids {:?}: {}", ids, e);
+            if worker_store.remove_query_ids(ids).await.is_err() {
                 error!("failed to remove query ids from store")
             }
         }
@@ -97,16 +92,11 @@ async fn handle_unsubscribe_recv(
     worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
 ) {
-    let Ok(to_unsub) = worker_store.remove_query_ids(ids).await else {
-        error!("failed to remove query ids from store");
-        return;
-    };
-
-    match unsubscribe(&to_unsub, connection).await {
-        Ok(_) => info!("unsubscribed to ids {:?}", to_unsub),
+    match unsubscribe(&ids, connection).await {
+        Ok(_) => info!("unsubscribed to ids {:?}", ids),
         Err(e) => {
-            error!("failed to unsubscribe to ids {:?}: {}", to_unsub, e);
-            if worker_store.add_query_ids(to_unsub).await.is_err() {
+            error!("failed to unsubscribe to ids {:?}: {}", ids, e);
+            if worker_store.add_query_ids(ids).await.is_err() {
                 error!("failed to add query ids to store")
             }
         }
