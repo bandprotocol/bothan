@@ -1,11 +1,14 @@
+use crate::api;
+use bothan_core::store;
 use thiserror::Error;
 
-use crate::api;
-
 #[derive(Error, Debug)]
-pub(crate) enum ParseError {
+pub(crate) enum WorkerError {
     #[error("invalid price: {0}")]
     InvalidPrice(f64),
+
+    #[error("failed to set data to the store: {0}")]
+    SetFailed(#[from] store::errors::Error),
 }
 
 #[derive(Error, Debug)]

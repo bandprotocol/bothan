@@ -62,6 +62,7 @@ impl AssetWorker for BinanceWorker {
             .send(to_unsub)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
         Ok(())
     }
 }

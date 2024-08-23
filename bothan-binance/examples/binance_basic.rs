@@ -15,7 +15,7 @@ async fn main() {
     let registry = Registry::default().validate().unwrap();
     let store = SharedStore::new(registry, path.as_path()).await.unwrap();
 
-    let worker_store = store.create_worker_store("binance");
+    let worker_store = store.create_worker_store(BinanceWorkerBuilder::worker_name());
     let opts = BinanceWorkerBuilderOpts::default();
 
     let worker = BinanceWorkerBuilder::new(worker_store, opts)

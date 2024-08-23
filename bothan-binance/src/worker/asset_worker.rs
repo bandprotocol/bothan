@@ -12,7 +12,7 @@ use bothan_core::types::AssetInfo;
 use crate::api::error::{MessageError, SendError};
 use crate::api::msgs::{BinanceResponse, Data};
 use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
-use crate::worker::error::ParseError;
+use crate::worker::error::WorkerError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 use crate::worker::BinanceWorker;
 
@@ -137,16 +137,15 @@ async fn handle_reconnect(
     }
 }
 
-async fn store_data(store: &WorkerStore, data: Data) -> Result<(), ParseError> {
+async fn store_data(store: &WorkerStore, data: Data) -> Result<(), WorkerError> {
     match data {
         Data::MiniTicker(ticker) => {
-            let asset_info = AssetInfo {
-                id: ticker.symbol.to_lowercase(),
-                price: Decimal::from_str_exact(&ticker.close_price)?,
-                timestamp: ticker.event_time / 1000,
-            };
+            let id = ticker.symbol.to_lowercase();
+            let price = Decimal::from_str_exact(&ticker.close_price)?;
+            let timestamp = ticker.event_time / 1000;
+            let asset_info = AssetInfo::new(id.clone(), price, timestamp);
 
-            store.set_asset(&asset_info.id.clone(), asset_info).await?;
+            store.set_asset(&id, asset_info).await?;
         }
     }
 

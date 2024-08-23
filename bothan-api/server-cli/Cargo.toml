@@ -7,6 +7,7 @@ edition = "2021"
 bothan-api = { workspace = true }
 bothan-binance = { workspace = true }
 bothan-coingecko = { workspace = true }
+bothan-kraken = { workspace = true }
 bothan-core = { workspace = true }
 
 async-trait = { workspace = true }

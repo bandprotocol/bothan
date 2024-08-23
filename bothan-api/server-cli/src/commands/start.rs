@@ -22,6 +22,7 @@ use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
+use bothan_kraken::KrakenWorkerBuilder;
 
 #[derive(Parser)]
 pub struct StartCli {
@@ -163,6 +164,7 @@ async fn init_crypto_workers(
 ) -> anyhow::Result<()> {
     type Binance = BinanceWorkerBuilder;
     type CoinGecko = CoinGeckoWorkerBuilder;
+    type Kraken = KrakenWorkerBuilder;
 
     if let Some(opts) = &source.binance {
         add_worker::<Binance>(manager, store, opts).await?;
@@ -170,6 +172,10 @@ async fn init_crypto_workers(
 
     if let Some(opts) = &source.coingecko {
         add_worker::<CoinGecko>(manager, store, opts).await?;
+    }
+
+    if let Some(opts) = &source.kraken {
+        add_worker::<Kraken>(manager, store, opts).await?;
     }
 
     Ok(())

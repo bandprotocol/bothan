@@ -9,6 +9,7 @@ bothan-core = { workspace = true }
 
 bothan-binance = { workspace = true }
 bothan-coingecko = { workspace = true }
+bothan-kraken = { workspace = true }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }

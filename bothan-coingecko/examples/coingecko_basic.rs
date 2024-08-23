@@ -15,7 +15,7 @@ async fn main() {
     let store = SharedStore::new(Registry::default().validate().unwrap(), path.as_path())
         .await
         .unwrap();
-    let worker_store = store.create_worker_store("coingecko");
+    let worker_store = store.create_worker_store(CoinGeckoWorkerBuilder::worker_name());
     let opts = CoinGeckoWorkerBuilderOpts::default();
 
     let worker = CoinGeckoWorkerBuilder::new(worker_store, opts)
