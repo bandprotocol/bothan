@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 
-use itertools::Itertools;
 use tracing::{error, info};
 
 use crate::manager::crypto_asset_info::error::SetActiveSignalError;

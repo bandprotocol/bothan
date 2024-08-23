@@ -11,6 +11,7 @@ use crate::registry::processor::{Process, ProcessError};
 use crate::registry::signal::Signal;
 use crate::registry::source::OperationRoute;
 use crate::registry::{Registry, Valid};
+use crate::store::ActiveSignalIDs;
 use crate::worker::AssetState;
 
 #[derive(Debug, Error)]
@@ -31,6 +32,7 @@ enum Error {
 pub async fn get_signal_price_states<'a>(
     ids: Vec<String>,
     workers: &WorkerMap<'a>,
+    active_signal_ids: ActiveSignalIDs,
     registry: &Registry<Valid>,
     stale_cutoff: i64,
 ) -> Vec<PriceState> {
@@ -70,7 +72,16 @@ pub async fn get_signal_price_states<'a>(
     }
 
     ids.iter()
-        .map(|id| cache.get(id).cloned().unwrap()) // This should never fail as all values of ids should be inserted into the cache
+        .map(|id| {
+            let is_active = active_signal_ids.contains(id);
+            // This should never fail as all values of ids should be inserted into the cache
+            let cache_value = cache.get(id).cloned().unwrap();
+            match (is_active, cache_value) {
+                (true, ps) => ps, // If the signal is active, return the cache value
+                (false, PriceState::Unsupported) => PriceState::Unsupported, // If the signal is not active and is unsupported, return unsupported
+                (false, _) => PriceState::Unavailable, // If the signal is not active and is available/unavailable, return unavailable
+            }
+        })
         .collect()
 }
 

@@ -11,6 +11,7 @@ use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::{Invalid, Registry};
+use crate::store::errors::Error as StoreError;
 use crate::store::ManagerStore;
 use crate::worker::AssetWorker;
 
@@ -60,16 +61,16 @@ impl<'a> CryptoAssetInfoManager<'a> {
     }
 
     /// Gets the `Price` of the given signal ids.
-    pub async fn get_prices(&self, ids: Vec<String>) -> Vec<PriceState> {
+    pub async fn get_prices(&self, ids: Vec<String>) -> Result<Vec<PriceState>, StoreError> {
         let registry = self.store.get_registry().await;
         let workers = self.workers.read().await;
 
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
-        let active_signals = self.store.get_active_signal_ids().await;
+        let active_signals = self.store.get_active_signal_ids().await?;
 
         // TODO: filter on active_signals as well
-        get_signal_price_states(ids, &workers, &registry, stale_cutoff).await
+        get_signal_price_states(ids, active_signals, &workers, &registry, stale_cutoff).await
     }
 
     pub async fn set_registry_from_ipfs(
