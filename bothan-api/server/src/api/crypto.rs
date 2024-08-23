@@ -1,20 +1,18 @@
 use std::sync::Arc;
 
-use rust_decimal::RoundingStrategy;
 use semver::Version;
 use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
-use bothan_core::manager::crypto_asset_info::types::PriceState;
 use bothan_core::manager::CryptoAssetInfoManager;
 
 use crate::api::utils::{parse_price_state, registry_resp};
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
-    Price, PriceRequest, PriceResponse, PriceStatus, SetActiveSignalIdRequest,
-    SetActiveSignalIdResponse, UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
+    PriceRequest, PriceResponse, SetActiveSignalIdRequest, SetActiveSignalIdResponse,
+    UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
 };
 
 pub const PRECISION: u32 = 9;

@@ -29,7 +29,7 @@ pub struct Registry<State = Invalid> {
 impl Registry<Invalid> {
     pub fn validate(self) -> Result<Registry<Valid>, ValidationError> {
         let mut visited = HashMap::new();
-        for (root, _) in &self.inner {
+        for root in self.inner.keys() {
             let signal = self
                 .inner
                 .get(root)
