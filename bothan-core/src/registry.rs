@@ -30,12 +30,7 @@ impl Registry<Invalid> {
     pub fn validate(self) -> Result<Registry<Valid>, ValidationError> {
         let mut visited = HashMap::new();
         for root in self.inner.keys() {
-            let signal = self
-                .inner
-                .get(root)
-                .ok_or(ValidationError::InvalidDependency(root.clone()))?;
-
-            dfs(root, signal, &mut visited, &self)?;
+            dfs(root, &mut visited, &self)?;
         }
 
         Ok(Registry {
@@ -57,6 +52,9 @@ impl Default for Registry<Invalid> {
 impl<T> Registry<T> {
     pub fn get(&self, signal_id: &str) -> Option<&Signal> {
         self.inner.get(signal_id)
+    }
+    pub fn contains(&self, signal_id: &str) -> bool {
+        self.inner.contains_key(signal_id)
     }
 }
 
@@ -94,9 +92,8 @@ mod test {
     #[test]
     fn test_registry_validate_registry_with_invalid_dependency() {
         let registry = invalid_dependency_mock_registry();
-        let valid_registry = registry.validate();
         assert_eq!(
-            valid_registry,
+            registry.validate(),
             Err(ValidationError::InvalidDependency("A".to_string()))
         );
     }

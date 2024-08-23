@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use thiserror::Error;
 
-use crate::registry::signal::Signal;
 use crate::registry::Registry;
 
 #[derive(Clone, Debug, Error, PartialEq)]
@@ -21,7 +20,6 @@ pub enum VisitState {
 
 pub(crate) fn dfs(
     signal_id: &str,
-    signal: &Signal,
     visited: &mut HashMap<String, VisitState>,
     registry: &Registry,
 ) -> Result<(), ValidationError> {
@@ -35,14 +33,16 @@ pub(crate) fn dfs(
         }
     }
 
+    let signal = registry
+        .get(signal_id)
+        .ok_or(ValidationError::InvalidDependency(signal_id.to_string()))?;
+
     for source_query in signal.source_queries.iter() {
         for route in source_query.routes.iter() {
-            let prereq_signal_id = &route.signal_id;
-
-            let prereq_signal = registry
-                .get(prereq_signal_id)
-                .ok_or(ValidationError::InvalidDependency(signal_id.to_string()))?;
-            dfs(prereq_signal_id, prereq_signal, visited, registry)?;
+            if !registry.contains(&route.signal_id) {
+                return Err(ValidationError::InvalidDependency(signal_id.to_string()));
+            }
+            dfs(&route.signal_id, visited, registry)?;
         }
     }
 
