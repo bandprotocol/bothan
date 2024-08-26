@@ -1,6 +1,7 @@
+use std::collections::{HashSet, VecDeque};
+
 use num_traits::Zero;
 use rust_decimal::Decimal;
-use std::collections::{HashSet, VecDeque};
 use thiserror::Error;
 use tracing::{error, info, warn};
 
@@ -51,10 +52,10 @@ pub async fn get_signal_price_states<'a>(
             }
             Err(Error::PrerequisiteRequired(prereqs)) => {
                 info!("prerequisites required for signal {}: {:?}", id, prereqs);
+                queue.push_front(id);
                 for prereq in prereqs {
                     queue.push_front(prereq)
                 }
-                queue.push_back(id);
             }
             Err(Error::InvalidSignal) => {
                 warn!("signal with id {} is not supported", id);
@@ -119,10 +120,9 @@ async fn compute_source_result<'a>(
     let mut source_results = Vec::with_capacity(signal.source_queries.len());
     let mut missing_pids = HashSet::new();
     for source_query in &signal.source_queries {
-        if let Some(w) = workers.get(&source_query.source_id) {
-            let qid = &source_query.query_id;
-            let sid = &source_query.source_id;
-
+        let qid = &source_query.query_id;
+        let sid = &source_query.source_id;
+        if let Some(w) = workers.get(sid) {
             match w.get_asset(qid).await {
                 Ok(AssetState::Available(a)) => {
                     if a.timestamp.ge(&stale_cutoff) {
