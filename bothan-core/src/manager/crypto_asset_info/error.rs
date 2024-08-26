@@ -27,7 +27,7 @@ pub enum SetRegistryError {
 #[error("Signal {signal_id} doesnt exist in the registry")]
 pub enum SetActiveSignalError {
     #[error("Signal \"{0}\" doesnt exist in the registry")]
-    MissingSignal(String),
+    UnsupportedSignal(String),
 
     #[error("Failed to set active signal ids")]
     FailedToSetActiveSignalIds(#[from] StoreError),
