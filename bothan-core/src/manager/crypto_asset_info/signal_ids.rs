@@ -24,8 +24,8 @@ pub async fn set_workers_query_ids<'a>(
     for (source, mut query_ids) in query_ids.drain() {
         match workers.get(&source) {
             Some(worker) => match worker.set_query_ids(query_ids.drain().collect()).await {
-                Ok(_) => info!("removed query ids from {} worker", source),
-                Err(e) => error!("worker {} failed to remove query ids: {}", source, e),
+                Ok(_) => info!("set query ids for {} worker", source),
+                Err(e) => error!("failed to set query ids for {} worker: {}", source, e),
             },
             None => info!("worker {} not found", source),
         }
@@ -40,7 +40,7 @@ fn get_source_batched_query_ids(
 ) -> Result<HashMap<String, HashSet<String>>, SetActiveSignalError> {
     let mut source_query_ids: HashMap<String, HashSet<String>> = HashMap::new();
     // Seen signal_ids
-    let seen = HashSet::<String>::new();
+    let mut seen = HashSet::<String>::new();
 
     let mut queue = VecDeque::from_iter(signal_ids);
     while let Some(signal_id) = queue.pop_front() {
@@ -50,7 +50,8 @@ fn get_source_batched_query_ids(
 
         let signal = registry
             .get(signal_id)
-            .ok_or(SetActiveSignalError::MissingSignal(signal_id.clone()))?;
+            .ok_or(SetActiveSignalError::UnsupportedSignal(signal_id.clone()))?;
+
         for source in &signal.source_queries {
             source_query_ids
                 .entry(source.source_id.clone())
@@ -64,6 +65,8 @@ fn get_source_batched_query_ids(
                 queue.push_front(&route.signal_id);
             }
         }
+
+        seen.insert(signal_id.clone());
     }
     Ok(source_query_ids)
 }
