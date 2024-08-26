@@ -20,7 +20,7 @@ pub async fn set_workers_query_ids<'a>(
         registry,
     )?;
 
-    // Find diff between current worker query ids and new query ids
+    // Set query ids for each worker
     for (source, mut query_ids) in query_ids.drain() {
         match workers.get(&source) {
             Some(worker) => match worker.set_query_ids(query_ids.drain().collect()).await {
