@@ -8,7 +8,7 @@ pub(crate) enum WorkerError {
     InvalidPrice(f64),
 
     #[error("failed to set data to the store: {0}")]
-    SetFailed(#[from] store::errors::Error),
+    SetFailed(#[from] store::error::Error),
 }
 
 #[derive(Error, Debug)]

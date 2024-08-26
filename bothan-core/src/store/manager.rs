@@ -1,5 +1,5 @@
 use crate::registry::{Registry, Valid};
-use crate::store::errors::Error;
+use crate::store::error::Error;
 use crate::store::{ActiveSignalIDs, SharedStore};
 
 pub struct ManagerStore {

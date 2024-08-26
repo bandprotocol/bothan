@@ -10,11 +10,11 @@ pub use manager::ManagerStore;
 pub use worker::WorkerStore;
 
 use crate::registry::{Registry, Valid};
-use crate::store::errors::Error;
+use crate::store::error::Error;
 use crate::store::types::Key;
 use crate::types::AssetInfo;
 
-pub mod errors;
+pub mod error;
 mod manager;
 mod types;
 mod worker;

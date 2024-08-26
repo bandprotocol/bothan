@@ -5,13 +5,13 @@ use semver::{Version, VersionReq};
 use serde_json::from_str;
 use tokio::sync::RwLock;
 
-use crate::ipfs::{errors::Error as IpfsError, IpfsClient};
+use crate::ipfs::{error::Error as IpfsError, IpfsClient};
 use crate::manager::crypto_asset_info::error::{SetActiveSignalError, SetRegistryError};
 use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::{Invalid, Registry};
-use crate::store::errors::Error as StoreError;
+use crate::store::error::Error as StoreError;
 use crate::store::ManagerStore;
 use crate::worker::AssetWorker;
 

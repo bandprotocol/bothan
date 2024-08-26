@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::store::errors::Error;
+use crate::store::error::Error;
 use crate::store::{QueryIds, SharedStore};
 use crate::types::AssetInfo;
 use crate::worker::AssetState;

@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 
-use bothan_core::store::errors::Error as StoreError;
+use bothan_core::store::error::Error as StoreError;
 use bothan_core::store::WorkerStore;
 use bothan_core::worker::{AssetState, AssetWorker, SetQueryIDError};
 

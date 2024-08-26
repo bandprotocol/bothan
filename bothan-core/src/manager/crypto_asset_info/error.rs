@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::store::errors::Error as StoreError;
+use crate::store::error::Error as StoreError;
 
 #[derive(Clone, Debug, Error, PartialEq)]
 pub enum SetRegistryError {

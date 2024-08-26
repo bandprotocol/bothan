@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::store::errors::Error as StoreError;
+use crate::store::error::Error as StoreError;
 use crate::store::WorkerStore;
 use crate::types::AssetInfo;
 

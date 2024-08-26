@@ -8,7 +8,7 @@ pub(crate) enum WorkerError {
     Underflow(#[from] rust_decimal::Error),
 
     #[error("store error: {0}")]
-    StoreError(#[from] store::errors::Error),
+    StoreError(#[from] store::error::Error),
 }
 
 #[derive(Debug, Error)]
@@ -17,5 +17,5 @@ pub enum BuildError {
     FailedToConnect(#[from] api::ConnectionError),
 
     #[error("store error: {0}")]
-    StoreError(#[from] store::errors::Error),
+    StoreError(#[from] store::error::Error),
 }
