@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_UpdateRegistry_FullMethodName    = "/query.Query/UpdateRegistry"
-	Query_SetActiveSignalID_FullMethodName = "/query.Query/SetActiveSignalID"
-	Query_GetPrices_FullMethodName         = "/query.Query/GetPrices"
+	Query_UpdateRegistry_FullMethodName     = "/query.Query/UpdateRegistry"
+	Query_SetActiveSignalIds_FullMethodName = "/query.Query/SetActiveSignalIds"
+	Query_GetPrices_FullMethodName          = "/query.Query/GetPrices"
 )
 
 // QueryClient is the client API for Query service.
@@ -29,9 +29,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
 	UpdateRegistry(ctx context.Context, in *UpdateRegistryRequest, opts ...grpc.CallOption) (*UpdateRegistryResponse, error)
-	SetActiveSignalID(ctx context.Context, in *SetActiveSignalIDRequest, opts ...grpc.CallOption) (*SetActiveSignalIDResponse, error)
+	SetActiveSignalIds(ctx context.Context, in *SetActiveSignalIdsRequest, opts ...grpc.CallOption) (*SetActiveSignalIdsResponse, error)
 	// RPC method that returns all prices of requested signal ids.
-	GetPrices(ctx context.Context, in *PriceRequest, opts ...grpc.CallOption) (*PriceResponse, error)
+	GetPrices(ctx context.Context, in *GetPricesRequest, opts ...grpc.CallOption) (*GetPricesResponse, error)
 }
 
 type queryClient struct {
@@ -51,17 +51,17 @@ func (c *queryClient) UpdateRegistry(ctx context.Context, in *UpdateRegistryRequ
 	return out, nil
 }
 
-func (c *queryClient) SetActiveSignalID(ctx context.Context, in *SetActiveSignalIDRequest, opts ...grpc.CallOption) (*SetActiveSignalIDResponse, error) {
-	out := new(SetActiveSignalIDResponse)
-	err := c.cc.Invoke(ctx, Query_SetActiveSignalID_FullMethodName, in, out, opts...)
+func (c *queryClient) SetActiveSignalIds(ctx context.Context, in *SetActiveSignalIdsRequest, opts ...grpc.CallOption) (*SetActiveSignalIdsResponse, error) {
+	out := new(SetActiveSignalIdsResponse)
+	err := c.cc.Invoke(ctx, Query_SetActiveSignalIds_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) GetPrices(ctx context.Context, in *PriceRequest, opts ...grpc.CallOption) (*PriceResponse, error) {
-	out := new(PriceResponse)
+func (c *queryClient) GetPrices(ctx context.Context, in *GetPricesRequest, opts ...grpc.CallOption) (*GetPricesResponse, error) {
+	out := new(GetPricesResponse)
 	err := c.cc.Invoke(ctx, Query_GetPrices_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -74,9 +74,9 @@ func (c *queryClient) GetPrices(ctx context.Context, in *PriceRequest, opts ...g
 // for forward compatibility
 type QueryServer interface {
 	UpdateRegistry(context.Context, *UpdateRegistryRequest) (*UpdateRegistryResponse, error)
-	SetActiveSignalID(context.Context, *SetActiveSignalIDRequest) (*SetActiveSignalIDResponse, error)
+	SetActiveSignalIds(context.Context, *SetActiveSignalIdsRequest) (*SetActiveSignalIdsResponse, error)
 	// RPC method that returns all prices of requested signal ids.
-	GetPrices(context.Context, *PriceRequest) (*PriceResponse, error)
+	GetPrices(context.Context, *GetPricesRequest) (*GetPricesResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -87,10 +87,10 @@ type UnimplementedQueryServer struct {
 func (UnimplementedQueryServer) UpdateRegistry(context.Context, *UpdateRegistryRequest) (*UpdateRegistryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRegistry not implemented")
 }
-func (UnimplementedQueryServer) SetActiveSignalID(context.Context, *SetActiveSignalIDRequest) (*SetActiveSignalIDResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetActiveSignalID not implemented")
+func (UnimplementedQueryServer) SetActiveSignalIds(context.Context, *SetActiveSignalIdsRequest) (*SetActiveSignalIdsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetActiveSignalIds not implemented")
 }
-func (UnimplementedQueryServer) GetPrices(context.Context, *PriceRequest) (*PriceResponse, error) {
+func (UnimplementedQueryServer) GetPrices(context.Context, *GetPricesRequest) (*GetPricesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPrices not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
@@ -124,26 +124,26 @@ func _Query_UpdateRegistry_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_SetActiveSignalID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetActiveSignalIDRequest)
+func _Query_SetActiveSignalIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetActiveSignalIdsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).SetActiveSignalID(ctx, in)
+		return srv.(QueryServer).SetActiveSignalIds(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_SetActiveSignalID_FullMethodName,
+		FullMethod: Query_SetActiveSignalIds_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).SetActiveSignalID(ctx, req.(*SetActiveSignalIDRequest))
+		return srv.(QueryServer).SetActiveSignalIds(ctx, req.(*SetActiveSignalIdsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_GetPrices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PriceRequest)
+	in := new(GetPricesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func _Query_GetPrices_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: Query_GetPrices_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetPrices(ctx, req.(*PriceRequest))
+		return srv.(QueryServer).GetPrices(ctx, req.(*GetPricesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -172,8 +172,8 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_UpdateRegistry_Handler,
 		},
 		{
-			MethodName: "SetActiveSignalID",
-			Handler:    _Query_SetActiveSignalID_Handler,
+			MethodName: "SetActiveSignalIds",
+			Handler:    _Query_SetActiveSignalIds_Handler,
 		},
 		{
 			MethodName: "GetPrices",

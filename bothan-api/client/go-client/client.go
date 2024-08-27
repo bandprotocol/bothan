@@ -6,6 +6,6 @@ import (
 
 type Client interface {
 	UpdateRegistry(ipfsHash string, version string) (*bothanproto.UpdateStatusCode, error)
-	SetActiveSignalID(signalIDs []string) (bool, error)
+	SetActiveSignalIDs(signalIDs []string) (bool, error)
 	GetPrices(signalIDs []string) ([]*bothanproto.Price, error)
 }

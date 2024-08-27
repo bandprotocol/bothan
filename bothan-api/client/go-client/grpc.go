@@ -38,7 +38,7 @@ func (c *GRPC) UpdateRegistry(ipfsHash string, version string) (*proto.UpdateSta
 	return &response.Code, nil
 }
 
-func (c *GRPC) SetActiveSignalID(signalIDs []string) (bool, error) {
+func (c *GRPC) SetActiveSignalIDs(signalIDs []string) (bool, error) {
 	client := proto.NewQueryClient(c.connection)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()

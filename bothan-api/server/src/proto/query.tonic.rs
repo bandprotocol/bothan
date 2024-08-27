@@ -109,11 +109,11 @@ pub mod query_client {
                 .insert(GrpcMethod::new("query.Query", "UpdateRegistry"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn set_active_signal_id(
+        pub async fn set_active_signal_ids(
             &mut self,
-            request: impl tonic::IntoRequest<super::SetActiveSignalIdRequest>,
+            request: impl tonic::IntoRequest<super::SetActiveSignalIdsRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::SetActiveSignalIdResponse>,
+            tonic::Response<super::SetActiveSignalIdsResponse>,
             tonic::Status,
         > {
             self.inner
@@ -127,17 +127,20 @@ pub mod query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/query.Query/SetActiveSignalID",
+                "/query.Query/SetActiveSignalIds",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("query.Query", "SetActiveSignalID"));
+                .insert(GrpcMethod::new("query.Query", "SetActiveSignalIds"));
             self.inner.unary(req, path, codec).await
         }
         pub async fn get_prices(
             &mut self,
-            request: impl tonic::IntoRequest<super::PriceRequest>,
-        ) -> std::result::Result<tonic::Response<super::PriceResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::GetPricesRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetPricesResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -169,17 +172,20 @@ pub mod query_server {
             tonic::Response<super::UpdateRegistryResponse>,
             tonic::Status,
         >;
-        async fn set_active_signal_id(
+        async fn set_active_signal_ids(
             &self,
-            request: tonic::Request<super::SetActiveSignalIdRequest>,
+            request: tonic::Request<super::SetActiveSignalIdsRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::SetActiveSignalIdResponse>,
+            tonic::Response<super::SetActiveSignalIdsResponse>,
             tonic::Status,
         >;
         async fn get_prices(
             &self,
-            request: tonic::Request<super::PriceRequest>,
-        ) -> std::result::Result<tonic::Response<super::PriceResponse>, tonic::Status>;
+            request: tonic::Request<super::GetPricesRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetPricesResponse>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
     pub struct QueryServer<T: Query> {
@@ -306,25 +312,25 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/query.Query/SetActiveSignalID" => {
+                "/query.Query/SetActiveSignalIds" => {
                     #[allow(non_camel_case_types)]
-                    struct SetActiveSignalIDSvc<T: Query>(pub Arc<T>);
+                    struct SetActiveSignalIdsSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::SetActiveSignalIdRequest>
-                    for SetActiveSignalIDSvc<T> {
-                        type Response = super::SetActiveSignalIdResponse;
+                    > tonic::server::UnaryService<super::SetActiveSignalIdsRequest>
+                    for SetActiveSignalIdsSvc<T> {
+                        type Response = super::SetActiveSignalIdsResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::SetActiveSignalIdRequest>,
+                            request: tonic::Request<super::SetActiveSignalIdsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as Query>::set_active_signal_id(&inner, request).await
+                                <T as Query>::set_active_signal_ids(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -336,7 +342,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = SetActiveSignalIDSvc(inner);
+                        let method = SetActiveSignalIdsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -355,16 +361,16 @@ pub mod query_server {
                 "/query.Query/GetPrices" => {
                     #[allow(non_camel_case_types)]
                     struct GetPricesSvc<T: Query>(pub Arc<T>);
-                    impl<T: Query> tonic::server::UnaryService<super::PriceRequest>
+                    impl<T: Query> tonic::server::UnaryService<super::GetPricesRequest>
                     for GetPricesSvc<T> {
-                        type Response = super::PriceResponse;
+                        type Response = super::GetPricesResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::PriceRequest>,
+                            request: tonic::Request<super::GetPricesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {

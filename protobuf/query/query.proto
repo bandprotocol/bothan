@@ -12,13 +12,13 @@ service Query {
     option (google.api.http).post = "/registry";
   }
 
-  rpc SetActiveSignalID(SetActiveSignalIDRequest) returns (SetActiveSignalIDResponse) {
+  rpc SetActiveSignalIds(SetActiveSignalIdsRequest) returns (SetActiveSignalIdsResponse) {
     option (google.api.http).post = "/signal_ids";
   }
 
   // RPC method that returns all prices of requested signal ids.
-  rpc GetPrices(PriceRequest) returns (PriceResponse) {
-    option (google.api.http).get = "/signal_ids/{signal_ids}";
+  rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {
+    option (google.api.http).get = "/prices/{signal_ids}";
   }
 }
 
@@ -38,23 +38,23 @@ message UpdateRegistryResponse {
   UpdateStatusCode code = 1;
 }
 
-message SetActiveSignalIDRequest {
+message SetActiveSignalIdsRequest {
   repeated string signal_ids = 1;
 }
 
-message SetActiveSignalIDResponse {
+message SetActiveSignalIdsResponse {
   bool success = 1;
 }
 
 // QueryPricesRequest is the request type for the PriceService/GetPrices RPC
 // method.
-message PriceRequest {
+message GetPricesRequest {
   repeated string signal_ids = 1;
 }
 
 // QueryPricesResponse is the response type for the PriceService/GetPrices RPC
 // method.
-message PriceResponse {
+message GetPricesResponse {
   repeated Price prices = 1;
 }
 

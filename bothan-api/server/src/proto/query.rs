@@ -15,13 +15,13 @@ pub struct UpdateRegistryResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SetActiveSignalIdRequest {
+pub struct SetActiveSignalIdsRequest {
     #[prost(string, repeated, tag="1")]
     pub signal_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SetActiveSignalIdResponse {
+pub struct SetActiveSignalIdsResponse {
     #[prost(bool, tag="1")]
     pub success: bool,
 }
@@ -29,7 +29,7 @@ pub struct SetActiveSignalIdResponse {
 /// method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PriceRequest {
+pub struct GetPricesRequest {
     #[prost(string, repeated, tag="1")]
     pub signal_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
@@ -37,7 +37,7 @@ pub struct PriceRequest {
 /// method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PriceResponse {
+pub struct GetPricesResponse {
     #[prost(message, repeated, tag="1")]
     pub prices: ::prost::alloc::vec::Vec<Price>,
 }

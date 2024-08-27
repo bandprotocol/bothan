@@ -52,7 +52,7 @@ func (c *RestClient) UpdateRegistry(ipfsHash string, version string) (*proto.Upd
 	return &updateResp, nil
 }
 
-func (c *RestClient) SetActiveSignalID(signalIDs []string) (bool, error) {
+func (c *RestClient) SetActiveSignalIDs(signalIDs []string) (bool, error) {
 	parsedUrl, err := url.Parse(c.url + "/signal_ids")
 	if err != nil {
 		return false, err
@@ -81,7 +81,7 @@ func (c *RestClient) SetActiveSignalID(signalIDs []string) (bool, error) {
 }
 
 func (c *RestClient) GetPrices(signalIDs []string) ([]*proto.Price, error) {
-	parsedUrl, err := url.Parse(c.url + "/signal_ids")
+	parsedUrl, err := url.Parse(c.url + "/prices")
 	if err != nil {
 		return nil, err
 	}

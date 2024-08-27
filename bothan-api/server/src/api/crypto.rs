@@ -11,7 +11,7 @@ use bothan_core::manager::CryptoAssetInfoManager;
 use crate::api::utils::{parse_price_state, registry_resp};
 use crate::proto::query::query_server::Query;
 use crate::proto::query::{
-    PriceRequest, PriceResponse, SetActiveSignalIdRequest, SetActiveSignalIdResponse,
+    GetPricesRequest, GetPricesResponse, SetActiveSignalIdsRequest, SetActiveSignalIdsResponse,
     UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
 };
 
@@ -75,10 +75,10 @@ impl Query for CryptoQueryServer {
         }
     }
 
-    async fn set_active_signal_id(
+    async fn set_active_signal_ids(
         &self,
-        request: Request<SetActiveSignalIdRequest>,
-    ) -> Result<Response<SetActiveSignalIdResponse>, Status> {
+        request: Request<SetActiveSignalIdsRequest>,
+    ) -> Result<Response<SetActiveSignalIdsResponse>, Status> {
         info!("received set active signal id request");
         let update_registry_request = request.into_inner();
         let mut manager = self.manager.write().await;
@@ -89,19 +89,19 @@ impl Query for CryptoQueryServer {
         match set_result {
             Ok(_) => {
                 info!("successfully set active signal ids");
-                Ok(Response::new(SetActiveSignalIdResponse { success: true }))
+                Ok(Response::new(SetActiveSignalIdsResponse { success: true }))
             }
             Err(e) => {
                 error!("failed to set active signal ids: {}", e);
-                Ok(Response::new(SetActiveSignalIdResponse { success: false }))
+                Ok(Response::new(SetActiveSignalIdsResponse { success: false }))
             }
         }
     }
 
     async fn get_prices(
         &self,
-        request: Request<PriceRequest>,
-    ) -> Result<Response<PriceResponse>, Status> {
+        request: Request<GetPricesRequest>,
+    ) -> Result<Response<GetPricesResponse>, Status> {
         info!("received get price request");
         let price_request = request.into_inner();
         let manager = self.manager.read().await;
@@ -120,6 +120,6 @@ impl Query for CryptoQueryServer {
             .map(|(id, state)| parse_price_state(id, state))
             .collect();
 
-        Ok(Response::new(PriceResponse { prices }))
+        Ok(Response::new(GetPricesResponse { prices }))
     }
 }
