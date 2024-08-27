@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use serde::{Deserialize, Serialize};
 
 use crate::registry::signal::Signal;
-use crate::registry::validate::{dfs, ValidationError};
+use crate::registry::validate::{validate_signal, ValidationError};
 
 pub mod post_processor;
 pub mod processor;
@@ -30,7 +30,7 @@ impl Registry<Invalid> {
     pub fn validate(self) -> Result<Registry<Valid>, ValidationError> {
         let mut visited = HashMap::new();
         for root in self.inner.keys() {
-            dfs(root, &mut visited, &self)?;
+            validate_signal(root, &mut visited, &self)?;
         }
 
         Ok(Registry {

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::store::error::Error;
-use crate::store::{QueryIds, SharedStore};
+use crate::store::{QueryIDs, SharedStore};
 use crate::types::AssetInfo;
 use crate::worker::AssetState;
 
@@ -51,7 +51,7 @@ impl WorkerStore {
         K: Into<String> + Clone,
     {
         let current_ids = self.get_query_ids().await?;
-        let new_ids: QueryIds = HashSet::from_iter(ids.into_iter().map(Into::into));
+        let new_ids: QueryIDs = HashSet::from_iter(ids.into_iter().map(Into::into));
 
         let added = new_ids
             .difference(&current_ids)
@@ -103,7 +103,7 @@ impl WorkerStore {
         Ok(removed)
     }
 
-    pub async fn get_query_ids(&self) -> Result<QueryIds, Error> {
+    pub async fn get_query_ids(&self) -> Result<QueryIDs, Error> {
         let query_ids = self
             .store
             .get_query_ids(&self.prefix)

@@ -18,7 +18,7 @@ pub enum VisitState {
     Complete,
 }
 
-pub(crate) fn dfs(
+pub(crate) fn validate_signal(
     signal_id: &str,
     visited: &mut HashMap<String, VisitState>,
     registry: &Registry,
@@ -42,7 +42,7 @@ pub(crate) fn dfs(
             if !registry.contains(&route.signal_id) {
                 return Err(ValidationError::InvalidDependency(signal_id.to_string()));
             }
-            dfs(&route.signal_id, visited, registry)?;
+            validate_signal(&route.signal_id, visited, registry)?;
         }
     }
 

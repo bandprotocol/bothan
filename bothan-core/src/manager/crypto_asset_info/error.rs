@@ -30,5 +30,5 @@ pub enum SetActiveSignalError {
     UnsupportedSignal(String),
 
     #[error("Failed to set active signal ids")]
-    FailedToSetActiveSignalIds(#[from] StoreError),
+    FailedToSetActiveSignalIDs(#[from] StoreError),
 }

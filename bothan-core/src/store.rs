@@ -25,7 +25,7 @@ pub struct SharedStore {
 }
 
 pub type AssetStore = HashMap<String, AssetInfo>;
-pub type QueryIds = HashSet<String>;
+pub type QueryIDs = HashSet<String>;
 pub type ActiveSignalIDs = HashSet<String>;
 
 struct Inner {
@@ -114,8 +114,8 @@ impl SharedStore {
         Ok(())
     }
 
-    async fn get_query_ids<S: AsRef<str>>(&self, source_id: &S) -> Result<Option<QueryIds>, Error> {
-        let key = Key::QueryIds {
+    async fn get_query_ids<S: AsRef<str>>(&self, source_id: &S) -> Result<Option<QueryIDs>, Error> {
+        let key = Key::QueryIDs {
             source_id: source_id.as_ref(),
         };
 
@@ -141,9 +141,9 @@ impl SharedStore {
     async fn set_query_ids<S: AsRef<str>>(
         &self,
         source_id: &S,
-        query_ids: QueryIds,
+        query_ids: QueryIDs,
     ) -> Result<(), Error> {
-        let key = Key::QueryIds {
+        let key = Key::QueryIDs {
             source_id: source_id.as_ref(),
         };
 
