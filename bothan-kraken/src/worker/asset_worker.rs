@@ -87,7 +87,7 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut KrakenWebSoc
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
-        info!("subscribed to ids {:?}", ids);
+        info!("unsubscribed to ids {:?}", ids);
     }
 }
 
