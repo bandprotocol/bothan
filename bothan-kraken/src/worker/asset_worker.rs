@@ -192,10 +192,9 @@ async fn handle_connection_recv(
         }
     }
 }
+
 #[cfg(test)]
 mod test {
-    use std::f64::INFINITY;
-
     use super::*;
 
     #[test]
@@ -232,7 +231,7 @@ mod test {
             bid_qty: 50000.00,
             ask: 42001.00,
             ask_qty: 50000.00,
-            last: INFINITY,
+            last: f64::INFINITY,
             volume: 100000.00,
             vwap: 42000.00,
             low: 40000.00,
