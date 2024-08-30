@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::ops::{Add, Div, Sub};
 
 use num_traits::FromPrimitive;
@@ -25,11 +26,7 @@ impl Process<Decimal> for MedianProcessor {
     /// Processes the given data and returns the median. If there are not enough sources, it
     /// returns an error.
     fn process(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessError> {
-        if self.min_source_count == 0 {
-            return Err(ProcessError::new("Minimum source count cannot be zero"));
-        }
-
-        if data.len() < self.min_source_count {
+        if data.len() < max(self.min_source_count, 1) {
             Err(ProcessError::new("Not enough sources to calculate median"))
         } else {
             Ok(median(data))
