@@ -11,7 +11,7 @@ pub struct StoreConfig {
 
 fn default_path() -> PathBuf {
     let home = dirs::home_dir().expect("Failed to get home directory");
-    home.join(".bothan")
+    home.join(".bothan/data")
 }
 
 impl Default for StoreConfig {

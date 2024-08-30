@@ -7,6 +7,8 @@ use clap::{Parser, Subcommand};
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
 
+use crate::commands::utils::bothan_home_dir;
+
 #[derive(Parser)]
 pub struct ConfigCli {
     #[command(subcommand)]
@@ -19,8 +21,7 @@ enum ConfigSubCommand {
     Init {
         /// The path to where to initialize the configuration file (defaults to ./config.toml).
         #[arg(short, long)]
-        #[clap(default_value = "./config.toml")]
-        path: PathBuf,
+        path: Option<PathBuf>,
     },
 }
 
@@ -28,7 +29,12 @@ impl ConfigCli {
     pub async fn run(&self) -> anyhow::Result<()> {
         match &self.subcommand {
             ConfigSubCommand::Init { path } => {
-                if let Some(parent) = path.parent() {
+                let config_path = match path {
+                    Some(p) => p.clone(),
+                    None => bothan_home_dir().join("config.toml"),
+                };
+
+                if let Some(parent) = config_path.parent() {
                     fs::create_dir_all(parent).with_context(|| {
                         format!("Failed to create parent directories for {:?}", path)
                     })?;
@@ -39,7 +45,7 @@ impl ConfigCli {
                 let config_string =
                     toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;
 
-                fs::write(path, config_string).with_context(|| "Failed to write config")?;
+                fs::write(config_path, config_string).with_context(|| "Failed to write config")?;
                 println!("Initialized default config at: {:?}", path);
                 Ok(())
             }

@@ -9,6 +9,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use semver::VersionReq;
 use tonic::transport::Server;
 
+use crate::commands::utils::bothan_home_dir;
 use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
@@ -28,8 +29,7 @@ use bothan_kraken::KrakenWorkerBuilder;
 pub struct StartCli {
     /// The configuration file to use with bothan
     #[arg(long)]
-    #[clap(default_value = "config.toml")]
-    config: PathBuf,
+    config: Option<PathBuf>,
 
     /// A flag to choose whether to start bothan as a fresh instance or not
     #[arg(short, long)]
@@ -46,7 +46,12 @@ pub struct StartCli {
 
 impl StartCli {
     pub async fn run(&self) -> anyhow::Result<()> {
-        let app_config = AppConfig::from(&self.config)?;
+        let config_path = match &self.config {
+            Some(p) => p.clone(),
+            None => bothan_home_dir().join("config.toml"),
+        };
+
+        let app_config = AppConfig::from(config_path)?;
 
         let registry = match &self.registry {
             Some(p) => {

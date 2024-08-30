@@ -374,6 +374,7 @@ dependencies = [
  "bothan-core",
  "bothan-kraken",
  "clap",
+ "dirs",
  "log",
  "reqwest",
  "semver",
