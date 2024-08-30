@@ -3,6 +3,10 @@ name = "bothan-api-cli"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "bothan"
+path = "src/main.rs"
+
 [dependencies]
 bothan-api = { workspace = true }
 bothan-binance = { workspace = true }
