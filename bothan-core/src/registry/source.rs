@@ -59,6 +59,9 @@ pub struct SourceQuery {
     #[serde(rename = "id")]
     pub query_id: String,
     /// The operation routes to execute on the source query results.
+    /// Set default as empty vec if not provided.
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub routes: Vec<OperationRoute>,
 }
 

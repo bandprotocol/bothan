@@ -1,12 +1,12 @@
-use std::fs::{create_dir_all, File};
-use std::io::BufReader;
-use std::path::PathBuf;
-use std::str::FromStr;
-
 use anyhow::{anyhow, Context};
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::VersionReq;
+use std::fs::{create_dir_all, File};
+use std::io::BufReader;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::Arc;
 use tonic::transport::Server;
 
 use crate::commands::utils::bothan_home_dir;
@@ -14,7 +14,8 @@ use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
-use bothan_api::proto::query::query_server::QueryServer;
+use bothan_api::proto::price::price_service_server::PriceServiceServer;
+use bothan_api::proto::signal::signal_service_server::SignalServiceServer;
 use bothan_api::VERSION;
 use bothan_binance::BinanceWorkerBuilder;
 use bothan_coingecko::CoinGeckoWorkerBuilder;
@@ -88,10 +89,11 @@ async fn start_server(
 
     let store = init_store(&app_config, registry, reset).await?;
     let ipfs_client = init_ipfs_client(&app_config).await?;
-    let crypto_server = init_crypto_server(&app_config, store, ipfs_client).await?;
+    let crypto_server = Arc::new(init_crypto_server(&app_config, store, ipfs_client).await?);
 
     Server::builder()
-        .add_service(QueryServer::new(crypto_server))
+        .add_service(PriceServiceServer::from_arc(crypto_server.clone()))
+        .add_service(SignalServiceServer::from_arc(crypto_server.clone()))
         .serve(app_config.grpc.addr)
         .await?;
 

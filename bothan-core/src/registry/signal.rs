@@ -10,6 +10,8 @@ pub struct Signal {
     #[serde(rename = "sources")]
     pub source_queries: Vec<SourceQuery>,
     pub processor: Processor,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub post_processors: Vec<PostProcessor>,
 }
 

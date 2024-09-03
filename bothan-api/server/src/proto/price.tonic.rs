@@ -1,14 +1,14 @@
 // @generated
 /// Generated client implementations.
-pub mod query_client {
+pub mod price_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct QueryClient<T> {
+    pub struct PriceServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl QueryClient<tonic::transport::Channel> {
+    impl PriceServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -19,7 +19,7 @@ pub mod query_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> QueryClient<T>
+    impl<T> PriceServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -37,7 +37,7 @@ pub mod query_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> QueryClient<InterceptedService<T, F>>
+        ) -> PriceServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -51,7 +51,7 @@ pub mod query_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            QueryClient::new(InterceptedService::new(inner, interceptor))
+            PriceServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -84,56 +84,6 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn update_registry(
-            &mut self,
-            request: impl tonic::IntoRequest<super::UpdateRegistryRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::UpdateRegistryResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/query.Query/UpdateRegistry",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("query.Query", "UpdateRegistry"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn set_active_signal_ids(
-            &mut self,
-            request: impl tonic::IntoRequest<super::SetActiveSignalIdsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::SetActiveSignalIdsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/query.Query/SetActiveSignalIds",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("query.Query", "SetActiveSignalIds"));
-            self.inner.unary(req, path, codec).await
-        }
         pub async fn get_prices(
             &mut self,
             request: impl tonic::IntoRequest<super::GetPricesRequest>,
@@ -151,34 +101,23 @@ pub mod query_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/query.Query/GetPrices");
+            let path = http::uri::PathAndQuery::from_static(
+                "/price.PriceService/GetPrices",
+            );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new("query.Query", "GetPrices"));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("price.PriceService", "GetPrices"));
             self.inner.unary(req, path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod query_server {
+pub mod price_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with QueryServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with PriceServiceServer.
     #[async_trait]
-    pub trait Query: Send + Sync + 'static {
-        async fn update_registry(
-            &self,
-            request: tonic::Request<super::UpdateRegistryRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::UpdateRegistryResponse>,
-            tonic::Status,
-        >;
-        async fn set_active_signal_ids(
-            &self,
-            request: tonic::Request<super::SetActiveSignalIdsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::SetActiveSignalIdsResponse>,
-            tonic::Status,
-        >;
+    pub trait PriceService: Send + Sync + 'static {
         async fn get_prices(
             &self,
             request: tonic::Request<super::GetPricesRequest>,
@@ -188,7 +127,7 @@ pub mod query_server {
         >;
     }
     #[derive(Debug)]
-    pub struct QueryServer<T: Query> {
+    pub struct PriceServiceServer<T: PriceService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
@@ -196,7 +135,7 @@ pub mod query_server {
         max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: Query> QueryServer<T> {
+    impl<T: PriceService> PriceServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -248,9 +187,9 @@ pub mod query_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for QueryServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for PriceServiceServer<T>
     where
-        T: Query,
+        T: PriceService,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -266,102 +205,12 @@ pub mod query_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/query.Query/UpdateRegistry" => {
+                "/price.PriceService/GetPrices" => {
                     #[allow(non_camel_case_types)]
-                    struct UpdateRegistrySvc<T: Query>(pub Arc<T>);
+                    struct GetPricesSvc<T: PriceService>(pub Arc<T>);
                     impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::UpdateRegistryRequest>
-                    for UpdateRegistrySvc<T> {
-                        type Response = super::UpdateRegistryResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::UpdateRegistryRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as Query>::update_registry(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = UpdateRegistrySvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/query.Query/SetActiveSignalIds" => {
-                    #[allow(non_camel_case_types)]
-                    struct SetActiveSignalIdsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::SetActiveSignalIdsRequest>
-                    for SetActiveSignalIdsSvc<T> {
-                        type Response = super::SetActiveSignalIdsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::SetActiveSignalIdsRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as Query>::set_active_signal_ids(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = SetActiveSignalIdsSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/query.Query/GetPrices" => {
-                    #[allow(non_camel_case_types)]
-                    struct GetPricesSvc<T: Query>(pub Arc<T>);
-                    impl<T: Query> tonic::server::UnaryService<super::GetPricesRequest>
+                        T: PriceService,
+                    > tonic::server::UnaryService<super::GetPricesRequest>
                     for GetPricesSvc<T> {
                         type Response = super::GetPricesResponse;
                         type Future = BoxFuture<
@@ -374,7 +223,7 @@ pub mod query_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as Query>::get_prices(&inner, request).await
+                                <T as PriceService>::get_prices(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -417,7 +266,7 @@ pub mod query_server {
             }
         }
     }
-    impl<T: Query> Clone for QueryServer<T> {
+    impl<T: PriceService> Clone for PriceServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -429,7 +278,7 @@ pub mod query_server {
             }
         }
     }
-    impl<T: Query> Clone for _Inner<T> {
+    impl<T: PriceService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(Arc::clone(&self.0))
         }
@@ -439,7 +288,7 @@ pub mod query_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: Query> tonic::server::NamedService for QueryServer<T> {
-        const NAME: &'static str = "query.Query";
+    impl<T: PriceService> tonic::server::NamedService for PriceServiceServer<T> {
+        const NAME: &'static str = "price.PriceService";
     }
 }

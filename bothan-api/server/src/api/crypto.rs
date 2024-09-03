@@ -8,12 +8,11 @@ use tracing::{error, info};
 use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
 use bothan_core::manager::CryptoAssetInfoManager;
 
-use crate::api::utils::{parse_price_state, registry_resp};
-use crate::proto::query::query_server::Query;
-use crate::proto::query::{
-    GetPricesRequest, GetPricesResponse, SetActiveSignalIdsRequest, SetActiveSignalIdsResponse,
-    UpdateRegistryRequest, UpdateRegistryResponse, UpdateStatusCode,
-};
+use crate::api::utils::parse_price_state;
+use crate::proto::price::price_service_server::PriceService;
+use crate::proto::price::{GetPricesRequest, GetPricesResponse};
+use crate::proto::signal::signal_service_server::SignalService;
+use crate::proto::signal::{SetActiveSignalIdsRequest, UpdateRegistryRequest};
 
 pub const PRECISION: u32 = 9;
 
@@ -32,11 +31,11 @@ impl CryptoQueryServer {
 }
 
 #[tonic::async_trait]
-impl Query for CryptoQueryServer {
+impl SignalService for CryptoQueryServer {
     async fn update_registry(
         &self,
         request: Request<UpdateRegistryRequest>,
-    ) -> Result<Response<UpdateRegistryResponse>, Status> {
+    ) -> Result<Response<()>, Status> {
         info!("received update registry request");
         let update_registry_request = request.into_inner();
 
@@ -49,16 +48,21 @@ impl Query for CryptoQueryServer {
             .await;
 
         match set_registry_result {
-            Ok(_) => Ok(registry_resp(UpdateStatusCode::Ok)),
+            Ok(_) => {
+                info!("successfully set registry");
+                Ok(Response::new(()))
+            }
+            Err(SetRegistryError::FailedToRetrieve(e)) => {
+                error!("Failed to retrieve registry: {}", e);
+                Err(Status::not_found("Failed to retrieve registry"))
+            }
             Err(SetRegistryError::InvalidRegistry(e)) => {
                 error!("Invalid registry: {}", e);
-                Ok(registry_resp(UpdateStatusCode::InvalidRegistry))
-            }
-            Err(SetRegistryError::FailedToRetrieve(_)) => {
-                Ok(registry_resp(UpdateStatusCode::FailedToGetRegistry))
+                Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::UnsupportedVersion) => {
-                Ok(registry_resp(UpdateStatusCode::UnsupportedVersion))
+                error!("Invalid registry");
+                Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::FailedToParse) => {
                 error!("Failed to parse registry");
@@ -78,7 +82,7 @@ impl Query for CryptoQueryServer {
     async fn set_active_signal_ids(
         &self,
         request: Request<SetActiveSignalIdsRequest>,
-    ) -> Result<Response<SetActiveSignalIdsResponse>, Status> {
+    ) -> Result<Response<()>, Status> {
         info!("received set active signal id request");
         let update_registry_request = request.into_inner();
         let mut manager = self.manager.write().await;
@@ -89,15 +93,18 @@ impl Query for CryptoQueryServer {
         match set_result {
             Ok(_) => {
                 info!("successfully set active signal ids");
-                Ok(Response::new(SetActiveSignalIdsResponse { success: true }))
+                Ok(Response::new(()))
             }
             Err(e) => {
                 error!("failed to set active signal ids: {}", e);
-                Ok(Response::new(SetActiveSignalIdsResponse { success: false }))
+                Err(Status::internal("Failed to set active signal ids"))
             }
         }
     }
+}
 
+#[tonic::async_trait]
+impl PriceService for CryptoQueryServer {
     async fn get_prices(
         &self,
         request: Request<GetPricesRequest>,

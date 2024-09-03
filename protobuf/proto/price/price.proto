@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package price;
+
+import "google/api/annotations.proto";
+
+option go_package = "bothan-api/price/price";
+
+// PriceService defines the gRPC service responsible for handling price queries.
+// This service provides methods to retrieve the prices of assets based on their signal IDs.
+service PriceService {
+  // Retrieves the prices for the specified signal IDs.
+  // This method returns the current prices and status for each requested signal ID.
+  rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {
+    option (google.api.http).get = "/prices/{signal_ids}";
+  }
+}
+
+// GetPricesRequest is the request message for the GetPrices RPC method.
+// It contains the list of signal IDs for which prices are requested.
+message GetPricesRequest {
+  // A list of signal IDs for which the prices are being requested.
+  repeated string signal_ids = 1;
+}
+
+// GetPricesResponse is the response message for the GetPrices RPC method.
+// It contains a list of prices corresponding to the requested signal IDs.
+message GetPricesResponse {
+  // A list of prices for the requested signal IDs.
+  repeated Price prices = 1;
+}
+
+// Price contains the price information for a signal ID.
+message Price {
+  // The signal ID associated with this price.
+  string signal_id = 1;
+  // The price of the asset associated with this signal ID.
+  int64 price = 2;
+  // The status of the price (e.g., available, unavailable).
+  Status status = 3;
+}
+
+// PriceStatus is an enum that defines the status of the price for a signal ID.
+enum Status {
+  // Default status, should not be used.
+  UNSPECIFIED = 0;
+  // Indicates that the price for the signal ID is not supported.
+  UNSUPPORTED = 1;
+  // Indicates that the price for the signal ID is currently unavailable.
+  UNAVAILABLE = 2;
+  // Indicates that the price for the signal ID is available.
+  AVAILABLE = 3;
+}

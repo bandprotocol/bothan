@@ -9,7 +9,7 @@ import (
 
 	"github.com/levigross/grequests"
 
-	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/query"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
 )
 
 var _ Client = &RestClient{}
@@ -19,14 +19,14 @@ type RestClient struct {
 	timeout time.Duration
 }
 
-func NewRest(url string, timeout time.Duration) *RestClient {
+func NewRestClient(url string, timeout time.Duration) *RestClient {
 	return &RestClient{url, timeout}
 }
 
-func (c *RestClient) UpdateRegistry(ipfsHash string, version string) (*proto.UpdateStatusCode, error) {
+func (c *RestClient) UpdateRegistry(ipfsHash string, version string) error {
 	parsedUrl, err := url.Parse(c.url + "/registry")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	resp, err := grequests.Post(
@@ -38,24 +38,21 @@ func (c *RestClient) UpdateRegistry(ipfsHash string, version string) (*proto.Upd
 			},
 		},
 	)
-
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var updateResp proto.UpdateStatusCode
-	err = json.Unmarshal(resp.Bytes(), &updateResp)
-	if err != nil {
-		return nil, err
+	if !resp.Ok {
+		return resp.Error
 	}
 
-	return &updateResp, nil
+	return nil
 }
 
-func (c *RestClient) SetActiveSignalIDs(signalIDs []string) (bool, error) {
+func (c *RestClient) SetActiveSignalIDs(signalIDs []string) error {
 	parsedUrl, err := url.Parse(c.url + "/signal_ids")
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	resp, err := grequests.Post(
@@ -68,19 +65,17 @@ func (c *RestClient) SetActiveSignalIDs(signalIDs []string) (bool, error) {
 	)
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	var setActiveResp proto.SetActiveSignalIDResponse
-	err = json.Unmarshal(resp.Bytes(), &setActiveResp)
-	if err != nil {
-		return false, err
+	if !resp.Ok {
+		return resp.Error
 	}
 
-	return setActiveResp.Success, nil
+	return nil
 }
 
-func (c *RestClient) GetPrices(signalIDs []string) ([]*proto.Price, error) {
+func (c *RestClient) GetPrices(signalIDs []string) ([]*price.Price, error) {
 	parsedUrl, err := url.Parse(c.url + "/prices")
 	if err != nil {
 		return nil, err
@@ -97,7 +92,11 @@ func (c *RestClient) GetPrices(signalIDs []string) ([]*proto.Price, error) {
 		return nil, err
 	}
 
-	var priceResp proto.PriceResponse
+	if !resp.Ok {
+		return nil, resp.Error
+	}
+
+	var priceResp price.GetPricesResponse
 	err = json.Unmarshal(resp.Bytes(), &priceResp)
 	if err != nil {
 		return nil, err
