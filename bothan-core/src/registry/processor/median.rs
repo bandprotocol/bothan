@@ -83,5 +83,4 @@ mod tests {
 
         assert_eq!(res.unwrap(), Decimal::from(50121));
     }
-
 }
