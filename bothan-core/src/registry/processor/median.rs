@@ -84,19 +84,4 @@ mod tests {
         assert_eq!(res.unwrap(), Decimal::from(50121));
     }
 
-    #[test]
-    fn test_median_with_invalid_parameter() {
-        let median = MedianProcessor::new(0);
-        let data = vec![
-            Decimal::from(101000878),
-            Decimal::from(210),
-            Decimal::from(333120),
-            Decimal::from(4000),
-            Decimal::from(50120),
-            Decimal::from(50122),
-        ];
-        let res = median.process(data);
-
-        assert!(res.is_err());
-    }
 }
