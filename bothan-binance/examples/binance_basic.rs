@@ -1,20 +1,38 @@
+use std::time::Duration;
+
+use tokio::time::sleep;
 use tracing_subscriber::fmt::init;
 
-use bothan_binance::BinanceWorkerBuilder;
-use bothan_core::worker::AssetWorker;
+use bothan_binance::{BinanceWorkerBuilder, BinanceWorkerBuilderOpts};
+use bothan_core::registry::Registry;
+use bothan_core::store::SharedStore;
+use bothan_core::worker::{AssetWorker, AssetWorkerBuilder};
 
 #[tokio::main]
 async fn main() {
     init();
-    let worker = BinanceWorkerBuilder::default().build().await.unwrap();
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-    worker
-        .add_query_ids(vec!["btcusdt".to_string(), "ethusdt".to_string()])
+    let path = std::env::current_dir().unwrap();
+    let registry = Registry::default().validate().unwrap();
+    let store = SharedStore::new(registry, path.as_path()).await.unwrap();
+
+    let worker_store = store.create_worker_store(BinanceWorkerBuilder::worker_name());
+    let opts = BinanceWorkerBuilderOpts::default();
+
+    let worker = BinanceWorkerBuilder::new(worker_store, opts)
+        .build()
         .await
         .unwrap();
+
+    worker
+        .set_query_ids(vec!["btcusdt".to_string(), "ethusdt".to_string()])
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(2)).await;
+
     loop {
-        let data = worker.get_assets(&["btcusdt", "ethusdt"]).await;
+        let data = worker.get_asset("btcusdt").await;
         println!("{:?}", data);
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(5)).await;
     }
 }

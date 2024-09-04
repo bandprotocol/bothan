@@ -4,9 +4,9 @@ use std::time::Duration;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::time::{interval, timeout};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
-use bothan_core::store::Store;
+use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
 use crate::api::rest::CoinGeckoRestAPI;
@@ -20,7 +20,13 @@ pub(crate) fn start_asset_worker(weak_worker: Weak<CoinGeckoWorker>, update_inte
         while let Some(worker) = weak_worker.upgrade() {
             info!("updating asset info");
 
-            let ids = worker.store.get_query_ids().await;
+            let ids = match worker.store.get_query_ids().await {
+                Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
+                Err(e) => {
+                    error!("failed to get query ids with error: {}", e);
+                    Vec::new()
+                }
+            };
 
             let result = timeout(
                 interval.period(),
@@ -39,7 +45,7 @@ pub(crate) fn start_asset_worker(weak_worker: Weak<CoinGeckoWorker>, update_inte
     });
 }
 
-async fn update_asset_info(store: &Store, api: &CoinGeckoRestAPI, ids: &[String]) {
+async fn update_asset_info<T: AsRef<str>>(store: &WorkerStore, api: &CoinGeckoRestAPI, ids: &[T]) {
     match api.get_simple_price_usd(ids).await {
         Ok(markets) => {
             // Sanity check to assure that the number of markets returned is less than the number of ids
@@ -54,7 +60,9 @@ async fn update_asset_info(store: &Store, api: &CoinGeckoRestAPI, ids: &[String]
                         }
                     })
                     .collect::<Vec<(String, AssetInfo)>>();
-                store.set_assets(to_set).await;
+                if let Err(e) = store.set_assets(to_set).await {
+                    error!("failed to set asset info with error: {}", e);
+                }
             } else {
                 warn!(
                     "received more markets than ids, ids: {}, markets: {}",
@@ -64,10 +72,7 @@ async fn update_asset_info(store: &Store, api: &CoinGeckoRestAPI, ids: &[String]
             }
         }
         Err(e) => {
-            warn!(
-                "failed to get market data for ids '{:?}' with error: {}",
-                ids, e
-            );
+            warn!("failed to get market data with error: {}", e);
         }
     }
 }

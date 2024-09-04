@@ -4,46 +4,34 @@ version = "0.1.0"
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-name = "bothan_api"
-path = "src/lib.rs"
-
-[[bin]]
-name = "bothan-api"
-path = "src/main.rs"
-
 [dependencies]
-bothan-binance = { workspace = true }
-bothan-bybit = { workspace = true }
-bothan-coinbase = { workspace = true }
-bothan-coingecko = { workspace = true }
-bothan-coinmarketcap = { workspace = true }
 bothan-core = { workspace = true }
-bothan-cryptocompare = { workspace = true }
-bothan-htx = { workspace = true }
-bothan-kraken = { workspace = true }
-bothan-okx = { workspace = true }
 
+bothan-binance = { workspace = true }
+bothan-coingecko = { workspace = true }
+bothan-kraken = { workspace = true }
+
+anyhow = { workspace = true }
+async-trait = { workspace = true }
 chrono = { workspace = true }
 humantime-serde = { workspace = true }
+itertools = { workspace = true }
+reqwest = { workspace = true }
+rust_decimal = { workspace = true }
+semver = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
-anyhow = "1.0.86"
 config = "0.14.0"
-enum_dispatch = "0.3.13"
-log = "0.4.21"
-num-traits = "0.2.18"
-petgraph = "0.6.4"
-prost = "0.12.4"
+dirs = "5.0.1"
+glob = "0.3.1"
+prost = "0.13.1"
 protoc-gen-prost = "0.3.1"
 protoc-gen-tonic = "0.4.0"
-tonic = "0.11"
-glob = "0.3.1"
+tonic = "0.12.1"
 
 [build-dependencies]
-tonic-build = "0.11"
+tonic-build = "0.12.1"
