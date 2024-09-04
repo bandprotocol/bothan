@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package signal;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/bothan/bothan-api/client/proto/signal";
+
+// SignalService defines the gRPC service responsible for updating the registry
+// and managing active signal IDs.
+service SignalService {
+  // Updates the registry with the given IPFS hash and version.
+  // The registry stores metadata and configuration data that can be referenced
+  // by other parts of the system.
+  rpc UpdateRegistry(UpdateRegistryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http).post = "/registry";
+  }
+
+  // Sets the current active signal IDs.
+  // Active signal IDs are used to determine which signals are currently in use
+  // or monitored by the system.
+  rpc SetActiveSignalIds(SetActiveSignalIdsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http).post = "/signal_ids";
+  }
+}
+
+// UpdateRegistryRequest is the request message for the UpdateRegistry RPC method.
+// It contains the IPFS hash and version information needed to update the registry.
+message UpdateRegistryRequest {
+  // The IPFS hash pointing to the registry data.
+  string ipfs_hash = 1;
+  // The version of the registry.
+  string version = 2;
+}
+
+// SetActiveSignalIdsRequest is the request message for the SetActiveSignalIds RPC method.
+// It contains the list of signal IDs that should be marked as active.
+message SetActiveSignalIdsRequest {
+  // A list of signal IDs to be set as active.
+  repeated string signal_ids = 1;
+}

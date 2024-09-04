@@ -1,7 +1,6 @@
-use std::sync::Arc;
-
-use bothan_core::store::Store;
-use bothan_core::worker::{AssetStatus, AssetWorker, Error};
+use bothan_core::store::error::Error as StoreError;
+use bothan_core::store::WorkerStore;
+use bothan_core::worker::{AssetState, AssetWorker, SetQueryIDError};
 
 use crate::api::CoinGeckoRestAPI;
 
@@ -14,12 +13,12 @@ pub mod types;
 /// A worker that fetches and stores the asset information from CoinGecko's API.
 pub struct CoinGeckoWorker {
     api: CoinGeckoRestAPI,
-    store: Arc<Store>,
+    store: WorkerStore,
 }
 
 impl CoinGeckoWorker {
     /// Create a new worker with the specified api and store.
-    pub fn new(api: CoinGeckoRestAPI, store: Arc<Store>) -> Self {
+    pub fn new(api: CoinGeckoRestAPI, store: WorkerStore) -> Self {
         Self { api, store }
     }
 }
@@ -27,24 +26,16 @@ impl CoinGeckoWorker {
 #[async_trait::async_trait]
 impl AssetWorker for CoinGeckoWorker {
     /// Fetches the AssetStatus for the given cryptocurrency ids.
-    async fn get_assets(&self, ids: &[&str]) -> Vec<AssetStatus> {
-        self.store.get_assets(ids).await
+    async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError> {
+        self.store.get_asset(&id).await
     }
 
     /// Adds the specified cryptocurrency IDs to the query set.
-    async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), Error> {
-        self.store.add_query_ids(ids).await;
+    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
+        self.store
+            .set_query_ids(ids)
+            .await
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
         Ok(())
-    }
-
-    /// Removes the specified cryptocurrency IDs from the query set.
-    async fn remove_query_ids(&self, ids: &[&str]) -> Result<(), Error> {
-        self.store.remove_query_ids(ids).await;
-        Ok(())
-    }
-
-    /// Retrieves the current set of queried cryptocurrency IDs.
-    async fn get_query_ids(&self) -> Vec<String> {
-        self.get_query_ids().await
     }
 }

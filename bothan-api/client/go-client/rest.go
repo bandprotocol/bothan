@@ -9,7 +9,7 @@ import (
 
 	"github.com/levigross/grequests"
 
-	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/query"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
 )
 
 var _ Client = &RestClient{}
@@ -19,16 +19,68 @@ type RestClient struct {
 	timeout time.Duration
 }
 
-func NewRest(url string, timeout time.Duration) *RestClient {
+func NewRestClient(url string, timeout time.Duration) *RestClient {
 	return &RestClient{url, timeout}
 }
 
-func (c *RestClient) QueryPrices(signalIds []string) ([]*proto.PriceData, error) {
+func (c *RestClient) UpdateRegistry(ipfsHash string, version string) error {
+	parsedUrl, err := url.Parse(c.url + "/registry")
+	if err != nil {
+		return err
+	}
+
+	resp, err := grequests.Post(
+		parsedUrl.String(), &grequests.RequestOptions{
+			RequestTimeout: c.timeout,
+			JSON: map[string]string{
+				"ipfsHash": ipfsHash,
+				"version":  version,
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if !resp.Ok {
+		return resp.Error
+	}
+
+	return nil
+}
+
+func (c *RestClient) SetActiveSignalIDs(signalIDs []string) error {
+	parsedUrl, err := url.Parse(c.url + "/signal_ids")
+	if err != nil {
+		return err
+	}
+
+	resp, err := grequests.Post(
+		parsedUrl.String(), &grequests.RequestOptions{
+			RequestTimeout: c.timeout,
+			JSON: map[string][]string{
+				"signal_ids": signalIDs,
+			},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if !resp.Ok {
+		return resp.Error
+	}
+
+	return nil
+}
+
+func (c *RestClient) GetPrices(signalIDs []string) ([]*price.Price, error) {
 	parsedUrl, err := url.Parse(c.url + "/prices")
 	if err != nil {
 		return nil, err
 	}
-	parsedUrl.Path = path.Join(parsedUrl.Path, strings.Join(signalIds, ","))
+	parsedUrl.Path = path.Join(parsedUrl.Path, strings.Join(signalIDs, ","))
 
 	resp, err := grequests.Get(
 		parsedUrl.String(),
@@ -40,7 +92,11 @@ func (c *RestClient) QueryPrices(signalIds []string) ([]*proto.PriceData, error)
 		return nil, err
 	}
 
-	var priceResp proto.QueryPricesResponse
+	if !resp.Ok {
+		return nil, resp.Error
+	}
+
+	var priceResp price.GetPricesResponse
 	err = json.Unmarshal(resp.Bytes(), &priceResp)
 	if err != nil {
 		return nil, err

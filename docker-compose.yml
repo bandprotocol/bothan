@@ -3,9 +3,10 @@ services:
   bothan-api:
     build:
       context: .
-      dockerfile: ./bothan-api/server/Dockerfile
+      dockerfile: bothan-api/server-cli/Dockerfile
     volumes:
-      - ./bothan-api/server/config.toml:/app/config.toml
+      - ./bothan-api/server-cli/config.toml:/app/config.toml
+      - ./.bothan:/home/user/.bothan
     ports:
       - "50051:50051"
   bothan-api-proxy:

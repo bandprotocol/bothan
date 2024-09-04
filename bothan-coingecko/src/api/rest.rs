@@ -79,9 +79,10 @@ pub(crate) mod test {
     pub(crate) async fn setup() -> (ServerGuard, CoinGeckoRestAPI) {
         let server = Server::new_async().await;
 
-        let mut builder = CoinGeckoRestAPIBuilder::default();
-        builder.with_url(&server.url());
-        let api = builder.build().unwrap();
+        let api = CoinGeckoRestAPIBuilder::default()
+            .with_url(server.url())
+            .build()
+            .unwrap();
 
         (server, api)
     }

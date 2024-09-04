@@ -1,24 +1,38 @@
 use std::time::Duration;
 
+use tokio::time::sleep;
 use tracing_subscriber::fmt::init;
 
-use bothan_coingecko::CoinGeckoWorkerBuilder;
-use bothan_core::worker::AssetWorker;
+use bothan_coingecko::{CoinGeckoWorkerBuilder, CoinGeckoWorkerBuilderOpts};
+use bothan_core::registry::Registry;
+use bothan_core::store::SharedStore;
+use bothan_core::worker::{AssetWorker, AssetWorkerBuilder};
 
 #[tokio::main]
 async fn main() {
     init();
-    let worker_result = CoinGeckoWorkerBuilder::default().build().await;
+    let path = std::env::current_dir().unwrap();
+    let store = SharedStore::new(Registry::default().validate().unwrap(), path.as_path())
+        .await
+        .unwrap();
+    let worker_store = store.create_worker_store(CoinGeckoWorkerBuilder::worker_name());
+    let opts = CoinGeckoWorkerBuilderOpts::default();
 
-    if let Ok(worker) = worker_result {
-        worker
-            .add_query_ids(vec!["bitcoin".to_string(), "ethereum".to_string()])
-            .await
-            .unwrap();
-        loop {
-            let data = worker.get_assets(&["bitcoin", "ethereum"]).await;
-            println!("{:?}", data);
-            tokio::time::sleep(Duration::from_secs(5)).await;
-        }
+    let worker = CoinGeckoWorkerBuilder::new(worker_store, opts)
+        .build()
+        .await
+        .unwrap();
+
+    worker
+        .set_query_ids(vec!["bitcoin".to_string()])
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(2)).await;
+
+    loop {
+        let data = worker.get_asset("bitcoin").await;
+        println!("{:?}", data);
+        tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }

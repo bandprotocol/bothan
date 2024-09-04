@@ -1,77 +1,43 @@
-use config::Config;
-use serde::Deserialize;
+use config::{Config, ConfigError};
+use serde::{Deserialize, Serialize};
 
-use bothan_binance::BinanceServiceBuilderOpts;
-use bothan_bybit::BybitServiceBuilderOpts;
-use bothan_coinbase::CoinbaseServiceBuilderOpts;
-use bothan_coingecko::CoinGeckoServiceBuilderOpts;
-use bothan_coinmarketcap::CoinMarketCapServiceBuilderOpts;
-use bothan_cryptocompare::CryptoCompareServiceBuilderOpts;
-use bothan_htx::HtxServiceBuilderOpts;
-use bothan_kraken::KrakenServiceBuilderOpts;
-use bothan_okx::OkxServiceBuilderOpts;
+use crate::config::grpc::GrpcConfig;
+use crate::config::ipfs::IpfsConfig;
+use crate::config::log::LogConfig;
+use crate::config::manager::ManagerConfig;
+use crate::config::store::StoreConfig;
 
-/// The configuration for the gRPC server.
-#[derive(Clone, Debug, Deserialize)]
-pub struct GrpcConfig {
-    pub addr: String,
-}
-
-/// The configuration for the manager.
-#[derive(Clone, Debug, Deserialize)]
-pub struct ManagerConfig {
-    pub stale_threshold: u64,
-}
-
-/// The configuration for each data source
-#[derive(Clone, Debug, Deserialize)]
-pub struct SourceConfig {
-    pub binance: BinanceServiceBuilderOpts,
-    pub bybit: BybitServiceBuilderOpts,
-    pub coinbase: CoinbaseServiceBuilderOpts,
-    pub coingecko: CoinGeckoServiceBuilderOpts,
-    pub coinmarketcap: CoinMarketCapServiceBuilderOpts,
-    pub cryptocompare: CryptoCompareServiceBuilderOpts,
-    pub htx: HtxServiceBuilderOpts,
-    pub kraken: KrakenServiceBuilderOpts,
-    pub okx: OkxServiceBuilderOpts,
-}
-
-/// The configuration for the registry.
-#[derive(Clone, Debug, Deserialize)]
-pub struct RegistrySourceConfig {
-    pub source: String,
-    pub version: String,
-}
-
-/// The registry source configuration.
-#[derive(Clone, Debug, Deserialize)]
-pub struct RegistryConfig {
-    pub crypto_price: RegistrySourceConfig,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct LoggingConfig {
-    pub level: String,
-}
+pub mod grpc;
+pub mod ipfs;
+pub mod log;
+pub mod manager;
+pub mod store;
 
 /// The main application configuration.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AppConfig {
     pub grpc: GrpcConfig,
+    pub log: LogConfig,
+    pub ipfs: IpfsConfig,
+    pub store: StoreConfig,
     pub manager: ManagerConfig,
-    pub source: SourceConfig,
-    pub registry: RegistryConfig,
-    pub logging: LoggingConfig,
 }
 
 impl AppConfig {
     /// Creates a new `AppConfig` using the configuration file.
-    pub fn new() -> Result<Self, config::ConfigError> {
+    pub fn with_name<N: AsRef<str>>(name: N) -> Result<Self, ConfigError> {
         let config = Config::builder()
-            .add_source(config::File::with_name("config"))
-            .build()
-            .unwrap();
+            .add_source(config::File::with_name(name.as_ref()))
+            .build()?;
+
+        // Deserialize the configuration
+        config.try_deserialize()
+    }
+
+    pub fn from<P: AsRef<std::path::Path>>(path: P) -> Result<Self, ConfigError> {
+        let config = Config::builder()
+            .add_source(config::File::from(path.as_ref()))
+            .build()?;
 
         // Deserialize the configuration
         config.try_deserialize()
