@@ -1,11 +1,14 @@
+use crate::api;
+use bothan_core::store;
 use thiserror::Error;
 
-use crate::api;
-
 #[derive(Error, Debug)]
-pub(crate) enum ParseError {
+pub(crate) enum WorkerError {
     #[error("value is not a valid decimal: {0}")]
     Underflow(#[from] rust_decimal::Error),
+
+    #[error("failed to set data to the store: {0}")]
+    SetFailed(#[from] store::error::Error),
 }
 
 #[derive(Error, Debug)]
