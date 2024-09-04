@@ -4,7 +4,7 @@ package price;
 
 import "google/api/annotations.proto";
 
-option go_package = "github.com/bothan/protobuf/proto/price";
+option go_package = "github.com/bothan/bothan-api/client/proto/price";
 
 // PriceService defines the gRPC service responsible for handling price queries.
 // This service provides methods to retrieve the prices of assets based on their signal IDs.

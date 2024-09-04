@@ -1,15 +1,15 @@
-use anyhow::{anyhow, Context};
-use clap::Parser;
-use reqwest::header::{HeaderName, HeaderValue};
-use semver::VersionReq;
 use std::fs::{create_dir_all, File};
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
+
+use anyhow::{anyhow, Context};
+use clap::Parser;
+use reqwest::header::{HeaderName, HeaderValue};
+use semver::VersionReq;
 use tonic::transport::Server;
 
-use crate::commands::utils::bothan_home_dir;
 use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
@@ -25,6 +25,8 @@ use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
 use bothan_kraken::KrakenWorkerBuilder;
+
+use crate::commands::utils::bothan_home_dir;
 
 #[derive(Parser)]
 pub struct StartCli {
@@ -47,10 +49,10 @@ pub struct StartCli {
 
 impl StartCli {
     pub async fn run(&self) -> anyhow::Result<()> {
-        let config_path = match &self.config {
-            Some(p) => p.clone(),
-            None => bothan_home_dir().join("config.toml"),
-        };
+        let config_path = self
+            .config
+            .clone()
+            .unwrap_or(bothan_home_dir().join("config.toml"));
 
         let app_config = AppConfig::from(config_path)?;
 
