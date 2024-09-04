@@ -5,7 +5,7 @@ package signal;
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "bothan-api/signal/signal";
+option go_package = "github.com/bothan/protobuf/proto/signal";
 
 // SignalService defines the gRPC service responsible for updating the registry
 // and managing active signal IDs.
