@@ -72,8 +72,8 @@ impl SignalService for CryptoQueryServer {
                 error!("invalid IPFS hash");
                 Err(Status::invalid_argument("Invalid IPFS hash"))
             }
-            Err(SetRegistryError::FailedToSetRegistry(_)) => {
-                error!("Failed to set registry");
+            Err(SetRegistryError::FailedToSetRegistry(e)) => {
+                error!("failed to set registry: {e}");
                 Err(Status::internal("Failed to set registry"))
             }
         }
