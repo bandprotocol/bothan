@@ -7,13 +7,13 @@ use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::Store;
+use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
 use crate::api::error::{MessageError, SendError};
 use crate::api::types::{ChannelResponse, KrakenResponse, TickerResponse};
 use crate::api::{KrakenWebSocketConnection, KrakenWebSocketConnector};
-use crate::worker::error::ParseError;
+use crate::worker::error::WorkerError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 use crate::worker::KrakenWorker;
 
@@ -55,13 +55,8 @@ async fn subscribe(
     connection: &mut KrakenWebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
-        connection
-            .subscribe_ticker(
-                &ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
-                None,
-                None,
-            )
-            .await?
+        let ids_vec = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+        connection.subscribe_ticker(&ids_vec, None, None).await?
     }
 
     Ok(())
@@ -92,14 +87,14 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut KrakenWebSoc
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
-        info!("subscribed to ids {:?}", ids);
+        info!("unsubscribed to ids {:?}", ids);
     }
 }
 
 async fn handle_reconnect(
     connector: &KrakenWebSocketConnector,
     connection: &mut KrakenWebSocketConnection,
-    query_ids: &Store,
+    query_ids: &WorkerStore,
 ) {
     let mut retry_count: usize = 1;
     loop {
@@ -109,8 +104,14 @@ async fn handle_reconnect(
             *connection = new_connection;
 
             // Resubscribe to all ids
-            let ids = query_ids.get_query_ids().await;
-            match subscribe(&ids, connection).await {
+            let Ok(ids) = query_ids.get_query_ids().await else {
+                error!("failed to get query ids from store");
+                return;
+            };
+
+            let ids_vec = ids.into_iter().collect::<Vec<String>>();
+
+            match subscribe(&ids_vec, connection).await {
                 Ok(_) => {
                     info!("resubscribed to all ids");
                     return;
@@ -128,43 +129,32 @@ async fn handle_reconnect(
     }
 }
 
-fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, ParseError> {
+fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, WorkerError> {
+    let id = ticker.symbol.clone();
     let price_value =
-        Decimal::from_f64(ticker.last).ok_or(ParseError::InvalidPrice(ticker.last))?;
-    Ok(AssetInfo::new(
-        ticker.symbol,
-        price_value,
-        chrono::Utc::now().timestamp(),
-    ))
+        Decimal::from_f64(ticker.last).ok_or(WorkerError::InvalidPrice(ticker.last))?;
+    Ok(AssetInfo::new(id, price_value, 0))
 }
 
-async fn store_tickers(tickers: Vec<TickerResponse>, store: &Store) -> Result<(), ParseError> {
-    let to_set = tickers
-        .into_iter()
-        .filter_map(|ticker| {
-            let id = ticker.symbol.clone();
-            match parse_ticker(ticker) {
-                Ok(asset_info) => Some((id, asset_info)),
-                Err(e) => {
-                    warn!("failed to parse ticker data for {} with error {}", id, e);
-                    None
-                }
-            }
-        })
-        .collect::<Vec<(String, AssetInfo)>>();
-
-    store.set_assets(to_set).await;
+async fn store_ticker(store: &WorkerStore, ticker: TickerResponse) -> Result<(), WorkerError> {
+    store
+        .set_asset(ticker.symbol.clone(), parse_ticker(ticker)?)
+        .await?;
     Ok(())
 }
 
 /// Processes the response from the Kraken API.
-async fn process_response(resp: KrakenResponse, store: &Store) {
+async fn process_response(resp: KrakenResponse, store: &WorkerStore) {
     match resp {
         KrakenResponse::Channel(resp) => match resp {
-            ChannelResponse::Ticker(tickers) => match store_tickers(tickers, store).await {
-                Ok(_) => info!("saved data"),
-                Err(e) => error!("failed to save data: {}", e),
-            },
+            ChannelResponse::Ticker(tickers) => {
+                for ticker in tickers {
+                    match store_ticker(store, ticker).await {
+                        Ok(_) => info!("saved data"),
+                        Err(e) => error!("failed to save data: {}", e),
+                    }
+                }
+            }
             ChannelResponse::Heartbeat => {
                 debug!("received heartbeat from kraken");
             }
@@ -185,7 +175,7 @@ async fn handle_connection_recv(
     recv_result: Result<KrakenResponse, MessageError>,
     connector: &KrakenWebSocketConnector,
     connection: &mut KrakenWebSocketConnection,
-    store: &Store,
+    store: &WorkerStore,
 ) {
     match recv_result {
         Ok(resp) => {
@@ -205,8 +195,6 @@ async fn handle_connection_recv(
 
 #[cfg(test)]
 mod test {
-    use std::f64::INFINITY;
-
     use super::*;
 
     #[test]
@@ -243,7 +231,7 @@ mod test {
             bid_qty: 50000.00,
             ask: 42001.00,
             ask_qty: 50000.00,
-            last: INFINITY,
+            last: f64::INFINITY,
             volume: 100000.00,
             vwap: 42000.00,
             low: 40000.00,

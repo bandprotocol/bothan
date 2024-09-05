@@ -7,13 +7,13 @@ exclude = [".github/"]
 
 
 [workspace]
-#members = ["bothan-*", "bothan-api/server"]
 members = [
     "bothan-core",
     "bothan-binance",
-    "bothan-coinbase",
     "bothan-coingecko",
     "bothan-kraken",
+    "bothan-api/server",
+    "bothan-api/server-cli",
 ]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
@@ -31,6 +31,7 @@ mockito = "1.4.0"
 rand = "0.8.5"
 reqwest = { version = "0.12.3", features = ["json"] }
 rust_decimal = "1.10.2"
+semver = "1.0.23"
 serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
 serde_json = "1.0.116"
 thiserror = "1.0.57"
@@ -41,14 +42,15 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = "2.5.0"
 
-bothan-core = { version = "0.1.0", path = "bothan-core" }
+bothan-core = { path = "bothan-core" }
+bothan-api = { path = "bothan-api/server" }
 
-bothan-binance = { version = "0.1.0", path = "bothan-binance" }
-bothan-bybit = { version = "0.1.0", path = "bothan-bybit" }
-bothan-coinbase = { version = "0.1.0", path = "bothan-coinbase" }
-bothan-coingecko = { version = "0.1.0", path = "bothan-coingecko" }
-bothan-coinmarketcap = { version = "0.1.0", path = "bothan-coinmarketcap" }
-bothan-cryptocompare = { version = "0.1.0", path = "bothan-cryptocompare" }
-bothan-htx = { version = "0.1.0", path = "bothan-htx" }
-bothan-kraken = { version = "0.1.0", path = "bothan-kraken" }
-bothan-okx = { version = "0.1.0", path = "bothan-okx" }
+bothan-binance = { path = "bothan-binance" }
+#bothan-bybit = { path = "bothan-bybit" }
+#bothan-coinbase = { path = "bothan-coinbase" }
+bothan-coingecko = { path = "bothan-coingecko" }
+#bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
+#bothan-cryptocompare = { path = "bothan-cryptocompare" }
+#bothan-htx = { path = "bothan-htx" }
+bothan-kraken = { path = "bothan-kraken" }
+#bothan-okx = { path = "bothan-okx" }

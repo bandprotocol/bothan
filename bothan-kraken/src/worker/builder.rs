@@ -2,40 +2,25 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::channel;
 
-use bothan_core::store::Store;
-
 use crate::api::KrakenWebSocketConnector;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::worker::error::BuildError;
 use crate::worker::opts::KrakenWorkerBuilderOpts;
 use crate::worker::KrakenWorker;
+use bothan_core::store::WorkerStore;
+use bothan_core::worker::AssetWorkerBuilder;
 
 /// Builds a `KrakenWorker` with custom options.
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](KrakenWorkerBuilder::build) method.
-/// # Example
-/// ```no_run
-/// use bothan_kraken::KrakenWorkerBuilder;
-///
-///
-/// #[tokio::main]
-/// async fn main() {
-///     let worker = KrakenWorkerBuilder::default()
-///         .build()
-///         .await
-///         .unwrap();
-///
-///     // use worker ...
-/// }
-/// ```
 pub struct KrakenWorkerBuilder {
-    store: Arc<Store>,
+    store: WorkerStore,
     opts: KrakenWorkerBuilderOpts,
 }
 
 impl KrakenWorkerBuilder {
     /// Returns a new `KrakenWorkerBuilder` with the given options.
-    pub fn new(store: Arc<Store>, opts: KrakenWorkerBuilderOpts) -> Self {
+    pub fn new(store: WorkerStore, opts: KrakenWorkerBuilderOpts) -> Self {
         Self { store, opts }
     }
 
@@ -55,13 +40,30 @@ impl KrakenWorkerBuilder {
 
     /// Sets the store for the `KrakenWorker`.
     /// If not set, the store is created and owned by the worker.
-    pub fn with_store(mut self, store: Arc<Store>) -> Self {
+    pub fn with_store(mut self, store: WorkerStore) -> Self {
         self.store = store;
         self
     }
+}
+
+#[async_trait::async_trait]
+impl<'a> AssetWorkerBuilder<'a> for KrakenWorkerBuilder {
+    type Opts = KrakenWorkerBuilderOpts;
+    type Worker = KrakenWorker;
+    type Error = BuildError;
+
+    /// Returns a new `KrakenWorkerBuilder` with the given options.
+    fn new(store: WorkerStore, opts: Self::Opts) -> Self {
+        Self { store, opts }
+    }
+
+    /// Returns the name of the worker.
+    fn worker_name() -> &'static str {
+        "kraken"
+    }
 
     /// Creates the configured `KrakenWorker`.
-    pub async fn build(self) -> Result<Arc<KrakenWorker>, BuildError> {
+    async fn build(self) -> Result<Arc<KrakenWorker>, BuildError> {
         let url = self.opts.url;
         let ch_size = self.opts.internal_ch_size;
 
@@ -81,15 +83,5 @@ impl KrakenWorkerBuilder {
         ));
 
         Ok(worker)
-    }
-}
-
-impl Default for KrakenWorkerBuilder {
-    /// Create a new `KrakenWorkerBuilder` with its default values.
-    fn default() -> Self {
-        Self::new(
-            Arc::new(Store::default()),
-            KrakenWorkerBuilderOpts::default(),
-        )
     }
 }

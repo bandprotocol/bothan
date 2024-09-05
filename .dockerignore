@@ -1,3 +1,10 @@
-bothan-api/server/config.toml
-bothan-api-proxy/config.toml
-target
+debug/
+target/
+
+.vscode/
+.idea/
+
+.DS_Store
+
+**/config.toml
+**/.bothan

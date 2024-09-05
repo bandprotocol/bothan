@@ -11,57 +11,64 @@ use crate::api::CoinGeckoRestAPI;
 /// service is constructed by calling the [`build`](CoinGeckoRestAPIBuilder::build) method.
 ///
 /// # Example
-/// ```no_run
+/// ```
 /// use bothan_coingecko::api::CoinGeckoRestAPIBuilder;
+///
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let mut builder = CoinGeckoRestAPIBuilder::default();
-///     builder.with_url("https://api.coingecko.com/api/v3");
-///     builder.with_api_key("your_api_key");
-///     builder.with_user_agent("your_user_agent");
-///     let api = builder.build().unwrap();
+///     let mut api = CoinGeckoRestAPIBuilder::default()
+///         .with_url("https://api.coingecko.com/api/v3")
+///         .with_api_key("your_api_key")
+///         .with_user_agent("your_user_agent")
+///         .build()
+///         .unwrap();
 ///
 ///     // use api ...
 /// }
 /// ```
 pub struct CoinGeckoRestAPIBuilder {
     user_agent: String,
-    url: Option<String>,
+    url: String,
     api_key: Option<String>,
+    // Flag to determine if the URL was modified by the user.
+    mod_url: bool,
 }
 
 impl CoinGeckoRestAPIBuilder {
-    pub fn new<T: Into<String>>(
-        user_agent: T,
-        url: Option<String>,
-        api_key: Option<String>,
-    ) -> Self {
+    pub fn new<T, U, V>(user_agent: T, url: U, api_key: Option<V>) -> Self
+    where
+        T: Into<String>,
+        U: Into<String>,
+        V: Into<String>,
+    {
         CoinGeckoRestAPIBuilder {
             user_agent: user_agent.into(),
-            url,
-            api_key,
+            url: url.into(),
+            api_key: api_key.map(Into::into),
+            mod_url: true,
         }
     }
 
     /// Sets the URL for the API.
     /// If not specified, the default URL is `DEFAULT_URL` when no API key is provided,
     /// and `DEFAULT_PRO_URL` when an API key is provided.
-    pub fn with_url<T: Into<String>>(&mut self, url: T) -> &Self {
-        self.url = Some(url.into());
+    pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
+        self.url = url.into();
+        self.mod_url = true;
         self
     }
 
     /// Sets the API key for the API.
     /// The default is `None`.
-    pub fn with_api_key<T: Into<String>>(&mut self, api_key: T) -> &Self {
+    pub fn with_api_key<T: Into<String>>(mut self, api_key: T) -> Self {
         self.api_key = Some(api_key.into());
         self
     }
 
     /// Sets the user agent for the API.
     /// The default is `DEFAULT_USER_AGENT`.
-    pub fn with_user_agent<T: Into<String>>(&mut self, user_agent: T) -> &Self {
+    pub fn with_user_agent<T: Into<String>>(mut self, user_agent: T) -> Self {
         self.user_agent = user_agent.into();
         self
     }
@@ -76,10 +83,10 @@ impl CoinGeckoRestAPIBuilder {
 
         headers.insert("User-Agent", agent);
 
-        let url = match (&self.url, &self.api_key) {
-            (Some(url), _) => url,
-            (None, Some(_)) => DEFAULT_PRO_URL,
-            (None, None) => DEFAULT_URL,
+        let url = match (&self.mod_url, &self.api_key) {
+            (true, _) => &self.url,
+            (false, Some(_)) => DEFAULT_PRO_URL,
+            (false, None) => DEFAULT_URL,
         };
         let parsed_url = Url::parse(url)?;
 
@@ -105,9 +112,10 @@ impl Default for CoinGeckoRestAPIBuilder {
     /// Creates a default `CoinGeckoRestAPIBuilder` instance with default values.
     fn default() -> Self {
         CoinGeckoRestAPIBuilder {
-            url: None,
+            url: DEFAULT_URL.into(),
             api_key: None,
             user_agent: DEFAULT_USER_AGENT.into(),
+            mod_url: false,
         }
     }
 }
