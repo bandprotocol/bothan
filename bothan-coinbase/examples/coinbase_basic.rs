@@ -3,10 +3,10 @@ use std::time::Duration;
 use tokio::time::sleep;
 use tracing_subscriber::fmt::init;
 
+use bothan_coinbase::{CoinbaseWorkerBuilder, CoinbaseWorkerBuilderOpts};
 use bothan_core::registry::Registry;
 use bothan_core::store::SharedStore;
 use bothan_core::worker::{AssetWorker, AssetWorkerBuilder};
-use bothan_coinbase::{CoinbaseWorkerBuilder, CoinbaseWorkerBuilderOpts};
 
 #[tokio::main]
 async fn main() {
