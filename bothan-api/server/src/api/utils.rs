@@ -15,7 +15,7 @@ pub fn parse_price_state(id: String, price_state: PriceState) -> Price {
             match i64::try_from(mantissa_price) {
                 Ok(p) => Price::new(id, p, Status::Available),
                 Err(_) => {
-                    warn!("Failed to convert {mantissa_price} to i64 for id {id}");
+                    warn!("failed to convert {mantissa_price} to i64 for id {id}");
                     Price::new(id, 0, Status::Unavailable)
                 }
             }

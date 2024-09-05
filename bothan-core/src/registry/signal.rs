@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::registry::post_processor::PostProcessor;
@@ -5,7 +6,7 @@ use crate::registry::processor::Processor;
 use crate::registry::source::SourceQuery;
 
 /// `Signal` contains the sources, processor, and post-processors for a signal.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct Signal {
     #[serde(rename = "sources")]
     pub source_queries: Vec<SourceQuery>,

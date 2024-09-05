@@ -78,7 +78,7 @@ impl Service for CoinbaseService {
             .collect();
 
         if !sub_ids.is_empty() && self.cmd_tx.send(Command::Subscribe(sub_ids)).await.is_err() {
-            warn!("Failed to send subscribe command");
+            warn!("failed to send subscribe command");
         }
 
         result
@@ -143,7 +143,7 @@ async fn process_command(
                 .await
                 .is_err()
             {
-                warn!("Failed to subscribe to ids: {:?}", ids);
+                warn!("failed to subscribe to ids: {:?}", ids);
             }
         }
     }
@@ -177,7 +177,7 @@ async fn handle_reconnect(
     };
 
     if command_tx.send(cmd).await.is_err() {
-        error!("Failed to send subscribe command");
+        error!("failed to send subscribe command");
     };
 }
 
