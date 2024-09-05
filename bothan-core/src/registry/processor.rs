@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -22,7 +23,7 @@ pub trait Process<T> {
 }
 
 /// The Process enum represents the different types of processors that can be used.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
 pub enum Processor {
     Median(median::MedianProcessor),

@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
+use bincode::{config, decode_from_slice, encode_to_vec};
 use rust_rocksdb::{Options, DB};
 use tokio::sync::RwLock;
 use tracing::debug;
@@ -55,15 +56,16 @@ impl SharedStore {
     pub async fn restore(&mut self) -> Result<(), Error> {
         let mut inner = self.inner.write().await;
 
-        let registry = inner
+        let invalid_registry: Option<Registry> = inner
             .db
             .get(Key::Registry.to_prefixed_bytes())?
-            .map(|b| bincode::deserialize(b.as_slice()))
-            .transpose()?;
+            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .transpose()?
+            .map(|(r, _)| r);
 
-        if let Some(registry) = registry {
+        if let Some(invalid_reg) = invalid_registry {
+            inner.registry = invalid_reg.validate()?;
             debug!("loaded registry");
-            inner.registry = registry;
         }
 
         Ok(())
@@ -78,25 +80,26 @@ impl SharedStore {
     }
 
     async fn get_active_signal_ids(&self) -> Result<Option<ActiveSignalIDs>, Error> {
-        let serialized = self
+        let encoded = self
             .inner
             .read()
             .await
             .db
             .get(Key::ActiveSignalIDs.to_prefixed_bytes())?;
-        let active_signal_ids = serialized
-            .map(|b| bincode::deserialize(b.as_slice()))
-            .transpose()?;
+        let active_signal_ids = encoded
+            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .transpose()?
+            .map(|(ids, _)| ids);
         Ok(active_signal_ids)
     }
 
     async fn set_active_signal_ids(&self, signal_ids: HashSet<String>) -> Result<(), Error> {
-        let serialized = bincode::serialize(&signal_ids)?;
+        let encoded = encode_to_vec(&signal_ids, config::standard())?;
         self.inner
             .write()
             .await
             .db
-            .put(Key::ActiveSignalIDs.to_prefixed_bytes(), serialized)?;
+            .put(Key::ActiveSignalIDs.to_prefixed_bytes(), encoded)?;
         Ok(())
     }
 
@@ -106,10 +109,8 @@ impl SharedStore {
 
     async fn set_registry(&self, registry: Registry<Valid>) -> Result<(), Error> {
         let mut inner = self.inner.write().await;
-        let serialized = bincode::serialize(&registry)?;
-        inner
-            .db
-            .put(Key::Registry.to_prefixed_bytes(), serialized)?;
+        let encoded = encode_to_vec(&registry, config::standard())?;
+        inner.db.put(Key::Registry.to_prefixed_bytes(), encoded)?;
         inner.registry = registry;
         Ok(())
     }
@@ -119,10 +120,11 @@ impl SharedStore {
             source_id: source_id.as_ref(),
         };
 
-        let serialized = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
-        let query_ids = serialized
-            .map(|b| bincode::deserialize(b.as_slice()))
-            .transpose()?;
+        let encoded = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
+        let query_ids = encoded
+            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .transpose()?
+            .map(|(ids, _)| ids);
         Ok(query_ids)
     }
 
@@ -147,12 +149,12 @@ impl SharedStore {
             source_id: source_id.as_ref(),
         };
 
-        let serialized = bincode::serialize(&query_ids)?;
+        let encoded = encode_to_vec(&query_ids, config::standard())?;
         self.inner
             .write()
             .await
             .db
-            .put(key.to_prefixed_bytes(), serialized)?;
+            .put(key.to_prefixed_bytes(), encoded)?;
         Ok(())
     }
 
@@ -196,10 +198,11 @@ impl SharedStore {
             id: id.as_ref(),
         };
 
-        let serialized = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
-        let asset_info = serialized
-            .map(|b| bincode::deserialize(b.as_slice()))
-            .transpose()?;
+        let encoded = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
+        let asset_info = encoded
+            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .transpose()?
+            .map(|(info, _)| info);
         Ok(asset_info)
     }
 
@@ -218,12 +221,12 @@ impl SharedStore {
             id: id.as_ref(),
         };
 
-        let serialized = bincode::serialize(&asset_info)?;
+        let encoded = encode_to_vec(&asset_info, config::standard())?;
         self.inner
             .write()
             .await
             .db
-            .put(key.to_prefixed_bytes(), serialized)?;
+            .put(key.to_prefixed_bytes(), encoded)?;
         Ok(())
     }
 
@@ -242,8 +245,8 @@ impl SharedStore {
                 source_id: source_id.as_ref(),
                 id: id.as_ref(),
             };
-            let serialized = bincode::serialize(&asset_info)?;
-            inner.db.put(key.to_prefixed_bytes(), serialized)?;
+            let encoded = encode_to_vec(&asset_info, config::standard())?;
+            inner.db.put(key.to_prefixed_bytes(), encoded)?;
         }
         Ok(())
     }
