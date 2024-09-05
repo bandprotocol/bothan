@@ -56,15 +56,14 @@ impl SharedStore {
     pub async fn restore(&mut self) -> Result<(), Error> {
         let mut inner = self.inner.write().await;
 
-        let unvalidated_registry: Option<Registry> = inner
+        if let Some(unvalidated_registry) = inner
             .db
             .get(Key::Registry.to_prefixed_bytes())?
-            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .map(|b| decode_from_slice::<Registry, _>(b.as_slice(), config::standard()))
             .transpose()?
-            .map(|(r, _)| r);
-
-        if let Some(invalid_reg) = unvalidated_registry {
-            inner.registry = invalid_reg.validate()?;
+            .map(|(r, _)| r)
+        {
+            inner.registry = unvalidated_registry.validate()?;
             debug!("loaded registry");
         }
 
