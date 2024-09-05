@@ -9,7 +9,7 @@ pub mod message;
 pub const DEFAULT_URL: &str = "wss://ws.okx.com:8443/ws/v5/public";
 
 /// Represents the different types of responses from the OKX WebSocket API.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum OkxResponse {
     /// A response from a WebSocket message.

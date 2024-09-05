@@ -1,6 +1,5 @@
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
-use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
@@ -58,11 +57,8 @@ impl OkxWebSocketConnection {
             args: Some(ticker_args),
         };
 
-        // Create the subscription payload.
-        let payload = json!(msg);
-
         // Send the subscription message.
-        let message = Message::Text(payload.to_string());
+        let message = Message::Text(serde_json::to_string(&msg)?);
         Ok(self.sender.send(message).await?)
     }
 
@@ -73,11 +69,9 @@ impl OkxWebSocketConnection {
             op: Op::Unsubscribe,
             args: Some(ticker_args),
         };
-        // Create the unsubscription payload.
-        let payload = json!(msg);
 
         // Send the unsubscription message.
-        let message = Message::Text(payload.to_string());
+        let message = Message::Text(serde_json::to_string(&msg)?);
         Ok(self.sender.send(message).await?)
     }
 

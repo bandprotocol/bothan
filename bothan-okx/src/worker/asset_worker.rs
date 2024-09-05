@@ -131,11 +131,8 @@ async fn handle_reconnect(
 fn parse_ticker(ticker: TickerData) -> Result<AssetInfo, WorkerError> {
     let id = ticker.inst_id.clone();
     let price_value = Decimal::from_str_exact(&ticker.last)?;
-    Ok(AssetInfo::new(
-        id,
-        price_value,
-        chrono::Utc::now().timestamp(),
-    ))
+    let timestamp = chrono::Utc::now().timestamp();
+    Ok(AssetInfo::new(id, price_value, timestamp))
 }
 
 async fn store_ticker(store: &WorkerStore, ticker: TickerData) -> Result<(), WorkerError> {

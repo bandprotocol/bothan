@@ -23,7 +23,7 @@ pub struct PublicMessage<T> {
 }
 
 /// Represents the response to a public message.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PublicMessageResponse {
     /// The error message, if any.
     pub error: Option<String>,
