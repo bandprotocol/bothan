@@ -6,14 +6,14 @@ use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::Store;
+use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
 use crate::api::error::{MessageError, SendError};
 use crate::api::types::channels::Channel;
 use crate::api::types::{CoinbaseResponse, Ticker};
 use crate::api::{CoinbaseWebSocketConnection, CoinbaseWebSocketConnector};
-use crate::worker::error::ParseError;
+use crate::worker::error::WorkerError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 use crate::worker::CoinbaseWorker;
 
@@ -55,11 +55,9 @@ async fn subscribe(
     connection: &mut CoinbaseWebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
+        let ids_vec = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         connection
-            .subscribe(
-                vec![Channel::Ticker],
-                &ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
-            )
+            .subscribe(vec![Channel::Ticker], &ids_vec)
             .await?
     }
 
@@ -94,14 +92,14 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut CoinbaseWebS
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
-        info!("subscribed to ids {:?}", ids);
+        info!("unsubscribed to ids {:?}", ids);
     }
 }
 
 async fn handle_reconnect(
     connector: &CoinbaseWebSocketConnector,
     connection: &mut CoinbaseWebSocketConnection,
-    query_ids: &Store,
+    query_ids: &WorkerStore,
 ) {
     let mut retry_count: usize = 1;
     loop {
@@ -111,8 +109,14 @@ async fn handle_reconnect(
             *connection = new_connection;
 
             // Resubscribe to all ids
-            let ids = query_ids.get_query_ids().await;
-            match subscribe(&ids, connection).await {
+            let Ok(ids) = query_ids.get_query_ids().await else {
+                error!("failed to get query ids from store");
+                return;
+            };
+
+            let ids_vec = ids.into_iter().collect::<Vec<String>>();
+
+            match subscribe(&ids_vec, connection).await {
                 Ok(_) => {
                     info!("resubscribed to all ids");
                     return;
@@ -130,32 +134,26 @@ async fn handle_reconnect(
     }
 }
 
-fn parse_ticker(ticker: &Ticker) -> Result<AssetInfo, ParseError> {
+fn parse_ticker(ticker: &Ticker) -> Result<AssetInfo, WorkerError> {
+    let id = ticker.product_id.clone();
     let price_value = Decimal::from_str_exact(&ticker.price)?;
     Ok(AssetInfo::new(
-        ticker.product_id.clone(),
+        id,
         price_value,
         chrono::Utc::now().timestamp(),
     ))
 }
 
-async fn store_tickers(ticker: &Ticker, store: &Store) -> Result<(), ParseError> {
+async fn store_ticker(store: &WorkerStore, ticker: &Ticker) -> Result<(), WorkerError> {
     let id = ticker.product_id.clone();
-    match parse_ticker(ticker) {
-        Ok(asset_info) => store.set_asset(id.clone(), asset_info).await,
-        Err(e) => {
-            warn!("failed to parse ticker data for {} with error {}", id, e);
-            return Err(e);
-        }
-    }
-
+    store.set_asset(id, parse_ticker(ticker)?).await?;
     Ok(())
 }
 
 /// Processes the response from the Coinbase API.
-async fn process_response(resp: CoinbaseResponse, store: &Store) {
+async fn process_response(resp: CoinbaseResponse, store: &WorkerStore) {
     match resp {
-        CoinbaseResponse::Ticker(ticker) => match store_tickers(&ticker, store).await {
+        CoinbaseResponse::Ticker(ticker) => match store_ticker(store, &ticker).await {
             Ok(_) => info!("saved data"),
             Err(e) => error!("failed to save data: {}", e),
         },
@@ -169,7 +167,7 @@ async fn handle_connection_recv(
     recv_result: Result<CoinbaseResponse, MessageError>,
     connector: &CoinbaseWebSocketConnector,
     connection: &mut CoinbaseWebSocketConnection,
-    store: &Store,
+    store: &WorkerStore,
 ) {
     match recv_result {
         Ok(resp) => {

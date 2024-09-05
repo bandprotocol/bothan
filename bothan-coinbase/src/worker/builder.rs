@@ -2,40 +2,25 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::channel;
 
-use bothan_core::store::Store;
-
 use crate::api::CoinbaseWebSocketConnector;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::worker::error::BuildError;
 use crate::worker::opts::CoinbaseWorkerBuilderOpts;
 use crate::worker::CoinbaseWorker;
+use bothan_core::store::WorkerStore;
+use bothan_core::worker::AssetWorkerBuilder;
 
 /// Builds a `CoinbaseWorker` with custom options.
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](CoinbaseWorkerBuilder::build) method.
-/// # Example
-/// ```no_run
-/// use bothan_coinbase::CoinbaseWorkerBuilder;
-///
-///
-/// #[tokio::main]
-/// async fn main() {
-///     let worker = CoinbaseWorkerBuilder::default()
-///         .build()
-///         .await
-///         .unwrap();
-///
-///     // use worker ...
-/// }
-/// ```
 pub struct CoinbaseWorkerBuilder {
-    store: Arc<Store>,
+    store: WorkerStore,
     opts: CoinbaseWorkerBuilderOpts,
 }
 
 impl CoinbaseWorkerBuilder {
     /// Returns a new `CoinbaseWorkerBuilder` with the given options.
-    pub fn new(store: Arc<Store>, opts: CoinbaseWorkerBuilderOpts) -> Self {
+    pub fn new(store: WorkerStore, opts: CoinbaseWorkerBuilderOpts) -> Self {
         Self { store, opts }
     }
 
@@ -55,13 +40,30 @@ impl CoinbaseWorkerBuilder {
 
     /// Sets the store for the `CoinbaseWorker`.
     /// If not set, the store is created and owned by the worker.
-    pub fn with_store(mut self, store: Arc<Store>) -> Self {
+    pub fn with_store(mut self, store: WorkerStore) -> Self {
         self.store = store;
         self
     }
+}
+
+#[async_trait::async_trait]
+impl<'a> AssetWorkerBuilder<'a> for CoinbaseWorkerBuilder {
+    type Opts = CoinbaseWorkerBuilderOpts;
+    type Worker = CoinbaseWorker;
+    type Error = BuildError;
+
+    /// Returns a new `CoinbaseWorkerBuilder` with the given options.
+    fn new(store: WorkerStore, opts: Self::Opts) -> Self {
+        Self { store, opts }
+    }
+
+    /// Returns the name of the worker.
+    fn worker_name() -> &'static str {
+        "coinbase"
+    }
 
     /// Creates the configured `CoinbaseWorker`.
-    pub async fn build(self) -> Result<Arc<CoinbaseWorker>, BuildError> {
+    async fn build(self) -> Result<Arc<CoinbaseWorker>, BuildError> {
         let url = self.opts.url;
         let ch_size = self.opts.internal_ch_size;
 
@@ -81,15 +83,5 @@ impl CoinbaseWorkerBuilder {
         ));
 
         Ok(worker)
-    }
-}
-
-impl Default for CoinbaseWorkerBuilder {
-    /// Create a new `CoinbaseWorkerBuilder` with its default values.
-    fn default() -> Self {
-        Self::new(
-            Arc::new(Store::default()),
-            CoinbaseWorkerBuilderOpts::default(),
-        )
     }
 }
