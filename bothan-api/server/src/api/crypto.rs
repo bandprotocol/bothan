@@ -53,23 +53,23 @@ impl SignalService for CryptoQueryServer {
                 Ok(Response::new(()))
             }
             Err(SetRegistryError::FailedToRetrieve(e)) => {
-                error!("Failed to retrieve registry: {}", e);
+                error!("failed to retrieve registry: {}", e);
                 Err(Status::not_found("Failed to retrieve registry"))
             }
             Err(SetRegistryError::InvalidRegistry(e)) => {
-                error!("Invalid registry: {}", e);
+                error!("invalid registry: {}", e);
                 Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::UnsupportedVersion) => {
-                error!("Invalid registry");
+                error!("invalid registry");
                 Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::FailedToParse) => {
-                error!("Failed to parse registry");
+                error!("failed to parse registry");
                 Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::InvalidHash) => {
-                error!("Invalid IPFS hash");
+                error!("invalid IPFS hash");
                 Err(Status::invalid_argument("Invalid IPFS hash"))
             }
             Err(SetRegistryError::FailedToSetRegistry(_)) => {
