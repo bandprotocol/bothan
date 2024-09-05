@@ -93,6 +93,7 @@ async fn start_server(
     let ipfs_client = init_ipfs_client(&app_config).await?;
     let crypto_server = Arc::new(init_crypto_server(&app_config, store, ipfs_client).await?);
 
+    println!("Server started");
     Server::builder()
         .add_service(PriceServiceServer::from_arc(crypto_server.clone()))
         .add_service(SignalServiceServer::from_arc(crypto_server.clone()))
