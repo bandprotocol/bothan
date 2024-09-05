@@ -1,4 +1,8 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
+
+use bothan_api::config::AppConfig;
 
 use crate::commands::config::ConfigCli;
 use crate::commands::start::StartCli;
@@ -10,6 +14,10 @@ mod commands;
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
+
+    // global args
+    #[arg(long, global = true)]
+    config: Option<PathBuf>,
 }
 
 #[derive(Subcommand)]
@@ -30,13 +38,30 @@ async fn main() {
         }
     };
 
+    let config_path = cli
+        .config
+        .clone()
+        .unwrap_or(bothan_home_dir().join("config.toml"));
+
+    let app_config = AppConfig::from(config_path).expect("Failed to load config");
+
+    let log_level = &app_config.log.level;
+    tracing_subscriber::fmt()
+        .with_env_filter(format!(
+            "bothan_core={log_level},bothan_api={log_level},bothan={log_level}"
+        ))
+        .init();
+
     if let Some(command) = &cli.command {
-        if let Err(e) = match command {
+        match command {
             Command::Config(config_cli) => config_cli.run().await,
-            Command::Start(start_cli) => start_cli.run().await,
-        } {
-            eprintln!("{}", e);
-            std::process::exit(1);
+            Command::Start(start_cli) => start_cli.run(app_config).await,
         }
+        .expect("Failed to run command");
     }
+}
+
+pub fn bothan_home_dir() -> PathBuf {
+    let home = dirs::home_dir().expect("Failed to get home directory");
+    home.join(".bothan")
 }

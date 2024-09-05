@@ -1,6 +1,7 @@
 use std::cmp::max;
 use std::ops::{Add, Div, Sub};
 
+use bincode::{Decode, Encode};
 use num_traits::FromPrimitive;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ use crate::registry::processor::{Process, ProcessError};
 /// The `MedianProcessor` finds the median of a given data set. It also has a `min_source_count` which
 /// is the minimum number of sources required to calculate the median. If the given data set has less
 /// than `min_source_count` sources, it returns an error.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct MedianProcessor {
     pub min_source_count: usize,
 }
