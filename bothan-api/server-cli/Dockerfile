@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y openssl && apt-get install -y ca-certif
 RUN ldconfig
 
 # Copy the binary from builder
-COPY --from=builder builder/target/release/bothan-api-cli /usr/local/bin
+COPY --from=builder builder/target/release/bothan /usr/local/bin
 
 WORKDIR /app
-CMD ["bothan-api-cli", "start"]
+CMD ["bothan", "start"]
