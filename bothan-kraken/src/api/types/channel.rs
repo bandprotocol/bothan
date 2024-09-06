@@ -4,7 +4,7 @@ pub mod status;
 pub mod ticker;
 
 /// Represents the response from various channels.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "channel", content = "data", rename_all = "snake_case")]
 pub enum ChannelResponse {
     /// Response for ticker data.

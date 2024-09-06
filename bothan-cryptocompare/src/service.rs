@@ -6,7 +6,7 @@ use tracing::{info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::CryptoCompareRestAPI;
 
@@ -14,7 +14,7 @@ pub mod builder;
 
 /// A service for interacting with the CryptoCompare REST API and caching price data.
 pub struct CryptoCompareService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
 }
 
 impl CryptoCompareService {
@@ -32,7 +32,7 @@ impl CryptoCompareService {
 #[async_trait::async_trait]
 impl Service for CryptoCompareService {
     /// Retrieves price data for the given IDs.
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         let mut to_set_pending = Vec::<String>::new();
         let result = self
             .cache
@@ -62,7 +62,7 @@ impl Service for CryptoCompareService {
 /// Starts the service for updating price data.
 pub fn start_service(
     rest_api: Arc<CryptoCompareRestAPI>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     mut update_price_interval: Interval,
 ) {
     tokio::spawn(async move {
@@ -74,7 +74,7 @@ pub fn start_service(
 }
 
 /// Updates the price data in the cache.
-async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<PriceData>) {
+async fn update_price_data(rest_api: &CryptoCompareRestAPI, cache: &Cache<AssetInfo>) {
     let keys = cache.keys().await;
 
     if !keys.is_empty() {
@@ -105,7 +105,7 @@ async fn process_symbol_price(
     id: &str,
     symbol_price: &f64,
     timestamp: &u64,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
 ) {
     let price_data = parse_symbol_price(id, symbol_price, timestamp);
 
@@ -118,8 +118,8 @@ async fn process_symbol_price(
 }
 
 /// Parses the symbol price data into a `PriceData` object.
-fn parse_symbol_price(id: &str, symbol_price: &f64, timestamp: &u64) -> PriceData {
-    PriceData::new(
+fn parse_symbol_price(id: &str, symbol_price: &f64, timestamp: &u64) -> AssetInfo {
+    AssetInfo::new(
         id.to_owned(),
         symbol_price.to_string(),
         timestamp.to_owned(),
@@ -137,10 +137,10 @@ mod test {
 
     async fn setup() -> (
         Arc<CryptoCompareRestAPI>,
-        Arc<Cache<PriceData>>,
+        Arc<Cache<AssetInfo>>,
         ServerGuard,
     ) {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let (server, rest_api) = api_setup().await;
         (Arc::new(rest_api), cache, server)
     }
@@ -156,13 +156,13 @@ mod test {
         update_price_data(&rest_api, &cache).await;
         let result = cache.get("BTC").await;
 
-        let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
+        let expected = AssetInfo::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_eq!(result, Ok(expected));
     }
 
     #[tokio::test]
     async fn test_process_symbol_price() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let now = Utc::now().timestamp() as u64;
         let id = "BTC";
         let symbol_price = 42000.69;
@@ -171,13 +171,13 @@ mod test {
         process_symbol_price(id, &symbol_price, &now, &cache).await;
         let result = cache.get("BTC").await;
 
-        let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
+        let expected = AssetInfo::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_eq!(result, Ok(expected));
     }
 
     #[tokio::test]
     async fn test_process_symbol_price_without_set_pending() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let now = Utc::now().timestamp() as u64;
         let id = "BTC";
         let symbol_price = 42000.69;
@@ -194,7 +194,7 @@ mod test {
         let symbol_price = 42000.69;
 
         let result = parse_symbol_price(id, &symbol_price, &now);
-        let expected = PriceData::new("BTC".to_string(), "42000.69".to_string(), now);
+        let expected = AssetInfo::new("BTC".to_string(), "42000.69".to_string(), now);
         assert_eq!(result, expected);
     }
 }

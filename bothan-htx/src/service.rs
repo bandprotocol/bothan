@@ -6,7 +6,7 @@ use tracing::warn;
 
 use bothan_core::cache::{Cache, Error as CacheError, Error};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::types::{Status, Ticker};
 use crate::api::HtxRestAPI;
@@ -17,7 +17,7 @@ mod parser;
 
 /// A service for interacting with the HTX REST API and caching price data.
 pub struct HtxService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
 }
 
 impl HtxService {
@@ -35,7 +35,7 @@ impl HtxService {
 #[async_trait::async_trait]
 impl Service for HtxService {
     /// Retrieves price data for the given IDs.
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         self.cache
             .get_batch(ids)
             .await
@@ -53,7 +53,7 @@ impl Service for HtxService {
 /// Starts the service for updating price data.
 pub async fn start_service(
     rest_api: Arc<HtxRestAPI>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     mut update_price_interval: Interval,
 ) {
     update_price_data(rest_api.clone(), cache.clone()).await;
@@ -66,7 +66,7 @@ pub async fn start_service(
 }
 
 /// Updates the price data in the cache.
-async fn update_price_data(rest_api: Arc<HtxRestAPI>, cache: Arc<Cache<PriceData>>) {
+async fn update_price_data(rest_api: Arc<HtxRestAPI>, cache: Arc<Cache<AssetInfo>>) {
     if let Ok(quote) = rest_api.get_latest_tickers().await {
         match quote.status {
             Status::Ok => {
@@ -90,7 +90,7 @@ async fn update_price_data(rest_api: Arc<HtxRestAPI>, cache: Arc<Cache<PriceData
 }
 
 /// Processes the ticker data and updates the cache.
-async fn process_ticker(ticker: &Ticker, timestamp: usize, cache: &Cache<PriceData>) {
+async fn process_ticker(ticker: &Ticker, timestamp: usize, cache: &Cache<AssetInfo>) {
     let price_data = parse_ticker(ticker, timestamp);
     let id = price_data.id.clone();
 
@@ -109,8 +109,8 @@ mod test {
 
     use super::*;
 
-    async fn setup() -> (Arc<HtxRestAPI>, Arc<Cache<PriceData>>, ServerGuard) {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+    async fn setup() -> (Arc<HtxRestAPI>, Arc<Cache<AssetInfo>>, ServerGuard) {
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let (server, rest_api) = api_setup().await;
         (Arc::new(rest_api), cache, server)
     }
@@ -144,7 +144,7 @@ mod test {
 
     #[tokio::test]
     async fn test_process_ticker() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let ticker = mock_ticker();
         let timestamp = 100000;
 

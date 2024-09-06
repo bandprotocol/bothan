@@ -8,7 +8,7 @@ use tracing::{error, info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::error::Error as CoinbaseError;
 use crate::api::types::channels::ticker::Ticker;
@@ -21,7 +21,7 @@ pub mod builder;
 
 /// A service for interacting with the Coinbase WebSocket API and caching price data.
 pub struct CoinbaseService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     cmd_tx: Arc<Sender<Command>>,
 }
 
@@ -56,7 +56,7 @@ impl CoinbaseService {
 #[async_trait::async_trait]
 impl Service for CoinbaseService {
     /// Retrieves price data for the given IDs.
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         let mut sub_ids = Vec::new();
 
         let result = self
@@ -78,7 +78,7 @@ impl Service for CoinbaseService {
             .collect();
 
         if !sub_ids.is_empty() && self.cmd_tx.send(Command::Subscribe(sub_ids)).await.is_err() {
-            warn!("Failed to send subscribe command");
+            warn!("failed to send subscribe command");
         }
 
         result
@@ -90,7 +90,7 @@ fn start_service(
     connection: Arc<Mutex<CoinbaseWebSocketConnection>>,
     mut command_rx: Receiver<Command>,
     mut removed_ids_rx: Receiver<Vec<String>>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     command_tx: Arc<Sender<Command>>,
 ) {
     tokio::spawn(async move {
@@ -130,7 +130,7 @@ fn start_service(
 async fn process_command(
     cmd: &Command,
     ws: &Mutex<CoinbaseWebSocketConnection>,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
 ) {
     match cmd {
         Command::Subscribe(ids) => {
@@ -143,7 +143,7 @@ async fn process_command(
                 .await
                 .is_err()
             {
-                warn!("Failed to subscribe to ids: {:?}", ids);
+                warn!("failed to subscribe to ids: {:?}", ids);
             }
         }
     }
@@ -152,7 +152,7 @@ async fn process_command(
 async fn handle_reconnect(
     connector: &CoinbaseWebSocketConnector,
     connection: &Mutex<CoinbaseWebSocketConnection>,
-    cache: &Cache<PriceData>,
+    cache: &Cache<AssetInfo>,
     command_tx: &Sender<Command>,
 ) {
     // TODO: Handle reconnection failure
@@ -177,13 +177,13 @@ async fn handle_reconnect(
     };
 
     if command_tx.send(cmd).await.is_err() {
-        error!("Failed to send subscribe command");
+        error!("failed to send subscribe command");
     };
 }
 
-async fn save_ticker(ticker: &Ticker, cache: &Cache<PriceData>) {
+async fn save_ticker(ticker: &Ticker, cache: &Cache<AssetInfo>) {
     if let Ok(date_time) = chrono::DateTime::parse_from_rfc3339(&ticker.time) {
-        let price_data = PriceData {
+        let price_data = AssetInfo {
             id: ticker.product_id.clone(),
             price: ticker.price.clone(),
             timestamp: date_time.timestamp() as u64,
@@ -203,7 +203,7 @@ async fn save_ticker(ticker: &Ticker, cache: &Cache<PriceData>) {
     }
 }
 
-async fn process_response(resp: &CoinbaseResponse, cache: &Cache<PriceData>) {
+async fn process_response(resp: &CoinbaseResponse, cache: &Cache<AssetInfo>) {
     match resp {
         CoinbaseResponse::Ticker(ticker) => save_ticker(ticker, cache).await,
         CoinbaseResponse::Subscriptions(_) => {

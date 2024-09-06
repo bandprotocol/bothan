@@ -6,7 +6,7 @@ use tracing::{info, warn};
 
 use bothan_core::cache::{Cache, Error as CacheError, Error};
 use bothan_core::service::{Error as ServiceError, Service, ServiceResult};
-use bothan_core::types::PriceData;
+use bothan_core::types::AssetInfo;
 
 use crate::api::types::ticker::{Category, Tickers};
 use crate::api::BybitRestAPI;
@@ -17,7 +17,7 @@ mod parser;
 
 /// A service for interacting with the Bybit REST API and caching price data.
 pub struct BybitService {
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
 }
 
 impl BybitService {
@@ -35,7 +35,7 @@ impl BybitService {
 #[async_trait::async_trait]
 impl Service for BybitService {
     /// Retrieves price data for the given IDs.
-    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<PriceData>> {
+    async fn get_price_data(&mut self, ids: &[&str]) -> Vec<ServiceResult<AssetInfo>> {
         self.cache
             .get_batch(ids)
             .await
@@ -54,7 +54,7 @@ impl Service for BybitService {
 /// Starts the price data update service.
 pub async fn start_service(
     rest_api: Arc<BybitRestAPI>,
-    cache: Arc<Cache<PriceData>>,
+    cache: Arc<Cache<AssetInfo>>,
     mut update_price_interval: Interval,
 ) {
     update_price_data(rest_api.clone(), cache.clone()).await;
@@ -67,7 +67,7 @@ pub async fn start_service(
 }
 
 /// Updates the price data in the cache.
-async fn update_price_data(rest_api: Arc<BybitRestAPI>, cache: Arc<Cache<PriceData>>) {
+async fn update_price_data(rest_api: Arc<BybitRestAPI>, cache: Arc<Cache<AssetInfo>>) {
     match rest_api.get_tickers(Category::Spot, None).await {
         Ok(response) => {
             if let Some(tickers) = response.result.list {
@@ -83,7 +83,7 @@ async fn update_price_data(rest_api: Arc<BybitRestAPI>, cache: Arc<Cache<PriceDa
 }
 
 /// Processes the tickers and updates the cache.
-async fn process_tickers(tickers: &Tickers, timestamp: usize, cache: Arc<Cache<PriceData>>) {
+async fn process_tickers(tickers: &Tickers, timestamp: usize, cache: Arc<Cache<AssetInfo>>) {
     let mut set = JoinSet::new();
     for price_data in parse_tickers(tickers, timestamp) {
         let cloned_cache = cache.clone();
@@ -114,8 +114,8 @@ mod test {
 
     use super::*;
 
-    async fn setup() -> (Arc<BybitRestAPI>, Arc<Cache<PriceData>>, ServerGuard) {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+    async fn setup() -> (Arc<BybitRestAPI>, Arc<Cache<AssetInfo>>, ServerGuard) {
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let (server, rest_api) = api_setup().await;
         (Arc::new(rest_api), cache, server)
     }
@@ -148,7 +148,7 @@ mod test {
 
     #[tokio::test]
     async fn test_process_ticker() {
-        let cache = Arc::new(Cache::<PriceData>::new(None));
+        let cache = Arc::new(Cache::<AssetInfo>::new(None));
         let tickers = mock_tickers_response();
         let timestamp = 100000;
 

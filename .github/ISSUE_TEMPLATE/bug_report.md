@@ -15,9 +15,10 @@ vX.X.X
 
 **To Reproduce**
 Steps to reproduce the behavior:
+
 1. Go to '...'
 2. Run '....'
-4. See error
+3. See error
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
@@ -26,8 +27,9 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
- - OS: [e.g. Linux, Windows]
- - Version [e.g. 10]
+
+- OS: [e.g. Linux, Windows]
+- Version [e.g. 10]
 
 **Additional context**
 Add any other context about the problem here.

@@ -7,31 +7,58 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/query"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/signal"
 )
 
-var _ Client = &GRPC{}
+var _ Client = &GrpcClient{}
 
-type GRPC struct {
+type GrpcClient struct {
 	connection *grpc.ClientConn
 	timeout    time.Duration
 }
 
-func NewGRPC(url string, timeout time.Duration) (*GRPC, error) {
+func NewGrpcClient(url string, timeout time.Duration) (*GrpcClient, error) {
 	connection, err := grpc.Dial(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
-	return &GRPC{connection, timeout}, nil
+	return &GrpcClient{connection, timeout}, nil
 }
 
-func (c *GRPC) QueryPrices(signalIds []string) ([]*proto.PriceData, error) {
-	// Create a client instance using the connection.
-	client := proto.NewQueryClient(c.connection)
+func (c *GrpcClient) UpdateRegistry(ipfsHash string, version string) error {
+	client := signal.NewSignalServiceClient(c.connection)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
-	response, err := client.Prices(ctx, &proto.QueryPricesRequest{SignalIds: signalIds})
+	_, err := client.UpdateRegistry(ctx, &signal.UpdateRegistryRequest{IpfsHash: ipfsHash, Version: version})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *GrpcClient) SetActiveSignalIDs(signalIDs []string) error {
+	client := signal.NewSignalServiceClient(c.connection)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	_, err := client.SetActiveSignalIds(ctx, &signal.SetActiveSignalIdsRequest{SignalIds: signalIDs})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *GrpcClient) GetPrices(signalIDs []string) ([]*price.Price, error) {
+	// Create a client instance using the connection.
+	client := price.NewPriceServiceClient(c.connection)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	response, err := client.GetPrices(ctx, &price.GetPricesRequest{SignalIds: signalIDs})
 	if err != nil {
 		return nil, err
 	}
