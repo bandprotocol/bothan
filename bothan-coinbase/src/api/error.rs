@@ -22,5 +22,11 @@ pub enum MessageError {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error(transparent)]
-pub struct SendError(#[from] tungstenite::Error);
+pub enum SendError {
+    #[error(transparent)]
+    Tungstenite(#[from] tungstenite::Error),
+
+    /// Indicates a failure to parse a message.
+    #[error("failed to parse")]
+    Parse(#[from] serde_json::Error),
+}
