@@ -11,8 +11,8 @@ members = [
     "bothan-api/server",
     "bothan-api/server-cli",
     "bothan-binance",
-    "bothan-core",
     "bothan-coingecko",
+    "bothan-core",
     "bothan-kraken",
     "bothan-okx",
 ]
