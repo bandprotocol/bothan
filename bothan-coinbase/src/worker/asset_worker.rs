@@ -138,11 +138,7 @@ fn parse_ticker(ticker: &Ticker) -> Result<AssetInfo, WorkerError> {
     let id = ticker.product_id.clone();
     let price_value = Decimal::from_str_exact(&ticker.price)?;
     let timestamp = chrono::Utc::now().timestamp();
-    Ok(AssetInfo::new(
-        id,
-        price_value,
-        timestamp,
-    ))
+    Ok(AssetInfo::new(id, price_value, timestamp))
 }
 
 async fn store_ticker(store: &WorkerStore, ticker: &Ticker) -> Result<(), WorkerError> {
