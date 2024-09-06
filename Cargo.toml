@@ -54,4 +54,4 @@ bothan-coingecko = { path = "bothan-coingecko" }
 #bothan-cryptocompare = { path = "bothan-cryptocompare" }
 #bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
-#bothan-okx = { path = "bothan-okx" }
+bothan-okx = { path = "bothan-okx" }
