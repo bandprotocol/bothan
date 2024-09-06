@@ -1,5 +1,6 @@
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
+use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
@@ -7,6 +8,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tracing::warn;
 
+use crate::api::error::{ConnectionError, MessageError, SendError};
 use crate::api::error::{ConnectionError, MessageError, SendError};
 use crate::api::types::channel::ticker::{EventTrigger, TickerRequestParameters};
 use crate::api::types::message::{Method, PublicMessage};
@@ -25,10 +27,13 @@ impl KrakenWebSocketConnector {
 
     /// Connects to the Kraken WebSocket API.
     pub async fn connect(&self) -> Result<KrakenWebSocketConnection, ConnectionError> {
+    pub async fn connect(&self) -> Result<KrakenWebSocketConnection, ConnectionError> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
         let status = resp.status();
         if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
+            warn!("failed to connect with response code {}", resp.status());
+            return Err(ConnectionError::UnsuccessfulHttpResponse(resp.status()));
             warn!("failed to connect with response code {}", resp.status());
             return Err(ConnectionError::UnsuccessfulHttpResponse(resp.status()));
         }
@@ -52,6 +57,7 @@ impl KrakenWebSocketConnection {
 
     /// Sends a ping message to the WebSocket server.
     pub async fn ping(&mut self) -> Result<(), SendError> {
+    pub async fn ping(&mut self) -> Result<(), SendError> {
         let msg = Message::Ping("".into());
         Ok(self.sender.send(msg).await?)
     }
@@ -62,6 +68,7 @@ impl KrakenWebSocketConnection {
         symbols: &[&str],
         event_trigger: Option<EventTrigger>,
         snapshot: Option<bool>,
+    ) -> Result<(), SendError> {
     ) -> Result<(), SendError> {
         let ticker_param = build_ticker_request(symbols, event_trigger, snapshot);
         let msg = PublicMessage {
@@ -77,6 +84,7 @@ impl KrakenWebSocketConnection {
 
     /// Unsubscribes from ticker updates for the given symbols.
     pub async fn unsubscribe_ticker(&mut self, symbols: &[&str]) -> Result<(), SendError> {
+    pub async fn unsubscribe_ticker(&mut self, symbols: &[&str]) -> Result<(), SendError> {
         let params = build_ticker_request(symbols, None, None);
         let msg = PublicMessage {
             method: Method::Unsubscribe,
@@ -90,21 +98,34 @@ impl KrakenWebSocketConnection {
 
     /// Receives the next message from the WebSocket connection.
     pub async fn next(&mut self) -> Result<KrakenResponse, MessageError> {
+    pub async fn next(&mut self) -> Result<KrakenResponse, MessageError> {
         if let Some(result_msg) = self.receiver.next().await {
             return match result_msg {
                 Ok(Message::Text(msg)) => serde_json::from_str::<KrakenResponse>(&msg)
                     .map_err(|_| MessageError::UnsupportedMessage),
+                    .map_err(|_| MessageError::UnsupportedMessage),
                 Ok(Message::Pong(_)) => Ok(KrakenResponse::Pong),
+                Ok(Message::Close(_)) => Err(MessageError::ChannelClosed),
                 Ok(Message::Close(_)) => Err(MessageError::ChannelClosed),
                 Err(err) => match err {
                     TungsteniteError::Protocol(..) => Err(MessageError::ChannelClosed),
                     TungsteniteError::ConnectionClosed => Err(MessageError::ChannelClosed),
                     _ => Err(MessageError::UnsupportedMessage),
+                    TungsteniteError::Protocol(..) => Err(MessageError::ChannelClosed),
+                    TungsteniteError::ConnectionClosed => Err(MessageError::ChannelClosed),
+                    _ => Err(MessageError::UnsupportedMessage),
                 },
+                _ => Err(MessageError::UnsupportedMessage),
                 _ => Err(MessageError::UnsupportedMessage),
             };
         }
 
+        Err(MessageError::ChannelClosed)
+    }
+
+    pub async fn close(&mut self) -> Result<(), SendError> {
+        self.sender.close().await?;
+        Ok(())
         Err(MessageError::ChannelClosed)
     }
 
