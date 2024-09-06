@@ -5,12 +5,10 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/bandprotocol/bothan"
 exclude = [".github/"]
 
-
 [workspace]
 members = ["bothan-core", "bothan-binance", "bothan-coingecko", "bothan-kraken", "bothan-api/server", "bothan-api/server-cli"]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
-
 
 [workspace.dependencies]
 anyhow = "1.0.86"
