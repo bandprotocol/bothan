@@ -30,7 +30,7 @@ impl CoinbaseWebSocketConnector {
 
         let status = resp.status();
         if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
-            warn!("Failed to connect with response code {}", resp.status());
+            warn!("failed to connect with response code {}", resp.status());
             return Err(ConnectionError::UnsuccessfulHttpResponse(resp.status()));
         }
 

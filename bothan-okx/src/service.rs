@@ -76,7 +76,7 @@ impl Service for OkxService {
             .collect();
 
         if !sub_ids.is_empty() && self.cmd_tx.send(Command::Subscribe(sub_ids)).await.is_err() {
-            warn!("Failed to send subscribe command");
+            warn!("failed to send subscribe command");
         }
 
         result
@@ -138,7 +138,7 @@ async fn process_command(
             let vec_ids = ids.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
             let mut locked = ws.lock().await;
             if locked.subscribe_ticker(vec_ids.as_slice()).await.is_err() {
-                warn!("Failed to subscribe to ids: {:?}", ids);
+                warn!("failed to subscribe to ids: {:?}", ids);
             }
         }
     }

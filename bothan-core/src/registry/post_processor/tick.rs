@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use num_traits::FromPrimitive;
 use rust_decimal::{Decimal, MathematicalOps};
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ const MAX_TICK: f64 = 524287.0;
 const MIN_TICK: f64 = 1.0;
 
 /// `TickPostProcessor` processes the given data into its tick value.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct TickPostProcessor {}
 
 impl PostProcess<Decimal> for TickPostProcessor {

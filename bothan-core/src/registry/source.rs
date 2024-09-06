@@ -1,8 +1,9 @@
+use bincode::{Decode, Encode};
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use serde::{Deserialize, Serialize};
 
 /// Enum representing the possible operations that can be performed.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub enum Operation {
     #[serde(rename = "+")]
     Add,
@@ -32,7 +33,7 @@ impl Operation {
 /// Route is value in a sequence of operations of which the operation is performed on.
 /// For example, if the sequence is [a, b, c] and the operations are [+, *, -], the result
 /// would be (((input + a) * b) - c).
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct OperationRoute {
     /// The signal id of the value to be used in the operation.
     pub signal_id: String,
@@ -51,7 +52,7 @@ impl OperationRoute {
 }
 
 /// Struct representing a source.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct SourceQuery {
     /// The source id.
     pub source_id: String,

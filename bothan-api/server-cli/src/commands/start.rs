@@ -5,11 +5,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
-use clap::Parser;
-use reqwest::header::{HeaderName, HeaderValue};
-use semver::VersionReq;
-use tonic::transport::Server;
-
 use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
@@ -25,8 +20,11 @@ use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
 use bothan_kraken::KrakenWorkerBuilder;
-
-use crate::commands::utils::bothan_home_dir;
+use clap::Parser;
+use reqwest::header::{HeaderName, HeaderValue};
+use semver::VersionReq;
+use tonic::transport::Server;
+use tracing::info;
 
 #[derive(Parser)]
 pub struct StartCli {
@@ -48,14 +46,7 @@ pub struct StartCli {
 }
 
 impl StartCli {
-    pub async fn run(&self) -> anyhow::Result<()> {
-        let config_path = self
-            .config
-            .clone()
-            .unwrap_or(bothan_home_dir().join("config.toml"));
-
-        let app_config = AppConfig::from(config_path)?;
-
+    pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         let registry = match &self.registry {
             Some(p) => {
                 let file =
@@ -84,15 +75,11 @@ async fn start_server(
     registry: Registry<Valid>,
     reset: bool,
 ) -> anyhow::Result<()> {
-    let log_level = &app_config.log.level;
-    tracing_subscriber::fmt()
-        .with_env_filter(format!("bothan_core={log_level},bothan_api={log_level}"))
-        .init();
-
     let store = init_store(&app_config, registry, reset).await?;
     let ipfs_client = init_ipfs_client(&app_config).await?;
     let crypto_server = Arc::new(init_crypto_server(&app_config, store, ipfs_client).await?);
 
+    info!("server started");
     Server::builder()
         .add_service(PriceServiceServer::from_arc(crypto_server.clone()))
         .add_service(SignalServiceServer::from_arc(crypto_server.clone()))
@@ -120,7 +107,7 @@ async fn init_store(
     let mut store = SharedStore::new(registry, &config.store.path)
         .await
         .with_context(|| "Failed to create store")?;
-    println!("Store created successfully at \"{:?}\"", &config.store.path);
+    info!("store created successfully at \"{:?}\"", &config.store.path);
 
     if !reset {
         store
@@ -208,6 +195,6 @@ where
         .with_context(|| format!("Failed to build worker {worker_name}"))?;
 
     manager.add_worker(worker_name.to_string(), worker).await;
-    println!("Loaded {} worker", worker_name);
+    info!("loaded {} worker", worker_name);
     Ok(())
 }

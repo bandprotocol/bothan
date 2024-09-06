@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
+use bincode::de::Decoder;
+use bincode::enc::Encoder;
+use bincode::error::{DecodeError, EncodeError};
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::registry::signal::Signal;
@@ -22,7 +26,7 @@ pub struct Valid;
 pub struct Registry<State = Invalid> {
     #[serde(flatten)]
     inner: HashMap<String, Signal>,
-    #[serde(skip_serializing, default)]
+    #[serde(skip)]
     _state: PhantomData<State>,
 }
 
@@ -40,6 +44,15 @@ impl Registry<Invalid> {
     }
 }
 
+impl<T> Registry<T> {
+    pub fn get(&self, signal_id: &str) -> Option<&Signal> {
+        self.inner.get(signal_id)
+    }
+    pub fn contains(&self, signal_id: &str) -> bool {
+        self.inner.contains_key(signal_id)
+    }
+}
+
 impl Default for Registry<Invalid> {
     fn default() -> Self {
         Registry {
@@ -49,12 +62,19 @@ impl Default for Registry<Invalid> {
     }
 }
 
-impl<T> Registry<T> {
-    pub fn get(&self, signal_id: &str) -> Option<&Signal> {
-        self.inner.get(signal_id)
+impl<State> Encode for Registry<State> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.inner.encode(encoder)
     }
-    pub fn contains(&self, signal_id: &str) -> bool {
-        self.inner.contains_key(signal_id)
+}
+
+impl Decode for Registry<Invalid> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let inner = HashMap::decode(decoder)?;
+        Ok(Registry {
+            inner,
+            _state: PhantomData,
+        })
     }
 }
 
