@@ -95,3 +95,53 @@ pub fn parse_ticker(ticker: &Ticker, timestamp: usize) -> Result<AssetInfo, Pars
         timestamp as i64,
     ))
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parse_market() {
+        let ticker = Ticker {
+            symbol: "btcusdt".to_string(),
+            open: 79000.0,
+            high: 81000.0,
+            low: 78000.0,
+            close: 80000.5,
+            amount: 100.0,
+            vol: 100000.0,
+            count: 1000,
+            bid: 80000.0,
+            bid_size: 100.0,
+            ask: 80000.0,
+            ask_size: 100.0,
+        };
+        let timestamp = 1609459200;
+        let result = parse_ticker(&ticker, timestamp);
+        let expected = AssetInfo::new(
+            "btcusdt".to_string(),
+            Decimal::from_str_exact("80000.5").unwrap(),
+            1609459200,
+        );
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_parse_market_with_failure() {
+        let ticker = Ticker {
+            symbol: "btcusdt".to_string(),
+            open: 79000.0,
+            high: 81000.0,
+            low: 78000.0,
+            close: f64::INFINITY,
+            amount: 100.0,
+            vol: 100000.0,
+            count: 1000,
+            bid: 80000.0,
+            bid_size: 100.0,
+            ask: 80000.0,
+            ask_size: 100.0,
+        };
+        assert!(parse_ticker(&ticker, 0).is_err());
+    }
+}
