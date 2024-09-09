@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Weak;
 use std::time::Duration;
 
@@ -44,8 +45,6 @@ pub(crate) fn start_asset_worker(weak_worker: Weak<HtxWorker>, update_interval: 
         debug!("asset worker has been dropped, stopping asset worker");
     });
 }
-
-use std::collections::HashSet;
 
 async fn update_asset_info<T: AsRef<str>>(store: &WorkerStore, api: &HtxRestAPI, ids: &[T]) {
     // Convert the slice of ids into a HashSet for faster lookups
