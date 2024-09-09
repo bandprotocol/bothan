@@ -1,7 +1,7 @@
 use reqwest::ClientBuilder;
 use url::Url;
 
-use crate::api::error::BuilderError;
+use crate::api::error::BuildError;
 use crate::api::types::DEFAULT_URL;
 use crate::api::HtxRestAPI;
 
@@ -26,6 +26,13 @@ pub struct HtxRestAPIBuilder {
 }
 
 impl HtxRestAPIBuilder {
+    pub fn new<T>(url: T) -> Self
+    where
+        T: Into<String>,
+    {
+        HtxRestAPIBuilder { url: url.into() }
+    }
+
     /// Sets the URL for the API.
     /// The default URL is `DEFAULT_URL`.
     pub fn with_url(&mut self, url: &str) -> &Self {
@@ -34,7 +41,7 @@ impl HtxRestAPIBuilder {
     }
 
     /// Builds the `HtxRestAPI` instance.
-    pub fn build(self) -> Result<HtxRestAPI, BuilderError> {
+    pub fn build(self) -> Result<HtxRestAPI, BuildError> {
         let parsed_url = Url::parse(&self.url)?;
         let client = ClientBuilder::new().build()?;
 

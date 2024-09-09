@@ -1,6 +1,6 @@
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
 /// Errors that can occur while building the `HtxRestAPI`.
-pub enum BuilderError {
+pub enum BuildError {
     /// The URL provided is invalid.
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
@@ -10,9 +10,9 @@ pub enum BuilderError {
     Reqwest(String),
 }
 
-impl From<reqwest::Error> for BuilderError {
+impl From<reqwest::Error> for BuildError {
     fn from(e: reqwest::Error) -> Self {
-        BuilderError::Reqwest(e.to_string())
+        BuildError::Reqwest(e.to_string())
     }
 }
 
