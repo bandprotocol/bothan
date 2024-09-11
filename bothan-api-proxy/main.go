@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/pelletier/go-toml"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
@@ -15,15 +15,23 @@ import (
 	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/signal"
 )
 
-type GrpcConfig struct {
-	Addr string `toml:"addr"`
+func main() {
+	grpcEndpoint := os.Getenv("GRPC_ENDPOINT")
+	if grpcEndpoint == "" {
+		grpcEndpoint = "localhost:50051"
+	}
+
+	proxyEndpoint := os.Getenv("PROXY_ENDPOINT")
+	if proxyEndpoint == "" {
+		proxyEndpoint = "localhost:8080"
+	}
+
+	if err := run(grpcEndpoint, proxyEndpoint); err != nil {
+		grpclog.Fatal(err)
+	}
 }
 
-type GoProxyConfig struct {
-	Addr string `toml:"addr"`
-}
-
-func run(grpcConfig GrpcConfig, goProxyConfig GoProxyConfig) error {
+func run(grpcEndpoint, proxyEndpoint string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -33,54 +41,18 @@ func run(grpcConfig GrpcConfig, goProxyConfig GoProxyConfig) error {
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
-	err := signal.RegisterSignalServiceHandlerFromEndpoint(ctx, mux, grpcConfig.Addr, opts)
+	err := signal.RegisterSignalServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}
 
-	err = price.RegisterPriceServiceHandlerFromEndpoint(ctx, mux, grpcConfig.Addr, opts)
+	err = price.RegisterPriceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Server running on", goProxyConfig.Addr)
+	fmt.Println("Server running on", proxyEndpoint)
 
 	// Start an HTTP server (and proxy calls to gRPC server endpoint)
-	return http.ListenAndServe(goProxyConfig.Addr, mux)
-}
-
-func main() {
-	config, err := toml.LoadFile("./config.toml")
-	if err != nil {
-		fmt.Println("Error loading TOML file:", err)
-		return
-	}
-
-	grpcTable, ok := config.Get("grpc").(*toml.Tree)
-	if !ok {
-		fmt.Println("gRPC configuration not found in TOML file")
-		return
-	}
-
-	grpcConfig := GrpcConfig{}
-	if err := grpcTable.Unmarshal(&grpcConfig); err != nil {
-		fmt.Println("Error parsing gRPC config:", err)
-		return
-	}
-
-	goProxyTable, ok := config.Get("go-proxy").(*toml.Tree)
-	if !ok {
-		fmt.Println("goProxy configuration not found in TOML file")
-		return
-	}
-
-	goProxyConfig := GoProxyConfig{}
-	if err := goProxyTable.Unmarshal(&goProxyConfig); err != nil {
-		fmt.Println("Error parsing goProxy config:", err)
-		return
-	}
-
-	if err := run(grpcConfig, goProxyConfig); err != nil {
-		grpclog.Fatal(err)
-	}
+	return http.ListenAndServe(proxyEndpoint, mux)
 }
