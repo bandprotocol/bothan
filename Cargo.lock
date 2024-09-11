@@ -425,7 +425,6 @@ dependencies = [
  "bothan-core",
  "chrono",
  "futures-util",
- "mockito",
  "rust_decimal",
  "serde",
  "serde_json",
@@ -434,6 +433,7 @@ dependencies = [
  "tokio-tungstenite",
  "tracing",
  "tracing-subscriber",
+ "ws-mock",
 ]
 
 [[package]]

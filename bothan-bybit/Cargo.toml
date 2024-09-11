@@ -22,4 +22,4 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
-mockito = { workspace = true }
+ws-mock = { git = "https://github.com/bandprotocol/ws-mock.git", branch = "master" }

@@ -179,3 +179,56 @@ async fn handle_connection_recv(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_parse_ticker() {
+        // Create a mock ticker response.
+        let ticker = Ticker {
+            symbol: "BTCUSDT".to_string(),
+            last_price: "42000.99".to_string(),
+            high_price24h: "44000.00".to_string(),
+            low_price24h: "40000.00".to_string(),
+            prev_price24h: "40000.00".to_string(),
+            volume24h: "100000.00".to_string(),
+            turnover24h: "4200000000.00".to_string(),
+            price24h_pcnt: "0.05".to_string(),
+            usd_index_price: "42000.00".to_string(),
+        };
+
+        // Parse the ticker using your custom parse function.
+        let result = parse_ticker(ticker);
+        let expected = AssetInfo::new(
+            "BTCUSDT".to_string(),
+            Decimal::from_str("42000.99").unwrap(),
+            0,
+        );
+
+        // Assertions to check the parsed output matches the expected values.
+        assert_eq!(result.as_ref().unwrap().id, expected.id);
+        assert_eq!(result.unwrap().price, expected.price);
+    }
+
+    #[test]
+    fn test_parse_ticker_with_failure() {
+        // Create a mock ticker response with an invalid price to simulate failure.
+        let ticker = Ticker {
+            symbol: "BTCUSDT".to_string(),
+            last_price: "NaN".to_string(), // Using NaN to simulate a parsing failure scenario.
+            high_price24h: "44000.00".to_string(),
+            low_price24h: "40000.00".to_string(),
+            prev_price24h: "40000.00".to_string(),
+            volume24h: "100000.00".to_string(),
+            turnover24h: "4200000000.00".to_string(),
+            price24h_pcnt: "0.05".to_string(),
+            usd_index_price: "42000.00".to_string(),
+        };
+
+        // Expect the parse to fail due to invalid data.
+        assert!(parse_ticker(ticker).is_err());
+    }
+}
