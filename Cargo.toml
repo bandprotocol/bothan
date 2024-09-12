@@ -7,7 +7,15 @@ exclude = [".github/"]
 
 
 [workspace]
-members = ["bothan-core", "bothan-binance", "bothan-coingecko", "bothan-kraken", "bothan-api/server", "bothan-api/server-cli"]
+members = [
+    "bothan-api/server",
+    "bothan-api/server-cli",
+    "bothan-binance",
+    "bothan-coingecko",
+    "bothan-core",
+    "bothan-cryptocompare",
+    "bothan-kraken",
+]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
 
@@ -43,7 +51,7 @@ bothan-binance = { path = "bothan-binance" }
 #bothan-coinbase = { path = "bothan-coinbase" }
 bothan-coingecko = { path = "bothan-coingecko" }
 #bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
-#bothan-cryptocompare = { path = "bothan-cryptocompare" }
+bothan-cryptocompare = { path = "bothan-cryptocompare" }
 #bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
 #bothan-okx = { path = "bothan-okx" }

@@ -2,7 +2,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::ClientBuilder;
 use url::Url;
 
-use crate::api::error::BuilderError;
+use crate::api::error::BuildError;
 use crate::api::types::DEFAULT_URL;
 use crate::api::CryptoCompareRestAPI;
 
@@ -16,8 +16,8 @@ use crate::api::CryptoCompareRestAPI;
 /// #[tokio::main]
 /// async fn main() {
 ///     let mut builder = CryptoCompareRestAPIBuilder::default();
-///     builder.set_url("https://min-api.cryptocompare.com/data");
-///     builder.set_api_key("your_api_key");
+///     builder.with_url("https://min-api.cryptocompare.com/");
+///     builder.with_api_key("your_api_key");
 ///     let api = builder.build().unwrap();
 ///
 ///     // use api ...
@@ -29,22 +29,33 @@ pub struct CryptoCompareRestAPIBuilder {
 }
 
 impl CryptoCompareRestAPIBuilder {
+    pub fn new<T, U>(url: T, api_key: Option<U>) -> Self
+    where
+        T: Into<String>,
+        U: Into<String>,
+    {
+        CryptoCompareRestAPIBuilder {
+            url: url.into(),
+            api_key: api_key.map(Into::into),
+        }
+    }
+
     /// Sets the URL for the API.
     /// The default URL is `DEFAULT_URL`.
-    pub fn set_url(&mut self, url: &str) -> &Self {
+    pub fn with_url(&mut self, url: &str) -> &Self {
         self.url = url.into();
         self
     }
 
     /// Sets the API key for the API.
     /// The default is `None`.
-    pub fn set_api_key(&mut self, api_key: &str) -> &Self {
+    pub fn with_api_key(&mut self, api_key: &str) -> &Self {
         self.api_key = Some(api_key.into());
         self
     }
 
     /// Builds the `CryptoCompareRestAPI` instance.
-    pub fn build(self) -> Result<CryptoCompareRestAPI, BuilderError> {
+    pub fn build(self) -> Result<CryptoCompareRestAPI, BuildError> {
         let mut headers = HeaderMap::new();
 
         let parsed_url = Url::parse(&self.url)?;
@@ -62,10 +73,10 @@ impl CryptoCompareRestAPIBuilder {
 }
 
 impl Default for CryptoCompareRestAPIBuilder {
-    /// Creates a default `CryptoCompareRestAPIBuilder` instance with the default URL.
+    /// Creates a default `CryptoCompareRestAPIBuilder` instance with default values.
     fn default() -> Self {
         CryptoCompareRestAPIBuilder {
-            url: DEFAULT_URL.to_string(),
+            url: DEFAULT_URL.into(),
             api_key: None,
         }
     }

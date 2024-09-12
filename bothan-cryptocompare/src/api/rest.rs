@@ -68,7 +68,7 @@ pub(crate) mod test {
         let server = Server::new_async().await;
 
         let mut builder = CryptoCompareRestAPIBuilder::default();
-        builder.set_url(&server.url());
+        builder.with_url(&server.url());
         let api = builder.build().unwrap();
 
         (server, api)
@@ -131,7 +131,7 @@ pub(crate) mod test {
     #[tokio::test]
     async fn test_successful_get_coin_market() {
         let (mut server, client) = setup().await;
-        let ids = &["btc", "eth"];
+        let ids = &["BTC", "ETH"];
 
         let prices = vec![42000.69, 2000.0];
 
@@ -148,7 +148,7 @@ pub(crate) mod test {
     #[tokio::test]
     async fn test_get_coin_market_with_missing_data() {
         let (mut server, client) = setup().await;
-        let ids = &["btc", "eth"];
+        let ids = &["BTC", "ETH"];
 
         let prices = vec![42000.69];
 
@@ -179,7 +179,7 @@ pub(crate) mod test {
     #[tokio::test]
     async fn test_failed_get_coin_market() {
         let (mut server, client) = setup().await;
-        let ids = &["btc"];
+        let ids = &["BTC"];
         let mock = server.set_failed_multi_symbol_price(ids);
 
         let result = client.get_multi_symbol_price(ids).await;
