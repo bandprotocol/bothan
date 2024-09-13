@@ -1,37 +1,40 @@
 use std::sync::Arc;
 
-use tokio::time::Duration;
+use tokio::sync::mpsc::channel;
 
+use crate::api::HtxWebSocketConnector;
+use crate::worker::asset_worker::start_asset_worker;
+use crate::worker::error::BuildError;
+use crate::worker::opts::HtxWorkerBuilderOpts;
+use crate::worker::HtxWorker;
 use bothan_core::store::WorkerStore;
 use bothan_core::worker::AssetWorkerBuilder;
 
-use crate::api::error::BuildError;
-use crate::api::HtxRestAPIBuilder;
-use crate::worker::asset_worker::start_asset_worker;
-use crate::worker::opts::HtxWorkerBuilderOpts;
-use crate::worker::HtxWorker;
-
 /// Builds a `HtxWorker` with custom options.
 /// Methods can be chained to set the configuration values and the
-/// service is constructed by calling the [`build`](HtxWorker::build) method.
+/// service is constructed by calling the [`build`](HtxWorkerBuilder::build) method.
 pub struct HtxWorkerBuilder {
     store: WorkerStore,
     opts: HtxWorkerBuilderOpts,
 }
 
 impl HtxWorkerBuilder {
+    /// Returns a new `HtxWorkerBuilder` with the given options.
+    pub fn new(store: WorkerStore, opts: HtxWorkerBuilderOpts) -> Self {
+        Self { store, opts }
+    }
+
     /// Set the URL for the `HtxWorker`.
-    /// The default URL is `DEFAULT_URL` when no API key is provided
-    /// and is `DEFAULT_PRO_URL` when an API key is provided.
+    /// The default URL is `DEFAULT_URL`.
     pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
         self.opts.url = url.into();
         self
     }
 
-    /// Sets the update interval for the `HtxWorker`.
-    /// The default interval is `DEFAULT_UPDATE_INTERVAL`.
-    pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
-        self.opts.update_interval = update_interval;
+    /// Set the internal channel size for the `HtxWorker`.
+    /// The default size is `DEFAULT_CHANNEL_SIZE`.
+    pub fn with_internal_ch_size(mut self, size: usize) -> Self {
+        self.opts.internal_ch_size = size;
         self
     }
 
@@ -60,12 +63,24 @@ impl<'a> AssetWorkerBuilder<'a> for HtxWorkerBuilder {
     }
 
     /// Creates the configured `HtxWorker`.
-    async fn build(self) -> Result<Arc<Self::Worker>, Self::Error> {
-        let api = HtxRestAPIBuilder::new(self.opts.url).build()?;
+    async fn build(self) -> Result<Arc<HtxWorker>, BuildError> {
+        let url = self.opts.url;
+        let ch_size = self.opts.internal_ch_size;
 
-        let worker = Arc::new(HtxWorker::new(api, self.store));
+        let connector = HtxWebSocketConnector::new(url);
+        let connection = connector.connect().await?;
 
-        start_asset_worker(Arc::downgrade(&worker), self.opts.update_interval);
+        let (sub_tx, sub_rx) = channel(ch_size);
+        let (unsub_tx, unsub_rx) = channel(ch_size);
+
+        let worker = Arc::new(HtxWorker::new(connector, self.store, sub_tx, unsub_tx));
+
+        tokio::spawn(start_asset_worker(
+            Arc::downgrade(&worker),
+            connection,
+            sub_rx,
+            unsub_rx,
+        ));
 
         Ok(worker)
     }

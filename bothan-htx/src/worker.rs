@@ -1,41 +1,68 @@
+use tokio::sync::mpsc::Sender;
+
 use bothan_core::store::error::Error as StoreError;
 use bothan_core::store::WorkerStore;
 use bothan_core::worker::{AssetState, AssetWorker, SetQueryIDError};
 
-use crate::api::HtxRestAPI;
+use crate::api::websocket::HtxWebSocketConnector;
 
 mod asset_worker;
 pub mod builder;
-pub mod error;
+pub(crate) mod error;
 pub mod opts;
-pub mod types;
+mod types;
 
 /// A worker that fetches and stores the asset information from Htx's API.
 pub struct HtxWorker {
-    api: HtxRestAPI,
+    connector: HtxWebSocketConnector,
     store: WorkerStore,
+    subscribe_tx: Sender<Vec<String>>,
+    unsubscribe_tx: Sender<Vec<String>>,
 }
 
 impl HtxWorker {
-    /// Create a new worker with the specified api and store.
-    pub fn new(api: HtxRestAPI, store: WorkerStore) -> Self {
-        Self { api, store }
+    /// Create a new worker with the specified connector, store and channels.
+    pub fn new(
+        connector: HtxWebSocketConnector,
+        store: WorkerStore,
+        subscribe_tx: Sender<Vec<String>>,
+        unsubscribe_tx: Sender<Vec<String>>,
+    ) -> Self {
+        Self {
+            connector,
+            store,
+            subscribe_tx,
+            unsubscribe_tx,
+        }
     }
 }
 
 #[async_trait::async_trait]
 impl AssetWorker for HtxWorker {
-    /// Fetches the AssetStatus for the given cryptocurrency ids.
+    /// Fetches the AssetStatus for the given cryptocurrency id.
     async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError> {
         self.store.get_asset(&id).await
     }
 
-    /// Adds the specified cryptocurrency IDs to the query set.
+    /// Sets the specified cryptocurrency IDs to the query. If the ids are already in the query set,
+    /// it will not be resubscribed.
     async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
-        self.store
+        let (to_sub, to_unsub) = self
+            .store
             .set_query_ids(ids)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
+        self.subscribe_tx
+            .send(to_sub)
+            .await
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
+        self.unsubscribe_tx
+            .send(to_unsub)
+            .await
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
         Ok(())
     }
 }

@@ -1,35 +1,26 @@
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
-/// Errors that can occur while building the `HtxRestAPI`.
-pub enum BuildError {
-    /// The URL provided is invalid.
-    #[error("invalid url")]
-    InvalidURL(#[from] url::ParseError),
+use tokio_tungstenite::tungstenite;
 
-    /// An error occurred with the `reqwest` client.
-    #[error("reqwest error: {0}")]
-    Reqwest(String),
+#[derive(Debug, thiserror::Error)]
+pub enum ConnectionError {
+    #[error("failed to connect to endpoint {0}")]
+    ConnectionFailure(#[from] tungstenite::Error),
+
+    #[error("received unsuccessful HTTP response: {0}")]
+    UnsuccessfulHttpResponse(tungstenite::http::StatusCode),
 }
 
-impl From<reqwest::Error> for BuildError {
-    fn from(e: reqwest::Error) -> Self {
-        BuildError::Reqwest(e.to_string())
-    }
+#[derive(Debug, thiserror::Error)]
+pub enum MessageError {
+    #[error("failed to parse message")]
+    Parse(#[from] serde_json::Error),
+
+    #[error("channel closed")]
+    ChannelClosed,
+
+    #[error("unsupported message")]
+    UnsupportedMessage,
 }
 
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
-/// Errors that can occur while interacting with the REST API.
-pub enum RestAPIError {
-    /// An HTTP error occurred.
-    #[error("http error: {0}")]
-    Http(reqwest::StatusCode),
-
-    /// An error occurred with the `reqwest` client.
-    #[error("reqwest error: {0}")]
-    Reqwest(String),
-}
-
-impl From<reqwest::Error> for RestAPIError {
-    fn from(e: reqwest::Error) -> Self {
-        RestAPIError::Reqwest(e.to_string())
-    }
-}
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct SendError(#[from] tungstenite::Error);

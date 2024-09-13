@@ -12,9 +12,9 @@ use bothan_htx::{HtxWorkerBuilder, HtxWorkerBuilderOpts};
 async fn main() {
     init();
     let path = std::env::current_dir().unwrap();
-    let store = SharedStore::new(Registry::default().validate().unwrap(), path.as_path())
-        .await
-        .unwrap();
+    let registry = Registry::default().validate().unwrap();
+    let store = SharedStore::new(registry, path.as_path()).await.unwrap();
+
     let worker_store = store.create_worker_store(HtxWorkerBuilder::worker_name());
     let opts = HtxWorkerBuilderOpts::default();
 
@@ -24,15 +24,16 @@ async fn main() {
         .unwrap();
 
     worker
-        .set_query_ids(vec!["btcusdt".to_string()])
+        .set_query_ids(vec!["btcusdt".to_string(), "ethusdt".to_string()])
         .await
         .unwrap();
 
     sleep(Duration::from_secs(2)).await;
 
     loop {
-        let data = worker.get_asset("btcusdt").await;
-        println!("{:?}", data);
-        tokio::time::sleep(Duration::from_secs(5)).await;
+        let btc_data = worker.get_asset("btcusdt").await;
+        let eth_data = worker.get_asset("ethusdt").await;
+        println!("{:?} {:?}", btc_data, eth_data);
+        sleep(Duration::from_secs(5)).await;
     }
 }
