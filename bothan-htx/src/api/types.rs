@@ -1,9 +1,9 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// The default URL for the Kraken WebSocket API.
 pub const DEFAULT_URL: &str = "wss://api.huobi.pro/ws";
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum HtxResponse {
     SubResponse(SubResponse),
@@ -12,7 +12,7 @@ pub enum HtxResponse {
     Ping(Ping),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SubResponse {
     pub id: Option<String>,
@@ -22,7 +22,7 @@ pub struct SubResponse {
     pub timestamp: i64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UnsubResponse {
     pub id: Option<String>,
@@ -32,7 +32,7 @@ pub struct UnsubResponse {
     pub timestamp: i64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DataUpdate {
     pub ch: String,
@@ -41,7 +41,7 @@ pub struct DataUpdate {
     pub tick: Tick,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Tick {
     pub open: f64,
@@ -59,13 +59,13 @@ pub struct Tick {
     pub last_size: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Ping {
     pub ping: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Pong {
     pub pong: u64,

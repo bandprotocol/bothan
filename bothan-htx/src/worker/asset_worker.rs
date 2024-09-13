@@ -194,3 +194,67 @@ async fn handle_connection_recv(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use rust_decimal::Decimal;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_parse_tick() {
+        // Create a mock Tick struct with valid data
+        let tick = Tick {
+            open: 51732.0,
+            high: 52785.64,
+            low: 51000.0,
+            close: 52735.63,
+            amount: 13259.24137056181,
+            vol: 687640987.4125315,
+            count: 448737,
+            bid: 52732.88,
+            bid_size: 0.036,
+            ask: 52732.89,
+            ask_size: 0.583653,
+            last_price: 52735.63,
+            last_size: 0.03,
+        };
+
+        // Parse the tick into AssetInfo
+        let result = parse_tick("btcusdt", tick);
+
+        // Expected AssetInfo object
+        let expected = AssetInfo::new(
+            "btcusdt".to_string(),
+            Decimal::from_str("52735.63").unwrap(),
+            0,
+        );
+
+        // Assert that the parsed result matches the expected output
+        assert_eq!(result.as_ref().unwrap().id, expected.id);
+        assert_eq!(result.unwrap().price, expected.price);
+    }
+
+    #[test]
+    fn test_parse_tick_with_failure() {
+        // Create a mock Tick struct with an invalid price
+        let tick = Tick {
+            open: 51732.0,
+            high: 52785.64,
+            low: 51000.0,
+            close: 52735.63,
+            amount: 13259.24137056181,
+            vol: 687640987.4125315,
+            count: 448737,
+            bid: 52732.88,
+            bid_size: 0.036,
+            ask: 52732.89,
+            ask_size: 0.583653,
+            last_price: f64::INFINITY, // Invalid price to trigger error
+            last_size: 0.03,
+        };
+
+        // Assert that parsing the tick with an invalid price results in an error
+        assert!(parse_tick("btcusdt", tick).is_err());
+    }
+}
