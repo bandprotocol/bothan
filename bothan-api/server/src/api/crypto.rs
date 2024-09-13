@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use semver::Version;
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
@@ -9,8 +10,9 @@ use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
 use bothan_core::manager::CryptoAssetInfoManager;
 
 use crate::api::utils::parse_price_state;
+use crate::monitoring::{Client as MonitoringClient, HEARTBEAT_INTERVAL};
 use crate::proto::price::price_service_server::PriceService;
-use crate::proto::price::{GetPricesRequest, GetPricesResponse};
+use crate::proto::price::{GetPricesRequest, GetPricesResponse, Price};
 use crate::proto::signal::signal_service_server::SignalService;
 use crate::proto::signal::{SetActiveSignalIdsRequest, UpdateRegistryRequest};
 
@@ -19,13 +21,38 @@ pub const PRECISION: u32 = 9;
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
     manager: Arc<RwLock<CryptoAssetInfoManager<'static>>>,
+    monitoring_client: Arc<MonitoringClient>,
 }
 
 impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: CryptoAssetInfoManager<'static>) -> Self {
+    pub fn new(
+        manager: CryptoAssetInfoManager<'static>,
+        monitoring_client: MonitoringClient,
+    ) -> Self {
         CryptoQueryServer {
             manager: Arc::new(RwLock::new(manager)),
+            monitoring_client: Arc::new(monitoring_client),
+        }
+    }
+
+    pub async fn start_heartbeat(&self) {
+        loop {
+            sleep(HEARTBEAT_INTERVAL).await;
+
+            let manager_reader = self.manager.read().await;
+            let Ok(ids) = manager_reader.get_active_signal_ids().await else {
+                error!("failed to get active signal ids to send to monitoring");
+                continue;
+            };
+
+            match self.monitoring_client.post_heartbeat(ids).await {
+                Ok(r) => match r.status() {
+                    reqwest::StatusCode::OK => info!("successfully sent data to monitoring"),
+                    _ => error!("failed to send data to monitoring: {:?}", r.text().await),
+                },
+                Err(e) => error!("failed to send data to monitoring: {}", e),
+            }
         }
     }
 }
@@ -125,7 +152,22 @@ impl PriceService for CryptoQueryServer {
             .into_iter()
             .zip(price_states)
             .map(|(id, state)| parse_price_state(id, state))
-            .collect();
+            .collect::<Vec<Price>>();
+
+        let monitoring_client = self.monitoring_client.clone();
+        let cloned_prices = prices.clone();
+
+        // Spawn a new task to send the prices to the monitoring service as to not block the
+        // current task.
+        tokio::spawn(async move {
+            match monitoring_client.post_price(cloned_prices).await {
+                Ok(r) => match r.status() {
+                    reqwest::StatusCode::OK => info!("successfully sent data to monitoring"),
+                    _ => error!("failed to send data to monitoring: {:?}", r.text().await),
+                },
+                Err(e) => error!("failed to send data to monitoring: {}", e),
+            }
+        });
 
         Ok(Response::new(GetPricesResponse { prices }))
     }

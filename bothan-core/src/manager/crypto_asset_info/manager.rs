@@ -12,7 +12,7 @@ use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::PriceState;
 use crate::registry::{Invalid, Registry};
 use crate::store::error::Error as StoreError;
-use crate::store::ManagerStore;
+use crate::store::{ActiveSignalIDs, ManagerStore};
 use crate::worker::AssetWorker;
 
 pub struct CryptoAssetInfoManager<'a> {
@@ -58,6 +58,11 @@ impl<'a> CryptoAssetInfoManager<'a> {
         self.store.set_active_signal_ids(signal_ids).await?;
 
         Ok(())
+    }
+
+    /// Gets the active signal ids of the manager
+    pub async fn get_active_signal_ids(&self) -> Result<ActiveSignalIDs, StoreError> {
+        self.store.get_active_signal_ids().await
     }
 
     /// Gets the `Price` of the given signal ids.
