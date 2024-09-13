@@ -375,13 +375,11 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "sha1",
  "thiserror",
  "tokio",
  "tonic",
  "tonic-build 0.12.1",
  "tracing",
- "uuid",
 ]
 
 [[package]]
