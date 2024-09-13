@@ -1,9 +1,9 @@
 #[derive(Debug, thiserror::Error)]
 pub enum PostError {
-    #[error("Failed to serialize data: {0}")]
+    #[error("Failed to send request: {0}")]
     Reqwest(#[from] reqwest::Error),
 
-    #[error("Failed to serialize data: {0}")]
+    #[error("Value is not a valid header: {0}")]
     InvalidHeader(#[from] reqwest::header::InvalidHeaderValue),
 
     #[error("Failed to serialize data: {0}")]
