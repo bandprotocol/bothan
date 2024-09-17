@@ -27,7 +27,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PriceServiceClient interface {
 	// Retrieves the prices for the specified signal IDs.
-	// This method returns the current prices and status for each requested signal ID.
+	// This method returns the current prices and status for each requested signal
+	// ID.
 	GetPrices(ctx context.Context, in *GetPricesRequest, opts ...grpc.CallOption) (*GetPricesResponse, error)
 }
 
@@ -53,7 +54,8 @@ func (c *priceServiceClient) GetPrices(ctx context.Context, in *GetPricesRequest
 // for forward compatibility
 type PriceServiceServer interface {
 	// Retrieves the prices for the specified signal IDs.
-	// This method returns the current prices and status for each requested signal ID.
+	// This method returns the current prices and status for each requested signal
+	// ID.
 	GetPrices(context.Context, *GetPricesRequest) (*GetPricesResponse, error)
 	mustEmbedUnimplementedPriceServiceServer()
 }
