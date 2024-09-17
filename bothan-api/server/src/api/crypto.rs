@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use rand::rngs::OsRng;
+use rand::RngCore;
 use semver::Version;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -46,7 +48,8 @@ impl CryptoQueryServer {
                 continue;
             };
 
-            match self.monitoring_client.post_heartbeat(ids).await {
+            let uuid = create_uuid();
+            match self.monitoring_client.post_heartbeat(uuid, ids).await {
                 Ok(r) => match r.status() {
                     reqwest::StatusCode::OK => info!("successfully sent data to monitoring"),
                     _ => error!("failed to send data to monitoring: {:?}", r.text().await),
@@ -154,13 +157,18 @@ impl PriceService for CryptoQueryServer {
             .map(|(id, state)| parse_price_state(id, state))
             .collect::<Vec<Price>>();
 
-        let monitoring_client = self.monitoring_client.clone();
-        let cloned_prices = prices.clone();
+        let uuid = create_uuid();
 
         // Spawn a new task to send the prices to the monitoring service as to not block the
         // current task.
+        let monitoring_client = self.monitoring_client.clone();
+        let cloned_uuid = uuid.clone();
+        let cloned_prices = prices.clone();
         tokio::spawn(async move {
-            match monitoring_client.post_price(cloned_prices).await {
+            match monitoring_client
+                .post_price(cloned_uuid, cloned_prices)
+                .await
+            {
                 Ok(r) => match r.status() {
                     reqwest::StatusCode::OK => info!("successfully sent data to monitoring"),
                     _ => error!("failed to send data to monitoring: {:?}", r.text().await),
@@ -169,6 +177,12 @@ impl PriceService for CryptoQueryServer {
             }
         });
 
-        Ok(Response::new(GetPricesResponse { prices }))
+        Ok(Response::new(GetPricesResponse { uuid, prices }))
     }
+}
+
+fn create_uuid() -> String {
+    let mut uuid_bytes = [0u8; 16];
+    OsRng.fill_bytes(&mut uuid_bytes);
+    hex::encode(uuid_bytes)
 }

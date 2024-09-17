@@ -1,5 +1,3 @@
-use rand::rngs::OsRng;
-use rand::RngCore;
 use reqwest::header::HeaderMap;
 use reqwest::Response;
 use serde::Serialize;
@@ -27,12 +25,17 @@ impl Client {
         }
     }
 
-    pub async fn post_price(&self, prices: Vec<Price>) -> Result<Response, PostError> {
-        self.post(Topic::Price, prices).await
+    pub async fn post_price(
+        &self,
+        uuid: String,
+        prices: Vec<Price>,
+    ) -> Result<Response, PostError> {
+        self.post(uuid, Topic::Price, prices).await
     }
 
     pub async fn post_heartbeat(
         &self,
+        uuid: String,
         active_signal_ids: ActiveSignalIDs,
     ) -> Result<Response, PostError> {
         let bothan_info = BothanInfo::new(
@@ -40,14 +43,15 @@ impl Client {
             active_signal_ids.into_iter().collect::<Vec<String>>(),
         );
 
-        self.post(Topic::Heartbeat, bothan_info).await
+        self.post(uuid, Topic::Heartbeat, bothan_info).await
     }
 
-    async fn post<T: Serialize>(&self, topic: Topic, data: T) -> Result<Response, PostError> {
-        let mut uuid_bytes = [0u8; 16];
-        OsRng.fill_bytes(&mut uuid_bytes);
-        let uuid = hex::encode(uuid_bytes);
-
+    async fn post<T: Serialize>(
+        &self,
+        uuid: String,
+        topic: Topic,
+        data: T,
+    ) -> Result<Response, PostError> {
         let entry = Entry::new(uuid, topic, data);
 
         let mut header = HeaderMap::new();
