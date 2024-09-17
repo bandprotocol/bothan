@@ -13,7 +13,7 @@ pub struct MonitoringConfig {
 
 // TODO: add default endpoint once finalized
 fn default_endpoint() -> String {
-    "".to_string()
+    "https://bothan-monitoring.bandchain.org".to_string()
 }
 
 fn default_path() -> PathBuf {
