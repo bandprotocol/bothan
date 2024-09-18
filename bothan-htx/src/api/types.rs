@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// The default URL for the Kraken WebSocket API.
+/// The default URL for the Htx WebSocket API.
 pub const DEFAULT_URL: &str = "wss://api.huobi.pro/ws";
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
