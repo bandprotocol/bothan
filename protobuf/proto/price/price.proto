@@ -7,10 +7,12 @@ import "google/api/annotations.proto";
 option go_package = "github.com/bothan/bothan-api/client/proto/price";
 
 // PriceService defines the gRPC service responsible for handling price queries.
-// This service provides methods to retrieve the prices of assets based on their signal IDs.
+// This service provides methods to retrieve the prices of assets based on their
+// signal IDs.
 service PriceService {
   // Retrieves the prices for the specified signal IDs.
-  // This method returns the current prices and status for each requested signal ID.
+  // This method returns the current prices and status for each requested signal
+  // ID.
   rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {
     option (google.api.http).get = "/prices/{signal_ids}";
   }
@@ -35,7 +37,7 @@ message Price {
   // The signal ID associated with this price.
   string signal_id = 1;
   // The price of the asset associated with this signal ID.
-  int64 price = 2;
+  uint64 price = 2;
   // The status of the price (e.g., available, unavailable).
   Status status = 3;
 }

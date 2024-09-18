@@ -4,76 +4,55 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/pelletier/go-toml"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/query"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/signal"
 )
 
-type GrpcConfig struct {
-	Addr string `toml:"addr"`
+func main() {
+	grpcEndpoint := os.Getenv("GRPC_ENDPOINT")
+	if grpcEndpoint == "" {
+		grpcEndpoint = "localhost:50051"
+	}
+
+	proxyEndpoint := os.Getenv("PROXY_ENDPOINT")
+	if proxyEndpoint == "" {
+		proxyEndpoint = "localhost:8080"
+	}
+
+	if err := run(grpcEndpoint, proxyEndpoint); err != nil {
+		grpclog.Fatal(err)
+	}
 }
 
-type GoProxyConfig struct {
-	Addr string `toml:"addr"`
-}
-
-func run(grpcConfig GrpcConfig, goProxyConfig GoProxyConfig) error {
+func run(grpcEndpoint, proxyEndpoint string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Register gRPC server endpoint
-	// Note: Make sure the gRPC server is running properly and accessible
+	// Note: Make sure the gRPC server is running properly and accessibly
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := query.RegisterQueryHandlerFromEndpoint(ctx, mux, grpcConfig.Addr, opts)
+
+	err := signal.RegisterSignalServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Server running on", goProxyConfig.Addr)
-
-	// Start HTTP server (and proxy calls to gRPC server endpoint)
-	return http.ListenAndServe(goProxyConfig.Addr, mux)
-}
-
-func main() {
-	config, err := toml.LoadFile("./config.toml")
+	err = price.RegisterPriceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
-		fmt.Println("Error loading TOML file:", err)
-		return
+		return err
 	}
 
-	grpcTable, ok := config.Get("grpc").(*toml.Tree)
-	if !ok {
-		fmt.Println("gRPC configuration not found in TOML file")
-		return
-	}
+	fmt.Println("Server running on", proxyEndpoint)
 
-	grpcConfig := GrpcConfig{}
-	if err := grpcTable.Unmarshal(&grpcConfig); err != nil {
-		fmt.Println("Error parsing gRPC config:", err)
-		return
-	}
-
-	goProxyTable, ok := config.Get("go-proxy").(*toml.Tree)
-	if !ok {
-		fmt.Println("goProxy configuration not found in TOML file")
-		return
-	}
-
-	goProxyConfig := GoProxyConfig{}
-	if err := goProxyTable.Unmarshal(&goProxyConfig); err != nil {
-		fmt.Println("Error parsing goProxy config:", err)
-		return
-	}
-
-	if err := run(grpcConfig, goProxyConfig); err != nil {
-		grpclog.Fatal(err)
-	}
+	// Start an HTTP server (and proxy calls to gRPC server endpoint)
+	return http.ListenAndServe(proxyEndpoint, mux)
 }

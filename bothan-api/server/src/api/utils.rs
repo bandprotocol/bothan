@@ -12,15 +12,15 @@ pub fn parse_price_state(id: String, price_state: PriceState) -> Price {
             let mantissa_price = raw_price
                 .round_dp_with_strategy(PRECISION, RoundingStrategy::ToZero)
                 .mantissa();
-            match i64::try_from(mantissa_price) {
+            match u64::try_from(mantissa_price) {
                 Ok(p) => Price::new(id, p, Status::Available),
                 Err(_) => {
-                    warn!("failed to convert {mantissa_price} to i64 for id {id}");
-                    Price::new(id, 0, Status::Unavailable)
+                    warn!("failed to convert {mantissa_price} to u64 for id {id}");
+                    Price::new(id, 0u64, Status::Unavailable)
                 }
             }
         }
-        PriceState::Unavailable => Price::new(id, 0, Status::Unavailable),
-        PriceState::Unsupported => Price::new(id, 0, Status::Unsupported),
+        PriceState::Unavailable => Price::new(id, 0u64, Status::Unavailable),
+        PriceState::Unsupported => Price::new(id, 0u64, Status::Unsupported),
     }
 }
