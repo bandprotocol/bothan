@@ -42,14 +42,14 @@ impl CryptoCompareRestAPIBuilder {
 
     /// Sets the URL for the API.
     /// The default URL is `DEFAULT_URL`.
-    pub fn with_url(&mut self, url: &str) -> &Self {
+    pub fn with_url(mut self, url: &str) -> Self {
         self.url = url.into();
         self
     }
 
     /// Sets the API key for the API.
     /// The default is `None`.
-    pub fn with_api_key(&mut self, api_key: &str) -> &Self {
+    pub fn with_api_key(mut self, api_key: &str) -> Self {
         self.api_key = Some(api_key.into());
         self
     }

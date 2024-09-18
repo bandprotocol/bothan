@@ -67,9 +67,10 @@ pub(crate) mod test {
     pub(crate) async fn setup() -> (ServerGuard, CryptoCompareRestAPI) {
         let server = Server::new_async().await;
 
-        let mut builder = CryptoCompareRestAPIBuilder::default();
-        builder.with_url(&server.url());
-        let api = builder.build().unwrap();
+        let api = CryptoCompareRestAPIBuilder::default()
+            .with_url(&server.url())
+            .build()
+            .unwrap();
 
         (server, api)
     }

@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-cryptocompare"
-version = "0.1.0"
+version = "0.0.1-alpha.3"
 dependencies = [
  "async-trait",
  "bothan-core",
