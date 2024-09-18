@@ -29,7 +29,9 @@ impl OkxWebSocketConnector {
         let status = resp.status();
         if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
             warn!("failed to connect with response code {}", resp.status());
-            return Err(ConnectionError::UnsuccessfulHttpResponse(resp.status()));
+            return Err(ConnectionError::UnsuccessfulWebSocketResponse(
+                resp.status(),
+            ));
         }
 
         Ok(OkxWebSocketConnection::new(wss))

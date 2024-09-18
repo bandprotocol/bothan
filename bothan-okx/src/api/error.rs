@@ -5,8 +5,8 @@ pub enum ConnectionError {
     #[error("failed to connect to endpoint {0}")]
     ConnectionFailure(#[from] tungstenite::Error),
 
-    #[error("received unsuccessful HTTP response: {0}")]
-    UnsuccessfulHttpResponse(tungstenite::http::StatusCode),
+    #[error("received unsuccessful WebSocket response: {0}")]
+    UnsuccessfulWebSocketResponse(tungstenite::http::StatusCode),
 }
 
 #[derive(Debug, thiserror::Error)]
