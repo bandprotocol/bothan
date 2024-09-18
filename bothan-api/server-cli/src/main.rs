@@ -43,7 +43,11 @@ async fn main() {
         .clone()
         .unwrap_or(bothan_home_dir().join("config.toml"));
 
-    let app_config = AppConfig::from(config_path).expect("Failed to load config");
+    let app_config = if config_path.is_file() {
+        AppConfig::from(config_path).expect("Failed to load config")
+    } else {
+        AppConfig::default()
+    };
 
     let log_level = &app_config.log.level;
     tracing_subscriber::fmt()
