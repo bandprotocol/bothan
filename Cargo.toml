@@ -1,10 +1,9 @@
 [workspace.package]
-version = "0.1.8"
+authors = ["Band Protocol <dev@bandprotocol.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/bandprotocol/bothan"
 exclude = [".github/"]
-
 
 [workspace]
 members = [
@@ -18,7 +17,6 @@ members = [
 ]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
-
 
 [workspace.dependencies]
 anyhow = "1.0.86"
