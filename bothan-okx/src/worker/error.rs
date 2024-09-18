@@ -5,7 +5,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub(crate) enum WorkerError {
     #[error("value is not a valid decimal: {0}")]
-    Underflow(#[from] rust_decimal::Error),
+    InvalidDecimal(#[from] rust_decimal::Error),
 
     #[error("failed to set data to the store: {0}")]
     SetFailed(#[from] store::error::Error),
