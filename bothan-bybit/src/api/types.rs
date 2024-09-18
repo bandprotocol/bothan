@@ -20,7 +20,6 @@ pub struct PublicMessageResponse {
     pub success: bool,
     pub ret_msg: String,
     pub conn_id: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub req_id: Option<String>,
     pub op: String,
 }
