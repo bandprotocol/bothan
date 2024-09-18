@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub use crate::api::types::channels::ticker::Ticker;
+use crate::api::types::channels::ticker::Ticker;
 use crate::api::types::request::Subscriptions;
 
 pub mod channels;

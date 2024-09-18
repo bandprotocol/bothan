@@ -11,8 +11,8 @@ use bothan_core::types::AssetInfo;
 
 use crate::api::error::{MessageError, SendError};
 use crate::api::types::channels::Channel;
-use crate::api::types::{CoinbaseResponse, Ticker};
-use crate::api::{CoinbaseWebSocketConnection, CoinbaseWebSocketConnector};
+use crate::api::types::CoinbaseResponse;
+use crate::api::{CoinbaseWebSocketConnection, CoinbaseWebSocketConnector, Ticker};
 use crate::worker::error::WorkerError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 use crate::worker::CoinbaseWorker;

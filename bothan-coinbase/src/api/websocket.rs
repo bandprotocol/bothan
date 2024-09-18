@@ -123,7 +123,8 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::types::{CoinbaseResponse, Ticker};
+    use crate::api::types::CoinbaseResponse;
+    use crate::api::Ticker;
 
     use super::*;
 
