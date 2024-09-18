@@ -1,10 +1,9 @@
 [package]
 name = "bothan-coinbase"
-version = "0.1.0"
+version = "0.0.1-alpha.3"
 edition.workspace = true
 license.workspace = true
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository.workspace = true
 
 [dependencies]
 futures-util = "0.3.29"

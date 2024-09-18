@@ -6,7 +6,7 @@ pub mod price;
 pub mod signal;
 
 impl price::Price {
-    pub fn new<T: Into<String>, U: Into<i64>>(
+    pub fn new<T: Into<String>, U: Into<u64>>(
         signal_id: T,
         price: U,
         status: price::Status,

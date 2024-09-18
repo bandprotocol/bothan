@@ -349,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-api"
-version = "0.1.0"
+version = "0.0.1-alpha.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -380,7 +380,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-api-cli"
-version = "0.1.0"
+version = "0.0.1-alpha.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -404,7 +404,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-binance"
-version = "0.1.0"
+version = "0.0.1-alpha.3"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -425,7 +425,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-coingecko"
-version = "0.1.0"
+version = "0.0.1-alpha.3"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -446,7 +446,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-core"
-version = "0.1.8"
+version = "0.0.1-alpha.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -495,7 +495,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-kraken"
-version = "0.1.0"
+version = "0.0.1-alpha.3"
 dependencies = [
  "async-trait",
  "bothan-core",
