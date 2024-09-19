@@ -9,20 +9,6 @@ use crate::api::CryptoCompareRestAPI;
 /// Builder for creating instances of `CryptoCompareRestAPI`.
 /// Methods can be chained to set the configuration values and the
 /// service is constructed by calling the [`build`](CryptoCompareRestAPIBuilder::build) method.
-/// # Example
-/// ```no_run
-/// use bothan_cryptocompare::api::CryptoCompareRestAPIBuilder;
-///
-/// #[tokio::main]
-/// async fn main() {
-///     let mut builder = CryptoCompareRestAPIBuilder::default();
-///     builder.with_url("https://min-api.cryptocompare.com/");
-///     builder.with_api_key("your_api_key");
-///     let api = builder.build().unwrap();
-///
-///     // use api ...
-/// }
-/// ```
 pub struct CryptoCompareRestAPIBuilder {
     url: String,
     api_key: Option<String>,
