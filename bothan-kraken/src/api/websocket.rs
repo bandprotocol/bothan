@@ -1,6 +1,5 @@
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
-use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
@@ -31,7 +30,9 @@ impl KrakenWebSocketConnector {
         let status = resp.status();
         if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
             warn!("failed to connect with response code {}", resp.status());
-            return Err(ConnectionError::UnsuccessfulHttpResponse(resp.status()));
+            return Err(ConnectionError::UnsuccessfulWebSocketResponse(
+                resp.status(),
+            ));
         }
 
         Ok(KrakenWebSocketConnection::new(wss))
@@ -71,11 +72,8 @@ impl KrakenWebSocketConnection {
             req_id: None,
         };
 
-        // Create the subscription payload.
-        let payload = json!(msg);
-
-        // Send the subscription message.
-        let message = Message::Text(payload.to_string());
+        // Send the unsubscription message.
+        let message = Message::Text(serde_json::to_string(&msg)?);
         Ok(self.sender.send(message).await?)
     }
 
@@ -87,11 +85,8 @@ impl KrakenWebSocketConnection {
             params: Some(params),
             req_id: None,
         };
-        // Create the unsubscription payload.
-        let payload = json!(msg);
-
         // Send the unsubscription message.
-        let message = Message::Text(payload.to_string());
+        let message = Message::Text(serde_json::to_string(&msg)?);
         Ok(self.sender.send(message).await?)
     }
 
@@ -144,7 +139,6 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    // use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
     use crate::api::types::{ChannelResponse, KrakenResponse, TickerResponse};
 
     use super::*;

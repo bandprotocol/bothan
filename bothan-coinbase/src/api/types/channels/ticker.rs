@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents a ticker with various market data.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Ticker {
     /// The sequence number of the ticker.
     pub sequence: usize,

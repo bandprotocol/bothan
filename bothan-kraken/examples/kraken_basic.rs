@@ -31,8 +31,9 @@ async fn main() {
     sleep(Duration::from_secs(2)).await;
 
     loop {
-        let data = worker.get_asset("BTC/USD").await;
-        println!("{:?}", data);
+        let btc_data = worker.get_asset("BTC/USD").await;
+        let eth_data = worker.get_asset("ETH/USD").await;
+        println!("{:?}, {:?}", btc_data, eth_data);
         sleep(Duration::from_secs(5)).await;
     }
 }

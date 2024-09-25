@@ -1,44 +1,72 @@
 use serde::{Deserialize, Serialize};
 
-/// The default URL for the Huobi API.
-pub(crate) const DEFAULT_URL: &str = "https://api.huobi.pro/";
+/// The default URL for the Htx WebSocket API.
+pub const DEFAULT_URL: &str = "wss://api.huobi.pro/ws";
 
-/// Represents the status of a response.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Status {
-    /// The request was successful.
-    Ok,
-    /// The request resulted in an error.
-    Error,
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", untagged)]
+pub enum HtxResponse {
+    SubResponse(SubResponse),
+    UnsubResponse(UnsubResponse),
+    DataUpdate(DataUpdate),
+    Ping(Ping),
 }
 
-/// A generic response wrapper.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Response<T> {
-    /// The actual data of the response.
-    pub data: T,
-    /// The status of the response.
-    pub status: Status,
-    /// The timestamp of the response.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SubResponse {
+    pub id: Option<String>,
+    pub status: String,
+    pub subbed: String,
     #[serde(rename = "ts")]
-    pub timestamp: usize,
+    pub timestamp: i64,
 }
 
-/// Represents a ticker.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct Ticker {
-    pub symbol: String,
+pub struct UnsubResponse {
+    pub id: Option<String>,
+    pub status: String,
+    pub unsubbed: String,
+    #[serde(rename = "ts")]
+    pub timestamp: i64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DataUpdate {
+    pub ch: String,
+    #[serde(rename = "ts")]
+    pub timestamp: i64,
+    pub tick: Tick,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Tick {
     pub open: f64,
     pub high: f64,
     pub low: f64,
     pub close: f64,
     pub amount: f64,
     pub vol: f64,
-    pub count: usize,
+    pub count: u64,
     pub bid: f64,
     pub bid_size: f64,
     pub ask: f64,
     pub ask_size: f64,
+    pub last_price: f64,
+    pub last_size: f64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Ping {
+    pub ping: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Pong {
+    pub pong: u64,
 }
