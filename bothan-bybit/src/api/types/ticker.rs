@@ -67,7 +67,7 @@ pub struct SpotTicker {
 }
 
 /// Represents different types of tickers.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged, rename_all = "camelCase")]
 pub enum Tickers {
     /// A list of spot tickers.
@@ -75,7 +75,7 @@ pub enum Tickers {
 }
 
 /// Represents the response containing tickers.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TickersResponse {
     /// The category of the tickers.
     #[serde(default)]

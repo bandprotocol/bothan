@@ -1,6 +1,5 @@
 use std::sync::Weak;
 
-use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
@@ -11,15 +10,15 @@ use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
 use crate::api::error::{MessageError, SendError};
-use crate::api::types::{ChannelResponse, KrakenResponse, TickerResponse};
-use crate::api::{KrakenWebSocketConnection, KrakenWebSocketConnector};
+use crate::api::types::{ChannelResponse, OkxResponse, TickerData};
+use crate::api::{OkxWebSocketConnection, OkxWebSocketConnector};
 use crate::worker::error::WorkerError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::KrakenWorker;
+use crate::worker::OkxWorker;
 
 pub(crate) async fn start_asset_worker(
-    worker: Weak<KrakenWorker>,
-    mut connection: KrakenWebSocketConnection,
+    worker: Weak<OkxWorker>,
+    mut connection: OkxWebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
@@ -31,7 +30,7 @@ pub(crate) async fn start_asset_worker(
                 if let Some(worker) = worker.upgrade() {
                     match result {
                         Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
-                        Ok(kraken_result) => handle_connection_recv(kraken_result, &worker.connector, &mut connection, &worker.store).await,
+                        Ok(okx_result) => handle_connection_recv(okx_result, &worker.connector, &mut connection, &worker.store).await,
                     }
                 } else {
                     break
@@ -52,17 +51,17 @@ pub(crate) async fn start_asset_worker(
 
 async fn subscribe(
     ids: &[String],
-    connection: &mut KrakenWebSocketConnection,
+    connection: &mut OkxWebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
         let ids_vec = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-        connection.subscribe_ticker(&ids_vec, None, None).await?
+        connection.subscribe_ticker(&ids_vec).await?
     }
 
     Ok(())
 }
 
-async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut KrakenWebSocketConnection) {
+async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut OkxWebSocketConnection) {
     if let Err(e) = subscribe(&ids, connection).await {
         error!("failed to subscribe to ids {:?}: {}", ids, e);
     } else {
@@ -72,7 +71,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut KrakenWebSocke
 
 async fn unsubscribe(
     ids: &[String],
-    connection: &mut KrakenWebSocketConnection,
+    connection: &mut OkxWebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
         connection
@@ -83,7 +82,7 @@ async fn unsubscribe(
     Ok(())
 }
 
-async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut KrakenWebSocketConnection) {
+async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut OkxWebSocketConnection) {
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
@@ -92,8 +91,8 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut KrakenWebSoc
 }
 
 async fn handle_reconnect(
-    connector: &KrakenWebSocketConnector,
-    connection: &mut KrakenWebSocketConnection,
+    connector: &OkxWebSocketConnector,
+    connection: &mut OkxWebSocketConnection,
     query_ids: &WorkerStore,
 ) {
     let mut retry_count: usize = 1;
@@ -121,7 +120,7 @@ async fn handle_reconnect(
                 }
             }
         } else {
-            error!("failed to reconnect to kraken");
+            error!("failed to reconnect to okx");
         }
 
         retry_count += 1;
@@ -129,29 +128,26 @@ async fn handle_reconnect(
     }
 }
 
-fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, WorkerError> {
-    let id = ticker.symbol.clone();
-    let price_value =
-        Decimal::from_f64(ticker.last).ok_or(WorkerError::InvalidPrice(ticker.last))?;
-    Ok(AssetInfo::new(
-        id,
-        price_value,
-        chrono::Utc::now().timestamp(),
-    ))
+fn parse_ticker(ticker: TickerData) -> Result<AssetInfo, WorkerError> {
+    let id = ticker.inst_id.clone();
+    let price_value = Decimal::from_str_exact(&ticker.last)?;
+    let timestamp = chrono::Utc::now().timestamp();
+    Ok(AssetInfo::new(id, price_value, timestamp))
 }
 
-async fn store_ticker(store: &WorkerStore, ticker: TickerResponse) -> Result<(), WorkerError> {
+async fn store_ticker(store: &WorkerStore, ticker: TickerData) -> Result<(), WorkerError> {
     store
-        .set_asset(ticker.symbol.clone(), parse_ticker(ticker)?)
+        .set_asset(ticker.inst_id.clone(), parse_ticker(ticker)?)
         .await?;
     Ok(())
 }
 
-/// Processes the response from the Kraken API.
-async fn process_response(resp: KrakenResponse, store: &WorkerStore) {
+/// Processes the response from the Okx API.
+async fn process_response(resp: OkxResponse, store: &WorkerStore) {
     match resp {
-        KrakenResponse::Channel(resp) => match resp {
-            ChannelResponse::Ticker(tickers) => {
+        OkxResponse::ChannelResponse(resp) => match resp {
+            ChannelResponse::Ticker(push_data) => {
+                let tickers = push_data.data;
                 for ticker in tickers {
                     match store_ticker(store, ticker).await {
                         Ok(_) => info!("saved data"),
@@ -159,26 +155,17 @@ async fn process_response(resp: KrakenResponse, store: &WorkerStore) {
                     }
                 }
             }
-            ChannelResponse::Heartbeat => {
-                debug!("received heartbeat from kraken");
-            }
-            ChannelResponse::Status(status) => {
-                debug!("received status from kraken: {:?}", status);
-            }
         },
-        KrakenResponse::PublicMessage(resp) => {
-            debug!("received public message from kraken: {:?}", resp);
-        }
-        KrakenResponse::Pong => {
-            debug!("received pong from kraken");
+        OkxResponse::WebSocketMessageResponse(resp) => {
+            debug!("received public message from okx: {:?}", resp);
         }
     }
 }
 
 async fn handle_connection_recv(
-    recv_result: Result<KrakenResponse, MessageError>,
-    connector: &KrakenWebSocketConnector,
-    connection: &mut KrakenWebSocketConnection,
+    recv_result: Result<OkxResponse, MessageError>,
+    connector: &OkxWebSocketConnector,
+    connection: &mut OkxWebSocketConnection,
     store: &WorkerStore,
 ) {
     match recv_result {
@@ -189,10 +176,10 @@ async fn handle_connection_recv(
             handle_reconnect(connector, connection, store).await;
         }
         Err(MessageError::UnsupportedMessage) => {
-            error!("unsupported message received from kraken");
+            error!("unsupported message received from okx");
         }
         Err(MessageError::Parse(..)) => {
-            error!("unable to parse message from kraken");
+            error!("unable to parse message from okx");
         }
     }
 }
@@ -203,23 +190,27 @@ mod test {
 
     #[test]
     fn test_parse_market() {
-        let ticker = TickerResponse {
-            symbol: "BTC".to_string(),
-            bid: 42000.00,
-            bid_qty: 50000.00,
-            ask: 42001.00,
-            ask_qty: 50000.00,
-            last: 42000.99,
-            volume: 100000.00,
-            vwap: 42000.00,
-            low: 40000.00,
-            high: 44000.00,
-            change: 2000.00,
-            change_pct: 0.05,
+        let ticker = TickerData {
+            inst_type: "SPOT".to_string(),
+            inst_id: "BTC-USDT".to_string(),
+            last: "42000.99".to_string(),
+            last_sz: "5000".to_string(),
+            ask_px: "10001".to_string(),
+            ask_sz: "5000".to_string(),
+            bid_px: "9999".to_string(),
+            bid_sz: "5000".to_string(),
+            open_24h: "10000".to_string(),
+            high_24h: "10000".to_string(),
+            low_24h: "10000".to_string(),
+            vol_ccy_24h: "10000".to_string(),
+            vol_24h: "10000".to_string(),
+            sod_utc0: "10000".to_string(),
+            sod_utc8: "10000".to_string(),
+            ts: "10000".to_string(),
         };
         let result = parse_ticker(ticker);
         let expected = AssetInfo::new(
-            "BTC".to_string(),
+            "BTC-USDT".to_string(),
             Decimal::from_str_exact("42000.99").unwrap(),
             0,
         );
@@ -229,19 +220,23 @@ mod test {
 
     #[test]
     fn test_parse_market_with_failure() {
-        let ticker = TickerResponse {
-            symbol: "BTC".to_string(),
-            bid: 42000.00,
-            bid_qty: 50000.00,
-            ask: 42001.00,
-            ask_qty: 50000.00,
-            last: f64::INFINITY,
-            volume: 100000.00,
-            vwap: 42000.00,
-            low: 40000.00,
-            high: 44000.00,
-            change: 2000.00,
-            change_pct: 0.05,
+        let ticker = TickerData {
+            inst_type: "SPOT".to_string(),
+            inst_id: "BTC-USDT".to_string(),
+            last: f64::INFINITY.to_string(),
+            last_sz: "5000".to_string(),
+            ask_px: "10001".to_string(),
+            ask_sz: "5000".to_string(),
+            bid_px: "9999".to_string(),
+            bid_sz: "5000".to_string(),
+            open_24h: "10000".to_string(),
+            high_24h: "10000".to_string(),
+            low_24h: "10000".to_string(),
+            vol_ccy_24h: "10000".to_string(),
+            vol_24h: "10000".to_string(),
+            sod_utc0: "10000".to_string(),
+            sod_utc8: "10000".to_string(),
+            ts: "10000".to_string(),
         };
         assert!(parse_ticker(ticker).is_err());
     }

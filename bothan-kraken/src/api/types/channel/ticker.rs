@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents the event trigger type.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum EventTrigger {
     #[serde(rename = "bbo")]
     BBO,
@@ -10,7 +10,7 @@ pub enum EventTrigger {
 }
 
 /// Parameters for a ticker request.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TickerRequestParameters {
     /// The channel name.
     pub channel: String,
@@ -35,7 +35,7 @@ pub struct TickerSubscriptionResult {
 }
 
 /// Response from a ticker request.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TickerResponse {
     /// The symbol of the ticker.
     pub symbol: String,
