@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents a response from a channel subscription.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ChannelResponse {
     /// Ticker data response.
@@ -9,7 +9,7 @@ pub enum ChannelResponse {
 }
 
 /// Represents push data from a channel.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PushData<T> {
     /// The argument for the channel.
     pub arg: ChannelArgument,
@@ -18,7 +18,7 @@ pub struct PushData<T> {
 }
 
 /// Represents the argument for a channel.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChannelArgument {
     /// The name of the channel.
@@ -28,7 +28,7 @@ pub struct ChannelArgument {
 }
 
 /// Represents ticker data received from the channel.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TickerData {
     pub inst_type: String,

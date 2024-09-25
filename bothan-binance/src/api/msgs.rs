@@ -1,26 +1,26 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SuccessResponse {
     pub result: Option<String>,
     pub id: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub code: u16,
     pub msg: String,
     pub id: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "e")]
 pub enum Data {
     #[serde(rename = "24hrMiniTicker")]
     MiniTicker(MiniTickerInfo),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MiniTickerInfo {
     #[serde(rename = "E")]
     pub event_time: i64,
@@ -47,13 +47,13 @@ pub struct MiniTickerInfo {
     pub quote_volume: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct StreamResponse {
     pub stream: String,
     pub data: Data,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BinanceResponse {
     Success(SuccessResponse),

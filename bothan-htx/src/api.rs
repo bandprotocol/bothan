@@ -1,7 +1,6 @@
-pub use builder::HtxRestAPIBuilder;
-pub use rest::HtxRestAPI;
+pub use error::{ConnectionError, MessageError, SendError};
+pub use websocket::{HtxWebSocketConnection, HtxWebSocketConnector};
 
-pub mod builder;
 pub mod error;
-pub mod rest;
 pub mod types;
+pub mod websocket;

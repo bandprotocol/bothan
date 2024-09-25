@@ -12,7 +12,7 @@ pub mod message;
 pub const DEFAULT_URL: &str = "wss://ws.kraken.com/v2";
 
 /// Represents the different types of responses from the Kraken API.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", untagged)]
 pub enum KrakenResponse {
     /// A response for public messages.

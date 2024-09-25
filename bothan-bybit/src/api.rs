@@ -1,7 +1,6 @@
-pub use builder::BybitRestAPIBuilder;
-pub use rest::BybitRestAPI;
+pub use error::{ConnectionError, MessageError, SendError};
+pub use websocket::{BybitWebSocketConnection, BybitWebSocketConnector};
 
-pub mod builder;
 pub mod error;
-pub mod rest;
 pub mod types;
+pub mod websocket;
