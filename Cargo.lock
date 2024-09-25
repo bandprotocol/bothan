@@ -418,6 +418,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bothan-coinbase"
+version = "0.0.1-alpha.3"
+dependencies = [
+ "async-trait",
+ "bothan-core",
+ "chrono",
+ "futures-util",
+ "rand",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "tracing-subscriber",
+ "ws-mock",
+]
+
+[[package]]
 name = "bothan-coingecko"
 version = "0.0.1-alpha.3"
 dependencies = [
