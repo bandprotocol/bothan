@@ -10,6 +10,7 @@ members = [
     "bothan-api/server",
     "bothan-api/server-cli",
     "bothan-binance",
+    "bothan-bybit",
     "bothan-coinbase",
     "bothan-coingecko",
     "bothan-core",
@@ -47,7 +48,7 @@ bothan-core = { path = "bothan-core" }
 bothan-api = { path = "bothan-api/server" }
 
 bothan-binance = { path = "bothan-binance" }
-#bothan-bybit = { path = "bothan-bybit" }
+bothan-bybit = { path = "bothan-bybit" }
 bothan-coinbase = { path = "bothan-coinbase" }
 bothan-coingecko = { path = "bothan-coingecko" }
 #bothan-coinmarketcap = { path = "bothan-coinmarketcap" }

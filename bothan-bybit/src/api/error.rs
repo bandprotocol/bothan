@@ -1,39 +1,26 @@
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
-/// Errors that can occur while building the `BybitRestAPI`.
-pub enum BuilderError {
-    #[error("invalid url")]
-    /// The URL provided is invalid.
-    InvalidURL(#[from] url::ParseError),
+use tokio_tungstenite::tungstenite;
 
-    #[error("reqwest error: {0}")]
-    /// An error occurred with the `reqwest` client.
-    Reqwest(String),
+#[derive(Debug, thiserror::Error)]
+pub enum ConnectionError {
+    #[error("failed to connect to endpoint {0}")]
+    ConnectionFailure(#[from] tungstenite::Error),
+
+    #[error("received unsuccessful WebSocket response: {0}")]
+    UnsuccessfulWebSocketResponse(tungstenite::http::StatusCode),
 }
 
-impl From<reqwest::Error> for BuilderError {
-    fn from(e: reqwest::Error) -> Self {
-        BuilderError::Reqwest(e.to_string())
-    }
+#[derive(Debug, thiserror::Error)]
+pub enum MessageError {
+    #[error("failed to parse message")]
+    Parse(#[from] serde_json::Error),
+
+    #[error("channel closed")]
+    ChannelClosed,
+
+    #[error("unsupported message")]
+    UnsupportedMessage,
 }
 
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
-/// Errors that can occur while interacting with the `BybitRestAPI`.
-pub enum RestAPIError {
-    #[error("http error: {0}")]
-    /// An HTTP error occurred.
-    Http(reqwest::StatusCode),
-
-    #[error("reqwest error: {0}")]
-    /// An error occurred with the `reqwest` client.
-    Reqwest(String),
-
-    #[error("category currently unsupported")]
-    /// The specified category is currently unsupported.
-    UnsupportedCategory,
-}
-
-impl From<reqwest::Error> for RestAPIError {
-    fn from(e: reqwest::Error) -> Self {
-        RestAPIError::Reqwest(e.to_string())
-    }
-}
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct SendError(#[from] tungstenite::Error);

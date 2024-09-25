@@ -1,5 +1,8 @@
-pub use service::builder::{BybitServiceBuilder, BybitServiceBuilderOpts};
-pub use service::BybitService;
+pub use api::websocket::{BybitWebSocketConnection, BybitWebSocketConnector};
+pub use worker::builder::BybitWorkerBuilder;
+pub use worker::error::BuildError;
+pub use worker::opts::BybitWorkerBuilderOpts;
+pub use worker::BybitWorker;
 
 pub mod api;
-pub mod service;
+pub mod worker;
