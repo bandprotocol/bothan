@@ -10,10 +10,12 @@ members = [
     "bothan-api/server",
     "bothan-api/server-cli",
     "bothan-binance",
+    "bothan-coinbase",
     "bothan-coingecko",
     "bothan-core",
     "bothan-htx",
     "bothan-kraken",
+    "bothan-okx",
 ]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
@@ -46,10 +48,10 @@ bothan-api = { path = "bothan-api/server" }
 
 bothan-binance = { path = "bothan-binance" }
 #bothan-bybit = { path = "bothan-bybit" }
-#bothan-coinbase = { path = "bothan-coinbase" }
+bothan-coinbase = { path = "bothan-coinbase" }
 bothan-coingecko = { path = "bothan-coingecko" }
 #bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
 #bothan-cryptocompare = { path = "bothan-cryptocompare" }
 bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
-#bothan-okx = { path = "bothan-okx" }
+bothan-okx = { path = "bothan-okx" }

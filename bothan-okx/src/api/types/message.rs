@@ -9,7 +9,7 @@ pub enum Op {
 }
 
 /// Represents the instrument type.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum InstrumentType {
     Spot,
@@ -26,7 +26,7 @@ pub struct WebSocketMessage<T> {
 }
 
 /// Represents a response to a WebSocket message.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WebSocketMessageResponse {
     /// The event name.
@@ -42,7 +42,7 @@ pub struct WebSocketMessageResponse {
 }
 
 /// Represents the arguments for a price request.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceRequestArgument {
     /// The name of the channel.
