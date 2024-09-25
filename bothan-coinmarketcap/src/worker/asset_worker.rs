@@ -119,7 +119,7 @@ mod test {
         let timestamp = "2021-01-01T00:00:00.000Z";
 
         let quote = Quote {
-            id: 1 as usize,
+            id: 1_usize,
             symbol: "BTC".to_string(),
             slug: "bitcoin".to_string(),
             name: "Bitcoin".to_string(),
@@ -153,7 +153,7 @@ mod test {
         let timestamp = "2021-01-01T00:00:00.000Z";
 
         let quote = Quote {
-            id: 1 as usize,
+            id: 1_usize,
             symbol: "BTC".to_string(),
             slug: "bitcoin".to_string(),
             name: "Bitcoin".to_string(),

@@ -22,7 +22,7 @@ impl CoinMarketCapRestAPI {
     /// Equivalent to the `/v2/cryptocurrency/quotes/latest` endpoint.
     pub async fn get_latest_quotes(
         &self,
-        ids: &Vec<&str>,
+        ids: &[&str],
     ) -> Result<Vec<Option<Quote>>, RestAPIError> {
         let url = format!("{}v2/cryptocurrency/quotes/latest", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
