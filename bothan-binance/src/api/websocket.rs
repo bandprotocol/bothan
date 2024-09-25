@@ -41,7 +41,7 @@ impl BinanceWebSocketConnector {
         // Check the HTTP response status.
         let status = resp.status();
         if status.as_u16() >= 400 {
-            return Err(ConnectionError::UnsuccessfulHttpResponse(status));
+            return Err(ConnectionError::UnsuccessfulWebSocketResponse(status));
         }
 
         // Return the WebSocket connection.

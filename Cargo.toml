@@ -6,7 +6,15 @@ repository = "https://github.com/bandprotocol/bothan"
 exclude = [".github/"]
 
 [workspace]
-members = ["bothan-core", "bothan-binance", "bothan-coingecko", "bothan-kraken", "bothan-api/server", "bothan-api/server-cli"]
+members = [
+    "bothan-api/server",
+    "bothan-api/server-cli",
+    "bothan-binance",
+    "bothan-coingecko",
+    "bothan-core",
+    "bothan-kraken",
+    "bothan-okx",
+]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
 
@@ -44,4 +52,4 @@ bothan-coingecko = { path = "bothan-coingecko" }
 #bothan-cryptocompare = { path = "bothan-cryptocompare" }
 #bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
-#bothan-okx = { path = "bothan-okx" }
+bothan-okx = { path = "bothan-okx" }
