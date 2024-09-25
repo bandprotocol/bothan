@@ -1,6 +1,6 @@
-pub use service::builder::{CryptoCompareServiceBuilder, CryptoCompareServiceBuilderOpts};
-pub use service::CryptoCompareService;
+pub use worker::builder::CryptoCompareWorkerBuilder;
+pub use worker::opts::CryptoCompareWorkerBuilderOpts;
+pub use worker::CryptoCompareWorker;
 
 pub mod api;
-pub mod service;
-pub mod types;
+pub mod worker;

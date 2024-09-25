@@ -513,6 +513,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "bothan-cryptocompare"
+version = "0.0.1-alpha.3"
+dependencies = [
+ "async-trait",
+ "bothan-core",
+ "chrono",
+ "futures",
+ "humantime-serde",
+ "mockito",
+ "reqwest",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+]
+
+[[package]]
 name = "bothan-htx"
 version = "0.0.1-alpha.3"
 dependencies = [
