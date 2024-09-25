@@ -13,6 +13,7 @@ members = [
     "bothan-coinbase",
     "bothan-coingecko",
     "bothan-core",
+    "bothan-htx",
     "bothan-kraken",
     "bothan-okx",
 ]
@@ -51,6 +52,6 @@ bothan-coinbase = { path = "bothan-coinbase" }
 bothan-coingecko = { path = "bothan-coingecko" }
 #bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
 #bothan-cryptocompare = { path = "bothan-cryptocompare" }
-#bothan-htx = { path = "bothan-htx" }
+bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
 bothan-okx = { path = "bothan-okx" }

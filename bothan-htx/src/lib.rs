@@ -1,5 +1,6 @@
-pub use service::builder::{HtxServiceBuilder, HtxServiceBuilderOpts};
-pub use service::HtxService;
+pub use worker::builder::HtxWorkerBuilder;
+pub use worker::opts::HtxWorkerBuilderOpts;
+pub use worker::HtxWorker;
 
 pub mod api;
-pub mod service;
+pub mod worker;
