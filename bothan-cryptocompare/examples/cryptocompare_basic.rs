@@ -23,13 +23,17 @@ async fn main() {
         .await
         .unwrap();
 
-    worker.set_query_ids(vec!["BTC".to_string()]).await.unwrap();
+    worker
+        .set_query_ids(vec!["BTC".to_string(), "ETH".to_string()])
+        .await
+        .unwrap();
 
     sleep(Duration::from_secs(2)).await;
 
     loop {
-        let data = worker.get_asset("BTC").await;
-        println!("{:?}", data);
+        let btc_data = worker.get_asset("BTC").await;
+        let eth_data = worker.get_asset("ETH").await;
+        println!("{:?} {:?}", btc_data, eth_data);
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }
