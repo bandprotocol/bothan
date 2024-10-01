@@ -3,7 +3,7 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 use crate::api::types::DEFAULT_URL;
-use crate::worker::types::{DEFAULT_UPDATE_INTERVAL, DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL};
+use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
 
 /// Options for configuring the `CoinMarketCapWorkerBuilder`.
 ///
@@ -19,9 +19,6 @@ pub struct CoinMarketCapWorkerBuilderOpts {
     #[serde(default = "default_update_interval")]
     #[serde(with = "humantime_serde")]
     pub update_interval: Duration,
-    #[serde(default = "default_update_supported_assets_interval")]
-    #[serde(with = "humantime_serde")]
-    pub update_supported_assets_interval: Duration,
 }
 
 fn default_url() -> String {
@@ -32,17 +29,12 @@ fn default_update_interval() -> Duration {
     DEFAULT_UPDATE_INTERVAL
 }
 
-fn default_update_supported_assets_interval() -> Duration {
-    DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL
-}
-
 impl Default for CoinMarketCapWorkerBuilderOpts {
     fn default() -> Self {
         Self {
             url: default_url(),
             api_key: None,
             update_interval: default_update_interval(),
-            update_supported_assets_interval: default_update_supported_assets_interval(),
         }
     }
 }

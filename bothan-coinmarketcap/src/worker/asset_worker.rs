@@ -55,13 +55,17 @@ async fn update_asset_info<T: AsRef<str>>(
     ids: &[T],
 ) {
     // Convert ids to a slice of &str
-    let ids_str: Vec<&str> = ids.iter().map(|id| id.as_ref()).collect();
+    // let ids_str: Vec<&str> = ids.iter().map(|id| id.as_ref()).collect();
+    let parsed_ids = ids
+        .iter()
+        .filter_map(|s| s.as_ref().parse().ok())
+        .collect::<Vec<usize>>();
 
-    match api.get_latest_quotes(&ids_str).await {
+    match api.get_latest_quotes(parsed_ids.as_slice()).await {
         Ok(quotes) => {
             let mut to_set = Vec::new();
 
-            for (id, quote) in ids_str.iter().zip(quotes.iter()) {
+            for (id, quote) in parsed_ids.iter().zip(quotes.iter()) {
                 let quote = match quote {
                     Some(price) => price,
                     None => {
@@ -70,7 +74,7 @@ async fn update_asset_info<T: AsRef<str>>(
                     }
                 };
 
-                match parse_quote(id, quote) {
+                match parse_quote(quote) {
                     Ok(asset_info) => to_set.push((id.to_string(), asset_info)),
                     Err(_) => warn!("failed to parse price data for id: {}", id),
                 }
@@ -85,7 +89,8 @@ async fn update_asset_info<T: AsRef<str>>(
     }
 }
 
-pub(crate) fn parse_quote(id: &str, quote: &Quote) -> Result<AssetInfo, ParseError> {
+pub(crate) fn parse_quote(quote: &Quote) -> Result<AssetInfo, ParseError> {
+    let id = quote.id.to_string();
     let price = quote
         .price_quotes
         .usd
@@ -114,7 +119,6 @@ mod test {
 
     #[test]
     fn test_parse_quote() {
-        let id = "1";
         let price = 8426.69;
         let timestamp = "2021-01-01T00:00:00.000Z";
 
@@ -140,15 +144,14 @@ mod test {
             },
         };
 
-        let asset_info = parse_quote(id, &quote).unwrap();
-        assert_eq!(asset_info.id, id);
+        let asset_info = parse_quote(&quote).unwrap();
+        assert_eq!(asset_info.id, quote.id.to_string());
         assert_eq!(asset_info.price, Decimal::from_str("8426.69").unwrap());
         assert_eq!(asset_info.timestamp, 1609459200);
     }
 
     #[test]
     fn test_parse_quote_with_failure() {
-        let id = "1";
         let price = f64::INFINITY;
         let timestamp = "2021-01-01T00:00:00.000Z";
 
@@ -174,6 +177,6 @@ mod test {
             },
         };
 
-        assert!(parse_quote(id, &quote).is_err());
+        assert!(parse_quote(&quote).is_err());
     }
 }

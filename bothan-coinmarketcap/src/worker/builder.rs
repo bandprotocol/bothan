@@ -41,13 +41,6 @@ impl CoinMarketCapWorkerBuilder {
         self
     }
 
-    /// Sets the update supported assets interval for the `CoinMarketCapWorker`.
-    /// The default interval is `DEFAULT_UPDATE_SUPPORTED_ASSETS_INTERVAL`.
-    pub fn with_update_supported_assets_interval(mut self, update_interval: Duration) -> Self {
-        self.opts.update_supported_assets_interval = update_interval;
-        self
-    }
-
     /// Sets the store for the `CoinMarketCapWorker`.
     /// If not set, the store is created and owned by the worker.
     pub fn with_store(mut self, store: WorkerStore) -> Self {

@@ -22,7 +22,7 @@ impl CoinMarketCapRestAPI {
     /// Equivalent to the `/v2/cryptocurrency/quotes/latest` endpoint.
     pub async fn get_latest_quotes(
         &self,
-        ids: &[&str],
+        ids: &[usize],
     ) -> Result<Vec<Option<Quote>>, RestAPIError> {
         let url = format!("{}v2/cryptocurrency/quotes/latest", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
@@ -158,7 +158,7 @@ pub(crate) mod test {
         let quotes = vec![mock_quote()];
         let mock = server.set_successful_quotes(&["1"], &quotes);
 
-        let result = client.get_latest_quotes(&["1"]).await;
+        let result = client.get_latest_quotes(&[1]).await;
         let expected_result = quotes.into_iter().map(Some).collect();
         mock.assert();
         assert_eq!(result, Ok(expected_result));
@@ -172,7 +172,7 @@ pub(crate) mod test {
 
         let mock = server.set_successful_quotes(&["1", "0"], &quotes);
 
-        let result = client.get_latest_quotes(&["1", "0"]).await;
+        let result = client.get_latest_quotes(&[1, 0]).await;
 
         mock.assert();
         let expected_result = vec![Some(quotes[0].clone()), None];
@@ -185,7 +185,7 @@ pub(crate) mod test {
 
         let mock = server.set_arbitrary_quotes(&["1"], "abc");
 
-        let result = client.get_latest_quotes(&["1"]).await;
+        let result = client.get_latest_quotes(&[1]).await;
 
         mock.assert();
 
@@ -198,7 +198,7 @@ pub(crate) mod test {
         let (mut server, client) = setup().await;
         let mock = server.set_failed_quotes(&["1"]);
 
-        let result = client.get_latest_quotes(&["1"]).await;
+        let result = client.get_latest_quotes(&[1]).await;
         mock.assert();
         assert!(result.is_err());
     }
