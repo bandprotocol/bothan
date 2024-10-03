@@ -133,7 +133,11 @@ fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, WorkerError> {
     let id = ticker.symbol.clone();
     let price_value =
         Decimal::from_f64(ticker.last).ok_or(WorkerError::InvalidPrice(ticker.last))?;
-    Ok(AssetInfo::new(id, price_value, 0))
+    Ok(AssetInfo::new(
+        id,
+        price_value,
+        chrono::Utc::now().timestamp(),
+    ))
 }
 
 async fn store_ticker(store: &WorkerStore, ticker: TickerResponse) -> Result<(), WorkerError> {

@@ -28,8 +28,8 @@ pub struct Price {
     #[prost(string, tag="1")]
     pub signal_id: ::prost::alloc::string::String,
     /// The price of the asset associated with this signal ID.
-    #[prost(int64, tag="2")]
-    pub price: i64,
+    #[prost(uint64, tag="2")]
+    pub price: u64,
     /// The status of the price (e.g., available, unavailable).
     #[prost(enumeration="Status", tag="3")]
     pub status: i32,

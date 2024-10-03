@@ -1,16 +1,26 @@
 [workspace.package]
-version = "0.1.8"
+authors = ["Band Protocol <dev@bandprotocol.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/bandprotocol/bothan"
 exclude = [".github/"]
 
-
 [workspace]
-members = ["bothan-core", "bothan-binance", "bothan-coingecko", "bothan-kraken", "bothan-api/server", "bothan-api/server-cli"]
+members = [
+    "bothan-api/server",
+    "bothan-api/server-cli",
+    "bothan-binance",
+    "bothan-bybit",
+    "bothan-coinbase",
+    "bothan-coingecko",
+    "bothan-core",
+    "bothan-cryptocompare",
+    "bothan-htx",
+    "bothan-kraken",
+    "bothan-okx",
+]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
-
 
 [workspace.dependencies]
 anyhow = "1.0.86"
@@ -39,11 +49,11 @@ bothan-core = { path = "bothan-core" }
 bothan-api = { path = "bothan-api/server" }
 
 bothan-binance = { path = "bothan-binance" }
-#bothan-bybit = { path = "bothan-bybit" }
-#bothan-coinbase = { path = "bothan-coinbase" }
+bothan-bybit = { path = "bothan-bybit" }
+bothan-coinbase = { path = "bothan-coinbase" }
 bothan-coingecko = { path = "bothan-coingecko" }
 #bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
-#bothan-cryptocompare = { path = "bothan-cryptocompare" }
-#bothan-htx = { path = "bothan-htx" }
+bothan-cryptocompare = { path = "bothan-cryptocompare" }
+bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
-#bothan-okx = { path = "bothan-okx" }
+bothan-okx = { path = "bothan-okx" }

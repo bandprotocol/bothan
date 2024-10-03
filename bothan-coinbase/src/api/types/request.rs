@@ -25,7 +25,7 @@ pub struct Request {
 }
 
 /// Represents a subscription channel.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SubscriptionChannel {
     /// The name of the channel.
     pub name: String,
@@ -34,7 +34,7 @@ pub struct SubscriptionChannel {
 }
 
 /// Represents the current subscriptions.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Subscriptions {
     /// The list of subscribed channels.
     pub channels: Vec<SubscriptionChannel>,

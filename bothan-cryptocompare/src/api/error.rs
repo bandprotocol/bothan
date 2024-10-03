@@ -1,6 +1,6 @@
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
 /// Errors that can occur while building the `CryptoCompareRestAPI`.
-pub enum BuilderError {
+pub enum BuildError {
     /// An error occurred with the `reqwest` client.
     #[error("reqwest error: {0}")]
     Reqwest(String),
@@ -14,15 +14,15 @@ pub enum BuilderError {
     InvalidURL(#[from] url::ParseError),
 }
 
-impl From<reqwest::header::InvalidHeaderValue> for BuilderError {
+impl From<reqwest::header::InvalidHeaderValue> for BuildError {
     fn from(e: reqwest::header::InvalidHeaderValue) -> Self {
-        BuilderError::InvalidHeaderValue(e.to_string())
+        BuildError::InvalidHeaderValue(e.to_string())
     }
 }
 
-impl From<reqwest::Error> for BuilderError {
+impl From<reqwest::Error> for BuildError {
     fn from(e: reqwest::Error) -> Self {
-        BuilderError::Reqwest(e.to_string())
+        BuildError::Reqwest(e.to_string())
     }
 }
 
