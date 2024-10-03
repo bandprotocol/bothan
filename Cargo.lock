@@ -484,6 +484,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "bothan-coinmarketcap"
+version = "0.0.1-alpha.3"
+dependencies = [
+ "async-trait",
+ "bothan-core",
+ "chrono",
+ "futures",
+ "humantime-serde",
+ "itertools 0.13.0",
+ "mockito",
+ "reqwest",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+]
+
+[[package]]
 name = "bothan-core"
 version = "0.0.1-alpha.3"
 dependencies = [

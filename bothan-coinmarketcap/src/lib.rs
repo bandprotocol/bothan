@@ -1,5 +1,6 @@
-pub use service::builder::{CoinMarketCapServiceBuilder, CoinMarketCapServiceBuilderOpts};
-pub use service::CoinMarketCapService;
+pub use worker::builder::CoinMarketCapWorkerBuilder;
+pub use worker::opts::CoinMarketCapWorkerBuilderOpts;
+pub use worker::CoinMarketCapWorker;
 
 pub mod api;
-pub mod service;
+pub mod worker;

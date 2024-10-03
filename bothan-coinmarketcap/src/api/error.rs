@@ -1,5 +1,5 @@
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum BuilderError {
+pub enum BuildError {
     #[error("missing api key")]
     MissingAPIKey(),
 
@@ -13,15 +13,15 @@ pub enum BuilderError {
     Reqwest(String),
 }
 
-impl From<reqwest::header::InvalidHeaderValue> for BuilderError {
+impl From<reqwest::header::InvalidHeaderValue> for BuildError {
     fn from(e: reqwest::header::InvalidHeaderValue) -> Self {
-        BuilderError::InvalidHeaderValue(e.to_string())
+        BuildError::InvalidHeaderValue(e.to_string())
     }
 }
 
-impl From<reqwest::Error> for BuilderError {
+impl From<reqwest::Error> for BuildError {
     fn from(e: reqwest::Error) -> Self {
-        BuilderError::Reqwest(e.to_string())
+        BuildError::Reqwest(e.to_string())
     }
 }
 
