@@ -1,5 +1,4 @@
-use std::fs;
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all, read_to_string, File};
 use std::io::{BufReader, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -80,7 +79,10 @@ async fn start_server(
 ) -> anyhow::Result<()> {
     let store = init_store(&app_config, registry, reset).await?;
     let ipfs_client = init_ipfs_client(&app_config).await?;
-    let crypto_server = init_crypto_server(&app_config, store, ipfs_client).await?;
+    let monitoring_client = init_monitoring_client(&app_config).await?;
+
+    let crypto_server =
+        init_crypto_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
     info!("server started");
     Server::builder()
@@ -124,7 +126,7 @@ async fn init_store(
 
 async fn init_signer(config: &AppConfig) -> anyhow::Result<Signer> {
     if config.monitoring.path.is_file() {
-        let pk = fs::read_to_string(&config.monitoring.path)
+        let pk = read_to_string(&config.monitoring.path)
             .with_context(|| "Failed to read monitoring key file")?;
 
         Signer::from_hex(&pk).with_context(|| "Failed to parse monitoring key file")
@@ -171,6 +173,7 @@ async fn init_crypto_server(
     config: &AppConfig,
     store: SharedStore,
     ipfs_client: IpfsClient,
+    monitoring_client: MonitoringClient,
 ) -> anyhow::Result<Arc<CryptoQueryServer>> {
     let manager_store = SharedStore::create_manager_store(&store);
 
@@ -181,7 +184,6 @@ async fn init_crypto_server(
         CryptoAssetInfoManager::new(manager_store, ipfs_client, stale_threshold, version_req);
     init_crypto_workers(&mut manager, &store, &config.manager.crypto.source).await?;
 
-    let monitoring_client = init_monitoring_client(config).await?;
     let server = Arc::new(CryptoQueryServer::new(manager, monitoring_client));
     let cloned_server = server.clone();
     tokio::spawn(async move { cloned_server.start_heartbeat().await });
