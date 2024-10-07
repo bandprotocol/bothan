@@ -1,132 +1,184 @@
 use std::sync::Weak;
-use std::time::Duration;
 
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
-use tokio::time::{interval, timeout};
+use tokio::select;
+use tokio::sync::mpsc::Receiver;
+use tokio::time::{sleep, timeout};
+use tokio_tungstenite::tungstenite;
 use tracing::{debug, error, info, warn};
 
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
-use crate::api::rest::CryptoCompareRestAPI;
-use crate::worker::error::ParseError;
+use crate::api::errors::MessageError;
+use crate::api::msgs::{Packet, ReferenceTick};
+use crate::api::{CryptoCompareWebSocketConnection, CryptoCompareWebSocketConnector};
+use crate::worker::errors::WorkerError;
+use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 use crate::worker::CryptoCompareWorker;
 
-pub(crate) fn start_asset_worker(
+pub(crate) async fn start_asset_worker(
     weak_worker: Weak<CryptoCompareWorker>,
-    update_interval: Duration,
+    mut connection: CryptoCompareWebSocketConnection,
+    mut subscribe_rx: Receiver<Vec<String>>,
+    mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
-    let mut interval = interval(update_interval);
-    tokio::spawn(async move {
-        while let Some(worker) = weak_worker.upgrade() {
-            info!("updating asset info");
-
-            let ids = match worker.store.get_query_ids().await {
-                Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
-                Err(e) => {
-                    error!("failed to get query ids with error: {}", e);
-                    Vec::new()
+    while let Some(worker) = weak_worker.upgrade() {
+        select! {
+            Some(ids) = subscribe_rx.recv() => handle_subscribe_recv(ids, &worker.store, &mut connection).await,
+            Some(ids) = unsubscribe_rx.recv() => handle_unsubscribe_recv(ids, &worker.store, &mut connection).await,
+            result = timeout(DEFAULT_TIMEOUT, connection.next()) => {
+                match result {
+                    Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
+                    Ok(packet_result) => handle_connection_recv(packet_result, &worker.connector, &mut connection, &worker.store).await,
                 }
+            }
+        }
+    }
+
+    // Close the connection upon exiting
+    if let Err(e) = connection.close().await {
+        error!("asset worker failed to send close frame: {}", e)
+    } else {
+        debug!("asset worker successfully sent close frame")
+    }
+
+    debug!("asset worker has been dropped, stopping asset worker");
+}
+
+async fn subscribe<T: AsRef<str>>(
+    ids: &[T],
+    connection: &mut CryptoCompareWebSocketConnection,
+) -> Result<(), tungstenite::Error> {
+    if !ids.is_empty() {
+        connection
+            .subscribe_latest_tick_adaptive_inclusion(
+                &ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>(),
+            )
+            .await?
+    }
+
+    Ok(())
+}
+
+async fn handle_subscribe_recv(
+    ids: Vec<String>,
+    worker_store: &WorkerStore,
+    connection: &mut CryptoCompareWebSocketConnection,
+) {
+    match subscribe(&ids, connection).await {
+        Ok(_) => info!("subscribed to ids {:?}", ids),
+        Err(e) => {
+            error!("failed to subscribe to ids {:?}: {}", ids, e);
+            if worker_store.remove_query_ids(ids).await.is_err() {
+                error!("failed to remove query ids from store")
+            }
+        }
+    }
+}
+
+async fn unsubscribe<T: AsRef<str>>(
+    ids: &[T],
+    connection: &mut CryptoCompareWebSocketConnection,
+) -> Result<(), tungstenite::Error> {
+    if !ids.is_empty() {
+        connection
+            .unsubscribe_latest_tick_adaptive_inclusion(
+                &ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>(),
+            )
+            .await?
+    }
+
+    Ok(())
+}
+
+async fn handle_unsubscribe_recv(
+    ids: Vec<String>,
+    worker_store: &WorkerStore,
+    connection: &mut CryptoCompareWebSocketConnection,
+) {
+    match unsubscribe(&ids, connection).await {
+        Ok(_) => info!("unsubscribed to ids {:?}", ids),
+        Err(e) => {
+            error!("failed to unsubscribe to ids {:?}: {}", ids, e);
+            if worker_store.add_query_ids(ids).await.is_err() {
+                error!("failed to add query ids to store")
+            }
+        }
+    }
+}
+
+async fn handle_reconnect(
+    connector: &CryptoCompareWebSocketConnector,
+    connection: &mut CryptoCompareWebSocketConnection,
+    query_ids: &WorkerStore,
+) {
+    let mut retry_count: usize = 1;
+    loop {
+        warn!("reconnecting: attempt {}", retry_count);
+
+        if let Ok(new_connection) = connector.connect().await {
+            *connection = new_connection;
+
+            // Resubscribe to all ids
+            let Ok(ids) = query_ids.get_query_ids().await else {
+                error!("failed to get query ids from store");
+                return;
             };
 
-            let result = timeout(
-                interval.period(),
-                update_asset_info(&worker.store, &worker.api, &ids),
-            )
-            .await;
+            let ids_vec = ids.into_iter().collect::<Vec<String>>();
 
-            if result.is_err() {
-                warn!("updating interval exceeded timeout")
+            if subscribe(&ids_vec, connection).await.is_ok() {
+                info!("resubscribed to all ids");
+            } else {
+                error!("failed to resubscribe to all ids");
             }
-
-            interval.tick().await;
+        } else {
+            error!("failed to reconnect to binance");
         }
 
-        debug!("asset worker has been dropped, stopping asset worker");
-    });
+        retry_count += 1;
+        sleep(RECONNECT_BUFFER).await;
+    }
 }
 
-async fn update_asset_info<T: AsRef<str>>(
+async fn store_ref_tick(store: &WorkerStore, ref_tick: ReferenceTick) -> Result<(), WorkerError> {
+    let id = ref_tick.instrument.clone();
+    let price =
+        Decimal::from_f64(ref_tick.value).ok_or(WorkerError::InvalidDecimal(ref_tick.value))?;
+
+    let asset_info = AssetInfo::new(ref_tick.instrument, price, ref_tick.last_update);
+    store.set_asset(id, asset_info).await?;
+
+    Ok(())
+}
+
+async fn process_packet(store: &WorkerStore, packet: Packet) {
+    match packet {
+        Packet::RefTickAdaptive(ref_tick) => match store_ref_tick(store, ref_tick).await {
+            Ok(_) => info!("stored data"),
+            Err(e) => error!("failed to store ref tick: {}", e),
+        },
+        Packet::SubscriptionError(msg) => error!("subscription error: {}", msg),
+        Packet::SubscriptionRejected(msg) => error!("subscription rejected: {}", msg),
+        Packet::SubscriptionWarning(msg) => warn!("subscription warning: {}", msg),
+        _ => (),
+    }
+}
+
+async fn handle_connection_recv(
+    result: Result<Packet, MessageError>,
+    connector: &CryptoCompareWebSocketConnector,
+    connection: &mut CryptoCompareWebSocketConnection,
     store: &WorkerStore,
-    api: &CryptoCompareRestAPI,
-    ids: &[T],
 ) {
-    let now = chrono::Utc::now().timestamp();
-    // Convert ids to a slice of &str
-    let ids_str: Vec<&str> = ids.iter().map(|id| id.as_ref()).collect();
-
-    match api.get_multi_symbol_price(&ids_str).await {
-        Ok(prices) => {
-            let mut to_set = Vec::new();
-
-            for (id, price) in ids_str.iter().zip(prices.iter()) {
-                let price = match price {
-                    Some(price) => price,
-                    None => {
-                        warn!("missing price data for id: {}", id);
-                        continue;
-                    }
-                };
-
-                match parse_symbol_price(id, price, &now) {
-                    Ok(asset_info) => to_set.push((id.to_string(), asset_info)),
-                    Err(_) => warn!("failed to parse price data for id: {}", id),
-                }
-            }
-
-            // Set multiple assets at once
-            if let Err(e) = store.set_assets(to_set).await {
-                warn!("failed to set multiple assets with error: {}", e);
-            }
+    match result {
+        Ok(resp) => process_packet(store, resp).await,
+        Err(MessageError::ChannelClosed) => handle_reconnect(connector, connection, store).await,
+        Err(MessageError::UnsupportedMessage) => {
+            error!("unsupported message received from cryptocompare")
         }
-        Err(e) => warn!("failed to get price data with error: {}", e),
-    }
-}
-
-fn parse_symbol_price(
-    id: &str,
-    symbol_price: &f64,
-    timestamp: &i64,
-) -> Result<AssetInfo, ParseError> {
-    let price_value = Decimal::from_f64(symbol_price.to_owned())
-        .ok_or(ParseError::InvalidPrice(symbol_price.to_owned()))?;
-    Ok(AssetInfo::new(
-        id.to_owned(),
-        price_value,
-        timestamp.to_owned(),
-    ))
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use rust_decimal::Decimal;
-    use std::str::FromStr;
-
-    #[test]
-    fn test_parse_symbol_price() {
-        let id = "BTC";
-        let price = 8426.69;
-        let timestamp = 1609459200;
-
-        // Call parse_symbol_price with the updated parameters
-        let result = parse_symbol_price(id, &price, &timestamp);
-        let expected = AssetInfo::new(
-            id.to_string(),
-            Decimal::from_str("8426.69").unwrap(),
-            timestamp,
-        );
-        assert_eq!(result.unwrap(), expected);
-    }
-
-    #[test]
-    fn test_parse_symbol_price_with_failure() {
-        let id = "BTC";
-        let price = f64::INFINITY; // Invalid price value
-        let timestamp = 0;
-
-        // Test failure case where the price is invalid
-        assert!(parse_symbol_price(id, &price, &timestamp).is_err());
+        Err(MessageError::Parse(_)) => error!("unable to parse message from cryptocompare"),
     }
 }
