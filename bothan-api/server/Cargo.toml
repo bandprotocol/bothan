@@ -9,8 +9,14 @@ repository.workspace = true
 bothan-core = { workspace = true }
 
 bothan-binance = { workspace = true }
+bothan-bybit = { workspace = true }
+bothan-coinbase = { workspace = true }
 bothan-coingecko = { workspace = true }
+bothan-coinmarketcap = { workspace = true }
+bothan-cryptocompare = { workspace = true }
+bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
+bothan-okx = { workspace = true }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }

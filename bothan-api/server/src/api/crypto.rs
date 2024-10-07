@@ -3,7 +3,7 @@ use std::sync::Arc;
 use semver::Version;
 use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
 use bothan_core::manager::CryptoAssetInfoManager;
@@ -110,6 +110,7 @@ impl PriceService for CryptoQueryServer {
         request: Request<GetPricesRequest>,
     ) -> Result<Response<GetPricesResponse>, Status> {
         info!("received get price request");
+        debug!("received get price request: {:?}", request);
         let price_request = request.into_inner();
         let manager = self.manager.read().await;
         let price_states = manager
@@ -127,6 +128,8 @@ impl PriceService for CryptoQueryServer {
             .map(|(id, state)| parse_price_state(id, state))
             .collect();
 
+        info!("successfully retrieved prices");
+        debug!("successfully retrieved prices: {:?}", prices);
         Ok(Response::new(GetPricesResponse { prices }))
     }
 }

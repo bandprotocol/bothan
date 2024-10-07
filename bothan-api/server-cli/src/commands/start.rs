@@ -13,13 +13,19 @@ use bothan_api::proto::price::price_service_server::PriceServiceServer;
 use bothan_api::proto::signal::signal_service_server::SignalServiceServer;
 use bothan_api::VERSION;
 use bothan_binance::BinanceWorkerBuilder;
+use bothan_bybit::BybitWorkerBuilder;
+use bothan_coinbase::CoinbaseWorkerBuilder;
 use bothan_coingecko::CoinGeckoWorkerBuilder;
+use bothan_coinmarketcap::CoinMarketCapWorkerBuilder;
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
+use bothan_cryptocompare::CryptoCompareWorkerBuilder;
+use bothan_htx::HtxWorkerBuilder;
 use bothan_kraken::KrakenWorkerBuilder;
+use bothan_okx::OkxWorkerBuilder;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::VersionReq;
@@ -159,19 +165,49 @@ async fn init_crypto_workers(
     source: &CryptoSourceConfigs,
 ) -> anyhow::Result<()> {
     type Binance = BinanceWorkerBuilder;
+    type Bybit = BybitWorkerBuilder;
+    type Coinbase = CoinbaseWorkerBuilder;
     type CoinGecko = CoinGeckoWorkerBuilder;
+    type CoinMarketCap = CoinMarketCapWorkerBuilder;
+    type CryptoCompare = CryptoCompareWorkerBuilder;
+    type Htx = HtxWorkerBuilder;
     type Kraken = KrakenWorkerBuilder;
+    type Okx = OkxWorkerBuilder;
 
     if let Some(opts) = &source.binance {
         add_worker::<Binance>(manager, store, opts).await?;
+    }
+
+    if let Some(opts) = &source.bybit {
+        add_worker::<Bybit>(manager, store, opts).await?;
+    }
+
+    if let Some(opts) = &source.coinbase {
+        add_worker::<Coinbase>(manager, store, opts).await?;
     }
 
     if let Some(opts) = &source.coingecko {
         add_worker::<CoinGecko>(manager, store, opts).await?;
     }
 
+    if let Some(opts) = &source.coinmarketcap {
+        add_worker::<CoinMarketCap>(manager, store, opts).await?;
+    }
+
+    if let Some(opts) = &source.cryptocompare {
+        add_worker::<CryptoCompare>(manager, store, opts).await?;
+    }
+
+    if let Some(opts) = &source.htx {
+        add_worker::<Htx>(manager, store, opts).await?;
+    }
+
     if let Some(opts) = &source.kraken {
         add_worker::<Kraken>(manager, store, opts).await?;
+    }
+
+    if let Some(opts) = &source.okx {
+        add_worker::<Okx>(manager, store, opts).await?;
     }
 
     Ok(())

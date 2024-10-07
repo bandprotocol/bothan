@@ -5,7 +5,7 @@ use chrono::NaiveDateTime;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::time::{interval, timeout};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, trace, warn};
 
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
@@ -22,8 +22,6 @@ pub(crate) fn start_asset_worker(
     let mut interval = interval(update_interval);
     tokio::spawn(async move {
         while let Some(worker) = weak_worker.upgrade() {
-            info!("updating asset info");
-
             let ids = match worker.store.get_query_ids().await {
                 Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
                 Err(e) => {
@@ -81,8 +79,13 @@ async fn update_asset_info<T: AsRef<str>>(
             }
 
             // Set multiple assets at once
-            if let Err(e) = store.set_assets(to_set).await {
-                warn!("failed to set multiple assets with error: {}", e);
+            if let Err(e) = store.set_assets(to_set.clone()).await {
+                error!("failed to set multiple assets with error: {}", e);
+            } else {
+                trace!(
+                    "stored data for ids: {:?}",
+                    to_set.iter().map(|(id, _)| id).collect::<Vec<&String>>(),
+                );
             }
         }
         Err(e) => warn!("failed to get price data with error: {}", e),
