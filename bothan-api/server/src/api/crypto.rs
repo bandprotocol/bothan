@@ -48,14 +48,21 @@ impl CryptoQueryServer {
                 continue;
             };
 
+            let supported_sources = manager_reader.current_worker_set().await;
+
             let uuid = create_uuid();
-            match self.monitoring_client.post_heartbeat(uuid, ids).await {
+            let post_result = self
+                .monitoring_client
+                .post_heartbeat(uuid, ids, supported_sources)
+                .await;
+
+            match post_result {
                 Ok(r) => match r.status() {
                     reqwest::StatusCode::OK => info!("successfully sent data to monitoring"),
                     _ => error!("failed to send data to monitoring: {:?}", r.text().await),
                 },
                 Err(e) => error!("failed to send data to monitoring: {}", e),
-            }
+            };
         }
     }
 }

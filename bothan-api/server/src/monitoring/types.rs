@@ -14,13 +14,19 @@ pub enum Topic {
 pub struct BothanInfo {
     pub version: String,
     pub active_signal_ids: Vec<String>,
+    pub supported_sources: Vec<String>,
 }
 
 impl BothanInfo {
-    pub fn new(version: String, active_signal_ids: Vec<String>) -> BothanInfo {
+    pub fn new(
+        version: String,
+        active_signal_ids: Vec<String>,
+        supported_sources: Vec<String>,
+    ) -> BothanInfo {
         BothanInfo {
             version,
             active_signal_ids,
+            supported_sources,
         }
     }
 }

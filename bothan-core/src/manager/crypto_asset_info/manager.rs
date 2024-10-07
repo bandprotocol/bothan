@@ -109,4 +109,8 @@ impl<'a> CryptoAssetInfoManager<'a> {
         self.store.set_registry(registry).await?;
         Ok(())
     }
+
+    pub async fn current_worker_set(&self) -> Vec<String> {
+        self.workers.read().await.keys().cloned().collect()
+    }
 }

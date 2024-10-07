@@ -37,10 +37,12 @@ impl Client {
         &self,
         uuid: String,
         active_signal_ids: ActiveSignalIDs,
+        supported_sources: Vec<String>,
     ) -> Result<Response, PostError> {
         let bothan_info = BothanInfo::new(
             VERSION.to_string(),
             active_signal_ids.into_iter().collect::<Vec<String>>(),
+            supported_sources,
         );
 
         self.post(uuid, Topic::Heartbeat, bothan_info).await
