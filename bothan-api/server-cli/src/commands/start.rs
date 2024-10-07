@@ -146,11 +146,18 @@ async fn init_signer(config: &AppConfig) -> anyhow::Result<Signer> {
     }
 }
 
-async fn init_monitoring_client(config: &AppConfig) -> anyhow::Result<MonitoringClient> {
+async fn init_monitoring_client(
+    config: &AppConfig,
+) -> anyhow::Result<Option<Arc<MonitoringClient>>> {
+    if !config.monitoring.enabled {
+        return Ok(None);
+    }
+
     let signer = init_signer(config)
         .await
         .with_context(|| "Failed to build signer")?;
-    Ok(MonitoringClient::new(&config.monitoring.endpoint, signer))
+    let monitoring = Arc::new(MonitoringClient::new(&config.monitoring.endpoint, signer));
+    Ok(Some(monitoring))
 }
 
 async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
@@ -173,7 +180,7 @@ async fn init_crypto_server(
     config: &AppConfig,
     store: SharedStore,
     ipfs_client: IpfsClient,
-    monitoring_client: MonitoringClient,
+    monitoring_client: Option<Arc<MonitoringClient>>,
 ) -> anyhow::Result<Arc<CryptoQueryServer>> {
     let manager_store = SharedStore::create_manager_store(&store);
 
@@ -184,11 +191,7 @@ async fn init_crypto_server(
         CryptoAssetInfoManager::new(manager_store, ipfs_client, stale_threshold, version_req);
     init_crypto_workers(&mut manager, &store, &config.manager.crypto.source).await?;
 
-    let server = Arc::new(CryptoQueryServer::new(manager, monitoring_client));
-    let cloned_server = server.clone();
-    tokio::spawn(async move { cloned_server.start_heartbeat().await });
-
-    Ok(server)
+    Ok(Arc::new(CryptoQueryServer::new(manager, monitoring_client)))
 }
 
 async fn init_crypto_workers(

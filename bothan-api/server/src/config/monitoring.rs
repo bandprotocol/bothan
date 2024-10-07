@@ -9,6 +9,9 @@ pub struct MonitoringConfig {
     /// The path to where the key for the monitoring service is stored.
     #[serde(default = "default_path")]
     pub path: PathBuf,
+
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
 }
 
 fn default_endpoint() -> String {
@@ -20,11 +23,16 @@ fn default_path() -> PathBuf {
     home.join(".bothan/keyring/broadcaster.info")
 }
 
+fn default_enabled() -> bool {
+    true
+}
+
 impl Default for MonitoringConfig {
     fn default() -> Self {
         MonitoringConfig {
             endpoint: default_endpoint(),
             path: default_path(),
+            enabled: default_enabled(),
         }
     }
 }
