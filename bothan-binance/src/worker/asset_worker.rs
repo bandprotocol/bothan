@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, warn};
 
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
@@ -146,7 +146,7 @@ async fn store_data(store: &WorkerStore, data: Data) -> Result<(), WorkerError> 
             let asset_info = AssetInfo::new(id.clone(), price, timestamp);
 
             store.set_asset(&id, asset_info).await?;
-            trace!("stored data for id {}", id);
+            debug!("stored data for id {}", id);
         }
     }
 
