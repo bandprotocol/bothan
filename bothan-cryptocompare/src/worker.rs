@@ -1,25 +1,39 @@
+use tokio::sync::mpsc::Sender;
+
 use bothan_core::store::error::Error as StoreError;
 use bothan_core::store::WorkerStore;
 use bothan_core::worker::{AssetState, AssetWorker, SetQueryIDError};
 
-use crate::api::CryptoCompareRestAPI;
+use crate::api::CryptoCompareWebSocketConnector;
 
 mod asset_worker;
 pub mod builder;
-pub mod error;
+pub mod errors;
 pub mod opts;
 pub mod types;
 
 /// A worker that fetches and stores the asset information from CryptoCompare's API.
 pub struct CryptoCompareWorker {
-    api: CryptoCompareRestAPI,
+    connector: CryptoCompareWebSocketConnector,
     store: WorkerStore,
+    subscribe_tx: Sender<Vec<String>>,
+    unsubscribe_tx: Sender<Vec<String>>,
 }
 
 impl CryptoCompareWorker {
     /// Create a new worker with the specified api and store.
-    pub fn new(api: CryptoCompareRestAPI, store: WorkerStore) -> Self {
-        Self { api, store }
+    pub fn new(
+        connector: CryptoCompareWebSocketConnector,
+        store: WorkerStore,
+        subscribe_tx: Sender<Vec<String>>,
+        unsubscribe_tx: Sender<Vec<String>>,
+    ) -> Self {
+        Self {
+            connector,
+            store,
+            subscribe_tx,
+            unsubscribe_tx,
+        }
     }
 }
 
@@ -30,12 +44,25 @@ impl AssetWorker for CryptoCompareWorker {
         self.store.get_asset(&id).await
     }
 
-    /// Adds the specified cryptocurrency IDs to the query set.
+    /// Sets the specified cryptocurrency IDs to the query. If the ids are already in the query set,
+    /// it will not be resubscribed.
     async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
-        self.store
+        let (to_sub, to_unsub) = self
+            .store
             .set_query_ids(ids)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
+        self.subscribe_tx
+            .send(to_sub)
+            .await
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
+        self.unsubscribe_tx
+            .send(to_unsub)
+            .await
+            .map_err(|e| SetQueryIDError::new(e.to_string()))?;
+
         Ok(())
     }
 }

@@ -1,9 +1,7 @@
-use std::time::Duration;
-
 use serde::{Deserialize, Serialize};
 
-use crate::api::types::DEFAULT_URL;
-use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
+use crate::api::DEFAULT_URL;
+use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 
 /// Options for configuring the `CryptoCompareWorkerBuilder`.
 ///
@@ -16,17 +14,16 @@ pub struct CryptoCompareWorkerBuilderOpts {
     pub url: String,
     #[serde(default)]
     pub api_key: Option<String>,
-    #[serde(default = "default_update_interval")]
-    #[serde(with = "humantime_serde")]
-    pub update_interval: Duration,
+    #[serde(default = "default_internal_ch_size")]
+    pub internal_ch_size: usize,
 }
 
 fn default_url() -> String {
     DEFAULT_URL.to_string()
 }
 
-fn default_update_interval() -> Duration {
-    DEFAULT_UPDATE_INTERVAL
+fn default_internal_ch_size() -> usize {
+    DEFAULT_CHANNEL_SIZE
 }
 
 impl Default for CryptoCompareWorkerBuilderOpts {
@@ -34,7 +31,7 @@ impl Default for CryptoCompareWorkerBuilderOpts {
         Self {
             url: default_url(),
             api_key: None,
-            update_interval: default_update_interval(),
+            internal_ch_size: default_internal_ch_size(),
         }
     }
 }
