@@ -17,4 +17,5 @@ pub enum CoinbaseResponse {
     Ticker(Box<Ticker>),
     /// A subscription update.
     Subscriptions(Box<Subscriptions>),
+    Ping,
 }

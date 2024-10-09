@@ -101,6 +101,7 @@ impl CoinbaseWebSocketConnection {
             return match result_msg {
                 Ok(Message::Text(msg)) => serde_json::from_str::<CoinbaseResponse>(&msg)
                     .map_err(|_| MessageError::UnsupportedMessage),
+                Ok(Message::Ping(_)) => Ok(CoinbaseResponse::Ping),
                 Ok(Message::Close(_)) => Err(MessageError::ChannelClosed),
                 Err(err) => match err {
                     TungsteniteError::Protocol(..) => Err(MessageError::ChannelClosed),

@@ -127,6 +127,7 @@ impl PriceService for CryptoQueryServer {
             .map(|(id, state)| parse_price_state(id, state))
             .collect();
 
+        info!("successfully retrieved prices");
         Ok(Response::new(GetPricesResponse { prices }))
     }
 }

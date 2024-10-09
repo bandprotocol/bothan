@@ -1,7 +1,11 @@
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use tracing_subscriber::filter::Directive;
+use tracing_subscriber::EnvFilter;
 
+use bothan_api::config::log::LogLevel;
 use bothan_api::config::AppConfig;
 
 use crate::commands::config::ConfigCli;
@@ -49,12 +53,24 @@ async fn main() {
         AppConfig::default()
     };
 
-    let log_level = &app_config.log.level;
-    tracing_subscriber::fmt()
-        .with_env_filter(format!(
-            "bothan_core={log_level},bothan_api={log_level},bothan={log_level}"
-        ))
-        .init();
+    let log_lvl = &app_config.log.log_level;
+    let core_log_lvl = &app_config.log.core_log_level;
+    let src_log_lvl = &app_config.log.source_log_level;
+
+    let filter = EnvFilter::new(format!("bothan={log_lvl}"))
+        .add_directive(create_directive("bothan_api", log_lvl))
+        .add_directive(create_directive("bothan_core", core_log_lvl))
+        .add_directive(create_directive("bothan_binance", src_log_lvl))
+        .add_directive(create_directive("bothan_bybit", src_log_lvl))
+        .add_directive(create_directive("bothan_coinbase", src_log_lvl))
+        .add_directive(create_directive("bothan_coingecko", src_log_lvl))
+        .add_directive(create_directive("bothan_coinmarketcap", src_log_lvl))
+        .add_directive(create_directive("bothan_cryptocompare", src_log_lvl))
+        .add_directive(create_directive("bothan_htx", src_log_lvl))
+        .add_directive(create_directive("bothan_kraken", src_log_lvl))
+        .add_directive(create_directive("bothan_okx", src_log_lvl));
+
+    tracing_subscriber::fmt().with_env_filter(filter).init();
 
     if let Some(command) = &cli.command {
         match command {
@@ -63,6 +79,10 @@ async fn main() {
         }
         .expect("Failed to run command");
     }
+}
+
+fn create_directive(module: &str, log_level: &LogLevel) -> Directive {
+    Directive::from_str(&format!("{module}={log_level}")).expect("Failed to create directive}")
 }
 
 pub fn bothan_home_dir() -> PathBuf {

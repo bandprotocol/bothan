@@ -146,6 +146,7 @@ async fn store_data(store: &WorkerStore, data: Data) -> Result<(), WorkerError> 
             let asset_info = AssetInfo::new(id.clone(), price, timestamp);
 
             store.set_asset(&id, asset_info).await?;
+            debug!("stored data for id {}", id);
         }
     }
 
@@ -155,7 +156,7 @@ async fn store_data(store: &WorkerStore, data: Data) -> Result<(), WorkerError> 
 async fn process_response(store: &WorkerStore, resp: BinanceResponse) {
     match resp {
         BinanceResponse::Stream(resp) => match store_data(store, resp.data).await {
-            Ok(_) => info!("saved data"),
+            Ok(_) => debug!("saved data"),
             Err(e) => error!("failed to save data: {}", e),
         },
         BinanceResponse::Success(_) => {

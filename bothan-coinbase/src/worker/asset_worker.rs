@@ -143,7 +143,8 @@ fn parse_ticker(ticker: &Ticker) -> Result<AssetInfo, WorkerError> {
 
 async fn store_ticker(store: &WorkerStore, ticker: &Ticker) -> Result<(), WorkerError> {
     let id = ticker.product_id.clone();
-    store.set_asset(id, parse_ticker(ticker)?).await?;
+    store.set_asset(id.clone(), parse_ticker(ticker)?).await?;
+    debug!("stored data for id {}", id);
     Ok(())
 }
 
@@ -151,9 +152,10 @@ async fn store_ticker(store: &WorkerStore, ticker: &Ticker) -> Result<(), Worker
 async fn process_response(resp: CoinbaseResponse, store: &WorkerStore) {
     match resp {
         CoinbaseResponse::Ticker(ticker) => match store_ticker(store, &ticker).await {
-            Ok(_) => info!("saved data"),
+            Ok(_) => debug!("saved data"),
             Err(e) => error!("failed to save data: {}", e),
         },
+        CoinbaseResponse::Ping => debug!("received ping"),
         CoinbaseResponse::Subscriptions(_) => {
             info!("received request response");
         }
