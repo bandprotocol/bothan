@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::api::types::{DEFAULT_URL, DEFAULT_USER_AGENT};
 use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
@@ -15,6 +15,8 @@ pub struct CoinGeckoWorkerBuilderOpts {
     #[serde(default = "default_url")]
     pub url: String,
     #[serde(default)]
+    #[serde(deserialize_with = "empty_string_is_none")]
+    #[serde(serialize_with = "none_is_empty_string")]
     pub api_key: Option<String>,
     #[serde(default = "default_user_agent")]
     pub user_agent: String,
@@ -43,5 +45,22 @@ impl Default for CoinGeckoWorkerBuilderOpts {
             user_agent: default_user_agent(),
             update_interval: default_update_interval(),
         }
+    }
+}
+
+fn empty_string_is_none<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    let s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(s.filter(|s| !s.is_empty()))
+}
+
+fn none_is_empty_string<S: Serializer>(
+    value: &Option<String>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match value {
+        Some(val) => serializer.serialize_str(val),
+        None => serializer.serialize_str(""),
     }
 }
