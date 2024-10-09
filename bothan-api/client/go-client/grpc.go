@@ -52,16 +52,11 @@ func (c *GrpcClient) SetActiveSignalIDs(signalIDs []string) error {
 	return nil
 }
 
-func (c *GrpcClient) GetPrices(signalIDs []string) ([]*price.Price, error) {
+func (c *GrpcClient) GetPrices(signalIDs []string) (*price.GetPricesResponse, error) {
 	// Create a client instance using the connection.
 	client := price.NewPriceServiceClient(c.connection)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
-	response, err := client.GetPrices(ctx, &price.GetPricesRequest{SignalIds: signalIDs})
-	if err != nil {
-		return nil, err
-	}
-
-	return response.Prices, nil
+	return client.GetPrices(ctx, &price.GetPricesRequest{SignalIds: signalIDs})
 }

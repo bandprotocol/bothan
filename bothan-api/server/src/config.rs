@@ -5,12 +5,14 @@ use crate::config::grpc::GrpcConfig;
 use crate::config::ipfs::IpfsConfig;
 use crate::config::log::LogConfig;
 use crate::config::manager::ManagerConfig;
+use crate::config::monitoring::MonitoringConfig;
 use crate::config::store::StoreConfig;
 
 pub mod grpc;
 pub mod ipfs;
 pub mod log;
 pub mod manager;
+pub mod monitoring;
 pub mod store;
 
 /// The main application configuration.
@@ -20,6 +22,7 @@ pub struct AppConfig {
     pub log: LogConfig,
     pub ipfs: IpfsConfig,
     pub store: StoreConfig,
+    pub monitoring: MonitoringConfig,
     pub manager: ManagerConfig,
 }
 

@@ -1,11 +1,11 @@
 package client
 
 import (
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
+	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
 )
 
 type Client interface {
 	UpdateRegistry(ipfsHash string, version string) error
 	SetActiveSignalIDs(signalIDs []string) error
-	GetPrices(signalIDs []string) ([]*price.Price, error)
+	GetPrices(signalIDs []string) (*proto.GetPricesResponse, error)
 }

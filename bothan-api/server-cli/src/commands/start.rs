@@ -1,14 +1,21 @@
-use std::fs::{create_dir_all, File};
-use std::io::BufReader;
+use std::fs::{create_dir_all, read_to_string, File};
+use std::io::{BufReader, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
+use clap::Parser;
+use reqwest::header::{HeaderName, HeaderValue};
+use semver::VersionReq;
+use tonic::transport::Server;
+use tracing::info;
+
 use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
+use bothan_api::monitoring::{Client as MonitoringClient, Signer};
 use bothan_api::proto::price::price_service_server::PriceServiceServer;
 use bothan_api::proto::signal::signal_service_server::SignalServiceServer;
 use bothan_api::VERSION;
@@ -20,11 +27,6 @@ use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
 use bothan_kraken::KrakenWorkerBuilder;
-use clap::Parser;
-use reqwest::header::{HeaderName, HeaderValue};
-use semver::VersionReq;
-use tonic::transport::Server;
-use tracing::info;
 
 #[derive(Parser)]
 pub struct StartCli {
@@ -77,7 +79,10 @@ async fn start_server(
 ) -> anyhow::Result<()> {
     let store = init_store(&app_config, registry, reset).await?;
     let ipfs_client = init_ipfs_client(&app_config).await?;
-    let crypto_server = Arc::new(init_crypto_server(&app_config, store, ipfs_client).await?);
+    let monitoring_client = init_monitoring_client(&app_config).await?;
+
+    let crypto_server =
+        init_crypto_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
     info!("server started");
     Server::builder()
@@ -119,6 +124,42 @@ async fn init_store(
     Ok(store)
 }
 
+async fn init_signer(config: &AppConfig) -> anyhow::Result<Signer> {
+    if config.monitoring.path.is_file() {
+        let pk = read_to_string(&config.monitoring.path)
+            .with_context(|| "Failed to read monitoring key file")?;
+
+        Signer::from_hex(&pk).with_context(|| "Failed to parse monitoring key file")
+    } else {
+        let signer = Signer::random();
+
+        if let Some(parent) = config.monitoring.path.parent() {
+            create_dir_all(parent).with_context(|| "Failed to create monitoring key directory")?;
+        }
+
+        let mut file = File::create(&config.monitoring.path)
+            .with_context(|| "Failed to create monitoring key file")?;
+
+        file.write(signer.to_hex().as_bytes())
+            .with_context(|| "Failed to write monitoring key file")?;
+        Ok(signer)
+    }
+}
+
+async fn init_monitoring_client(
+    config: &AppConfig,
+) -> anyhow::Result<Option<Arc<MonitoringClient>>> {
+    if !config.monitoring.enabled {
+        return Ok(None);
+    }
+
+    let signer = init_signer(config)
+        .await
+        .with_context(|| "Failed to build signer")?;
+    let monitoring = Arc::new(MonitoringClient::new(&config.monitoring.endpoint, signer));
+    Ok(Some(monitoring))
+}
+
 async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
     let ipfs_builder = IpfsClientBuilder::new(config.ipfs.endpoint.clone());
     let ipfs_client = match &config.ipfs.authentication {
@@ -139,7 +180,8 @@ async fn init_crypto_server(
     config: &AppConfig,
     store: SharedStore,
     ipfs_client: IpfsClient,
-) -> anyhow::Result<CryptoQueryServer> {
+    monitoring_client: Option<Arc<MonitoringClient>>,
+) -> anyhow::Result<Arc<CryptoQueryServer>> {
     let manager_store = SharedStore::create_manager_store(&store);
 
     let stale_threshold = config.manager.crypto.stale_threshold;
@@ -147,10 +189,9 @@ async fn init_crypto_server(
         .with_context(|| "Failed to parse bothan version requirement")?;
     let mut manager =
         CryptoAssetInfoManager::new(manager_store, ipfs_client, stale_threshold, version_req);
-
     init_crypto_workers(&mut manager, &store, &config.manager.crypto.source).await?;
 
-    Ok(CryptoQueryServer::new(manager))
+    Ok(Arc::new(CryptoQueryServer::new(manager, monitoring_client)))
 }
 
 async fn init_crypto_workers(

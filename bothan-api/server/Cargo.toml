@@ -28,10 +28,14 @@ tracing = { workspace = true }
 
 config = "0.14.0"
 dirs = "5.0.1"
+ed25519 = "2.2.3"
+ed25519-dalek = { version = "2.1.1", features = ["std", "rand_core"] }
 glob = "0.3.1"
+hex = "0.4.3"
 prost = "0.13.1"
 protoc-gen-prost = "0.3.1"
 protoc-gen-tonic = "0.4.0"
+rand = "0.8.5"
 tonic = "0.12.1"
 
 [build-dependencies]
