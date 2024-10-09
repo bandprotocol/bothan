@@ -1,0 +1,106 @@
+# gRPC server configuration
+[grpc]
+# The address and port of Bothan's gRPC server.
+addr = "0.0.0.0:50051"
+
+# Logging configuration
+[log]
+# The logging level, which can be "trace", "debug", "info", "warn", or "error".
+level = "info"
+
+# IPFS configuration
+[ipfs]
+# The endpoint for IPFS connection for Bothan to use.
+endpoint = "https://ipfs.io"
+# Authentication method for the IPFS endpoint, None or Header.
+authentication = "None"
+
+# Example of IPFS authentication header configuration. If this setting is used, remove the line 'authentication = "None"'.
+# [ipfs.authentication.Header]
+# key = ""
+# value = ""
+
+# Store configuration
+[store]
+# File system path where application data is stored. The default is "$HOME/.bothan".
+path = ""
+
+# Manager configuration for handling crypto data sources
+[manager.crypto]
+# The threshold in seconds after which data is considered stale.
+stale_threshold = 300
+
+# Configuration for the data sources that the manager will use.
+# If any of these [manager.crypto.source] sections (e.g., section manager.crypto.source.binance) are removed,
+# that specific source will not be used in bothan.
+
+# Configuration for Binance.
+[manager.crypto.source.binance]
+# WebSocket URL for streaming data from Binance.
+url = "wss://stream.binance.com:9443/stream"
+# Internal channel size for Binance data streams.
+internal_ch_size = 1000
+
+# Configuration for Bybit.
+[manager.crypto.source.bybit]
+# WebSocket URL for streaming data from Bybit.
+url = "wss://stream.bybit.com/v5/public/spot"
+# Internal channel size for Bybit data streams.
+internal_ch_size = 1000
+
+# Configuration for Coinbase.
+[manager.crypto.source.coinbase]
+# WebSocket URL for streaming data from Coinbase.
+url = "wss://ws-feed.exchange.coinbase.com"
+# Internal channel size for Coinbase data streams.
+internal_ch_size = 1000
+
+# Configuration for Coingecko.
+[manager.crypto.source.coingecko]
+# REST API URL for querying data from Coingecko.
+url = "https://api.coingecko.com/api/v3/"
+# API key for authentication (if required).
+api_key = ""
+# User agent string for HTTP requests to Coingecko.
+user_agent = "Bothan"
+# Update interval for pulling data from Coingecko.
+update_interval = "1m"
+
+# Configuration for CoinMarketCap.
+[manager.crypto.source.coinmarketcap]
+# REST API URL for querying data from CoinMarketCap.
+url = "https://pro-api.coinmarketcap.com"
+# API key for authentication (required for access).
+api_key = ""
+# Update interval for pulling data from CoinMarketCap.
+update_interval = "1m"
+
+# Configuration for CryptoCompare.
+[manager.crypto.source.cryptocompare]
+# REST API URL for querying data from CryptoCompare.
+url = "wss://data-streamer.cryptocompare.com"
+# API key for authentication (required for access).
+api_key = ""
+# Internal channel size for cryptocompare data streams.
+internal_ch_size = 1000
+
+# Configuration for HTX (Huobi).
+[manager.crypto.source.htx]
+# WebSocket URL for streaming data from HTX.
+url = "wss://api.huobi.pro/ws"
+# Internal channel size for Huobi data streams.
+internal_ch_size = 1000
+
+# Configuration for Kraken.
+[manager.crypto.source.kraken]
+# WebSocket URL for streaming data from Kraken.
+url = "wss://ws.kraken.com/v2"
+# Internal channel size for Kraken data streams.
+internal_ch_size = 1000
+
+# Configuration for OKX.
+[manager.crypto.source.okx]
+# WebSocket URL for streaming data from OKX.
+url = "wss://ws.okx.com:8443/ws/v5/public"
+# Internal channel size for OKX data streams.
+internal_ch_size = 1000
