@@ -24,7 +24,7 @@ This will compile and install the bothan executable
 ## Configuration Setup
 
 Once Bothan is installed, the next step is to initialize the configuration file. By default, the configuration file will
-be created in the `$HOME/.bothan/ directory`.
+be created in the `$HOME/.bothan` directory.
 
 - Initialize the configuration file using the command:
 
