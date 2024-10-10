@@ -23,7 +23,7 @@ impl MedianProcessor {
     }
 }
 
-impl Process<Decimal> for MedianProcessor {
+impl Process<Decimal, Decimal> for MedianProcessor {
     /// Processes the given data and returns the median. If there are not enough sources, it
     /// returns an error.
     fn process(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessError> {
