@@ -114,8 +114,8 @@ async fn compute_source_result<'a>(
     workers: &WorkerMap<'a>,
     cache: &PriceCache<String>,
     stale_cutoff: i64,
-) -> Result<Vec<Decimal>, Error> {
-    // Check if all prerequisites are available, if not add the missing ones to the queue
+) -> Result<Vec<(String, Decimal)>, Error> {
+    // Check if all prerequisites are available, if not, add the missing ones to the queue
     // and continue to the next signal
     let mut source_results = Vec::with_capacity(signal.source_queries.len());
     let mut missing_pids = HashSet::new();
@@ -127,7 +127,7 @@ async fn compute_source_result<'a>(
                 Ok(AssetState::Available(a)) => {
                     if a.timestamp.ge(&stale_cutoff) {
                         match compute_source_routes(&source_query.routes, a.price, cache) {
-                            Ok(Some(price)) => source_results.push(price),
+                            Ok(Some(price)) => source_results.push((sid.clone(), price)),
                             Ok(None) => {} // If unable to calculate the price, ignore the source
                             Err(Error::PrerequisiteRequired(ids)) => missing_pids.extend(ids),
                             Err(e) => return Err(e),
