@@ -13,8 +13,11 @@ pub struct GetPricesRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetPricesResponse {
+    /// A unique identifier for the response.
+    #[prost(string, tag="1")]
+    pub uuid: ::prost::alloc::string::String,
     /// A list of prices for the requested signal IDs.
-    #[prost(message, repeated, tag="1")]
+    #[prost(message, repeated, tag="2")]
     pub prices: ::prost::alloc::vec::Vec<Price>,
 }
 /// Price contains the price information for a signal ID.

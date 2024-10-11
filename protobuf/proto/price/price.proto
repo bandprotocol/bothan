@@ -28,8 +28,10 @@ message GetPricesRequest {
 // GetPricesResponse is the response message for the GetPrices RPC method.
 // It contains a list of prices corresponding to the requested signal IDs.
 message GetPricesResponse {
+  // A unique identifier for the response.
+  string uuid = 1;
   // A list of prices for the requested signal IDs.
-  repeated Price prices = 1;
+  repeated Price prices = 2;
 }
 
 // Price contains the price information for a signal ID.
