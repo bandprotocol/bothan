@@ -5,7 +5,7 @@ use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, warn};
 
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
@@ -143,7 +143,7 @@ fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, WorkerError> {
 async fn store_ticker(store: &WorkerStore, ticker: TickerResponse) -> Result<(), WorkerError> {
     let id = ticker.symbol.clone();
     store.set_asset(id.clone(), parse_ticker(ticker)?).await?;
-    trace!("stored data for id {}", id);
+    debug!("stored data for id {}", id);
     Ok(())
 }
 
