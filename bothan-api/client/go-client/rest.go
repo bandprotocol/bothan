@@ -75,7 +75,7 @@ func (c *RestClient) SetActiveSignalIDs(signalIDs []string) error {
 	return nil
 }
 
-func (c *RestClient) GetPrices(signalIDs []string) ([]*price.Price, error) {
+func (c *RestClient) GetPrices(signalIDs []string) (*price.GetPricesResponse, error) {
 	parsedUrl, err := url.Parse(c.url + "/prices")
 	if err != nil {
 		return nil, err
@@ -102,5 +102,5 @@ func (c *RestClient) GetPrices(signalIDs []string) ([]*price.Price, error) {
 		return nil, err
 	}
 
-	return priceResp.Prices, nil
+	return &priceResp, nil
 }
