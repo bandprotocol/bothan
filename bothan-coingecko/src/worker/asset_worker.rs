@@ -18,6 +18,8 @@ pub(crate) fn start_asset_worker(weak_worker: Weak<CoinGeckoWorker>, update_inte
     let mut interval = interval(update_interval);
     tokio::spawn(async move {
         while let Some(worker) = weak_worker.upgrade() {
+            interval.tick().await;
+
             let ids = match worker.store.get_query_ids().await {
                 Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
                 Err(e) => {
@@ -25,6 +27,11 @@ pub(crate) fn start_asset_worker(weak_worker: Weak<CoinGeckoWorker>, update_inte
                     Vec::new()
                 }
             };
+
+            if ids.is_empty() {
+                debug!("no ids to update, skipping update");
+                continue;
+            }
 
             let result = timeout(
                 interval.period(),
@@ -35,8 +42,6 @@ pub(crate) fn start_asset_worker(weak_worker: Weak<CoinGeckoWorker>, update_inte
             if result.is_err() {
                 warn!("updating interval exceeded timeout")
             }
-
-            interval.tick().await;
         }
 
         debug!("asset worker has been dropped, stopping asset worker");
