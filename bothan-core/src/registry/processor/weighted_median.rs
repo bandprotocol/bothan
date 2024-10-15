@@ -119,9 +119,9 @@ impl Process<(String, Decimal), Decimal> for WeightedMedianProcessor {
 
 fn compute_weighted_median<T>(mut values: Vec<(T, Decimal)>) -> Option<T>
 where
-    T: Ord + Copy + Add<Output = T> + Div<Output = T> + FromPrimitive,
+    T: Ord + Add<Output = T> + Div<Output = T> + FromPrimitive,
 {
-    values.sort_by(|a, b| a.0.cmp(&b.0));
+    values.sort_by(|(v1, _), (v2, _)| v1.cmp(v2));
 
     let sum = values
         .iter()
