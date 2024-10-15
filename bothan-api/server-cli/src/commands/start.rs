@@ -30,7 +30,7 @@ use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::VersionReq;
 use tonic::transport::Server;
-use tracing::info;
+use tracing::{debug, info};
 
 #[derive(Parser)]
 pub struct StartCli {
@@ -113,7 +113,7 @@ async fn init_store(
     let mut store = SharedStore::new(registry, &config.store.path)
         .await
         .with_context(|| "Failed to create store")?;
-    info!("store created successfully at {:?}", &config.store.path);
+    debug!("store created successfully at {:?}", &config.store.path);
 
     if !reset {
         store

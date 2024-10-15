@@ -1,9 +1,7 @@
-use std::time::Duration;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use serde::{Deserialize, Serialize};
-
-use crate::api::types::DEFAULT_URL;
-use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
+use crate::api::DEFAULT_URL;
+use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 
 /// Options for configuring the `CryptoCompareWorkerBuilder`.
 ///
@@ -15,18 +13,19 @@ pub struct CryptoCompareWorkerBuilderOpts {
     #[serde(default = "default_url")]
     pub url: String,
     #[serde(default)]
+    #[serde(deserialize_with = "empty_string_is_none")]
+    #[serde(serialize_with = "none_is_empty_string")]
     pub api_key: Option<String>,
-    #[serde(default = "default_update_interval")]
-    #[serde(with = "humantime_serde")]
-    pub update_interval: Duration,
+    #[serde(default = "default_internal_ch_size")]
+    pub internal_ch_size: usize,
 }
 
 fn default_url() -> String {
     DEFAULT_URL.to_string()
 }
 
-fn default_update_interval() -> Duration {
-    DEFAULT_UPDATE_INTERVAL
+fn default_internal_ch_size() -> usize {
+    DEFAULT_CHANNEL_SIZE
 }
 
 impl Default for CryptoCompareWorkerBuilderOpts {
@@ -34,7 +33,24 @@ impl Default for CryptoCompareWorkerBuilderOpts {
         Self {
             url: default_url(),
             api_key: None,
-            update_interval: default_update_interval(),
+            internal_ch_size: default_internal_ch_size(),
         }
+    }
+}
+
+fn empty_string_is_none<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    let s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(s.filter(|s| !s.is_empty()))
+}
+
+fn none_is_empty_string<S: Serializer>(
+    value: &Option<String>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match value {
+        Some(val) => serializer.serialize_str(val),
+        None => serializer.serialize_str(""),
     }
 }

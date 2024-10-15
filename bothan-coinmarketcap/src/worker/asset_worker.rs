@@ -5,7 +5,7 @@ use chrono::NaiveDateTime;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::time::{interval, timeout};
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, warn};
 
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
@@ -87,7 +87,7 @@ async fn update_asset_info<T: AsRef<str>>(
             if let Err(e) = store.set_assets(to_set.clone()).await {
                 error!("failed to set multiple assets with error: {}", e);
             } else {
-                trace!(
+                debug!(
                     "stored data for ids: {:?}",
                     to_set.iter().map(|(id, _)| id).collect::<Vec<&String>>(),
                 );

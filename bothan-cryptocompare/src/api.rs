@@ -1,7 +1,7 @@
-pub use builder::CryptoCompareRestAPIBuilder;
-pub use rest::CryptoCompareRestAPI;
+pub use websocket::{
+    CryptoCompareWebSocketConnection, CryptoCompareWebSocketConnector, DEFAULT_URL,
+};
 
-pub mod builder;
-pub mod error;
-pub mod rest;
-pub mod types;
+pub mod errors;
+pub mod msgs;
+mod websocket;
