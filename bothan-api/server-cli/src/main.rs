@@ -48,7 +48,9 @@ async fn main() {
         .unwrap_or(bothan_home_dir().join("config.toml"));
 
     let app_config = if config_path.is_file() {
-        AppConfig::from(config_path).expect("Failed to load config")
+        AppConfig::from(config_path).expect(
+            "Failed to load config. Try deleting the config file and running 'config init'.",
+        )
     } else {
         AppConfig::default()
     };
