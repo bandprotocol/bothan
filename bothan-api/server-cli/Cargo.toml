@@ -12,8 +12,14 @@ path = "src/main.rs"
 [dependencies]
 bothan-api = { workspace = true }
 bothan-binance = { workspace = true }
+bothan-bybit = { workspace = true }
+bothan-coinbase = { workspace = true }
 bothan-coingecko = { workspace = true }
+bothan-coinmarketcap = { workspace = true }
+bothan-cryptocompare = { workspace = true }
+bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
+bothan-okx = { workspace = true }
 bothan-core = { workspace = true }
 
 async-trait = { workspace = true }
@@ -24,9 +30,9 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-anyhow = "1.0.86"
-clap = { version = "4.5.16", features = ["derive"] }
+anyhow = "1.0.89"
+clap = { version = "4.5.20", features = ["derive"] }
 dirs = "5.0.1"
 log = "0.4.22"
 toml = "0.8.19"
-tonic = "0.12.1"
+tonic = "0.12.3"

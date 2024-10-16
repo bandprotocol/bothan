@@ -128,6 +128,7 @@ fn parse_tick(id: &str, tick: Tick) -> Result<AssetInfo, WorkerError> {
 /// Stores tick information into the worker store.
 async fn store_tick(store: &WorkerStore, id: &str, tick: Tick) -> Result<(), WorkerError> {
     store.set_asset(id, parse_tick(id, tick)?).await?;
+    debug!("stored data for id {}", id);
     Ok(())
 }
 
@@ -149,7 +150,7 @@ async fn process_response(
             if let Some(id) = data.ch.split('.').nth(1) {
                 // Handle processing of data update, e.g., storing tick data
                 match store_tick(store, id, data.tick).await {
-                    Ok(_) => info!("saved data"),
+                    Ok(_) => debug!("saved data"),
                     Err(e) => error!("failed to save data: {}", e),
                 }
             }
@@ -160,7 +161,7 @@ async fn process_response(
             if let Err(e) = send_pong(ping.ping, connection).await {
                 error!("failed to send pong: {}", e);
             } else {
-                info!("sent pong in response to ping: {}", ping.ping);
+                debug!("sent pong in response to ping: {}", ping.ping);
             }
         }
     }
