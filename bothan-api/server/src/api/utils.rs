@@ -1,3 +1,4 @@
+use rust_decimal::prelude::Zero;
 use tracing::warn;
 
 use bothan_core::manager::crypto_asset_info::types::PriceState;
@@ -18,8 +19,8 @@ pub fn parse_price_state(id: String, price_state: PriceState) -> Price {
                 }
             }
         }
-        PriceState::Unavailable => Price::new(id, 0u64, Status::Unavailable),
-        PriceState::Unsupported => Price::new(id, 0u64, Status::Unsupported),
+        PriceState::Unavailable => Price::new(id, u64::zero(), Status::Unavailable),
+        PriceState::Unsupported => Price::new(id, u64::zero(), Status::Unsupported),
     }
 }
 
@@ -67,6 +68,26 @@ mod tests {
         let price = parse_price_state(id.clone(), price_state);
 
         let expected_price = Price::new(id.clone(), 1000002_u64, Status::Available);
+        assert_eq!(price, expected_price);
+    }
+
+    #[test]
+    fn test_parse_price_state_unavailable() {
+        let id = "test".to_string();
+        let price_state = PriceState::Unavailable;
+        let price = parse_price_state(id.clone(), price_state);
+
+        let expected_price = Price::new(id.clone(), u64::zero(), Status::Unavailable);
+        assert_eq!(price, expected_price);
+    }
+
+    #[test]
+    fn test_parse_price_state_unsupported() {
+        let id = "test".to_string();
+        let price_state = PriceState::Unsupported;
+        let price = parse_price_state(id.clone(), price_state);
+
+        let expected_price = Price::new(id.clone(), u64::zero(), Status::Unsupported);
         assert_eq!(price, expected_price);
     }
 }
