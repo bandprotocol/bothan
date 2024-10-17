@@ -108,12 +108,9 @@ impl HtxWebSocketConnection {
                 }
                 Ok(Message::Text(msg)) => serde_json::from_str::<HtxResponse>(&msg)
                     .map_err(|_| MessageError::UnsupportedMessage),
-                Err(err) => match err {
-                    TungsteniteError::Protocol(..) | TungsteniteError::ConnectionClosed => {
-                        Err(MessageError::ChannelClosed)
-                    }
-                    _ => Err(MessageError::UnsupportedMessage),
-                },
+                Err(TungsteniteError::Protocol(_)) | Err(TungsteniteError::ConnectionClosed) => {
+                    Err(MessageError::ChannelClosed)
+                }
                 _ => Err(MessageError::UnsupportedMessage),
             };
         }
