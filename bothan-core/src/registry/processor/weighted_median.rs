@@ -70,15 +70,18 @@ where
 {
     values.sort_by(|(v1, _), (v2, _)| v1.cmp(v2));
 
-    let mid = values
+    // We use the sum of the weights as the mid-value to find the median to avoid rounding when
+    // dividing by two.
+    let effective_mid = values
         .iter()
         .fold(u32::zero(), |acc, (_, weight)| acc + weight);
 
-    let mut cumulative_weight = u32::zero();
+    let mut effective_cumulative_weight = u32::zero();
     let mut iter = values.into_iter();
     while let Some((value, weight)) = iter.next() {
-        cumulative_weight += weight * 2;
-        match cumulative_weight.cmp(&mid) {
+        // We multiply the weight by 2 to avoid rounding when dividing by two.
+        effective_cumulative_weight += weight * 2;
+        match effective_cumulative_weight.cmp(&effective_mid) {
             Ordering::Greater => return value,
             Ordering::Equal => {
                 return if let Some((next_value, _)) = iter.next() {
