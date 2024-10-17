@@ -1,4 +1,3 @@
-use rust_decimal::RoundingStrategy;
 use tracing::warn;
 
 use bothan_core::manager::crypto_asset_info::types::PriceState;
