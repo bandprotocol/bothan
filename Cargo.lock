@@ -343,7 +343,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-api"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -384,7 +384,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-api-cli"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -414,7 +414,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-binance"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -435,7 +435,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-bybit"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -454,7 +454,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-coinbase"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -474,7 +474,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-coingecko"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -495,7 +495,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-coinmarketcap"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -517,7 +517,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-core"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -546,7 +546,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-cryptocompare"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -569,7 +569,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-htx"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-kraken"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
@@ -608,7 +608,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-okx"
-version = "0.0.1-alpha.3"
+version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
  "bothan-core",
