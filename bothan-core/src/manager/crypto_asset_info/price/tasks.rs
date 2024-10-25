@@ -59,7 +59,7 @@ pub async fn get_signal_price_states<'a>(
                 warn!("error while processing signal id {}: {}", id, e);
                 cache.set_unavailable(id);
             }
-            Err(Error::FailedToProcessPostSignal(e)) => {
+            Err(Error::FailedToPostProcessSignal(e)) => {
                 warn!("error while post processing signal id {}: {}", id, e);
                 cache.set_unavailable(id);
             }
