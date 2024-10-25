@@ -120,7 +120,7 @@ impl SharedStore {
             .read()
             .await
             .db
-            .get(Key::RegsitryHash.to_prefixed_bytes())?;
+            .get(Key::RegistryHash.to_prefixed_bytes())?;
         let hash = encoded
             .map(|b| decode_from_slice(&b, config::standard()))
             .transpose()?
@@ -134,7 +134,7 @@ impl SharedStore {
             .write()
             .await
             .db
-            .put(Key::RegsitryHash.to_prefixed_bytes(), encoded)?;
+            .put(Key::RegistryHash.to_prefixed_bytes(), encoded)?;
         Ok(())
     }
 
