@@ -195,7 +195,7 @@ async fn init_crypto_server(
     let stale_threshold = config.manager.crypto.stale_threshold;
     let bothan_version =
         Version::from_str(VERSION).with_context(|| "Failed to parse bothan version")?;
-    let registry_version_requirement = VersionReq::from_str(&format!("<{}", REGISTRY_REQUIREMENT))
+    let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
     let mut manager = CryptoAssetInfoManager::new(
         manager_store,
