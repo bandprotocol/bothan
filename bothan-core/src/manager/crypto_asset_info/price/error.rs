@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
+use thiserror::Error;
+
 use crate::registry::post_processor::PostProcessError;
 use crate::registry::processor::ProcessError;
-use std::collections::HashSet;
-use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {

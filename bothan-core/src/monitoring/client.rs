@@ -1,8 +1,9 @@
+use std::sync::Arc;
+
 use reqwest::header::HeaderMap;
 use reqwest::Response;
 use semver::Version;
 use serde::Serialize;
-use std::sync::Arc;
 
 use crate::monitoring::error::Error;
 use crate::monitoring::records::SignalComputationRecords;
