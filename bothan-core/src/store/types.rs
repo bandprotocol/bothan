@@ -5,6 +5,7 @@ pub(crate) enum Key<'a> {
     QueryIDs { source_id: &'a str },
     ActiveSignalIDs,
     Registry,
+    RegsitryHash,
 }
 
 impl<'a> Display for Key<'a> {
@@ -14,6 +15,7 @@ impl<'a> Display for Key<'a> {
             Key::QueryIDs { source_id } => format!("query_id::{}", source_id),
             Key::ActiveSignalIDs => "active_signal_ids".to_string(),
             Key::Registry => "registry".to_string(),
+            Key::RegsitryHash => "registry_hash".to_string(),
         };
         write!(f, "{}", s)
     }

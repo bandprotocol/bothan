@@ -3,22 +3,23 @@ use std::io::{BufReader, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{anyhow, Context};
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
-use semver::VersionReq;
+use semver::{Version, VersionReq};
+use tokio::sync::RwLock;
 use tonic::transport::Server;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use bothan_api::api::CryptoQueryServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
-use bothan_api::monitoring::{Client as MonitoringClient, Signer};
 use bothan_api::proto::price::price_service_server::PriceServiceServer;
 use bothan_api::proto::signal::signal_service_server::SignalServiceServer;
-use bothan_api::VERSION;
+use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
 use bothan_binance::BinanceWorkerBuilder;
 use bothan_bybit::BybitWorkerBuilder;
 use bothan_coinbase::CoinbaseWorkerBuilder;
@@ -26,6 +27,7 @@ use bothan_coingecko::CoinGeckoWorkerBuilder;
 use bothan_coinmarketcap::CoinMarketCapWorkerBuilder;
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
 use bothan_core::manager::CryptoAssetInfoManager;
+use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
 use bothan_core::worker::AssetWorkerBuilder;
@@ -191,13 +193,36 @@ async fn init_crypto_server(
     let manager_store = SharedStore::create_manager_store(&store);
 
     let stale_threshold = config.manager.crypto.stale_threshold;
-    let version_req = VersionReq::from_str(&format!("<={}", VERSION))
-        .with_context(|| "Failed to parse bothan version requirement")?;
-    let mut manager =
-        CryptoAssetInfoManager::new(manager_store, ipfs_client, stale_threshold, version_req);
+    let bothan_version =
+        Version::from_str(VERSION).with_context(|| "Failed to parse bothan version")?;
+    let registry_version_requirement = VersionReq::from_str(&format!("<{}", REGISTRY_REQUIREMENT))
+        .with_context(|| "Failed to parse registry version requirement")?;
+    let mut manager = CryptoAssetInfoManager::new(
+        manager_store,
+        ipfs_client,
+        stale_threshold,
+        bothan_version,
+        registry_version_requirement,
+        monitoring_client,
+    );
     init_crypto_workers(&mut manager, &store, &config.manager.crypto.source).await?;
 
-    Ok(Arc::new(CryptoQueryServer::new(manager, monitoring_client)))
+    let manager = Arc::new(RwLock::new(manager));
+    let cloned_manager = manager.clone();
+
+    tokio::spawn(async move {
+        loop {
+            // Heartbeat is fixed at 1 minute.
+            tokio::time::sleep(Duration::from_secs(60)).await;
+            let reader = cloned_manager.read().await;
+            match reader.post_heartbeat().await {
+                Ok(_) => info!("heartbeat sent"),
+                Err(e) => error!("failed to send heartbeat: {e}"),
+            }
+        }
+    });
+
+    Ok(Arc::new(CryptoQueryServer::new(manager)))
 }
 
 async fn init_crypto_workers(

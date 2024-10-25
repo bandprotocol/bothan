@@ -59,7 +59,7 @@ impl SharedStore {
         if let Some(unvalidated_registry) = inner
             .db
             .get(Key::Registry.to_prefixed_bytes())?
-            .map(|b| decode_from_slice::<Registry, _>(b.as_slice(), config::standard()))
+            .map(|b| decode_from_slice::<Registry, _>(&b, config::standard()))
             .transpose()?
             .map(|(r, _)| r)
         {
@@ -86,7 +86,7 @@ impl SharedStore {
             .db
             .get(Key::ActiveSignalIDs.to_prefixed_bytes())?;
         let active_signal_ids = encoded
-            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .map(|b| decode_from_slice(&b, config::standard()))
             .transpose()?
             .map(|(ids, _)| ids);
         Ok(active_signal_ids)
@@ -114,6 +114,30 @@ impl SharedStore {
         Ok(())
     }
 
+    async fn get_registry_hash(&self) -> Result<Option<String>, Error> {
+        let encoded = self
+            .inner
+            .read()
+            .await
+            .db
+            .get(Key::RegsitryHash.to_prefixed_bytes())?;
+        let hash = encoded
+            .map(|b| decode_from_slice(&b, config::standard()))
+            .transpose()?
+            .map(|(hash, _)| hash);
+        Ok(hash)
+    }
+
+    async fn set_registry_hash(&self, hash: String) -> Result<(), Error> {
+        let encoded = encode_to_vec(&hash, config::standard())?;
+        self.inner
+            .write()
+            .await
+            .db
+            .put(Key::RegsitryHash.to_prefixed_bytes(), encoded)?;
+        Ok(())
+    }
+
     async fn get_query_ids<S: AsRef<str>>(&self, source_id: &S) -> Result<Option<QueryIDs>, Error> {
         let key = Key::QueryIDs {
             source_id: source_id.as_ref(),
@@ -121,7 +145,7 @@ impl SharedStore {
 
         let encoded = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
         let query_ids = encoded
-            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .map(|b| decode_from_slice(&b, config::standard()))
             .transpose()?
             .map(|(ids, _)| ids);
         Ok(query_ids)
@@ -199,7 +223,7 @@ impl SharedStore {
 
         let encoded = self.inner.read().await.db.get(key.to_prefixed_bytes())?;
         let asset_info = encoded
-            .map(|b| decode_from_slice(b.as_slice(), config::standard()))
+            .map(|b| decode_from_slice(&b, config::standard()))
             .transpose()?
             .map(|(info, _)| info);
         Ok(asset_info)
