@@ -39,11 +39,16 @@ pub async fn get_signal_price_states<'a>(
                 info!("signal {}: {} ", id, price);
                 cache.set_available(id, price);
             }
-            Err(Error::PrerequisiteRequired(MissingPrerequisiteError { ids })) => {
-                debug!("prerequisites required for signal {}: {:?}", id, ids);
+            Err(Error::PrerequisiteRequired(MissingPrerequisiteError {
+                ids: prerequisite_ids,
+            })) => {
+                debug!(
+                    "prerequisites required for signal {}: {:?}",
+                    id, prerequisite_ids
+                );
                 queue.push_front(id);
-                for id in ids {
-                    queue.push_front(id)
+                for prerequisite_id in prerequisite_ids {
+                    queue.push_front(prerequisite_id)
                 }
             }
             Err(Error::InvalidSignal) => {
