@@ -17,7 +17,7 @@ pub enum Error {
     FailedToProcessSignal(#[from] ProcessError),
 
     #[error("Failed to post process signal: {0}")]
-    FailedToProcessPostSignal(#[from] PostProcessError),
+    FailedToPostProcessSignal(#[from] PostProcessError),
 }
 
 #[derive(Debug, Error)]
