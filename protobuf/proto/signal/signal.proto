@@ -50,6 +50,9 @@ message SetActiveSignalIdsRequest {
 // PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.
 // It contains the uuid of the records that should be pushed to the monitoring service.
 message PushMonitoringRecordsRequest {
-  // A list of monitoring records to be pushed to the monitoring service.
+  // The uuid of a list of monitoring records to be pushed to the monitoring service.
   string uuid = 1;
+
+  // The tx hash of the transaction associated with the monitoring records.
+  string tx_hash = 2;
 }

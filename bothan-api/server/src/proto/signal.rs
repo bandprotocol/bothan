@@ -25,9 +25,12 @@ pub struct SetActiveSignalIdsRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PushMonitoringRecordsRequest {
-    /// A list of monitoring records to be pushed to the monitoring service.
+    /// The uuid of a list of monitoring records to be pushed to the monitoring service.
     #[prost(string, tag="1")]
     pub uuid: ::prost::alloc::string::String,
+    /// The tx hash of the transaction associated with the monitoring records.
+    #[prost(string, tag="2")]
+    pub tx_hash: ::prost::alloc::string::String,
 }
 include!("signal.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -75,7 +75,7 @@ func (c *RestClient) SetActiveSignalIDs(signalIDs []string) error {
 	return nil
 }
 
-func (c *RestClient) PushMonitoringRecords(uuid string) error {
+func (c *RestClient) PushMonitoringRecords(uuid, txHash string) error {
 	parsedUrl, err := url.Parse(c.url + "/monitoring_records")
 	if err != nil {
 		return err
@@ -85,7 +85,8 @@ func (c *RestClient) PushMonitoringRecords(uuid string) error {
 		parsedUrl.String(), &grequests.RequestOptions{
 			RequestTimeout: c.timeout,
 			JSON: map[string]string{
-				"uuid": uuid,
+				"uuid":    uuid,
+				"tx_hash": txHash,
 			},
 		},
 	)

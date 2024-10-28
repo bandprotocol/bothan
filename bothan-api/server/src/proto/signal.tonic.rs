@@ -106,10 +106,6 @@ pub mod signal_service_client {
                 .insert(GrpcMethod::new("signal.SignalService", "UpdateRegistry"));
             self.inner.unary(req, path, codec).await
         }
-        /** Sets the current active signal IDs.
- Active signal IDs are used to determine which signals are currently in use
- or monitored by the system.
-*/
         pub async fn set_active_signal_ids(
             &mut self,
             request: impl tonic::IntoRequest<super::SetActiveSignalIdsRequest>,
@@ -132,9 +128,6 @@ pub mod signal_service_client {
                 .insert(GrpcMethod::new("signal.SignalService", "SetActiveSignalIds"));
             self.inner.unary(req, path, codec).await
         }
-        /** Pushes records to the monitoring service.
- Monitoring records are used to track the computation of signals.
-*/
         pub async fn push_monitoring_records(
             &mut self,
             request: impl tonic::IntoRequest<super::PushMonitoringRecordsRequest>,
@@ -172,17 +165,10 @@ pub mod signal_service_server {
             &self,
             request: tonic::Request<super::UpdateRegistryRequest>,
         ) -> std::result::Result<tonic::Response<()>, tonic::Status>;
-        /** Sets the current active signal IDs.
- Active signal IDs are used to determine which signals are currently in use
- or monitored by the system.
-*/
         async fn set_active_signal_ids(
             &self,
             request: tonic::Request<super::SetActiveSignalIdsRequest>,
         ) -> std::result::Result<tonic::Response<()>, tonic::Status>;
-        /** Pushes records to the monitoring service.
- Monitoring records are used to track the computation of signals.
-*/
         async fn push_monitoring_records(
             &self,
             request: tonic::Request<super::PushMonitoringRecordsRequest>,

@@ -44,12 +44,12 @@ func (c *GrpcClient) SetActiveSignalIDs(signalIDs []string) error {
 	return err
 }
 
-func (c *GrpcClient) PushMonitoringRecords(uuid string) error {
+func (c *GrpcClient) PushMonitoringRecords(uuid, txHash string) error {
 	client := signal.NewSignalServiceClient(c.connection)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
-	_, err := client.PushMonitoringRecords(ctx, &signal.PushMonitoringRecordsRequest{Uuid: uuid})
+	_, err := client.PushMonitoringRecords(ctx, &signal.PushMonitoringRecordsRequest{Uuid: uuid, TxHash: txHash})
 	return err
 }
 

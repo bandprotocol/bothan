@@ -108,8 +108,9 @@ impl SignalService for CryptoQueryServer {
     ) -> Result<Response<()>, Status> {
         info!("received push monitoring records request");
         let manager = self.manager.read().await;
+        let request = request.into_inner();
         let push_result = manager
-            .push_monitoring_record(request.into_inner().uuid)
+            .push_monitoring_record(request.uuid, request.tx_hash)
             .await;
 
         match push_result {
