@@ -20,5 +20,14 @@ pub struct SetActiveSignalIdsRequest {
     #[prost(string, repeated, tag="1")]
     pub signal_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+/// PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.
+/// It contains the uuid of the records that should be pushed to the monitoring service.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PushMonitoringRecordsRequest {
+    /// A list of monitoring records to be pushed to the monitoring service.
+    #[prost(string, tag="1")]
+    pub uuid: ::prost::alloc::string::String,
+}
 include!("signal.tonic.rs");
 // @@protoc_insertion_point(module)
