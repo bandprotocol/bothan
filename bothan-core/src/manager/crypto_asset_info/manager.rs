@@ -76,7 +76,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
             .store
             .get_registry_hash()
             .await
-            .map_err(|_| PostHeartbeatError::FailedToRegistryHash)?
+            .map_err(|_| PostHeartbeatError::FailedToGetRegistryHash)?
             .unwrap_or_else(|| "".to_string());
 
         client
