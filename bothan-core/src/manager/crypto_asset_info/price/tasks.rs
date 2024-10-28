@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashSet, VecDeque};
 
 use num_traits::Zero;
 use rust_decimal::Decimal;
@@ -98,10 +98,10 @@ async fn compute_signal_result<'a>(
             // Note: We use `or_insert()` to get the mutable reference to the insert here as we don't
             // expect re-entry of this function if the signal_id has already been computed and
             // entered into `records`
-            let record_entry = records.entry(id.to_string()).or_insert(record);
+            let record_ref = records.push(id.to_string(), record);
 
             let process_signal_result = signal.processor.process(source_results);
-            record_entry.process_result = Some(process_signal_result.clone());
+            record_ref.process_result = Some(process_signal_result.clone());
 
             let processed_signal = process_signal_result?;
 
@@ -109,7 +109,7 @@ async fn compute_signal_result<'a>(
                 .post_processors
                 .iter()
                 .try_fold(processed_signal, |acc, post| post.process(acc));
-            record_entry.post_process_result = Some(post_process_signal_result.clone());
+            record_ref.post_process_result = Some(post_process_signal_result.clone());
 
             Ok(post_process_signal_result?)
         }
@@ -126,7 +126,7 @@ async fn compute_source_result<'a>(
 ) -> Result<Vec<(String, Decimal)>, MissingPrerequisiteError> {
     // Create a temporary cache here as we don't want to write to the main record until we can
     // confirm that all prerequisites are settled
-    let mut records_cache = HashMap::new();
+    let mut records_cache = Vec::new();
 
     let mut source_values = Vec::with_capacity(signal.source_queries.len());
     let missing_prerequisites = HashSet::new();
@@ -162,19 +162,22 @@ async fn process_source_query<'a>(
     source_query: &SourceQuery,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
-    source_records: &mut HashMap<String, SourceRecord<Decimal>>,
+    source_records: &mut Vec<(String, SourceRecord<Decimal>)>,
 ) -> Result<Option<(String, Decimal)>, MissingPrerequisiteError> {
     let source_id = &source_query.source_id;
     let query_id = &source_query.query_id;
     match worker.get_asset(source_id).await {
         Ok(AssetState::Available(a)) if a.timestamp.ge(&stale_cutoff) => {
             // Create a record for the specific source
-            let source_record = source_records
-                .entry(source_id.clone())
-                .or_insert(SourceRecord::new(query_id.clone(), a.price, vec![], None));
+            source_records.push((
+                source_id.clone(),
+                SourceRecord::new(query_id.clone(), a.price, vec![], None),
+            ));
+            // We can unwrap here because we just pushed the value, so it's guaranteed to be there
+            let (_, record) = source_records.last_mut().unwrap();
 
             // Calculate the source route
-            compute_source_routes(&source_query.routes, a.price, cache, source_record)
+            compute_source_routes(&source_query.routes, a.price, cache, record)
                 .map(|opt| opt.map(|price| (source_id.clone(), price)))
         }
         Ok(AssetState::Available(_)) => {

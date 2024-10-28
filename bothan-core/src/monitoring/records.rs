@@ -1,6 +1,3 @@
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-
 use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -12,7 +9,7 @@ use crate::registry::source::Operation;
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct SignalComputationRecords<T, U> {
     #[serde(flatten)]
-    inner: HashMap<String, SignalComputationRecord<T, U>>,
+    inner: Vec<(String, SignalComputationRecord<T, U>)>,
 }
 
 impl<T, U> SignalComputationRecords<T, U>
@@ -20,8 +17,15 @@ where
     T: Serialize + DeserializeOwned,
     U: Serialize + DeserializeOwned,
 {
-    pub fn entry(&mut self, key: String) -> Entry<'_, String, SignalComputationRecord<T, U>> {
-        self.inner.entry(key)
+    pub fn push(
+        &mut self,
+        id: String,
+        value: SignalComputationRecord<T, U>,
+    ) -> &mut SignalComputationRecord<T, U> {
+        self.inner.push((id, value));
+        // We can unwrap here because we just pushed the value so it's guaranteed to be there
+        let (_, value) = self.inner.last_mut().unwrap();
+        value
     }
 }
 
@@ -31,7 +35,7 @@ where
     T: Sized,
     U: Sized,
 {
-    pub sources: HashMap<String, SourceRecord<T>>,
+    pub sources: Vec<(String, SourceRecord<T>)>,
     pub process_result: Option<Result<U, ProcessError>>,
     pub post_process_result: Option<Result<U, PostProcessError>>,
 }
