@@ -18,6 +18,7 @@ use crate::registry::{Registry, Valid};
 use crate::store::ActiveSignalIDs;
 use crate::worker::{AssetState, AssetWorker};
 
+// TODO: Allow records to be Option<T>
 pub async fn get_signal_price_states<'a>(
     ids: Vec<String>,
     workers: &WorkerMap<'a>,
