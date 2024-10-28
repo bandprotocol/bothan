@@ -96,9 +96,6 @@ async fn compute_signal_result<'a>(
             let source_results =
                 compute_source_result(signal, workers, cache, stale_cutoff, &mut record).await?;
 
-            // Note: We use `or_insert()` to get the mutable reference to the insert here as we don't
-            // expect re-entry of this function if the signal_id has already been computed and
-            // entered into `records`
             let record_ref = records.push(id.to_string(), record);
 
             let process_signal_result = signal.processor.process(source_results);
@@ -223,7 +220,6 @@ fn compute_source_routes(
         routes[idx].operation.execute(acc, values[idx])
     });
 
-    // Modify operation record if necessary
     let op_records = routes
         .iter()
         .zip(values.iter())
