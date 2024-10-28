@@ -33,7 +33,7 @@ pub async fn get_signal_price_states<'a>(
         if cache.contains(&id) {
             continue;
         }
-
+        
         match compute_signal_result(&id, workers, registry, stale_cutoff, &cache, records).await {
             Ok(price) => {
                 info!("signal {}: {} ", id, price);
@@ -95,8 +95,11 @@ async fn compute_signal_result<'a>(
             let source_results =
                 compute_source_result(signal, workers, cache, stale_cutoff, &mut record).await?;
 
+            // Note: We use `or_insert()` to get the mutable reference to the insert here as we don't
+            // expect re-entry of this function if the signal_id has already been computed and
+            // entered into `records`
             let record_entry = records.entry(id.to_string()).or_insert(record);
-
+            
             let process_signal_result = signal.processor.process(source_results);
             record_entry.process_result = Some(process_signal_result.clone());
 
@@ -122,7 +125,7 @@ async fn compute_source_result<'a>(
     record: &mut PriceSignalComputationRecord,
 ) -> Result<Vec<(String, Decimal)>, MissingPrerequisiteError> {
     // Create a temporary cache here as we don't want to write to the main record until we can
-    // confirm that all prerequisites is settled
+    // confirm that all prerequisites are settled
     let mut records_cache = HashMap::new();
 
     let mut source_values = Vec::with_capacity(signal.source_queries.len());
