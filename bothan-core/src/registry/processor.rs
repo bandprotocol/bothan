@@ -6,7 +6,7 @@ use thiserror::Error;
 pub mod median;
 pub mod weighted_median;
 
-#[derive(Debug, Error, PartialEq, Clone)]
+#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 #[error("{msg}")]
 pub struct ProcessError {
     msg: String,

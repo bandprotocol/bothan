@@ -5,7 +5,7 @@ use thiserror::Error;
 
 pub mod tick;
 
-#[derive(Debug, Error, PartialEq, Clone)]
+#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 #[error("{msg}")]
 pub struct PostProcessError {
     msg: String,

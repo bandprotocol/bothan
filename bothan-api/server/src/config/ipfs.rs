@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_IPFS_ENDPOINT: &str = "https://ipfs.io";
 

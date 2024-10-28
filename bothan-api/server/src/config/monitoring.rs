@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
 
 /// The configuration for bothan-api's monitoring service.
 #[derive(Clone, Debug, Serialize, Deserialize)]

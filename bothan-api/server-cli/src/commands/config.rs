@@ -1,12 +1,14 @@
 use std::fs;
 use std::path::PathBuf;
 
-use crate::bothan_home_dir;
 use anyhow::{anyhow, Context};
-use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
-use bothan_api::config::AppConfig;
 use clap::{Parser, Subcommand};
 use tracing::info;
+
+use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
+use bothan_api::config::AppConfig;
+
+use crate::bothan_home_dir;
 
 #[derive(Parser)]
 pub struct ConfigCli {

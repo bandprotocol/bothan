@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error)]
-pub enum PostError {
+pub enum Error {
     #[error("Failed to send request: {0}")]
     Reqwest(#[from] reqwest::Error),
 

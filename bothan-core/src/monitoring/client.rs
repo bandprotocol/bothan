@@ -1,14 +1,15 @@
+use std::sync::Arc;
+
 use reqwest::header::HeaderMap;
 use reqwest::Response;
+use semver::Version;
 use serde::Serialize;
 
-use bothan_core::store::ActiveSignalIDs;
-
-use crate::monitoring::error::PostError;
+use crate::monitoring::error::Error;
+use crate::monitoring::records::SignalComputationRecords;
 use crate::monitoring::signer::Signer;
 use crate::monitoring::types::{BothanInfo, Entry, Topic};
-use crate::proto::price::Price;
-use crate::VERSION;
+use crate::store::ActiveSignalIDs;
 
 pub struct Client {
     url: String,
@@ -25,12 +26,16 @@ impl Client {
         }
     }
 
-    pub async fn post_price(
+    pub async fn post_arced_signal_record<T, U>(
         &self,
         uuid: String,
-        prices: Vec<Price>,
-    ) -> Result<Response, PostError> {
-        self.post(uuid, Topic::Price, prices).await
+        records: Arc<SignalComputationRecords<T, U>>,
+    ) -> Result<Response, Error>
+    where
+        T: Serialize + Sized,
+        U: Serialize,
+    {
+        self.post(uuid, Topic::Records, records).await
     }
 
     pub async fn post_heartbeat(
@@ -38,11 +43,14 @@ impl Client {
         uuid: String,
         active_signal_ids: ActiveSignalIDs,
         supported_sources: Vec<String>,
-    ) -> Result<Response, PostError> {
+        bothan_version: Version,
+        registry_hash: String,
+    ) -> Result<Response, Error> {
         let bothan_info = BothanInfo::new(
-            VERSION.to_string(),
             active_signal_ids.into_iter().collect::<Vec<String>>(),
             supported_sources,
+            bothan_version,
+            registry_hash,
         );
 
         self.post(uuid, Topic::Heartbeat, bothan_info).await
@@ -53,7 +61,7 @@ impl Client {
         uuid: String,
         topic: Topic,
         data: T,
-    ) -> Result<Response, PostError> {
+    ) -> Result<Response, Error> {
         let entry = Entry::new(uuid, topic, data);
 
         let mut header = HeaderMap::new();
