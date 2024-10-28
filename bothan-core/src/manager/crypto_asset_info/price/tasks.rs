@@ -33,7 +33,7 @@ pub async fn get_signal_price_states<'a>(
         if cache.contains(&id) {
             continue;
         }
-        
+
         match compute_signal_result(&id, workers, registry, stale_cutoff, &cache, records).await {
             Ok(price) => {
                 info!("signal {}: {} ", id, price);
@@ -99,7 +99,7 @@ async fn compute_signal_result<'a>(
             // expect re-entry of this function if the signal_id has already been computed and
             // entered into `records`
             let record_entry = records.entry(id.to_string()).or_insert(record);
-            
+
             let process_signal_result = signal.processor.process(source_results);
             record_entry.process_result = Some(process_signal_result.clone());
 
