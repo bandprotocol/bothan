@@ -54,7 +54,7 @@ pub enum PostHeartbeatError {
     FailedToGetActiveSignalIDs,
 
     #[error("Failed to get registry hash")]
-    FailedToRegistryHash,
+    FailedToGetRegistryHash,
 
     #[error("Failed to send payload to monitor: {0}")]
     FailedToSendPayload(#[from] MonitoringError),
