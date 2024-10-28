@@ -32,11 +32,7 @@ func (c *GrpcClient) UpdateRegistry(ipfsHash string, version string) error {
 	defer cancel()
 
 	_, err := client.UpdateRegistry(ctx, &signal.UpdateRegistryRequest{IpfsHash: ipfsHash, Version: version})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (c *GrpcClient) SetActiveSignalIDs(signalIDs []string) error {
@@ -45,11 +41,16 @@ func (c *GrpcClient) SetActiveSignalIDs(signalIDs []string) error {
 	defer cancel()
 
 	_, err := client.SetActiveSignalIds(ctx, &signal.SetActiveSignalIdsRequest{SignalIds: signalIDs})
-	if err != nil {
-		return err
-	}
+	return err
+}
 
-	return nil
+func (c *GrpcClient) PushMonitoringRecords(uuid string) error {
+	client := signal.NewSignalServiceClient(c.connection)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	_, err := client.PushMonitoringRecords(ctx, &signal.PushMonitoringRecordsRequest{Uuid: uuid})
+	return err
 }
 
 func (c *GrpcClient) GetPrices(signalIDs []string) (*price.GetPricesResponse, error) {

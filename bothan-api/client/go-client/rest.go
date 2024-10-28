@@ -75,6 +75,32 @@ func (c *RestClient) SetActiveSignalIDs(signalIDs []string) error {
 	return nil
 }
 
+func (c *RestClient) PushMonitoringRecords(uuid string) error {
+	parsedUrl, err := url.Parse(c.url + "/monitoring_records")
+	if err != nil {
+		return err
+	}
+
+	resp, err := grequests.Post(
+		parsedUrl.String(), &grequests.RequestOptions{
+			RequestTimeout: c.timeout,
+			JSON: map[string]string{
+				"uuid": uuid,
+			},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if !resp.Ok {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (c *RestClient) GetPrices(signalIDs []string) (*price.GetPricesResponse, error) {
 	parsedUrl, err := url.Parse(c.url + "/prices")
 	if err != nil {
