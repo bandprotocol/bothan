@@ -147,7 +147,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
     pub async fn push_monitoring_record(
         &self,
         uuid: String,
-        _tx_hash: String,
+        tx_hash: String,
     ) -> Result<(), PushMonitoringRecordError> {
         let client = self
             .monitoring_client
@@ -162,7 +162,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
             .get(&uuid)
             .ok_or(PushMonitoringRecordError::RecordNotFound)?;
         client
-            .post_arced_signal_record(uuid, records.clone())
+            .post_signal_record(uuid, tx_hash, records.clone())
             .await?
             .error_for_status()?;
         Ok(())
