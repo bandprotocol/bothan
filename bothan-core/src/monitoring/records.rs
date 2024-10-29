@@ -1,10 +1,17 @@
 use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::registry::post_processor::PostProcessError;
 use crate::registry::processor::ProcessError;
 use crate::registry::source::Operation;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SignalRecordsWithTxHash<T, U> {
+    pub tx_hash: String,
+    pub records: Arc<SignalComputationRecords<T, U>>,
+}
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct SignalComputationRecords<T, U> {

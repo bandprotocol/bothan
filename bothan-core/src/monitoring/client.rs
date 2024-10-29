@@ -6,7 +6,7 @@ use semver::Version;
 use serde::Serialize;
 
 use crate::monitoring::error::Error;
-use crate::monitoring::records::SignalComputationRecords;
+use crate::monitoring::records::{SignalComputationRecords, SignalRecordsWithTxHash};
 use crate::monitoring::signer::Signer;
 use crate::monitoring::types::{BothanInfo, Entry, Topic};
 
@@ -25,16 +25,22 @@ impl Client {
         }
     }
 
-    pub async fn post_arced_signal_record<T, U>(
+    pub async fn post_signal_record<T, U>(
         &self,
         uuid: String,
+        tx_hash: String,
         records: Arc<SignalComputationRecords<T, U>>,
     ) -> Result<Response, Error>
     where
         T: Serialize + Sized,
         U: Serialize,
     {
-        self.post(uuid, Topic::Records, records).await
+        self.post(
+            uuid,
+            Topic::Records,
+            SignalRecordsWithTxHash { tx_hash, records },
+        )
+        .await
     }
 
     pub async fn post_heartbeat(
