@@ -21,7 +21,6 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	SignalService_UpdateRegistry_FullMethodName        = "/signal.SignalService/UpdateRegistry"
-	SignalService_SetActiveSignalIds_FullMethodName    = "/signal.SignalService/SetActiveSignalIds"
 	SignalService_PushMonitoringRecords_FullMethodName = "/signal.SignalService/PushMonitoringRecords"
 )
 
@@ -33,10 +32,6 @@ type SignalServiceClient interface {
 	// The registry stores metadata and configuration data that can be referenced
 	// by other parts of the system.
 	UpdateRegistry(ctx context.Context, in *UpdateRegistryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Sets the current active signal IDs.
-	// Active signal IDs are used to determine which signals are currently in use
-	// or monitored by the system.
-	SetActiveSignalIds(ctx context.Context, in *SetActiveSignalIdsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Pushes records to the monitoring service.
 	// Monitoring records are used to track the computation of signals.
 	PushMonitoringRecords(ctx context.Context, in *PushMonitoringRecordsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -53,15 +48,6 @@ func NewSignalServiceClient(cc grpc.ClientConnInterface) SignalServiceClient {
 func (c *signalServiceClient) UpdateRegistry(ctx context.Context, in *UpdateRegistryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, SignalService_UpdateRegistry_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *signalServiceClient) SetActiveSignalIds(ctx context.Context, in *SetActiveSignalIdsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, SignalService_SetActiveSignalIds_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,10 +71,6 @@ type SignalServiceServer interface {
 	// The registry stores metadata and configuration data that can be referenced
 	// by other parts of the system.
 	UpdateRegistry(context.Context, *UpdateRegistryRequest) (*emptypb.Empty, error)
-	// Sets the current active signal IDs.
-	// Active signal IDs are used to determine which signals are currently in use
-	// or monitored by the system.
-	SetActiveSignalIds(context.Context, *SetActiveSignalIdsRequest) (*emptypb.Empty, error)
 	// Pushes records to the monitoring service.
 	// Monitoring records are used to track the computation of signals.
 	PushMonitoringRecords(context.Context, *PushMonitoringRecordsRequest) (*emptypb.Empty, error)
@@ -101,9 +83,6 @@ type UnimplementedSignalServiceServer struct {
 
 func (UnimplementedSignalServiceServer) UpdateRegistry(context.Context, *UpdateRegistryRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRegistry not implemented")
-}
-func (UnimplementedSignalServiceServer) SetActiveSignalIds(context.Context, *SetActiveSignalIdsRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetActiveSignalIds not implemented")
 }
 func (UnimplementedSignalServiceServer) PushMonitoringRecords(context.Context, *PushMonitoringRecordsRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushMonitoringRecords not implemented")
@@ -139,24 +118,6 @@ func _SignalService_UpdateRegistry_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SignalService_SetActiveSignalIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetActiveSignalIdsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SignalServiceServer).SetActiveSignalIds(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SignalService_SetActiveSignalIds_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SignalServiceServer).SetActiveSignalIds(ctx, req.(*SetActiveSignalIdsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SignalService_PushMonitoringRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PushMonitoringRecordsRequest)
 	if err := dec(in); err != nil {
@@ -185,10 +146,6 @@ var SignalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRegistry",
 			Handler:    _SignalService_UpdateRegistry_Handler,
-		},
-		{
-			MethodName: "SetActiveSignalIds",
-			Handler:    _SignalService_SetActiveSignalIds_Handler,
 		},
 		{
 			MethodName: "PushMonitoringRecords",

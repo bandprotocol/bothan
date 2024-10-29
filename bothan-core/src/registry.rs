@@ -51,6 +51,14 @@ impl<T> Registry<T> {
     pub fn contains(&self, signal_id: &str) -> bool {
         self.inner.contains_key(signal_id)
     }
+
+    pub fn keys(&self) -> impl Iterator<Item = &String> {
+        self.inner.keys()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &Signal)> {
+        self.inner.iter()
+    }
 }
 
 impl Default for Registry<Invalid> {

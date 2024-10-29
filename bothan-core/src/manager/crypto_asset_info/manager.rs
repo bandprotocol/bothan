@@ -1,14 +1,13 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
-use tokio::sync::RwLock;
 
 use crate::ipfs::{error::Error as IpfsError, IpfsClient};
 use crate::manager::crypto_asset_info::error::{
-    PostHeartbeatError, PushMonitoringRecordError, SetActiveSignalError, SetRegistryError,
+    PostHeartbeatError, PushMonitoringRecordError, SetRegistryError,
 };
 use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
@@ -19,11 +18,11 @@ use crate::monitoring::records::SignalComputationRecords;
 use crate::monitoring::{create_uuid, Client as MonitoringClient};
 use crate::registry::{Invalid, Registry};
 use crate::store::error::Error as StoreError;
-use crate::store::{ActiveSignalIDs, ManagerStore};
+use crate::store::ManagerStore;
 use crate::worker::AssetWorker;
 
 pub struct CryptoAssetInfoManager<'a> {
-    workers: RwLock<HashMap<String, Arc<dyn AssetWorker + 'a>>>,
+    workers: HashMap<String, Arc<dyn AssetWorker + 'a>>,
     store: ManagerStore,
     stale_threshold: i64,
     ipfs_client: IpfsClient,
@@ -35,6 +34,7 @@ pub struct CryptoAssetInfoManager<'a> {
 
 impl<'a> CryptoAssetInfoManager<'a> {
     pub fn new(
+        workers: HashMap<String, Arc<dyn AssetWorker + 'a>>,
         store: ManagerStore,
         ipfs_client: IpfsClient,
         stale_threshold: i64,
@@ -47,7 +47,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
             .map(|_| Cache::builder().time_to_idle(MONITORING_TTL).build());
 
         CryptoAssetInfoManager {
-            workers: RwLock::new(HashMap::new()),
+            workers,
             store,
             stale_threshold,
             ipfs_client,
@@ -66,10 +66,6 @@ impl<'a> CryptoAssetInfoManager<'a> {
 
         let uuid = create_uuid();
 
-        let ids = self
-            .get_active_signal_ids()
-            .await
-            .map_err(|_| PostHeartbeatError::FailedToGetActiveSignalIDs)?;
         let supported_sources = self.current_worker_set().await;
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
@@ -82,7 +78,6 @@ impl<'a> CryptoAssetInfoManager<'a> {
         client
             .post_heartbeat(
                 uuid.clone(),
-                ids,
                 supported_sources,
                 bothan_version,
                 registry_hash,
@@ -93,30 +88,8 @@ impl<'a> CryptoAssetInfoManager<'a> {
         Ok(uuid)
     }
 
-    /// Adds a worker with an assigned name.
-    pub async fn add_worker(&mut self, name: String, worker: Arc<dyn AssetWorker + 'a>) {
-        self.workers.write().await.insert(name, worker);
-    }
-
-    /// Sets the active signal ids of the manager.
-    pub async fn set_active_signal_ids(
-        &mut self,
-        signal_ids: Vec<String>,
-    ) -> Result<(), SetActiveSignalError> {
-        let new_active_signal_ids = signal_ids.iter().cloned().collect::<HashSet<String>>();
-
-        let workers = self.workers.write().await;
-        let registry = self.store.get_registry().await;
-
-        set_workers_query_ids(&workers, &new_active_signal_ids, &registry).await?;
-        self.store.set_active_signal_ids(signal_ids).await?;
-
-        Ok(())
-    }
-
-    /// Gets the active signal ids of the manager
-    pub async fn get_active_signal_ids(&self) -> Result<ActiveSignalIDs, StoreError> {
-        self.store.get_active_signal_ids().await
+    pub async fn current_worker_set(&self) -> Vec<String> {
+        self.workers.keys().cloned().collect()
     }
 
     /// Gets the `Price` of the given signal ids.
@@ -125,7 +98,6 @@ impl<'a> CryptoAssetInfoManager<'a> {
         ids: Vec<String>,
     ) -> Result<(String, Vec<PriceState>), StoreError> {
         let registry = self.store.get_registry().await;
-        let workers = self.workers.read().await;
 
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
@@ -135,7 +107,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
 
         let price_states = get_signal_price_states(
             ids,
-            &workers,
+            &self.workers,
             &registry,
             &active_signals,
             stale_cutoff,
@@ -181,7 +153,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
     }
 
     pub async fn set_registry_from_ipfs(
-        &mut self,
+        &self,
         hash: &str,
         version: Version,
     ) -> Result<(), SetRegistryError> {
@@ -210,10 +182,9 @@ impl<'a> CryptoAssetInfoManager<'a> {
             .map_err(|e| SetRegistryError::InvalidRegistry(e.to_string()))?;
 
         self.store.set_registry(registry, hash.to_string()).await?;
-        Ok(())
-    }
 
-    pub async fn current_worker_set(&self) -> Vec<String> {
-        self.workers.read().await.keys().cloned().collect()
+        set_workers_query_ids(&self.workers, &self.store.get_registry().await).await;
+
+        Ok(())
     }
 }

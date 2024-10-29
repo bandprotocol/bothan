@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::{create_dir_all, read_to_string, File};
 use std::io::{BufReader, Write};
 use std::path::PathBuf;
@@ -9,7 +10,6 @@ use anyhow::{anyhow, Context};
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
-use tokio::sync::RwLock;
 use tonic::transport::Server;
 use tracing::{debug, error, info};
 
@@ -30,7 +30,7 @@ use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::registry::{Registry, Valid};
 use bothan_core::store::SharedStore;
-use bothan_core::worker::AssetWorkerBuilder;
+use bothan_core::worker::{AssetWorker, AssetWorkerBuilder};
 use bothan_cryptocompare::CryptoCompareWorkerBuilder;
 use bothan_htx::HtxWorkerBuilder;
 use bothan_kraken::KrakenWorkerBuilder;
@@ -197,7 +197,10 @@ async fn init_crypto_server(
         Version::from_str(VERSION).with_context(|| "Failed to parse bothan version")?;
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
-    let mut manager = CryptoAssetInfoManager::new(
+
+    let workers = init_crypto_workers(&store, &config.manager.crypto.source).await?;
+    let manager = CryptoAssetInfoManager::new(
+        workers,
         manager_store,
         ipfs_client,
         stale_threshold,
@@ -205,17 +208,15 @@ async fn init_crypto_server(
         registry_version_requirement,
         monitoring_client,
     );
-    init_crypto_workers(&mut manager, &store, &config.manager.crypto.source).await?;
 
-    let manager = Arc::new(RwLock::new(manager));
+    let manager = Arc::new(manager);
     let cloned_manager = manager.clone();
 
     tokio::spawn(async move {
         loop {
             // Heartbeat is fixed at 1 minute.
             tokio::time::sleep(Duration::from_secs(60)).await;
-            let reader = cloned_manager.read().await;
-            match reader.post_heartbeat().await {
+            match cloned_manager.post_heartbeat().await {
                 Ok(_) => info!("heartbeat sent"),
                 Err(e) => error!("failed to send heartbeat: {e}"),
             }
@@ -226,10 +227,9 @@ async fn init_crypto_server(
 }
 
 async fn init_crypto_workers(
-    manager: &mut CryptoAssetInfoManager<'static>,
     store: &SharedStore,
     source: &CryptoSourceConfigs,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<HashMap<String, Arc<dyn AssetWorker>>> {
     type Binance = BinanceWorkerBuilder;
     type Bybit = BybitWorkerBuilder;
     type Coinbase = CoinbaseWorkerBuilder;
@@ -240,47 +240,49 @@ async fn init_crypto_workers(
     type Kraken = KrakenWorkerBuilder;
     type Okx = OkxWorkerBuilder;
 
+    let mut workers = HashMap::new();
+
     if let Some(opts) = &source.binance {
-        add_worker::<Binance>(manager, store, opts).await?;
+        add_worker::<Binance>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.bybit {
-        add_worker::<Bybit>(manager, store, opts).await?;
+        add_worker::<Bybit>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.coinbase {
-        add_worker::<Coinbase>(manager, store, opts).await?;
+        add_worker::<Coinbase>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.coingecko {
-        add_worker::<CoinGecko>(manager, store, opts).await?;
+        add_worker::<CoinGecko>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.coinmarketcap {
-        add_worker::<CoinMarketCap>(manager, store, opts).await?;
+        add_worker::<CoinMarketCap>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.cryptocompare {
-        add_worker::<CryptoCompare>(manager, store, opts).await?;
+        add_worker::<CryptoCompare>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.htx {
-        add_worker::<Htx>(manager, store, opts).await?;
+        add_worker::<Htx>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.kraken {
-        add_worker::<Kraken>(manager, store, opts).await?;
+        add_worker::<Kraken>(&mut workers, store, opts).await?;
     }
 
     if let Some(opts) = &source.okx {
-        add_worker::<Okx>(manager, store, opts).await?;
+        add_worker::<Okx>(&mut workers, store, opts).await?;
     }
 
-    Ok(())
+    Ok(workers)
 }
 
 async fn add_worker<B>(
-    manager: &mut CryptoAssetInfoManager<'static>,
+    workers: &mut HashMap<String, Arc<dyn AssetWorker>>,
     store: &SharedStore,
     opts: &B::Opts,
 ) -> anyhow::Result<()>
@@ -296,7 +298,7 @@ where
         .await
         .with_context(|| format!("Failed to build worker {worker_name}"))?;
 
-    manager.add_worker(worker_name.to_string(), worker).await;
+    workers.insert(worker_name.to_string(), worker);
     info!("loaded {} worker", worker_name);
     Ok(())
 }
