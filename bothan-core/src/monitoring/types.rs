@@ -13,7 +13,6 @@ pub enum Topic {
 }
 
 pub struct BothanInfo {
-    pub active_signal_ids: Vec<String>,
     pub supported_sources: Vec<String>,
     pub version: Version,
     pub registry_hash: String,
@@ -21,13 +20,11 @@ pub struct BothanInfo {
 
 impl BothanInfo {
     pub fn new(
-        active_signal_ids: Vec<String>,
         supported_sources: Vec<String>,
         version: Version,
         registry_hash: String,
     ) -> BothanInfo {
         BothanInfo {
-            active_signal_ids,
             supported_sources,
             version,
             registry_hash,
@@ -41,7 +38,6 @@ impl Serialize for BothanInfo {
         S: serde::Serializer,
     {
         let mut state = serializer.serialize_struct("BothanInfo", 4)?;
-        state.serialize_field("active_signal_ids", &self.active_signal_ids)?;
         state.serialize_field("supported_sources", &self.supported_sources)?;
         state.serialize_field("version", &self.version.to_string())?;
         state.serialize_field("registry_hash", &self.registry_hash)?;

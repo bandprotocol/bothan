@@ -49,32 +49,6 @@ func (c *RestClient) UpdateRegistry(ipfsHash string, version string) error {
 	return nil
 }
 
-func (c *RestClient) SetActiveSignalIDs(signalIDs []string) error {
-	parsedUrl, err := url.Parse(c.url + "/signal_ids")
-	if err != nil {
-		return err
-	}
-
-	resp, err := grequests.Post(
-		parsedUrl.String(), &grequests.RequestOptions{
-			RequestTimeout: c.timeout,
-			JSON: map[string][]string{
-				"signal_ids": signalIDs,
-			},
-		},
-	)
-
-	if err != nil {
-		return err
-	}
-
-	if !resp.Ok {
-		return resp.Error
-	}
-
-	return nil
-}
-
 func (c *RestClient) PushMonitoringRecords(uuid, txHash string) error {
 	parsedUrl, err := url.Parse(c.url + "/monitoring_records")
 	if err != nil {

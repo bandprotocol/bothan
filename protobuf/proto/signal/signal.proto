@@ -17,13 +17,6 @@ service SignalService {
     option (google.api.http).post = "/registry";
   }
 
-  // Sets the current active signal IDs.
-  // Active signal IDs are used to determine which signals are currently in use
-  // or monitored by the system.
-  rpc SetActiveSignalIds(SetActiveSignalIdsRequest) returns (google.protobuf.Empty) {
-    option (google.api.http).post = "/signal_ids";
-  }
-
   // Pushes records to the monitoring service.
   // Monitoring records are used to track the computation of signals.
   rpc PushMonitoringRecords(PushMonitoringRecordsRequest) returns (google.protobuf.Empty) {
@@ -38,13 +31,6 @@ message UpdateRegistryRequest {
   string ipfs_hash = 1;
   // The version of the registry.
   string version = 2;
-}
-
-// SetActiveSignalIdsRequest is the request message for the SetActiveSignalIds RPC method.
-// It contains the list of signal IDs that should be marked as active.
-message SetActiveSignalIdsRequest {
-  // A list of signal IDs to be set as active.
-  repeated string signal_ids = 1;
 }
 
 // PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.

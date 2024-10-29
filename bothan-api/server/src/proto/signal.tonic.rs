@@ -106,28 +106,9 @@ pub mod signal_service_client {
                 .insert(GrpcMethod::new("signal.SignalService", "UpdateRegistry"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn set_active_signal_ids(
-            &mut self,
-            request: impl tonic::IntoRequest<super::SetActiveSignalIdsRequest>,
-        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/signal.SignalService/SetActiveSignalIds",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("signal.SignalService", "SetActiveSignalIds"));
-            self.inner.unary(req, path, codec).await
-        }
+        /** Pushes records to the monitoring service.
+ Monitoring records are used to track the computation of signals.
+*/
         pub async fn push_monitoring_records(
             &mut self,
             request: impl tonic::IntoRequest<super::PushMonitoringRecordsRequest>,
@@ -165,10 +146,9 @@ pub mod signal_service_server {
             &self,
             request: tonic::Request<super::UpdateRegistryRequest>,
         ) -> std::result::Result<tonic::Response<()>, tonic::Status>;
-        async fn set_active_signal_ids(
-            &self,
-            request: tonic::Request<super::SetActiveSignalIdsRequest>,
-        ) -> std::result::Result<tonic::Response<()>, tonic::Status>;
+        /** Pushes records to the monitoring service.
+ Monitoring records are used to track the computation of signals.
+*/
         async fn push_monitoring_records(
             &self,
             request: tonic::Request<super::PushMonitoringRecordsRequest>,
@@ -284,53 +264,6 @@ pub mod signal_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = UpdateRegistrySvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/signal.SignalService/SetActiveSignalIds" => {
-                    #[allow(non_camel_case_types)]
-                    struct SetActiveSignalIdsSvc<T: SignalService>(pub Arc<T>);
-                    impl<
-                        T: SignalService,
-                    > tonic::server::UnaryService<super::SetActiveSignalIdsRequest>
-                    for SetActiveSignalIdsSvc<T> {
-                        type Response = ();
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::SetActiveSignalIdsRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SignalService>::set_active_signal_ids(&inner, request)
-                                    .await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = SetActiveSignalIdsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

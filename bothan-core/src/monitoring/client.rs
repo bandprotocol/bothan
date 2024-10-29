@@ -9,7 +9,6 @@ use crate::monitoring::error::Error;
 use crate::monitoring::records::SignalComputationRecords;
 use crate::monitoring::signer::Signer;
 use crate::monitoring::types::{BothanInfo, Entry, Topic};
-use crate::store::ActiveSignalIDs;
 
 pub struct Client {
     url: String,
@@ -41,17 +40,11 @@ impl Client {
     pub async fn post_heartbeat(
         &self,
         uuid: String,
-        active_signal_ids: ActiveSignalIDs,
         supported_sources: Vec<String>,
         bothan_version: Version,
         registry_hash: String,
     ) -> Result<Response, Error> {
-        let bothan_info = BothanInfo::new(
-            active_signal_ids.into_iter().collect::<Vec<String>>(),
-            supported_sources,
-            bothan_version,
-            registry_hash,
-        );
+        let bothan_info = BothanInfo::new(supported_sources, bothan_version, registry_hash);
 
         self.post(uuid, Topic::Heartbeat, bothan_info).await
     }

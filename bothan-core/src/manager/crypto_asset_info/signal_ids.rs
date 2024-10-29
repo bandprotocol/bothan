@@ -3,25 +3,14 @@ use std::sync::Arc;
 
 use tracing::{error, info};
 
-use crate::manager::crypto_asset_info::error::SetActiveSignalError;
 use crate::registry::{Registry, Valid};
 use crate::worker::AssetWorker;
 
 pub async fn set_workers_query_ids<'a>(
     workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
-    new_active_signal_ids: &HashSet<String>,
     registry: &Registry<Valid>,
-) -> Result<(), SetActiveSignalError> {
-    let mut query_ids = get_source_batched_query_ids(
-        &new_active_signal_ids
-            .iter()
-            .cloned()
-            .collect::<Vec<String>>(),
-        registry,
-    )?;
-
-    // Set query ids for each worker
-    for (source, mut query_ids) in query_ids.drain() {
+) {
+    for (source, mut query_ids) in get_source_batched_query_ids(registry).drain() {
         match workers.get(&source) {
             Some(worker) => match worker.set_query_ids(query_ids.drain().collect()).await {
                 Ok(_) => info!("set query ids for {} worker", source),
@@ -30,27 +19,21 @@ pub async fn set_workers_query_ids<'a>(
             None => info!("worker {} not found", source),
         }
     }
-
-    Ok(())
 }
 
-fn get_source_batched_query_ids(
-    signal_ids: &[String],
-    registry: &Registry<Valid>,
-) -> Result<HashMap<String, HashSet<String>>, SetActiveSignalError> {
+fn get_source_batched_query_ids(registry: &Registry<Valid>) -> HashMap<String, HashSet<String>> {
     let mut source_query_ids: HashMap<String, HashSet<String>> = HashMap::new();
     // Seen signal_ids
     let mut seen = HashSet::<String>::new();
 
-    let mut queue = VecDeque::from_iter(signal_ids);
+    let mut queue = VecDeque::from_iter(registry.keys());
     while let Some(signal_id) = queue.pop_front() {
         if seen.contains(signal_id) {
             continue;
         }
 
-        let signal = registry
-            .get(signal_id)
-            .ok_or(SetActiveSignalError::UnsupportedSignal(signal_id.clone()))?;
+        // We unwrap here because we know the signal_id exists in the registry
+        let signal = registry.get(signal_id).unwrap();
 
         for source in &signal.source_queries {
             source_query_ids
@@ -68,7 +51,7 @@ fn get_source_batched_query_ids(
 
         seen.insert(signal_id.clone());
     }
-    Ok(source_query_ids)
+    source_query_ids
 }
 
 #[cfg(test)]
@@ -87,8 +70,7 @@ mod tests {
     fn test_get_source_batched_query_ids() {
         let registry = mock_registry();
 
-        let signal_ids = vec!["CS:BTC-USD".to_string()];
-        let diff = get_source_batched_query_ids(&signal_ids, &registry);
+        let diff = get_source_batched_query_ids(&registry);
         let expected = HashMap::from_iter([
             (
                 "binance".to_string(),
@@ -99,6 +81,6 @@ mod tests {
                 HashSet::from(["bitcoin".to_string(), "tether".to_string()]),
             ),
         ]);
-        assert_eq!(diff.unwrap(), expected);
+        assert_eq!(diff, expected);
     }
 }

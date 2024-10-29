@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use semver::Version;
-use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
@@ -12,20 +11,18 @@ use crate::api::utils::parse_price_state;
 use crate::proto::price::price_service_server::PriceService;
 use crate::proto::price::{GetPricesRequest, GetPricesResponse, Price};
 use crate::proto::signal::signal_service_server::SignalService;
-use crate::proto::signal::{
-    PushMonitoringRecordsRequest, SetActiveSignalIdsRequest, UpdateRegistryRequest,
-};
+use crate::proto::signal::{PushMonitoringRecordsRequest, UpdateRegistryRequest};
 
 pub const PRECISION: u32 = 9;
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
-    manager: Arc<RwLock<CryptoAssetInfoManager<'static>>>,
+    manager: Arc<CryptoAssetInfoManager<'static>>,
 }
 
 impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: Arc<RwLock<CryptoAssetInfoManager<'static>>>) -> Self {
+    pub fn new(manager: Arc<CryptoAssetInfoManager<'static>>) -> Self {
         CryptoQueryServer { manager }
     }
 }
@@ -42,8 +39,8 @@ impl SignalService for CryptoQueryServer {
         let version = Version::parse(&update_registry_request.version)
             .map_err(|_| Status::invalid_argument("Invalid version string"))?;
 
-        let mut manager = self.manager.write().await;
-        let set_registry_result = manager
+        let set_registry_result = self
+            .manager
             .set_registry_from_ipfs(&update_registry_request.ipfs_hash, version)
             .await;
 
@@ -79,37 +76,14 @@ impl SignalService for CryptoQueryServer {
         }
     }
 
-    async fn set_active_signal_ids(
-        &self,
-        request: Request<SetActiveSignalIdsRequest>,
-    ) -> Result<Response<()>, Status> {
-        info!("received set active signal id request");
-        let update_registry_request = request.into_inner();
-        let mut manager = self.manager.write().await;
-        let set_result = manager
-            .set_active_signal_ids(update_registry_request.signal_ids)
-            .await;
-
-        match set_result {
-            Ok(_) => {
-                info!("successfully set active signal ids");
-                Ok(Response::new(()))
-            }
-            Err(e) => {
-                error!("failed to set active signal ids: {}", e);
-                Err(Status::internal("Failed to set active signal ids"))
-            }
-        }
-    }
-
     async fn push_monitoring_records(
         &self,
         request: Request<PushMonitoringRecordsRequest>,
     ) -> Result<Response<()>, Status> {
         info!("received push monitoring records request");
-        let manager = self.manager.read().await;
         let request = request.into_inner();
-        let push_result = manager
+        let push_result = self
+            .manager
             .push_monitoring_record(request.uuid, request.tx_hash)
             .await;
 
@@ -150,8 +124,8 @@ impl PriceService for CryptoQueryServer {
     ) -> Result<Response<GetPricesResponse>, Status> {
         info!("received get price request");
         let price_request = request.into_inner();
-        let manager = self.manager.read().await;
-        let (uuid, price_states) = manager
+        let (uuid, price_states) = self
+            .manager
             .get_prices(price_request.signal_ids.clone())
             .await
             .map_err(|e| {

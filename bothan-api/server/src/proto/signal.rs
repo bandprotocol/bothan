@@ -11,15 +11,6 @@ pub struct UpdateRegistryRequest {
     #[prost(string, tag="2")]
     pub version: ::prost::alloc::string::String,
 }
-/// SetActiveSignalIdsRequest is the request message for the SetActiveSignalIds RPC method.
-/// It contains the list of signal IDs that should be marked as active.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SetActiveSignalIdsRequest {
-    /// A list of signal IDs to be set as active.
-    #[prost(string, repeated, tag="1")]
-    pub signal_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
 /// PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.
 /// It contains the uuid of the records that should be pushed to the monitoring service.
 #[allow(clippy::derive_partial_eq_without_eq)]

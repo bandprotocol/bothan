@@ -35,15 +35,6 @@ func (c *GrpcClient) UpdateRegistry(ipfsHash string, version string) error {
 	return err
 }
 
-func (c *GrpcClient) SetActiveSignalIDs(signalIDs []string) error {
-	client := signal.NewSignalServiceClient(c.connection)
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-
-	_, err := client.SetActiveSignalIds(ctx, &signal.SetActiveSignalIdsRequest{SignalIds: signalIDs})
-	return err
-}
-
 func (c *GrpcClient) PushMonitoringRecords(uuid, txHash string) error {
 	client := signal.NewSignalServiceClient(c.connection)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
