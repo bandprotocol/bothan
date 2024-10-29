@@ -1,4 +1,19 @@
 // @generated
+/// GetInfoResponse is the response message for the GetInfo RPC method.
+/// It contains the bothan version and the IPFS hash pointing to the registry data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetInfoResponse {
+    /// The bothan version
+    #[prost(string, tag="1")]
+    pub bothan_version: ::prost::alloc::string::String,
+    /// The IPFS hash pointing to the registry data.
+    #[prost(string, tag="2")]
+    pub registry_ipfs_hash: ::prost::alloc::string::String,
+    /// The version requirements for the registry.
+    #[prost(string, tag="3")]
+    pub registry_version_requirement: ::prost::alloc::string::String,
+}
 /// UpdateRegistryRequest is the request message for the UpdateRegistry RPC method.
 /// It contains the IPFS hash and version information needed to update the registry.
 #[allow(clippy::derive_partial_eq_without_eq)]

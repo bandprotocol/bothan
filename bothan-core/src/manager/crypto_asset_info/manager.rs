@@ -12,7 +12,7 @@ use crate::manager::crypto_asset_info::error::{
 use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::{
-    PriceSignalComputationRecords, PriceState, MONITORING_TTL,
+    CryptoAssetManagerInfo, PriceSignalComputationRecords, PriceState, MONITORING_TTL,
 };
 use crate::monitoring::records::SignalComputationRecords;
 use crate::monitoring::{create_uuid, Client as MonitoringClient};
@@ -56,6 +56,22 @@ impl<'a> CryptoAssetInfoManager<'a> {
             monitoring_client,
             monitoring_cache,
         }
+    }
+
+    pub async fn get_info(&self) -> Result<CryptoAssetManagerInfo, StoreError> {
+        let bothan_version = self.bothan_version.to_string();
+        let registry_hash = self
+            .store
+            .get_registry_hash()
+            .await?
+            .unwrap_or(String::new()); // If value doesn't exist, return an empty string
+        let registry_version_requirement = self.registry_version_requirement.to_string();
+
+        Ok(CryptoAssetManagerInfo::new(
+            bothan_version,
+            registry_hash,
+            registry_version_requirement,
+        ))
     }
 
     pub async fn post_heartbeat(&self) -> Result<String, PostHeartbeatError> {

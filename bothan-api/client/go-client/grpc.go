@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
 	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/signal"
@@ -24,6 +25,14 @@ func NewGrpcClient(url string, timeout time.Duration) (*GrpcClient, error) {
 		return nil, err
 	}
 	return &GrpcClient{connection, timeout}, nil
+}
+
+func (c *GrpcClient) GetInfo() (*signal.GetInfoResponse, error) {
+	client := signal.NewSignalServiceClient(c.connection)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	return client.GetInfo(ctx, &emptypb.Empty{})
 }
 
 func (c *GrpcClient) UpdateRegistry(ipfsHash string, version string) error {

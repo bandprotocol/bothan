@@ -11,7 +11,7 @@ use crate::api::utils::parse_price_state;
 use crate::proto::price::price_service_server::PriceService;
 use crate::proto::price::{GetPricesRequest, GetPricesResponse, Price};
 use crate::proto::signal::signal_service_server::SignalService;
-use crate::proto::signal::{PushMonitoringRecordsRequest, UpdateRegistryRequest};
+use crate::proto::signal::{GetInfoResponse, PushMonitoringRecordsRequest, UpdateRegistryRequest};
 
 pub const PRECISION: u32 = 9;
 
@@ -29,6 +29,22 @@ impl CryptoQueryServer {
 
 #[tonic::async_trait]
 impl SignalService for CryptoQueryServer {
+    async fn get_info(&self, _: Request<()>) -> Result<Response<GetInfoResponse>, Status> {
+        let info = self
+            .manager
+            .get_info()
+            .await
+            .map_err(|_| Status::internal("Failed to get info"))?;
+
+        let response = Response::new(GetInfoResponse {
+            bothan_version: info.bothan_version,
+            registry_ipfs_hash: info.registry_hash,
+            registry_version_requirement: info.registry_version_requirement,
+        });
+
+        Ok(response)
+    }
+
     async fn update_registry(
         &self,
         request: Request<UpdateRegistryRequest>,
