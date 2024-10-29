@@ -20,3 +20,23 @@ pub enum PriceState {
     Unavailable,
     Unsupported,
 }
+
+pub struct CryptoAssetManagerInfo {
+    pub bothan_version: String,
+    pub registry_hash: String,
+    pub registry_version_requirement: String,
+}
+
+impl CryptoAssetManagerInfo {
+    pub fn new(
+        bothan_version: String,
+        registry_hash: String,
+        registry_version_requirement: String,
+    ) -> Self {
+        CryptoAssetManagerInfo {
+            bothan_version,
+            registry_hash,
+            registry_version_requirement,
+        }
+    }
+}

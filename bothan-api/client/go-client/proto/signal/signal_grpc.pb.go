@@ -20,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	SignalService_GetInfo_FullMethodName               = "/signal.SignalService/GetInfo"
 	SignalService_UpdateRegistry_FullMethodName        = "/signal.SignalService/UpdateRegistry"
 	SignalService_PushMonitoringRecords_FullMethodName = "/signal.SignalService/PushMonitoringRecords"
 )
@@ -28,6 +29,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SignalServiceClient interface {
+	// Gets the information regarding the signal service
+	GetInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetInfoResponse, error)
 	// Updates the registry with the given IPFS hash and version.
 	// The registry stores metadata and configuration data that can be referenced
 	// by other parts of the system.
@@ -43,6 +46,15 @@ type signalServiceClient struct {
 
 func NewSignalServiceClient(cc grpc.ClientConnInterface) SignalServiceClient {
 	return &signalServiceClient{cc}
+}
+
+func (c *signalServiceClient) GetInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetInfoResponse, error) {
+	out := new(GetInfoResponse)
+	err := c.cc.Invoke(ctx, SignalService_GetInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *signalServiceClient) UpdateRegistry(ctx context.Context, in *UpdateRegistryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
@@ -67,6 +79,8 @@ func (c *signalServiceClient) PushMonitoringRecords(ctx context.Context, in *Pus
 // All implementations must embed UnimplementedSignalServiceServer
 // for forward compatibility
 type SignalServiceServer interface {
+	// Gets the information regarding the signal service
+	GetInfo(context.Context, *emptypb.Empty) (*GetInfoResponse, error)
 	// Updates the registry with the given IPFS hash and version.
 	// The registry stores metadata and configuration data that can be referenced
 	// by other parts of the system.
@@ -81,6 +95,9 @@ type SignalServiceServer interface {
 type UnimplementedSignalServiceServer struct {
 }
 
+func (UnimplementedSignalServiceServer) GetInfo(context.Context, *emptypb.Empty) (*GetInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInfo not implemented")
+}
 func (UnimplementedSignalServiceServer) UpdateRegistry(context.Context, *UpdateRegistryRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRegistry not implemented")
 }
@@ -98,6 +115,24 @@ type UnsafeSignalServiceServer interface {
 
 func RegisterSignalServiceServer(s grpc.ServiceRegistrar, srv SignalServiceServer) {
 	s.RegisterService(&SignalService_ServiceDesc, srv)
+}
+
+func _SignalService_GetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SignalServiceServer).GetInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SignalService_GetInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SignalServiceServer).GetInfo(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _SignalService_UpdateRegistry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -143,6 +178,10 @@ var SignalService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "signal.SignalService",
 	HandlerType: (*SignalServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetInfo",
+			Handler:    _SignalService_GetInfo_Handler,
+		},
 		{
 			MethodName: "UpdateRegistry",
 			Handler:    _SignalService_UpdateRegistry_Handler,

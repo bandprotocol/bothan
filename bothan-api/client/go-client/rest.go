@@ -10,6 +10,7 @@ import (
 	"github.com/levigross/grequests"
 
 	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/signal"
 )
 
 var _ Client = &RestClient{}
@@ -21,6 +22,35 @@ type RestClient struct {
 
 func NewRestClient(url string, timeout time.Duration) *RestClient {
 	return &RestClient{url, timeout}
+}
+
+func (c *RestClient) GetInfo() (*signal.GetInfoResponse, error) {
+	parsedUrl, err := url.Parse(c.url + "/info")
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := grequests.Get(
+		parsedUrl.String(),
+		&grequests.RequestOptions{
+			RequestTimeout: c.timeout,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Ok {
+		return nil, resp.Error
+	}
+
+	var infoResp signal.GetInfoResponse
+	err = json.Unmarshal(resp.Bytes(), &infoResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &infoResp, nil
 }
 
 func (c *RestClient) UpdateRegistry(ipfsHash string, version string) error {
