@@ -155,9 +155,11 @@ impl<'a> CryptoAssetInfoManager<'a> {
         Ok((uuid, price_states))
     }
 
+    // TODO: implement tx hash mapping into monitoring
     pub async fn push_monitoring_record(
         &self,
         uuid: String,
+        _tx_hash: String,
     ) -> Result<(), PushMonitoringRecordError> {
         let client = self
             .monitoring_client

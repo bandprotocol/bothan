@@ -23,6 +23,12 @@ service SignalService {
   rpc SetActiveSignalIds(SetActiveSignalIdsRequest) returns (google.protobuf.Empty) {
     option (google.api.http).post = "/signal_ids";
   }
+
+  // Pushes records to the monitoring service.
+  // Monitoring records are used to track the computation of signals.
+  rpc PushMonitoringRecords(PushMonitoringRecordsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http).post = "/monitoring_records";
+  }
 }
 
 // UpdateRegistryRequest is the request message for the UpdateRegistry RPC method.
@@ -39,4 +45,14 @@ message UpdateRegistryRequest {
 message SetActiveSignalIdsRequest {
   // A list of signal IDs to be set as active.
   repeated string signal_ids = 1;
+}
+
+// PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.
+// It contains the uuid of the records that should be pushed to the monitoring service.
+message PushMonitoringRecordsRequest {
+  // The uuid of a list of monitoring records to be pushed to the monitoring service.
+  string uuid = 1;
+
+  // The tx hash of the transaction associated with the monitoring records.
+  string tx_hash = 2;
 }

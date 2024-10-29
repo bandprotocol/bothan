@@ -5,14 +5,16 @@ use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
-use bothan_core::manager::crypto_asset_info::error::SetRegistryError;
+use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
 use bothan_core::manager::CryptoAssetInfoManager;
 
 use crate::api::utils::parse_price_state;
 use crate::proto::price::price_service_server::PriceService;
 use crate::proto::price::{GetPricesRequest, GetPricesResponse, Price};
 use crate::proto::signal::signal_service_server::SignalService;
-use crate::proto::signal::{SetActiveSignalIdsRequest, UpdateRegistryRequest};
+use crate::proto::signal::{
+    PushMonitoringRecordsRequest, SetActiveSignalIdsRequest, UpdateRegistryRequest,
+};
 
 pub const PRECISION: u32 = 9;
 
@@ -96,6 +98,45 @@ impl SignalService for CryptoQueryServer {
             Err(e) => {
                 error!("failed to set active signal ids: {}", e);
                 Err(Status::internal("Failed to set active signal ids"))
+            }
+        }
+    }
+
+    async fn push_monitoring_records(
+        &self,
+        request: Request<PushMonitoringRecordsRequest>,
+    ) -> Result<Response<()>, Status> {
+        info!("received push monitoring records request");
+        let manager = self.manager.read().await;
+        let request = request.into_inner();
+        let push_result = manager
+            .push_monitoring_record(request.uuid, request.tx_hash)
+            .await;
+
+        match push_result {
+            Ok(_) => {
+                info!("successfully pushed monitoring records");
+                Ok(Response::new(()))
+            }
+            Err(PushMonitoringRecordError::MonitoringNotEnabled) => {
+                info!("monitoring not enabled");
+                Err(Status::unimplemented("Monitoring not enabled"))
+            }
+            Err(PushMonitoringRecordError::RecordNotFound) => {
+                info!("record not found");
+                Err(Status::failed_precondition("Record not found"))
+            }
+            Err(PushMonitoringRecordError::FailedRequest(e)) => {
+                error!("failed to send request to monitoring: {}", e);
+                Err(Status::internal(
+                    "Failed to send request to monitoring record",
+                ))
+            }
+            Err(PushMonitoringRecordError::FailedToSendPayload(e)) => {
+                error!("failed to send payload to monitoring: {}", e);
+                Err(Status::internal(
+                    "Failed to send payload to monitoring record",
+                ))
             }
         }
     }

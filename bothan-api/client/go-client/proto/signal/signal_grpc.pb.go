@@ -20,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SignalService_UpdateRegistry_FullMethodName     = "/signal.SignalService/UpdateRegistry"
-	SignalService_SetActiveSignalIds_FullMethodName = "/signal.SignalService/SetActiveSignalIds"
+	SignalService_UpdateRegistry_FullMethodName        = "/signal.SignalService/UpdateRegistry"
+	SignalService_SetActiveSignalIds_FullMethodName    = "/signal.SignalService/SetActiveSignalIds"
+	SignalService_PushMonitoringRecords_FullMethodName = "/signal.SignalService/PushMonitoringRecords"
 )
 
 // SignalServiceClient is the client API for SignalService service.
@@ -36,6 +37,9 @@ type SignalServiceClient interface {
 	// Active signal IDs are used to determine which signals are currently in use
 	// or monitored by the system.
 	SetActiveSignalIds(ctx context.Context, in *SetActiveSignalIdsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Pushes records to the monitoring service.
+	// Monitoring records are used to track the computation of signals.
+	PushMonitoringRecords(ctx context.Context, in *PushMonitoringRecordsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type signalServiceClient struct {
@@ -64,6 +68,15 @@ func (c *signalServiceClient) SetActiveSignalIds(ctx context.Context, in *SetAct
 	return out, nil
 }
 
+func (c *signalServiceClient) PushMonitoringRecords(ctx context.Context, in *PushMonitoringRecordsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, SignalService_PushMonitoringRecords_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SignalServiceServer is the server API for SignalService service.
 // All implementations must embed UnimplementedSignalServiceServer
 // for forward compatibility
@@ -76,6 +89,9 @@ type SignalServiceServer interface {
 	// Active signal IDs are used to determine which signals are currently in use
 	// or monitored by the system.
 	SetActiveSignalIds(context.Context, *SetActiveSignalIdsRequest) (*emptypb.Empty, error)
+	// Pushes records to the monitoring service.
+	// Monitoring records are used to track the computation of signals.
+	PushMonitoringRecords(context.Context, *PushMonitoringRecordsRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSignalServiceServer()
 }
 
@@ -88,6 +104,9 @@ func (UnimplementedSignalServiceServer) UpdateRegistry(context.Context, *UpdateR
 }
 func (UnimplementedSignalServiceServer) SetActiveSignalIds(context.Context, *SetActiveSignalIdsRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetActiveSignalIds not implemented")
+}
+func (UnimplementedSignalServiceServer) PushMonitoringRecords(context.Context, *PushMonitoringRecordsRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushMonitoringRecords not implemented")
 }
 func (UnimplementedSignalServiceServer) mustEmbedUnimplementedSignalServiceServer() {}
 
@@ -138,6 +157,24 @@ func _SignalService_SetActiveSignalIds_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SignalService_PushMonitoringRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushMonitoringRecordsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SignalServiceServer).PushMonitoringRecords(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SignalService_PushMonitoringRecords_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SignalServiceServer).PushMonitoringRecords(ctx, req.(*PushMonitoringRecordsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SignalService_ServiceDesc is the grpc.ServiceDesc for SignalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +189,10 @@ var SignalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetActiveSignalIds",
 			Handler:    _SignalService_SetActiveSignalIds_Handler,
+		},
+		{
+			MethodName: "PushMonitoringRecords",
+			Handler:    _SignalService_PushMonitoringRecords_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

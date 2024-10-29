@@ -7,5 +7,6 @@ import (
 type Client interface {
 	UpdateRegistry(ipfsHash string, version string) error
 	SetActiveSignalIDs(signalIDs []string) error
+	PushMonitoringRecords(uuid, txHash string) error
 	GetPrices(signalIDs []string) (*proto.GetPricesResponse, error)
 }
