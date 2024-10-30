@@ -50,3 +50,40 @@ pub(crate) fn validate_signal(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::registry::tests::{complete_circular_dependency_mock_registry, valid_mock_registry};
+
+    #[test]
+    fn test_validate_signal() {
+        let registry = valid_mock_registry();
+
+        let res = validate_signal("CS:BTC-USD", &mut HashMap::new(), &registry);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_validate_signal_with_invalid_signal() {
+        let registry = valid_mock_registry();
+
+        let res = validate_signal("CS:DNE-USD", &mut HashMap::new(), &registry);
+        assert_eq!(
+            res,
+            Err(ValidationError::InvalidDependency("CS:DNE-USD".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_validate_signal_with_circular_dependency() {
+        let registry = complete_circular_dependency_mock_registry();
+        let mut visited = HashMap::new();
+
+        let res = validate_signal("CS:USDT-USD", &mut visited, &registry);
+        assert_eq!(
+            res,
+            Err(ValidationError::CycleDetected("CS:USDT-USD".to_string()))
+        );
+    }
+}

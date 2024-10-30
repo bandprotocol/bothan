@@ -36,7 +36,7 @@ where
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct SignalComputationRecord<T, U>
 where
     T: Sized,

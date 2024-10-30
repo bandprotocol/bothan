@@ -48,3 +48,43 @@ where
         self.cache.contains_key(id)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_set_available() {
+        let mut cache = PriceCache::new();
+        let id = "BTC";
+        let value = Decimal::new(69420, 0);
+
+        cache.set_available(id, value);
+        assert_eq!(cache.get(&id), Some(&PriceState::Available(value)));
+    }
+
+    #[test]
+    fn test_set_unavailable() {
+        let mut cache = PriceCache::new();
+        let id = "BTC";
+
+        cache.set_unavailable(id);
+        assert_eq!(cache.get(&id), Some(&PriceState::Unavailable));
+    }
+
+    #[test]
+    fn test_set_unsupported() {
+        let mut cache = PriceCache::new();
+        let id = "BTC";
+
+        cache.set_unsupported(id);
+        assert_eq!(cache.get(&id), Some(&PriceState::Unsupported));
+    }
+
+    #[test]
+    fn test_empty() {
+        let cache: PriceCache<&str> = PriceCache::new();
+
+        assert_eq!(cache.get(&"BTC"), None);
+    }
+}

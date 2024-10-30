@@ -87,26 +87,26 @@ impl Decode for Registry<Invalid> {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod tests {
     use crate::registry::{Invalid, Registry, ValidationError};
 
-    fn valid_mock_registry() -> Registry<Invalid> {
-        let json_string = "{\"A\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1a\",\"routes\":[{\"signal_id\":\"C\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"B\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1b\",\"routes\":[{\"signal_id\":\"C\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"C\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1c\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
+    pub(crate) fn valid_mock_registry() -> Registry<Invalid> {
+        let json_string = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"coingecko\",\"id\":\"tether\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:BTC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"btcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]},{\"source_id\":\"coingecko\",\"id\":\"bitcoin\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
         serde_json::from_str::<Registry>(json_string).unwrap()
     }
 
-    fn invalid_dependency_mock_registry() -> Registry<Invalid> {
-        let json_string = "{\"A\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1a\",\"routes\":[{\"signal_id\":\"B\",\"operation\":\"*\"}]},{\"source_id\":\"source_2\",\"id\":\"s2a\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
+    pub(crate) fn invalid_dependency_mock_registry() -> Registry<Invalid> {
+        let json_string = "{\"CS:BTC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"btcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]},{\"source_id\":\"coingecko\",\"id\":\"bitcoin\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
         serde_json::from_str::<Registry>(json_string).unwrap()
     }
 
-    fn complete_circular_dependency_mock_registry() -> Registry<Invalid> {
-        let json_string = "{\"A\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1a\",\"routes\":[{\"signal_id\":\"B\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"B\":{\"sources\":[{\"source_id\":\"source_2\",\"id\":\"s2b\",\"routes\":[{\"signal_id\":\"A\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
+    pub(crate) fn complete_circular_dependency_mock_registry() -> Registry<Invalid> {
+        let json_string = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"usdtusdc\",\"routes\":[{\"signal_id\":\"CS:USDC-USD\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:USDC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"usdcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
         serde_json::from_str::<Registry>(json_string).unwrap()
     }
 
-    fn circular_dependency_mock_registry() -> Registry<Invalid> {
-        let json_string = "{\"A\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1a\",\"routes\":[{\"signal_id\":\"B\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"B\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1b\",\"routes\":[{\"signal_id\":\"C\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"C\":{\"sources\":[{\"source_id\":\"source_1\",\"id\":\"s1c\",\"routes\":[{\"signal_id\":\"B\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
+    pub(crate) fn circular_dependency_mock_registry() -> Registry<Invalid> {
+        let json_string = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"usdtusdc\",\"routes\":[{\"signal_id\":\"CS:USDC-USD\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:USDC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"usdcdai\",\"routes\":[{\"signal_id\":\"CS:DAI-USD\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:DAI-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"daiusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
         serde_json::from_str::<Registry>(json_string).unwrap()
     }
 
@@ -122,7 +122,7 @@ mod test {
         let registry = invalid_dependency_mock_registry();
         assert_eq!(
             registry.validate(),
-            Err(ValidationError::InvalidDependency("A".to_string()))
+            Err(ValidationError::InvalidDependency("CS:BTC-USD".to_string()))
         );
     }
 

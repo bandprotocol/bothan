@@ -78,30 +78,6 @@ impl SharedStore {
         WorkerStore::new(self.clone(), prefix.into())
     }
 
-    async fn get_active_signal_ids(&self) -> Result<Option<ActiveSignalIDs>, Error> {
-        let encoded = self
-            .inner
-            .read()
-            .await
-            .db
-            .get(Key::ActiveSignalIDs.to_prefixed_bytes())?;
-        let active_signal_ids = encoded
-            .map(|b| decode_from_slice(&b, config::standard()))
-            .transpose()?
-            .map(|(ids, _)| ids);
-        Ok(active_signal_ids)
-    }
-
-    async fn set_active_signal_ids(&self, signal_ids: HashSet<String>) -> Result<(), Error> {
-        let encoded = encode_to_vec(&signal_ids, config::standard())?;
-        self.inner
-            .write()
-            .await
-            .db
-            .put(Key::ActiveSignalIDs.to_prefixed_bytes(), encoded)?;
-        Ok(())
-    }
-
     async fn get_registry(&self) -> Registry<Valid> {
         self.inner.read().await.registry.clone()
     }

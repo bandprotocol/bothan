@@ -56,19 +56,12 @@ fn get_source_batched_query_ids(registry: &Registry<Valid>) -> HashMap<String, H
 
 #[cfg(test)]
 mod tests {
-    use crate::registry::Invalid;
-
     use super::*;
-
-    fn mock_registry() -> Registry<Valid> {
-        let registry_str = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"coingecko\",\"id\":\"tether\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:BTC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"btcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]},{\"source_id\":\"coingecko\",\"id\":\"bitcoin\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
-        let registry = serde_json::from_str::<Registry<Invalid>>(registry_str).unwrap();
-        registry.validate().unwrap()
-    }
+    use crate::registry::tests::valid_mock_registry;
 
     #[test]
     fn test_get_source_batched_query_ids() {
-        let registry = mock_registry();
+        let registry = valid_mock_registry().validate().unwrap();
 
         let diff = get_source_batched_query_ids(&registry);
         let expected = HashMap::from_iter([
