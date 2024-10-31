@@ -15,7 +15,6 @@ use crate::registry::processor::Process;
 use crate::registry::signal::Signal;
 use crate::registry::source::{OperationRoute, SourceQuery};
 use crate::registry::{Registry, Valid};
-use crate::store::ActiveSignalIDs;
 use crate::worker::{AssetState, AssetWorker};
 
 // TODO: Allow records to be Option<T>
@@ -23,7 +22,6 @@ pub async fn get_signal_price_states<'a>(
     ids: Vec<String>,
     workers: &WorkerMap<'a>,
     registry: &Registry<Valid>,
-    active_signal_ids: &ActiveSignalIDs,
     stale_cutoff: i64,
     records: &mut PriceSignalComputationRecords,
 ) -> Vec<PriceState> {
@@ -68,16 +66,7 @@ pub async fn get_signal_price_states<'a>(
     }
 
     ids.iter()
-        .map(|id| {
-            let is_active = active_signal_ids.contains(id);
-            // This should never fail as all values of ids should be inserted into the cache
-            let cache_value = cache.get(id).cloned().unwrap();
-            match (is_active, cache_value) {
-                (true, ps) => ps, // If the signal is active, return the cache value
-                (false, PriceState::Unsupported) => PriceState::Unsupported, // If the signal is not active and is unsupported, return unsupported
-                (false, _) => PriceState::Unavailable, // If the signal is not active and is available/unavailable, return unavailable
-            }
-        })
+        .map(|id| cache.get(id).cloned().unwrap()) // This should never fail as all values of ids should be inserted into the cache
         .collect()
 }
 
@@ -228,4 +217,344 @@ fn compute_source_routes(
     record.operations = op_records;
 
     Ok(price)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use num_traits::One;
+
+    use crate::registry::processor::median::MedianProcessor;
+    use crate::registry::processor::Processor;
+    use crate::registry::source::Operation;
+    use crate::registry::tests::valid_mock_registry;
+    use crate::store::error::Error as StoreError;
+    use crate::types::AssetInfo;
+    use crate::worker::SetQueryIDError;
+
+    use super::*;
+
+    #[derive(Default)]
+    struct MockWorker {
+        value: Decimal,
+        timestamp: i64,
+    }
+
+    #[async_trait::async_trait]
+    impl AssetWorker for MockWorker {
+        async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError> {
+            Ok(AssetState::Available(AssetInfo::new(
+                id.to_string(),
+                self.value,
+                self.timestamp,
+            )))
+        }
+
+        async fn set_query_ids(&self, _: Vec<String>) -> Result<(), SetQueryIDError> {
+            Ok(())
+        }
+    }
+
+    #[derive(Default)]
+    struct MockUnavailableWorker {}
+
+    #[async_trait::async_trait]
+    impl AssetWorker for MockUnavailableWorker {
+        async fn get_asset(&self, _: &str) -> Result<AssetState, StoreError> {
+            Ok(AssetState::Unsupported)
+        }
+
+        async fn set_query_ids(&self, _: Vec<String>) -> Result<(), SetQueryIDError> {
+            Ok(())
+        }
+    }
+
+    fn mock_workers<'a>(ids: Vec<String>) -> WorkerMap<'a> {
+        ids.into_iter()
+            .map(|id| {
+                (
+                    id.clone(),
+                    Arc::new(MockWorker::default()) as Arc<dyn AssetWorker>,
+                )
+            })
+            .collect()
+    }
+
+    fn mock_unavailable_workers<'a>(ids: Vec<String>) -> WorkerMap<'a> {
+        ids.into_iter()
+            .map(|id| {
+                (
+                    id.clone(),
+                    Arc::new(MockUnavailableWorker::default()) as Arc<dyn AssetWorker>,
+                )
+            })
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn test_get_signal_price_states() {
+        let ids = vec!["CS:BTC-USD".to_string(), "CS:USDT-USD".to_string()];
+        let workers = mock_workers(vec!["binance".to_string(), "coingecko".to_string()]);
+        let registry = valid_mock_registry().validate().unwrap();
+        let stale_cutoff = 0;
+        let mut records = PriceSignalComputationRecords::default();
+
+        let res =
+            get_signal_price_states(ids, &workers, &registry, stale_cutoff, &mut records).await;
+
+        let expected_res = vec![
+            PriceState::Available(Decimal::default()),
+            PriceState::Available(Decimal::default()),
+        ];
+        assert_eq!(res, expected_res);
+    }
+
+    #[tokio::test]
+    async fn test_get_signal_price_states_with_unavailable() {
+        let ids = vec!["CS:BTC-USD".to_string(), "CS:USDT-USD".to_string()];
+        let workers =
+            mock_unavailable_workers(vec!["binance".to_string(), "coingecko".to_string()]);
+        let registry = valid_mock_registry().validate().unwrap();
+        let stale_cutoff = 0;
+        let mut records = PriceSignalComputationRecords::default();
+
+        let res =
+            get_signal_price_states(ids, &workers, &registry, stale_cutoff, &mut records).await;
+
+        let expected_res = vec![PriceState::Unavailable, PriceState::Unavailable];
+        assert_eq!(res, expected_res);
+    }
+
+    #[tokio::test]
+    async fn test_get_signal_price_states_with_unsupported() {
+        let ids = vec![
+            "CS:BTC-USD".to_string(),
+            "CS:USDT-USD".to_string(),
+            "CS:DNE-USD".to_string(),
+        ];
+        let workers = mock_workers(vec!["binance".to_string(), "coingecko".to_string()]);
+        let registry = valid_mock_registry().validate().unwrap();
+        let stale_cutoff = 0;
+        let mut records = PriceSignalComputationRecords::default();
+
+        let res =
+            get_signal_price_states(ids, &workers, &registry, stale_cutoff, &mut records).await;
+
+        let expected_res = vec![
+            PriceState::Available(Decimal::default()),
+            PriceState::Available(Decimal::default()),
+            PriceState::Unsupported,
+        ];
+        assert_eq!(res, expected_res);
+    }
+
+    #[tokio::test]
+    async fn test_compute_source_result() {
+        let source_queries = vec![SourceQuery::new(
+            "test-source".to_string(),
+            "testusd".to_string(),
+            vec![],
+        )];
+        let processor = Processor::Median(MedianProcessor::new(1));
+        let signal = Signal::new(source_queries, processor, vec![]);
+        let workers = mock_workers(vec!["test-source".to_string()]);
+        let cache = PriceCache::new();
+        let stale_cutoff = 0;
+        let mut record = PriceSignalComputationRecord::default();
+
+        let res = compute_source_result(&signal, &workers, &cache, stale_cutoff, &mut record).await;
+
+        let expected_res = Ok(vec![("test-source".to_string(), Decimal::default())]);
+        let expected_record = SignalComputationRecord {
+            sources: vec![(
+                "test-source".to_string(),
+                SourceRecord::new("testusd".to_string(), Decimal::default(), vec![], None),
+            )],
+            process_result: None,
+            post_process_result: None,
+        };
+        assert_eq!(res, expected_res);
+        assert_eq!(record, expected_record);
+    }
+
+    #[tokio::test]
+    async fn test_compute_source_result_with_missing_prerequisite() {
+        let source_queries = vec![SourceQuery::new(
+            "test-source".to_string(),
+            "testusd".to_string(),
+            vec![OperationRoute::new(
+                "test2usd".to_string(),
+                Operation::Multiply,
+            )],
+        )];
+        let processor = Processor::Median(MedianProcessor::new(1));
+        let signal = Signal::new(source_queries, processor, vec![]);
+        let workers = mock_workers(vec!["test-source".to_string()]);
+        let cache = PriceCache::new();
+        let stale_cutoff = 0;
+        let mut record = PriceSignalComputationRecord::default();
+        let expected_record = record.clone();
+
+        let res = compute_source_result(&signal, &workers, &cache, stale_cutoff, &mut record).await;
+
+        let expected_res = Err(MissingPrerequisiteError::new(vec!["test2usd".to_string()]));
+        assert_eq!(res, expected_res);
+        // We expect no mutation to the record here on missing prerequisite error here
+        assert_eq!(record, expected_record);
+    }
+
+    #[tokio::test]
+    async fn test_process_source_query() {
+        let worker = MockWorker::default();
+        let source_query =
+            SourceQuery::new("test-source".to_string(), "testusd".to_string(), vec![]);
+        let stale_cutoff = 0;
+        let cache = PriceCache::new();
+        let source_records = &mut vec![];
+
+        let res =
+            process_source_query(&worker, &source_query, stale_cutoff, &cache, source_records)
+                .await;
+
+        let expected_res = Ok(Some(("test-source".to_string(), Decimal::default())));
+        let expected_source_records = vec![(
+            "test-source".to_string(),
+            SourceRecord::new("testusd".to_string(), Decimal::default(), vec![], None),
+        )];
+        assert_eq!(res, expected_res);
+        assert_eq!(source_records, &expected_source_records);
+    }
+
+    #[tokio::test]
+    async fn test_process_source_query_with_timeout() {
+        let worker = MockWorker::default();
+        let source_query =
+            SourceQuery::new("test-source".to_string(), "testusd".to_string(), vec![]);
+        let stale_cutoff = 1000;
+        let cache = PriceCache::new();
+        let source_records = &mut vec![];
+
+        let res =
+            process_source_query(&worker, &source_query, stale_cutoff, &cache, source_records)
+                .await;
+        assert_eq!(res, Ok(None));
+        assert_eq!(source_records, &vec![]);
+    }
+
+    #[tokio::test]
+    async fn test_process_source_query_with_unavailable_asset_state() {
+        let worker = MockUnavailableWorker::default();
+        let source_query =
+            SourceQuery::new("test-source".to_string(), "testusd".to_string(), vec![]);
+        let stale_cutoff = 1000;
+        let cache = PriceCache::new();
+        let source_records = &mut vec![];
+
+        let res =
+            process_source_query(&worker, &source_query, stale_cutoff, &cache, source_records)
+                .await;
+        assert_eq!(res, Ok(None));
+        assert_eq!(source_records, &vec![]);
+    }
+
+    #[test]
+    fn test_compute_source_routes() {
+        let routes = vec![
+            OperationRoute::new("A", Operation::Multiply),
+            OperationRoute::new("B", Operation::Divide),
+            OperationRoute::new("C", Operation::Subtract),
+            OperationRoute::new("D", Operation::Add),
+        ];
+
+        let start = Decimal::one();
+
+        let mut cache = PriceCache::new();
+        cache.set_available("A".to_string(), Decimal::from(2));
+        cache.set_available("B".to_string(), Decimal::from(5));
+        cache.set_available("C".to_string(), Decimal::from(13));
+        cache.set_available("D".to_string(), Decimal::from(89));
+
+        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let res = compute_source_routes(&routes, start, &cache, &mut record);
+
+        let expected_value = Some(Decimal::from_str_exact("76.4").unwrap());
+        let expected_record = SourceRecord::new(
+            "test".to_string(),
+            Decimal::one(),
+            vec![
+                OperationRecord::new("A".to_string(), Operation::Multiply, Decimal::from(2)),
+                OperationRecord::new("B".to_string(), Operation::Divide, Decimal::from(5)),
+                OperationRecord::new("C".to_string(), Operation::Subtract, Decimal::from(13)),
+                OperationRecord::new("D".to_string(), Operation::Add, Decimal::from(89)),
+            ],
+            None,
+        );
+
+        assert_eq!(res, Ok(expected_value));
+        assert_eq!(record, expected_record);
+    }
+
+    #[test]
+    fn test_compute_source_routes_with_missing_prerequisites() {
+        let routes = vec![
+            OperationRoute::new("A", Operation::Multiply),
+            OperationRoute::new("B", Operation::Multiply),
+        ];
+        let start = Decimal::one();
+        let mut cache = PriceCache::new();
+        cache.set_available("A".to_string(), Decimal::from(2));
+
+        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let expected_record = record.clone();
+        let res = compute_source_routes(&routes, start, &cache, &mut record);
+
+        let expected_err = Err(MissingPrerequisiteError::new(vec!["B".to_string()]));
+
+        assert_eq!(res, expected_err);
+        // We expect that no mutation occurs in the case of missing prerequisite error
+        assert_eq!(record, expected_record);
+    }
+
+    #[test]
+    fn test_compute_source_routes_with_unavailable_prerequisites() {
+        let routes = vec![
+            OperationRoute::new("A", Operation::Multiply),
+            OperationRoute::new("B", Operation::Multiply),
+        ];
+        let start = Decimal::one();
+        let mut cache = PriceCache::new();
+        cache.set_available("A".to_string(), Decimal::from(1337));
+        cache.set_unavailable("B".to_string());
+
+        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let expected_record = record.clone();
+        let res = compute_source_routes(&routes, start, &cache, &mut record);
+
+        assert_eq!(res, Ok(None));
+        // we expect no mutation to the record on failure here
+        assert_eq!(record, expected_record);
+    }
+
+    #[test]
+    fn test_compute_source_routes_with_unsupported_prerequisites() {
+        let routes = vec![
+            OperationRoute::new("A", Operation::Multiply),
+            OperationRoute::new("B", Operation::Multiply),
+            OperationRoute::new("C", Operation::Divide),
+        ];
+        let start = Decimal::one();
+        let mut cache = PriceCache::new();
+        cache.set_available("A".to_string(), Decimal::from(10710110));
+        cache.set_unsupported("B".to_string());
+        cache.set_available("C".to_string(), Decimal::from(10000));
+
+        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let expected_record = record.clone();
+        let res = compute_source_routes(&routes, start, &cache, &mut record);
+
+        assert_eq!(res, Ok(None));
+        // we expect no mutation to the record on failure here
+        assert_eq!(record, expected_record);
+    }
 }

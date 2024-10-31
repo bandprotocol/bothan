@@ -20,7 +20,7 @@ pub enum Error {
     FailedToPostProcessSignal(#[from] PostProcessError),
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 #[error("Missing prerequisite: {ids:?}")]
 pub struct MissingPrerequisiteError {
     pub ids: Vec<String>,

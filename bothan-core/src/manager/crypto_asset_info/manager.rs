@@ -117,19 +117,12 @@ impl<'a> CryptoAssetInfoManager<'a> {
 
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
-        let active_signals = self.store.get_active_signal_ids().await?;
 
         let mut records = SignalComputationRecords::default();
 
-        let price_states = get_signal_price_states(
-            ids,
-            &self.workers,
-            &registry,
-            &active_signals,
-            stale_cutoff,
-            &mut records,
-        )
-        .await;
+        let price_states =
+            get_signal_price_states(ids, &self.workers, &registry, stale_cutoff, &mut records)
+                .await;
 
         let uuid = create_uuid();
         if let Some(cache) = &self.monitoring_cache {
