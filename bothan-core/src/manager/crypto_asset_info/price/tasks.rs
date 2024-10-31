@@ -546,7 +546,7 @@ mod tests {
         let start = Decimal::one();
         let mut cache = PriceCache::new();
         cache.set_available("A".to_string(), Decimal::from(10710110));
-        cache.set_unavailable("B".to_string());
+        cache.set_unsupported("B".to_string());
         cache.set_available("C".to_string(), Decimal::from(10000));
 
         let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
