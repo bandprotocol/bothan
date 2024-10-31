@@ -24,15 +24,6 @@ pub enum SetRegistryError {
     InvalidHash,
 }
 
-#[derive(Debug, Error, PartialEq)]
-pub enum SetActiveSignalError {
-    #[error("Signal \"{0}\" doesnt exist in the registry")]
-    UnsupportedSignal(String),
-
-    #[error("Failed to set active signal ids")]
-    FailedToSetActiveSignalIDs(#[from] StoreError),
-}
-
 #[derive(Debug, Error)]
 pub enum PushMonitoringRecordError {
     #[error("Failed to send payload to monitor: {0}")]
@@ -50,9 +41,6 @@ pub enum PushMonitoringRecordError {
 
 #[derive(Debug, Error)]
 pub enum PostHeartbeatError {
-    #[error("Failed to get active signal ids")]
-    FailedToGetActiveSignalIDs,
-
     #[error("Failed to get registry hash")]
     FailedToGetRegistryHash,
 

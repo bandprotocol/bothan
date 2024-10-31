@@ -27,7 +27,6 @@ pub struct SharedStore {
 
 pub type AssetStore = HashMap<String, AssetInfo>;
 pub type QueryIDs = HashSet<String>;
-pub type ActiveSignalIDs = HashSet<String>;
 
 struct Inner {
     registry: Registry<Valid>,
