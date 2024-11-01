@@ -6,30 +6,25 @@ import "google/api/annotations.proto";
 
 option go_package = "github.com/bothan/bothan-api/client/proto";
 
-// SignalService defines the gRPC service responsible for updating the registry
-// and managing active signal IDs.
+// BothanService defines the gRPC services for Bothan's API
 service BothanService {
-  // Gets the information regarding the signal service
+  // GetInfo gets information regarding Bothan's services
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http).get = "/info";
   }
 
-  // Updates the registry with the given IPFS hash and version.
-  // The registry stores metadata and configuration data that can be referenced
-  // by other parts of the system.
+  // UpdateRegistry updates the registry that Bothan uses with the given IPFS hash and version.
   rpc UpdateRegistry(UpdateRegistryRequest) returns (UpdateRegistryResponse) {
     option (google.api.http).post = "/registry";
   }
 
-  // Pushes records to the monitoring service.
-  // Monitoring records are used to track the computation of signals.
+  // PushMonitoringRecords pushes the record associated with the given UUID to the monitoring service.
+  // If monitoring is disabled in Bothan, this will always return an error.
   rpc PushMonitoringRecords(PushMonitoringRecordsRequest) returns (PushMonitoringRecordsResponse) {
     option (google.api.http).post = "/monitoring_records";
   }
 
-  // Retrieves the prices for the specified signal IDs.
-  // This method returns the current prices and status for each requested signal
-  // ID.
+  // GetPrices gets prices for the specified signal IDs.
   rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {
     option (google.api.http).get = "/prices/{signal_ids}";
   }
@@ -37,8 +32,7 @@ service BothanService {
 
 message GetInfoRequest {}
 
-// GetInfoResponse is the response message for the GetInfo RPC method.
-// It contains the bothan version and the IPFS hash pointing to the registry data.
+// GetInfoResponse defines the response message for the GetInfo RPC method.
 message GetInfoResponse {
   // The bothan version
   string bothan_version = 1;
@@ -48,8 +42,7 @@ message GetInfoResponse {
   string registry_version_requirement = 3;
 }
 
-// UpdateRegistryRequest is the request message for the UpdateRegistry RPC method.
-// It contains the IPFS hash and version information needed to update the registry.
+// UpdateRegistryRequest defines the request message for the UpdateRegistry RPC method.
 message UpdateRegistryRequest {
   // The IPFS hash pointing to the registry data.
   string ipfs_hash = 1;
@@ -59,27 +52,24 @@ message UpdateRegistryRequest {
 
 message UpdateRegistryResponse {}
 
-// PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.
-// It contains the uuid of the records that should be pushed to the monitoring service.
+// PushMonitoringRecordsRequest defines the request message for the PushMonitoringRecords RPC method.
 message PushMonitoringRecordsRequest {
   // The uuid of a list of monitoring records to be pushed to the monitoring service.
   string uuid = 1;
-
   // The tx hash of the transaction associated with the monitoring records.
   string tx_hash = 2;
 }
 
+// PushMonitoringRecordsResponse defines the response message for the PushMonitoringRecords RPC method.
 message PushMonitoringRecordsResponse {}
 
-// GetPricesRequest is the request message for the GetPrices RPC method.
-// It contains the list of signal IDs for which prices are requested.
+// GetPricesRequest defines the request message for the GetPrices RPC method.
 message GetPricesRequest {
   // A list of signal IDs for which the prices are being requested.
   repeated string signal_ids = 1;
 }
 
-// GetPricesResponse is the response message for the GetPrices RPC method.
-// It contains a list of prices corresponding to the requested signal IDs.
+// GetPricesResponse defines the response message for the GetPrices RPC method.
 message GetPricesResponse {
   // A unique identifier for the response.
   string uuid = 1;
@@ -87,7 +77,7 @@ message GetPricesResponse {
   repeated Price prices = 2;
 }
 
-// Price contains the price information for a signal ID.
+// Price defines the price information for a signal ID.
 message Price {
   // The signal ID associated with this price.
   string signal_id = 1;
