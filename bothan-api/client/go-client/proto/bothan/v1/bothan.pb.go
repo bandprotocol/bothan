@@ -21,17 +21,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// PriceStatus is an enum that defines the status of the price for a signal ID.
+// Status defines the status for a signal ID.
 type Status int32
 
 const (
 	// Default status, should not be used.
 	Status_STATUS_UNSPECIFIED Status = 0
-	// Indicates that the price for the signal ID is not supported.
+	// Indicates that the signal ID is not supported.
 	Status_STATUS_UNSUPPORTED Status = 1
-	// Indicates that the price for the signal ID is currently unavailable.
+	// Indicates that the signal ID is currently unavailable.
 	Status_STATUS_UNAVAILABLE Status = 2
-	// Indicates that the price for the signal ID is available.
+	// Indicates that the signal ID is available.
 	Status_STATUS_AVAILABLE Status = 3
 )
 
@@ -116,8 +116,7 @@ func (*GetInfoRequest) Descriptor() ([]byte, []int) {
 	return file_bothan_v1_bothan_proto_rawDescGZIP(), []int{0}
 }
 
-// GetInfoResponse is the response message for the GetInfo RPC method.
-// It contains the bothan version and the IPFS hash pointing to the registry data.
+// GetInfoResponse defines the response message for the GetInfo RPC method.
 type GetInfoResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -184,8 +183,7 @@ func (x *GetInfoResponse) GetRegistryVersionRequirement() string {
 	return ""
 }
 
-// UpdateRegistryRequest is the request message for the UpdateRegistry RPC method.
-// It contains the IPFS hash and version information needed to update the registry.
+// UpdateRegistryRequest defines the request message for the UpdateRegistry RPC method.
 type UpdateRegistryRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -281,8 +279,7 @@ func (*UpdateRegistryResponse) Descriptor() ([]byte, []int) {
 	return file_bothan_v1_bothan_proto_rawDescGZIP(), []int{3}
 }
 
-// PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.
-// It contains the uuid of the records that should be pushed to the monitoring service.
+// PushMonitoringRecordsRequest defines the request message for the PushMonitoringRecords RPC method.
 type PushMonitoringRecordsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -340,6 +337,7 @@ func (x *PushMonitoringRecordsRequest) GetTxHash() string {
 	return ""
 }
 
+// PushMonitoringRecordsResponse defines the response message for the PushMonitoringRecords RPC method.
 type PushMonitoringRecordsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -378,8 +376,7 @@ func (*PushMonitoringRecordsResponse) Descriptor() ([]byte, []int) {
 	return file_bothan_v1_bothan_proto_rawDescGZIP(), []int{5}
 }
 
-// GetPricesRequest is the request message for the GetPrices RPC method.
-// It contains the list of signal IDs for which prices are requested.
+// GetPricesRequest defines the request message for the GetPrices RPC method.
 type GetPricesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -428,8 +425,7 @@ func (x *GetPricesRequest) GetSignalIds() []string {
 	return nil
 }
 
-// GetPricesResponse is the response message for the GetPrices RPC method.
-// It contains a list of prices corresponding to the requested signal IDs.
+// GetPricesResponse defines the response message for the GetPrices RPC method.
 type GetPricesResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -487,17 +483,17 @@ func (x *GetPricesResponse) GetPrices() []*Price {
 	return nil
 }
 
-// Price contains the price information for a signal ID.
+// Price defines the price information for a signal ID.
 type Price struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The signal ID associated with this price.
+	// The signal ID.
 	SignalId string `protobuf:"bytes,1,opt,name=signal_id,json=signalId,proto3" json:"signal_id,omitempty"`
-	// The price of the asset associated with this signal ID.
+	// The price value associated with this signal ID.
 	Price uint64 `protobuf:"varint,2,opt,name=price,proto3" json:"price,omitempty"`
-	// The status of the price (e.g., available, unavailable).
+	// The status of the signal ID.
 	Status Status `protobuf:"varint,3,opt,name=status,proto3,enum=bothan.v1.Status" json:"status,omitempty"`
 }
 

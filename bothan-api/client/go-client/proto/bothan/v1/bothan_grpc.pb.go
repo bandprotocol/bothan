@@ -29,18 +29,14 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BothanServiceClient interface {
-	// Gets the information regarding the signal service
+	// GetInfo gets information regarding Bothan's services
 	GetInfo(ctx context.Context, in *GetInfoRequest, opts ...grpc.CallOption) (*GetInfoResponse, error)
-	// Updates the registry with the given IPFS hash and version.
-	// The registry stores metadata and configuration data that can be referenced
-	// by other parts of the system.
+	// UpdateRegistry updates the registry that Bothan uses with the given IPFS hash and version.
 	UpdateRegistry(ctx context.Context, in *UpdateRegistryRequest, opts ...grpc.CallOption) (*UpdateRegistryResponse, error)
-	// Pushes records to the monitoring service.
-	// Monitoring records are used to track the computation of signals.
+	// PushMonitoringRecords pushes the record associated with the given UUID to the monitoring service.
+	// If monitoring is disabled in Bothan, this will always return an error.
 	PushMonitoringRecords(ctx context.Context, in *PushMonitoringRecordsRequest, opts ...grpc.CallOption) (*PushMonitoringRecordsResponse, error)
-	// Retrieves the prices for the specified signal IDs.
-	// This method returns the current prices and status for each requested signal
-	// ID.
+	// GetPrices gets prices for the specified signal IDs.
 	GetPrices(ctx context.Context, in *GetPricesRequest, opts ...grpc.CallOption) (*GetPricesResponse, error)
 }
 
@@ -92,18 +88,14 @@ func (c *bothanServiceClient) GetPrices(ctx context.Context, in *GetPricesReques
 // All implementations must embed UnimplementedBothanServiceServer
 // for forward compatibility
 type BothanServiceServer interface {
-	// Gets the information regarding the signal service
+	// GetInfo gets information regarding Bothan's services
 	GetInfo(context.Context, *GetInfoRequest) (*GetInfoResponse, error)
-	// Updates the registry with the given IPFS hash and version.
-	// The registry stores metadata and configuration data that can be referenced
-	// by other parts of the system.
+	// UpdateRegistry updates the registry that Bothan uses with the given IPFS hash and version.
 	UpdateRegistry(context.Context, *UpdateRegistryRequest) (*UpdateRegistryResponse, error)
-	// Pushes records to the monitoring service.
-	// Monitoring records are used to track the computation of signals.
+	// PushMonitoringRecords pushes the record associated with the given UUID to the monitoring service.
+	// If monitoring is disabled in Bothan, this will always return an error.
 	PushMonitoringRecords(context.Context, *PushMonitoringRecordsRequest) (*PushMonitoringRecordsResponse, error)
-	// Retrieves the prices for the specified signal IDs.
-	// This method returns the current prices and status for each requested signal
-	// ID.
+	// GetPrices gets prices for the specified signal IDs.
 	GetPrices(context.Context, *GetPricesRequest) (*GetPricesResponse, error)
 	mustEmbedUnimplementedBothanServiceServer()
 }
