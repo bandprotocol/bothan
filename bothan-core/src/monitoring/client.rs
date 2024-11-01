@@ -46,11 +46,11 @@ impl Client {
     pub async fn post_heartbeat(
         &self,
         uuid: String,
-        supported_sources: Vec<String>,
+        active_sources: Vec<String>,
         bothan_version: Version,
         registry_hash: String,
     ) -> Result<Response, Error> {
-        let bothan_info = BothanInfo::new(supported_sources, bothan_version, registry_hash);
+        let bothan_info = BothanInfo::new(active_sources, bothan_version, registry_hash);
 
         self.post(uuid, Topic::Heartbeat, bothan_info).await
     }

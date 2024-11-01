@@ -66,11 +66,14 @@ impl<'a> CryptoAssetInfoManager<'a> {
             .await?
             .unwrap_or(String::new()); // If value doesn't exist, return an empty string
         let registry_version_requirement = self.registry_version_requirement.to_string();
+        let active_sources = self.workers.keys().cloned().collect();
 
         Ok(CryptoAssetManagerInfo::new(
             bothan_version,
             registry_hash,
             registry_version_requirement,
+            active_sources,
+            self.monitoring_client.is_some(),
         ))
     }
 
@@ -82,7 +85,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
 
         let uuid = create_uuid();
 
-        let supported_sources = self.current_worker_set().await;
+        let active_sources = self.workers.keys().cloned().collect();
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
             .store
@@ -92,20 +95,11 @@ impl<'a> CryptoAssetInfoManager<'a> {
             .unwrap_or_else(|| "".to_string());
 
         client
-            .post_heartbeat(
-                uuid.clone(),
-                supported_sources,
-                bothan_version,
-                registry_hash,
-            )
+            .post_heartbeat(uuid.clone(), active_sources, bothan_version, registry_hash)
             .await?
             .error_for_status()?;
 
         Ok(uuid)
-    }
-
-    pub async fn current_worker_set(&self) -> Vec<String> {
-        self.workers.keys().cloned().collect()
     }
 
     /// Gets the `Price` of the given signal ids.

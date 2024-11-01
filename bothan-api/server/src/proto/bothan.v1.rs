@@ -9,7 +9,7 @@ pub struct GetInfoRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetInfoResponse {
-    /// The bothan version
+    /// The Bothan version
     #[prost(string, tag="1")]
     pub bothan_version: ::prost::alloc::string::String,
     /// The IPFS hash pointing to the registry data.
@@ -18,6 +18,12 @@ pub struct GetInfoResponse {
     /// The version requirements for the registry.
     #[prost(string, tag="3")]
     pub registry_version_requirement: ::prost::alloc::string::String,
+    /// The active sources the Bothan instance is using
+    #[prost(string, repeated, tag="4")]
+    pub active_sources: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// Whether or not the Bothan instance hs monitoring enabled
+    #[prost(bool, tag="5")]
+    pub monitoring_enabled: bool,
 }
 /// UpdateRegistryRequest defines the request message for the UpdateRegistry RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
