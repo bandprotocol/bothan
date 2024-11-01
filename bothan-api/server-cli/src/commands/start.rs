@@ -13,7 +13,7 @@ use semver::{Version, VersionReq};
 use tonic::transport::Server;
 use tracing::{debug, error, info};
 
-use bothan_api::api::CryptoQueryServer;
+use bothan_api::api::BothanServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
@@ -187,7 +187,7 @@ async fn init_bothan_server(
     store: SharedStore,
     ipfs_client: IpfsClient,
     monitoring_client: Option<Arc<MonitoringClient>>,
-) -> anyhow::Result<Arc<CryptoQueryServer>> {
+) -> anyhow::Result<Arc<BothanServer>> {
     let manager_store = SharedStore::create_manager_store(&store);
 
     let stale_threshold = config.manager.crypto.stale_threshold;
@@ -221,7 +221,7 @@ async fn init_bothan_server(
         }
     });
 
-    Ok(Arc::new(CryptoQueryServer::new(manager)))
+    Ok(Arc::new(BothanServer::new(manager)))
 }
 
 async fn init_crypto_workers(

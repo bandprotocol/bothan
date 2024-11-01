@@ -16,26 +16,26 @@ use crate::proto::bothan::v1::{
 
 pub const PRECISION: u32 = 9;
 
-/// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
-pub struct CryptoQueryServer {
-    crypto_manager: Arc<CryptoAssetInfoManager<'static>>,
+/// The `BothanServer` struct represents a server that implements the `BothanService` trait.
+pub struct BothanServer {
+    manager: Arc<CryptoAssetInfoManager<'static>>,
 }
 
-impl CryptoQueryServer {
+impl BothanServer {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(crypto_manager: Arc<CryptoAssetInfoManager<'static>>) -> Self {
-        CryptoQueryServer { crypto_manager }
+    pub fn new(manager: Arc<CryptoAssetInfoManager<'static>>) -> Self {
+        BothanServer { manager }
     }
 }
 
 #[tonic::async_trait]
-impl BothanService for CryptoQueryServer {
+impl BothanService for BothanServer {
     async fn get_info(
         &self,
         _: Request<GetInfoRequest>,
     ) -> Result<Response<GetInfoResponse>, Status> {
         let info = self
-            .crypto_manager
+            .manager
             .get_info()
             .await
             .map_err(|_| Status::internal("Failed to get info"))?;
@@ -60,7 +60,7 @@ impl BothanService for CryptoQueryServer {
             .map_err(|_| Status::invalid_argument("Invalid version string"))?;
 
         let set_registry_result = self
-            .crypto_manager
+            .manager
             .set_registry_from_ipfs(&update_registry_request.ipfs_hash, version)
             .await;
 
@@ -103,7 +103,7 @@ impl BothanService for CryptoQueryServer {
         info!("received push monitoring records request");
         let request = request.into_inner();
         let push_result = self
-            .crypto_manager
+            .manager
             .push_monitoring_record(request.uuid, request.tx_hash)
             .await;
 
@@ -142,7 +142,7 @@ impl BothanService for CryptoQueryServer {
         info!("received get price request");
         let price_request = request.into_inner();
         let (uuid, price_states) = self
-            .crypto_manager
+            .manager
             .get_prices(price_request.signal_ids.clone())
             .await
             .map_err(|e| {

@@ -3,7 +3,7 @@ use tracing::warn;
 
 use bothan_core::manager::crypto_asset_info::types::PriceState;
 
-use crate::api::crypto::PRECISION;
+use crate::api::server::PRECISION;
 use crate::proto::bothan::v1::{Price, Status};
 
 pub fn parse_price_state(id: String, price_state: PriceState) -> Price {
