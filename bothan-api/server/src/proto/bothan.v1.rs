@@ -21,7 +21,7 @@ pub struct GetInfoResponse {
     /// The active sources the Bothan instance is using
     #[prost(string, repeated, tag="4")]
     pub active_sources: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// Whether or not the Bothan instance hs monitoring enabled
+    /// Whether or not the Bothan instance has monitoring enabled
     #[prost(bool, tag="5")]
     pub monitoring_enabled: bool,
 }

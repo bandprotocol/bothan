@@ -131,7 +131,7 @@ type GetInfoResponse struct {
 	RegistryVersionRequirement string `protobuf:"bytes,3,opt,name=registry_version_requirement,json=registryVersionRequirement,proto3" json:"registry_version_requirement,omitempty"`
 	// The active sources the Bothan instance is using
 	ActiveSources []string `protobuf:"bytes,4,rep,name=active_sources,json=activeSources,proto3" json:"active_sources,omitempty"`
-	// Whether or not the Bothan instance hs monitoring enabled
+	// Whether or not the Bothan instance has monitoring enabled
 	MonitoringEnabled bool `protobuf:"varint,5,opt,name=monitoring_enabled,json=monitoringEnabled,proto3" json:"monitoring_enabled,omitempty"`
 }
 

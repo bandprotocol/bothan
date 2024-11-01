@@ -43,7 +43,7 @@ message GetInfoResponse {
   string registry_version_requirement = 3;
   // The active sources the Bothan instance is using
   repeated string active_sources = 4;
-  // Whether or not the Bothan instance hs monitoring enabled
+  // Whether or not the Bothan instance has monitoring enabled
   bool monitoring_enabled = 5;
 }
 
