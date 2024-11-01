@@ -44,6 +44,8 @@ impl BothanService for BothanServer {
             bothan_version: info.bothan_version,
             registry_ipfs_hash: info.registry_hash,
             registry_version_requirement: info.registry_version_requirement,
+            active_sources: info.active_sources,
+            monitoring_enabled: info.monitoring_enabled,
         });
 
         Ok(response)

@@ -35,12 +35,16 @@ message GetInfoRequest {}
 
 // GetInfoResponse defines the response message for the GetInfo RPC method.
 message GetInfoResponse {
-  // The bothan version
+  // The Bothan version
   string bothan_version = 1;
   // The IPFS hash pointing to the registry data.
   string registry_ipfs_hash = 2;
   // The version requirements for the registry.
   string registry_version_requirement = 3;
+  // The active sources the Bothan instance is using
+  repeated string active_sources = 4;
+  // Whether or not the Bothan instance has monitoring enabled
+  bool monitoring_enabled = 5;
 }
 
 // UpdateRegistryRequest defines the request message for the UpdateRegistry RPC method.
