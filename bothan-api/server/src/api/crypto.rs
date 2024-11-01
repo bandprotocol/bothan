@@ -8,30 +8,34 @@ use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, 
 use bothan_core::manager::CryptoAssetInfoManager;
 
 use crate::api::utils::parse_price_state;
-use crate::proto::price::price_service_server::PriceService;
-use crate::proto::price::{GetPricesRequest, GetPricesResponse, Price};
-use crate::proto::signal::signal_service_server::SignalService;
-use crate::proto::signal::{GetInfoResponse, PushMonitoringRecordsRequest, UpdateRegistryRequest};
+use crate::proto::bothan::v1::{
+    BothanService, GetInfoRequest, GetInfoResponse, GetPricesRequest, GetPricesResponse, Price,
+    PushMonitoringRecordsRequest, PushMonitoringRecordsResponse, UpdateRegistryRequest,
+    UpdateRegistryResponse,
+};
 
 pub const PRECISION: u32 = 9;
 
 /// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
 pub struct CryptoQueryServer {
-    manager: Arc<CryptoAssetInfoManager<'static>>,
+    crypto_manager: Arc<CryptoAssetInfoManager<'static>>,
 }
 
 impl CryptoQueryServer {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: Arc<CryptoAssetInfoManager<'static>>) -> Self {
-        CryptoQueryServer { manager }
+    pub fn new(crypto_manager: Arc<CryptoAssetInfoManager<'static>>) -> Self {
+        CryptoQueryServer { crypto_manager }
     }
 }
 
 #[tonic::async_trait]
-impl SignalService for CryptoQueryServer {
-    async fn get_info(&self, _: Request<()>) -> Result<Response<GetInfoResponse>, Status> {
+impl BothanService for CryptoQueryServer {
+    async fn get_info(
+        &self,
+        _: Request<GetInfoRequest>,
+    ) -> Result<Response<GetInfoResponse>, Status> {
         let info = self
-            .manager
+            .crypto_manager
             .get_info()
             .await
             .map_err(|_| Status::internal("Failed to get info"))?;
@@ -48,7 +52,7 @@ impl SignalService for CryptoQueryServer {
     async fn update_registry(
         &self,
         request: Request<UpdateRegistryRequest>,
-    ) -> Result<Response<()>, Status> {
+    ) -> Result<Response<UpdateRegistryResponse>, Status> {
         info!("received update registry request");
         let update_registry_request = request.into_inner();
 
@@ -56,14 +60,14 @@ impl SignalService for CryptoQueryServer {
             .map_err(|_| Status::invalid_argument("Invalid version string"))?;
 
         let set_registry_result = self
-            .manager
+            .crypto_manager
             .set_registry_from_ipfs(&update_registry_request.ipfs_hash, version)
             .await;
 
         match set_registry_result {
             Ok(_) => {
                 info!("successfully set registry");
-                Ok(Response::new(()))
+                Ok(Response::new(UpdateRegistryResponse {}))
             }
             Err(SetRegistryError::FailedToRetrieve(e)) => {
                 error!("failed to retrieve registry: {}", e);
@@ -95,18 +99,18 @@ impl SignalService for CryptoQueryServer {
     async fn push_monitoring_records(
         &self,
         request: Request<PushMonitoringRecordsRequest>,
-    ) -> Result<Response<()>, Status> {
+    ) -> Result<Response<PushMonitoringRecordsResponse>, Status> {
         info!("received push monitoring records request");
         let request = request.into_inner();
         let push_result = self
-            .manager
+            .crypto_manager
             .push_monitoring_record(request.uuid, request.tx_hash)
             .await;
 
         match push_result {
             Ok(_) => {
                 info!("successfully pushed monitoring records");
-                Ok(Response::new(()))
+                Ok(Response::new(PushMonitoringRecordsResponse {}))
             }
             Err(PushMonitoringRecordError::MonitoringNotEnabled) => {
                 info!("monitoring not enabled");
@@ -130,10 +134,7 @@ impl SignalService for CryptoQueryServer {
             }
         }
     }
-}
 
-#[tonic::async_trait]
-impl PriceService for CryptoQueryServer {
     async fn get_prices(
         &self,
         request: Request<GetPricesRequest>,
@@ -141,7 +142,7 @@ impl PriceService for CryptoQueryServer {
         info!("received get price request");
         let price_request = request.into_inner();
         let (uuid, price_states) = self
-            .manager
+            .crypto_manager
             .get_prices(price_request.signal_ids.clone())
             .await
             .map_err(|e| {
