@@ -79,22 +79,22 @@ message GetPricesResponse {
 
 // Price defines the price information for a signal ID.
 message Price {
-  // The signal ID associated with this price.
+  // The signal ID.
   string signal_id = 1;
-  // The price of the asset associated with this signal ID.
+  // The price value associated with this signal ID.
   uint64 price = 2;
-  // The status of the price (e.g., available, unavailable).
+  // The status of the signal ID.
   Status status = 3;
 }
 
-// PriceStatus is an enum that defines the status of the price for a signal ID.
+// Status defines the status for a signal ID.
 enum Status {
   // Default status, should not be used.
   STATUS_UNSPECIFIED = 0;
-  // Indicates that the price for the signal ID is not supported.
+  // Indicates that the signal ID is not supported.
   STATUS_UNSUPPORTED = 1;
-  // Indicates that the price for the signal ID is currently unavailable.
+  // Indicates that the signal ID is currently unavailable.
   STATUS_UNAVAILABLE = 2;
-  // Indicates that the price for the signal ID is available.
+  // Indicates that the signal ID is available.
   STATUS_AVAILABLE = 3;
 }
