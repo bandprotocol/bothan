@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package bothan.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/bothan/bothan-api/client/proto";
+
+// SignalService defines the gRPC service responsible for updating the registry
+// and managing active signal IDs.
+service BothanService {
+  // Gets the information regarding the signal service
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
+    option (google.api.http).get = "/info";
+  }
+
+  // Updates the registry with the given IPFS hash and version.
+  // The registry stores metadata and configuration data that can be referenced
+  // by other parts of the system.
+  rpc UpdateRegistry(UpdateRegistryRequest) returns (UpdateRegistryResponse) {
+    option (google.api.http).post = "/registry";
+  }
+
+  // Pushes records to the monitoring service.
+  // Monitoring records are used to track the computation of signals.
+  rpc PushMonitoringRecords(PushMonitoringRecordsRequest) returns (PushMonitoringRecordsResponse) {
+    option (google.api.http).post = "/monitoring_records";
+  }
+
+  // Retrieves the prices for the specified signal IDs.
+  // This method returns the current prices and status for each requested signal
+  // ID.
+  rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {
+    option (google.api.http).get = "/prices/{signal_ids}";
+  }
+}
+
+message GetInfoRequest {}
+
+// GetInfoResponse is the response message for the GetInfo RPC method.
+// It contains the bothan version and the IPFS hash pointing to the registry data.
+message GetInfoResponse {
+  // The bothan version
+  string bothan_version = 1;
+  // The IPFS hash pointing to the registry data.
+  string registry_ipfs_hash = 2;
+  // The version requirements for the registry.
+  string registry_version_requirement = 3;
+}
+
+// UpdateRegistryRequest is the request message for the UpdateRegistry RPC method.
+// It contains the IPFS hash and version information needed to update the registry.
+message UpdateRegistryRequest {
+  // The IPFS hash pointing to the registry data.
+  string ipfs_hash = 1;
+  // The version of the registry.
+  string version = 2;
+}
+
+message UpdateRegistryResponse {}
+
+// PushMonitoringRecordsRequest is the request message for the PushMonitoringRecords RPC method.
+// It contains the uuid of the records that should be pushed to the monitoring service.
+message PushMonitoringRecordsRequest {
+  // The uuid of a list of monitoring records to be pushed to the monitoring service.
+  string uuid = 1;
+
+  // The tx hash of the transaction associated with the monitoring records.
+  string tx_hash = 2;
+}
+
+message PushMonitoringRecordsResponse {}
+
+// GetPricesRequest is the request message for the GetPrices RPC method.
+// It contains the list of signal IDs for which prices are requested.
+message GetPricesRequest {
+  // A list of signal IDs for which the prices are being requested.
+  repeated string signal_ids = 1;
+}
+
+// GetPricesResponse is the response message for the GetPrices RPC method.
+// It contains a list of prices corresponding to the requested signal IDs.
+message GetPricesResponse {
+  // A unique identifier for the response.
+  string uuid = 1;
+  // A list of prices for the requested signal IDs.
+  repeated Price prices = 2;
+}
+
+// Price contains the price information for a signal ID.
+message Price {
+  // The signal ID associated with this price.
+  string signal_id = 1;
+  // The price of the asset associated with this signal ID.
+  uint64 price = 2;
+  // The status of the price (e.g., available, unavailable).
+  Status status = 3;
+}
+
+// PriceStatus is an enum that defines the status of the price for a signal ID.
+enum Status {
+  // Default status, should not be used.
+  STATUS_UNSPECIFIED = 0;
+  // Indicates that the price for the signal ID is not supported.
+  STATUS_UNSUPPORTED = 1;
+  // Indicates that the price for the signal ID is currently unavailable.
+  STATUS_UNAVAILABLE = 2;
+  // Indicates that the price for the signal ID is available.
+  STATUS_AVAILABLE = 3;
+}
