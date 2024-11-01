@@ -241,6 +241,7 @@ func (x *UpdateRegistryRequest) GetVersion() string {
 	return ""
 }
 
+// UpdateRegistryResponse defines the response message for the UpdateRegistry RPC method.
 type UpdateRegistryResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

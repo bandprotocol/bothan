@@ -50,6 +50,7 @@ message UpdateRegistryRequest {
   string version = 2;
 }
 
+// UpdateRegistryResponse defines the response message for the UpdateRegistry RPC method.
 message UpdateRegistryResponse {}
 
 // PushMonitoringRecordsRequest defines the request message for the PushMonitoringRecords RPC method.

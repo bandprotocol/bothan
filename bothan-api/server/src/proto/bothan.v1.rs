@@ -29,6 +29,7 @@ pub struct UpdateRegistryRequest {
     #[prost(string, tag="2")]
     pub version: ::prost::alloc::string::String,
 }
+/// UpdateRegistryResponse defines the response message for the UpdateRegistry RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct UpdateRegistryResponse {
