@@ -78,6 +78,7 @@ func (Status) EnumDescriptor() ([]byte, []int) {
 	return file_bothan_v1_bothan_proto_rawDescGZIP(), []int{0}
 }
 
+// GetInfoRequest defines the request message for the GetInfo RPC method.
 type GetInfoRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

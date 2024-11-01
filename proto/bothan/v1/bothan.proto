@@ -30,6 +30,7 @@ service BothanService {
   }
 }
 
+// GetInfoRequest defines the request message for the GetInfo RPC method.
 message GetInfoRequest {}
 
 // GetInfoResponse defines the response message for the GetInfo RPC method.
