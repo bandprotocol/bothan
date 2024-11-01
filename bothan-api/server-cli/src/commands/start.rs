@@ -212,16 +212,19 @@ async fn init_crypto_server(
     let manager = Arc::new(manager);
     let cloned_manager = manager.clone();
 
-    tokio::spawn(async move {
-        loop {
-            // Heartbeat is fixed at 1 minute.
-            tokio::time::sleep(Duration::from_secs(60)).await;
-            match cloned_manager.post_heartbeat().await {
-                Ok(_) => info!("heartbeat sent"),
-                Err(e) => error!("failed to send heartbeat: {e}"),
+    // Only spawn heartbeat if monitoring is enabled
+    if config.monitoring.enabled {
+        tokio::spawn(async move {
+            loop {
+                // Heartbeat is fixed at 1 minute.
+                tokio::time::sleep(Duration::from_secs(60)).await;
+                match cloned_manager.post_heartbeat().await {
+                    Ok(_) => info!("heartbeat sent"),
+                    Err(e) => error!("failed to send heartbeat: {e}"),
+                }
             }
-        }
-    });
+        });
+    }
 
     Ok(Arc::new(CryptoQueryServer::new(manager)))
 }
