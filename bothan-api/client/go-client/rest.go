@@ -9,8 +9,7 @@ import (
 
 	"github.com/levigross/grequests"
 
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/signal"
+	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
 )
 
 var _ Client = &RestClient{}
@@ -24,7 +23,7 @@ func NewRestClient(url string, timeout time.Duration) *RestClient {
 	return &RestClient{url, timeout}
 }
 
-func (c *RestClient) GetInfo() (*signal.GetInfoResponse, error) {
+func (c *RestClient) GetInfo() (*proto.GetInfoResponse, error) {
 	parsedUrl, err := url.Parse(c.url + "/info")
 	if err != nil {
 		return nil, err
@@ -44,7 +43,7 @@ func (c *RestClient) GetInfo() (*signal.GetInfoResponse, error) {
 		return nil, resp.Error
 	}
 
-	var infoResp signal.GetInfoResponse
+	var infoResp proto.GetInfoResponse
 	err = json.Unmarshal(resp.Bytes(), &infoResp)
 	if err != nil {
 		return nil, err
@@ -106,7 +105,7 @@ func (c *RestClient) PushMonitoringRecords(uuid, txHash string) error {
 	return nil
 }
 
-func (c *RestClient) GetPrices(signalIDs []string) (*price.GetPricesResponse, error) {
+func (c *RestClient) GetPrices(signalIDs []string) (*proto.GetPricesResponse, error) {
 	parsedUrl, err := url.Parse(c.url + "/prices")
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ func (c *RestClient) GetPrices(signalIDs []string) (*price.GetPricesResponse, er
 		return nil, resp.Error
 	}
 
-	var priceResp price.GetPricesResponse
+	var priceResp proto.GetPricesResponse
 	err = json.Unmarshal(resp.Bytes(), &priceResp)
 	if err != nil {
 		return nil, err

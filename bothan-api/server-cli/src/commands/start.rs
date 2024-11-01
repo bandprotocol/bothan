@@ -13,12 +13,11 @@ use semver::{Version, VersionReq};
 use tonic::transport::Server;
 use tracing::{debug, error, info};
 
-use bothan_api::api::CryptoQueryServer;
+use bothan_api::api::BothanServer;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
-use bothan_api::proto::price::price_service_server::PriceServiceServer;
-use bothan_api::proto::signal::signal_service_server::SignalServiceServer;
+use bothan_api::proto::bothan::v1::BothanServiceServer;
 use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
 use bothan_binance::BinanceWorkerBuilder;
 use bothan_bybit::BybitWorkerBuilder;
@@ -89,13 +88,12 @@ async fn start_server(
     let ipfs_client = init_ipfs_client(&app_config).await?;
     let monitoring_client = init_monitoring_client(&app_config).await?;
 
-    let crypto_server =
-        init_crypto_server(&app_config, store, ipfs_client, monitoring_client).await?;
+    let bothan_server =
+        init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
     info!("server started");
     Server::builder()
-        .add_service(PriceServiceServer::from_arc(crypto_server.clone()))
-        .add_service(SignalServiceServer::from_arc(crypto_server.clone()))
+        .add_service(BothanServiceServer::from_arc(bothan_server))
         .serve(app_config.grpc.addr)
         .await?;
 
@@ -184,12 +182,12 @@ async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
     Ok(ipfs_client)
 }
 
-async fn init_crypto_server(
+async fn init_bothan_server(
     config: &AppConfig,
     store: SharedStore,
     ipfs_client: IpfsClient,
     monitoring_client: Option<Arc<MonitoringClient>>,
-) -> anyhow::Result<Arc<CryptoQueryServer>> {
+) -> anyhow::Result<Arc<BothanServer>> {
     let manager_store = SharedStore::create_manager_store(&store);
 
     let stale_threshold = config.manager.crypto.stale_threshold;
@@ -226,7 +224,7 @@ async fn init_crypto_server(
         });
     }
 
-    Ok(Arc::new(CryptoQueryServer::new(manager)))
+    Ok(Arc::new(BothanServer::new(manager)))
 }
 
 async fn init_crypto_workers(

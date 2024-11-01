@@ -1,4 +1,4 @@
-pub use crypto::CryptoQueryServer;
+pub use server::BothanServer;
 
-mod crypto;
+mod server;
 mod utils;

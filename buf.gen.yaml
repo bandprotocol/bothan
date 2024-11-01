@@ -1,0 +1,21 @@
+version: v2
+plugins:
+- remote: buf.build/community/neoeinstein-prost:v0.4.0
+  out: bothan-api/server/src/proto
+- remote: buf.build/community/neoeinstein-tonic:v0.4.1
+  out: bothan-api/server/src/proto
+  opt:
+  - no_client=true
+- remote: buf.build/protocolbuffers/go:v1.34.0
+  out: ./bothan-api/client/go-client/proto
+  opt:
+  - paths=source_relative
+- remote: buf.build/grpc/go:v1.3.0
+  out: ./bothan-api/client/go-client/proto
+  opt:
+  - paths=source_relative
+- remote: buf.build/grpc-ecosystem/gateway:v2.19.1
+  out: ./bothan-api/client/go-client/proto
+  opt:
+  - paths=source_relative
+  - generate_unbound_methods=true

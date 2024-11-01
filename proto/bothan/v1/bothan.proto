@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package bothan.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/bothan/bothan-api/client/proto";
+
+// BothanService defines the gRPC services for Bothan's API
+service BothanService {
+  // GetInfo gets information regarding Bothan's services
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
+    option (google.api.http).get = "/info";
+  }
+
+  // UpdateRegistry updates the registry that Bothan uses with the given IPFS hash and version.
+  rpc UpdateRegistry(UpdateRegistryRequest) returns (UpdateRegistryResponse) {
+    option (google.api.http).post = "/registry";
+  }
+
+  // PushMonitoringRecords pushes the record associated with the given UUID to the monitoring service.
+  // If monitoring is disabled in Bothan, this will always return an error.
+  rpc PushMonitoringRecords(PushMonitoringRecordsRequest) returns (PushMonitoringRecordsResponse) {
+    option (google.api.http).post = "/monitoring_records";
+  }
+
+  // GetPrices gets prices for the specified signal IDs.
+  rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {
+    option (google.api.http).get = "/prices/{signal_ids}";
+  }
+}
+
+// GetInfoRequest defines the request message for the GetInfo RPC method.
+message GetInfoRequest {}
+
+// GetInfoResponse defines the response message for the GetInfo RPC method.
+message GetInfoResponse {
+  // The bothan version
+  string bothan_version = 1;
+  // The IPFS hash pointing to the registry data.
+  string registry_ipfs_hash = 2;
+  // The version requirements for the registry.
+  string registry_version_requirement = 3;
+}
+
+// UpdateRegistryRequest defines the request message for the UpdateRegistry RPC method.
+message UpdateRegistryRequest {
+  // The IPFS hash pointing to the registry data.
+  string ipfs_hash = 1;
+  // The version of the registry.
+  string version = 2;
+}
+
+// UpdateRegistryResponse defines the response message for the UpdateRegistry RPC method.
+message UpdateRegistryResponse {}
+
+// PushMonitoringRecordsRequest defines the request message for the PushMonitoringRecords RPC method.
+message PushMonitoringRecordsRequest {
+  // The uuid of a list of monitoring records to be pushed to the monitoring service.
+  string uuid = 1;
+  // The tx hash of the transaction associated with the monitoring records.
+  string tx_hash = 2;
+}
+
+// PushMonitoringRecordsResponse defines the response message for the PushMonitoringRecords RPC method.
+message PushMonitoringRecordsResponse {}
+
+// GetPricesRequest defines the request message for the GetPrices RPC method.
+message GetPricesRequest {
+  // A list of signal IDs for which the prices are being requested.
+  repeated string signal_ids = 1;
+}
+
+// GetPricesResponse defines the response message for the GetPrices RPC method.
+message GetPricesResponse {
+  // A unique identifier for the response.
+  string uuid = 1;
+  // A list of prices for the requested signal IDs.
+  repeated Price prices = 2;
+}
+
+// Price defines the price information for a signal ID.
+message Price {
+  // The signal ID.
+  string signal_id = 1;
+  // The price value associated with this signal ID.
+  uint64 price = 2;
+  // The status of the signal ID.
+  Status status = 3;
+}
+
+// Status defines the status for a signal ID.
+enum Status {
+  // Default status, should not be used.
+  STATUS_UNSPECIFIED = 0;
+  // Indicates that the signal ID is not supported.
+  STATUS_UNSUPPORTED = 1;
+  // Indicates that the signal ID is currently unavailable.
+  STATUS_UNAVAILABLE = 2;
+  // Indicates that the signal ID is available.
+  STATUS_AVAILABLE = 3;
+}

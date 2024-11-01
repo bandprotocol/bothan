@@ -8,28 +8,32 @@ use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, 
 use bothan_core::manager::CryptoAssetInfoManager;
 
 use crate::api::utils::parse_price_state;
-use crate::proto::price::price_service_server::PriceService;
-use crate::proto::price::{GetPricesRequest, GetPricesResponse, Price};
-use crate::proto::signal::signal_service_server::SignalService;
-use crate::proto::signal::{GetInfoResponse, PushMonitoringRecordsRequest, UpdateRegistryRequest};
+use crate::proto::bothan::v1::{
+    BothanService, GetInfoRequest, GetInfoResponse, GetPricesRequest, GetPricesResponse, Price,
+    PushMonitoringRecordsRequest, PushMonitoringRecordsResponse, UpdateRegistryRequest,
+    UpdateRegistryResponse,
+};
 
 pub const PRECISION: u32 = 9;
 
-/// The `CryptoQueryServer` struct represents a server for querying cryptocurrency prices.
-pub struct CryptoQueryServer {
+/// The `BothanServer` struct represents a server that implements the `BothanService` trait.
+pub struct BothanServer {
     manager: Arc<CryptoAssetInfoManager<'static>>,
 }
 
-impl CryptoQueryServer {
+impl BothanServer {
     /// Creates a new `CryptoQueryServer` instance.
     pub fn new(manager: Arc<CryptoAssetInfoManager<'static>>) -> Self {
-        CryptoQueryServer { manager }
+        BothanServer { manager }
     }
 }
 
 #[tonic::async_trait]
-impl SignalService for CryptoQueryServer {
-    async fn get_info(&self, _: Request<()>) -> Result<Response<GetInfoResponse>, Status> {
+impl BothanService for BothanServer {
+    async fn get_info(
+        &self,
+        _: Request<GetInfoRequest>,
+    ) -> Result<Response<GetInfoResponse>, Status> {
         let info = self
             .manager
             .get_info()
@@ -48,7 +52,7 @@ impl SignalService for CryptoQueryServer {
     async fn update_registry(
         &self,
         request: Request<UpdateRegistryRequest>,
-    ) -> Result<Response<()>, Status> {
+    ) -> Result<Response<UpdateRegistryResponse>, Status> {
         info!("received update registry request");
         let update_registry_request = request.into_inner();
 
@@ -63,7 +67,7 @@ impl SignalService for CryptoQueryServer {
         match set_registry_result {
             Ok(_) => {
                 info!("successfully set registry");
-                Ok(Response::new(()))
+                Ok(Response::new(UpdateRegistryResponse {}))
             }
             Err(SetRegistryError::FailedToRetrieve(e)) => {
                 error!("failed to retrieve registry: {}", e);
@@ -95,7 +99,7 @@ impl SignalService for CryptoQueryServer {
     async fn push_monitoring_records(
         &self,
         request: Request<PushMonitoringRecordsRequest>,
-    ) -> Result<Response<()>, Status> {
+    ) -> Result<Response<PushMonitoringRecordsResponse>, Status> {
         info!("received push monitoring records request");
         let request = request.into_inner();
         let push_result = self
@@ -106,7 +110,7 @@ impl SignalService for CryptoQueryServer {
         match push_result {
             Ok(_) => {
                 info!("successfully pushed monitoring records");
-                Ok(Response::new(()))
+                Ok(Response::new(PushMonitoringRecordsResponse {}))
             }
             Err(PushMonitoringRecordError::MonitoringNotEnabled) => {
                 info!("monitoring not enabled");
@@ -130,10 +134,7 @@ impl SignalService for CryptoQueryServer {
             }
         }
     }
-}
 
-#[tonic::async_trait]
-impl PriceService for CryptoQueryServer {
     async fn get_prices(
         &self,
         request: Request<GetPricesRequest>,

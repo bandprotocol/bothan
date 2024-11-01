@@ -32,6 +32,22 @@ given. Once the config file is set, run the following command from the root dire
 docker-compose up
 ```
 
+## Proto
+
+### Pre-requisites
+
+To generate the protobuf files, you need to have the following installed:
+
+- [Buf](https://buf.build/docs/installation)
+
+### Generate
+
+To generate the protobuf files, run the following command:
+
+```bash
+buf generate
+```
+
 ## Contributing
 
 We welcome contributions from the community! Before submitting a pull request, please review
