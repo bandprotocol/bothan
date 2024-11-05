@@ -12,9 +12,8 @@ use crate::manager::crypto_asset_info::error::{
 use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::{
-    CryptoAssetManagerInfo, PriceSignalComputationRecords, PriceState, MONITORING_TTL,
+    CryptoAssetManagerInfo, PriceSignalComputationRecord, PriceState, MONITORING_TTL,
 };
-use crate::monitoring::records::SignalComputationRecords;
 use crate::monitoring::{create_uuid, Client as MonitoringClient};
 use crate::registry::{Invalid, Registry};
 use crate::store::error::Error as StoreError;
@@ -29,7 +28,7 @@ pub struct CryptoAssetInfoManager<'a> {
     bothan_version: Version,
     registry_version_requirement: VersionReq,
     monitoring_client: Option<Arc<MonitoringClient>>,
-    monitoring_cache: Option<Cache<String, Arc<PriceSignalComputationRecords>>>,
+    monitoring_cache: Option<Cache<String, Arc<Vec<PriceSignalComputationRecord>>>>,
 }
 
 impl<'a> CryptoAssetInfoManager<'a> {
@@ -112,7 +111,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
 
-        let mut records = SignalComputationRecords::default();
+        let mut records = Vec::new();
 
         let price_states =
             get_signal_price_states(ids, &self.workers, &registry, stale_cutoff, &mut records)
@@ -130,7 +129,6 @@ impl<'a> CryptoAssetInfoManager<'a> {
         Ok((uuid, price_states))
     }
 
-    // TODO: implement tx hash mapping into monitoring
     pub async fn push_monitoring_record(
         &self,
         uuid: String,
