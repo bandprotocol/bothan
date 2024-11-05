@@ -9,6 +9,7 @@ use bothan_api::config::log::LogLevel;
 use bothan_api::config::AppConfig;
 
 use crate::commands::config::ConfigCli;
+use crate::commands::request::RequestCli;
 use crate::commands::start::StartCli;
 
 mod commands;
@@ -28,6 +29,8 @@ struct Cli {
 enum Command {
     /// Configuration command for the bothan-api server
     Config(ConfigCli),
+    /// Request command for the bothan-api server
+    Request(RequestCli),
     /// Starts the bothan-api server
     Start(StartCli),
 }
@@ -77,6 +80,7 @@ async fn main() {
     if let Some(command) = &cli.command {
         match command {
             Command::Config(config_cli) => config_cli.run().await,
+            Command::Request(request_cli) => request_cli.run(app_config).await,
             Command::Start(start_cli) => start_cli.run(app_config).await,
         }
         .expect("Failed to run command");
