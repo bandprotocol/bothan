@@ -7,7 +7,7 @@ use tracing::{debug, info, warn};
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
 use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisiteError};
 use crate::manager::crypto_asset_info::types::{
-    PriceSignalComputationRecord, PriceSignalComputationRecords, PriceState, WorkerMap,
+    PriceSignalComputationRecord, PriceState, WorkerMap,
 };
 use crate::monitoring::records::{OperationRecord, SignalComputationRecord, SourceRecord};
 use crate::registry::post_processor::PostProcess;
@@ -23,7 +23,7 @@ pub async fn get_signal_price_states<'a>(
     workers: &WorkerMap<'a>,
     registry: &Registry<Valid>,
     stale_cutoff: i64,
-    records: &mut PriceSignalComputationRecords,
+    records: &mut Vec<PriceSignalComputationRecord>,
 ) -> Vec<PriceState> {
     let mut cache = PriceCache::new();
 
@@ -76,16 +76,18 @@ async fn compute_signal_result<'a>(
     registry: &Registry<Valid>,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
-    records: &mut PriceSignalComputationRecords,
+    records: &mut Vec<PriceSignalComputationRecord>,
 ) -> Result<Decimal, Error> {
     match registry.get(id) {
         Some(signal) => {
-            let mut record = SignalComputationRecord::default();
+            let mut record = SignalComputationRecord::new(id.to_string());
 
             let source_results =
                 compute_source_result(signal, workers, cache, stale_cutoff, &mut record).await?;
 
-            let record_ref = records.push(id.to_string(), record);
+            records.push(record);
+            // We can unwrap here because we just pushed the record, so it's guaranteed to be there
+            let record_ref = records.last_mut().unwrap();
 
             let process_signal_result = signal.processor.process(source_results);
             record_ref.process_result = Some(process_signal_result.clone());
@@ -149,19 +151,18 @@ async fn process_source_query<'a>(
     source_query: &SourceQuery,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
-    source_records: &mut Vec<(String, SourceRecord<Decimal>)>,
+    source_records: &mut Vec<SourceRecord<Decimal>>,
 ) -> Result<Option<(String, Decimal)>, MissingPrerequisiteError> {
     let source_id = &source_query.source_id;
     let query_id = &source_query.query_id;
     match worker.get_asset(query_id).await {
         Ok(AssetState::Available(a)) if a.timestamp.ge(&stale_cutoff) => {
             // Create a record for the specific source
-            source_records.push((
-                source_id.clone(),
-                SourceRecord::new(query_id.clone(), a.price, vec![], None),
-            ));
+            let source_record =
+                SourceRecord::new(source_id.clone(), query_id.clone(), a.price, vec![], None);
+            source_records.push(source_record);
             // We can unwrap here because we just pushed the value, so it's guaranteed to be there
-            let (_, record) = source_records.last_mut().unwrap();
+            let record = source_records.last_mut().unwrap();
 
             // Calculate the source route
             compute_source_routes(&source_query.routes, a.price, cache, record)
@@ -304,7 +305,7 @@ mod tests {
 
         let registry = valid_mock_registry().validate().unwrap();
         let stale_cutoff = 0;
-        let mut records = PriceSignalComputationRecords::default();
+        let mut records = Vec::new();
 
         let res =
             get_signal_price_states(ids, &workers, &registry, stale_cutoff, &mut records).await;
@@ -333,7 +334,7 @@ mod tests {
 
         let registry = valid_mock_registry().validate().unwrap();
         let stale_cutoff = 0;
-        let mut records = PriceSignalComputationRecords::default();
+        let mut records = Vec::new();
 
         let res =
             get_signal_price_states(ids, &workers, &registry, stale_cutoff, &mut records).await;
@@ -381,7 +382,7 @@ mod tests {
 
         let registry = valid_mock_registry().validate().unwrap();
         let stale_cutoff = 10000;
-        let mut records = PriceSignalComputationRecords::default();
+        let mut records = Vec::new();
 
         let res =
             get_signal_price_states(ids, &workers, &registry, stale_cutoff, &mut records).await;
@@ -414,15 +415,19 @@ mod tests {
 
         let cache = PriceCache::new();
         let stale_cutoff = 0;
-        let mut record = PriceSignalComputationRecord::default();
+        let mut record = PriceSignalComputationRecord::new("test".to_string());
 
         let res = compute_source_result(&signal, &workers, &cache, stale_cutoff, &mut record).await;
 
         let expected_res = Ok(vec![("test-source".to_string(), Decimal::default())]);
         let expected_record = SignalComputationRecord {
-            sources: vec![(
+            signal_id: "test".to_string(),
+            sources: vec![SourceRecord::new(
                 "test-source".to_string(),
-                SourceRecord::new("testusd".to_string(), Decimal::default(), vec![], None),
+                "testusd".to_string(),
+                Decimal::default(),
+                vec![],
+                None,
             )],
             process_result: None,
             post_process_result: None,
@@ -454,7 +459,7 @@ mod tests {
 
         let cache = PriceCache::new();
         let stale_cutoff = 0;
-        let mut record = PriceSignalComputationRecord::default();
+        let mut record = PriceSignalComputationRecord::new("test".to_string());
         let expected_record = record.clone();
 
         let res = compute_source_result(&signal, &workers, &cache, stale_cutoff, &mut record).await;
@@ -482,9 +487,12 @@ mod tests {
                 .await;
 
         let expected_res = Ok(Some(("test-source".to_string(), Decimal::new(1000, 0))));
-        let expected_source_records = vec![(
+        let expected_source_records = vec![SourceRecord::new(
             "test-source".to_string(),
-            SourceRecord::new("testusd".to_string(), Decimal::new(1000, 0), vec![], None),
+            "testusd".to_string(),
+            Decimal::new(1000, 0),
+            vec![],
+            None,
         )];
         assert_eq!(res, expected_res);
         assert_eq!(source_records, &expected_source_records);
@@ -544,11 +552,18 @@ mod tests {
         cache.set_available("C".to_string(), Decimal::from(13));
         cache.set_available("D".to_string(), Decimal::from(89));
 
-        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let mut record = SourceRecord::new(
+            "test-source".to_string(),
+            "test".to_string(),
+            Decimal::one(),
+            vec![],
+            None,
+        );
         let res = compute_source_routes(&routes, start, &cache, &mut record);
 
         let expected_value = Some(Decimal::from_str_exact("76.4").unwrap());
         let expected_record = SourceRecord::new(
+            "test-source".to_string(),
             "test".to_string(),
             Decimal::one(),
             vec![
@@ -574,7 +589,13 @@ mod tests {
         let mut cache = PriceCache::new();
         cache.set_available("A".to_string(), Decimal::from(2));
 
-        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let mut record = SourceRecord::new(
+            "test-source".to_string(),
+            "test".to_string(),
+            Decimal::one(),
+            vec![],
+            None,
+        );
         let expected_record = record.clone();
         let res = compute_source_routes(&routes, start, &cache, &mut record);
 
@@ -596,7 +617,13 @@ mod tests {
         cache.set_available("A".to_string(), Decimal::from(1337));
         cache.set_unavailable("B".to_string());
 
-        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let mut record = SourceRecord::new(
+            "test-source".to_string(),
+            "test".to_string(),
+            Decimal::one(),
+            vec![],
+            None,
+        );
         let expected_record = record.clone();
         let res = compute_source_routes(&routes, start, &cache, &mut record);
 
@@ -618,7 +645,13 @@ mod tests {
         cache.set_unsupported("B".to_string());
         cache.set_available("C".to_string(), Decimal::from(10000));
 
-        let mut record = SourceRecord::new("test".to_string(), Decimal::one(), vec![], None);
+        let mut record = SourceRecord::new(
+            "test-source".to_string(),
+            "test".to_string(),
+            Decimal::one(),
+            vec![],
+            None,
+        );
         let expected_record = record.clone();
         let res = compute_source_routes(&routes, start, &cache, &mut record);
 

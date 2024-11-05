@@ -6,7 +6,7 @@ use semver::Version;
 use serde::Serialize;
 
 use crate::monitoring::error::Error;
-use crate::monitoring::records::{SignalComputationRecords, SignalRecordsWithTxHash};
+use crate::monitoring::records::{SignalComputationRecord, SignalRecordsWithTxHash};
 use crate::monitoring::signer::Signer;
 use crate::monitoring::types::{BothanInfo, Entry, Topic};
 
@@ -29,7 +29,7 @@ impl Client {
         &self,
         uuid: String,
         tx_hash: String,
-        records: Arc<SignalComputationRecords<T, U>>,
+        records: Arc<Vec<SignalComputationRecord<T, U>>>,
     ) -> Result<Response, Error>
     where
         T: Serialize + Sized,

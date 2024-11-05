@@ -1,7 +1,7 @@
-use rust_decimal::Decimal;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 
 use crate::registry::post_processor::PostProcessError;
 use crate::registry::processor::ProcessError;
@@ -10,45 +10,35 @@ use crate::registry::source::Operation;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignalRecordsWithTxHash<T, U> {
     pub tx_hash: String,
-    pub records: Arc<SignalComputationRecords<T, U>>,
+    pub records: Arc<Vec<SignalComputationRecord<T, U>>>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct SignalComputationRecords<T, U> {
-    #[serde(flatten)]
-    inner: Vec<(String, SignalComputationRecord<T, U>)>,
-}
-
-impl<T, U> SignalComputationRecords<T, U>
-where
-    T: Serialize + DeserializeOwned,
-    U: Serialize + DeserializeOwned,
-{
-    pub fn push(
-        &mut self,
-        id: String,
-        value: SignalComputationRecord<T, U>,
-    ) -> &mut SignalComputationRecord<T, U> {
-        self.inner.push((id, value));
-        // We can unwrap here because we just pushed the value so it's guaranteed to be there
-        let (_, value) = self.inner.last_mut().unwrap();
-        value
-    }
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SignalComputationRecord<T, U>
 where
     T: Sized,
     U: Sized,
 {
-    pub sources: Vec<(String, SourceRecord<T>)>,
+    pub signal_id: String,
+    pub sources: Vec<SourceRecord<T>>,
     pub process_result: Option<Result<U, ProcessError>>,
     pub post_process_result: Option<Result<U, PostProcessError>>,
 }
 
+impl<T, U> SignalComputationRecord<T, U> {
+    pub(crate) fn new(signal_id: String) -> Self {
+        SignalComputationRecord {
+            signal_id,
+            sources: Vec::new(),
+            process_result: None,
+            post_process_result: None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SourceRecord<T: Sized> {
+    pub source_id: String,
     pub query_id: String,
     pub raw_source_value: T,
     pub operations: Vec<OperationRecord>,
@@ -57,12 +47,14 @@ pub struct SourceRecord<T: Sized> {
 
 impl<T> SourceRecord<T> {
     pub fn new(
+        source_id: String,
         query_id: String,
         raw_source_value: T,
         operations: Vec<OperationRecord>,
         final_value: Option<T>,
     ) -> Self {
         SourceRecord {
+            source_id,
             query_id,
             raw_source_value,
             operations,
