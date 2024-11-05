@@ -1,0 +1,21 @@
+[package]
+name = "bothan-client"
+version = "0.0.1-alpha.4"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+exclude.workspace = true
+
+[dependencies]
+prost = { workspace = true }
+protoc-gen-prost = { workspace = true }
+protoc-gen-tonic = { workspace = true }
+tokio = { workspace = true }
+tonic = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+url = { workspace = true }
+
+pbjson = "0.7.0"

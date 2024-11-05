@@ -17,6 +17,7 @@ serde = { workspace = true, features = ["rc"] }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
+tonic = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
 rust_decimal = { workspace = true, features = ["maths", "serde-str"] }
@@ -36,5 +37,4 @@ prost = "0.13.1"
 rand = "0.8.5"
 rust-rocksdb = "0.32.0"
 serde_json = "1.0.132"
-tonic = "0.12.1"
 uuid = { version = "1.11.0", features = ["v4"] }
