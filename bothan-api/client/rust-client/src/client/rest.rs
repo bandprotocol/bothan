@@ -1,5 +1,5 @@
-use reqwest::{Client, Error, Url};
-use std::string::ParseError;
+use reqwest::{Client, Error};
+use url::{ParseError, Url};
 
 use crate::proto::bothan::v1::{GetInfoResponse, GetPricesResponse};
 
