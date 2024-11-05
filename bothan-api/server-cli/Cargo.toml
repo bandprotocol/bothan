@@ -20,6 +20,7 @@ bothan-cryptocompare = { workspace = true }
 bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
+bothan-client = { workspace = true }
 bothan-core = { workspace = true }
 
 async-trait = { workspace = true }

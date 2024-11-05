@@ -411,6 +411,7 @@ dependencies = [
  "bothan-api",
  "bothan-binance",
  "bothan-bybit",
+ "bothan-client",
  "bothan-coinbase",
  "bothan-coingecko",
  "bothan-coinmarketcap",
