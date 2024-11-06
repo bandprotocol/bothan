@@ -27,14 +27,14 @@ impl GrpcClient {
         Ok(GrpcClient { client })
     }
 
-    async fn get_info(&self) -> Result<GetInfoResponse, Status> {
+    pub async fn get_info(&self) -> Result<GetInfoResponse, Status> {
         let get_info_request = GetInfoRequest {};
         let request = Request::new(get_info_request);
         let response = self.client.lock().await.get_info(request).await?;
         Ok(response.into_inner())
     }
 
-    async fn update_registry(&self, ipfs_hash: &str, version: &str) -> Result<(), Status> {
+    pub async fn update_registry(&self, ipfs_hash: &str, version: &str) -> Result<(), Status> {
         let update_registry_request = UpdateRegistryRequest {
             ipfs_hash: ipfs_hash.into(),
             version: version.into(),
@@ -44,7 +44,7 @@ impl GrpcClient {
         Ok(())
     }
 
-    async fn push_monitoring_records(&self, uuid: &str, tx_hash: &str) -> Result<(), Status> {
+    pub async fn push_monitoring_records(&self, uuid: &str, tx_hash: &str) -> Result<(), Status> {
         let push_monitoring_records_request = PushMonitoringRecordsRequest {
             uuid: uuid.into(),
             tx_hash: tx_hash.into(),
@@ -59,7 +59,7 @@ impl GrpcClient {
         Ok(())
     }
 
-    async fn get_prices(&self, signal_ids: &[&str]) -> Result<GetPricesResponse, Status> {
+    pub async fn get_prices(&self, signal_ids: &[&str]) -> Result<GetPricesResponse, Status> {
         let get_prices_request = GetPricesRequest {
             signal_ids: signal_ids.iter().map(|s| s.to_string()).collect(),
         };
