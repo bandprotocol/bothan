@@ -9,12 +9,12 @@ use tracing::{debug, error, info, warn};
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
-use crate::api::{BybitWebSocketConnection, BybitWebSocketConnector};
 use crate::api::error::{MessageError, SendError};
-use crate::api::types::{BybitResponse, MAX_ARGS, Ticker};
-use crate::worker::BybitWorker;
+use crate::api::types::{BybitResponse, Ticker, MAX_ARGS};
+use crate::api::{BybitWebSocketConnection, BybitWebSocketConnector};
 use crate::worker::error::WorkerError;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
+use crate::worker::BybitWorker;
 
 pub(crate) async fn start_asset_worker(
     worker: Weak<BybitWorker>,
