@@ -119,15 +119,22 @@ async fn handle_reconnect(
 }
 
 /// Parses a tick response into an AssetInfo structure.
-fn parse_tick(id: &str, tick: Tick) -> Result<AssetInfo, WorkerError> {
+fn parse_tick(id: &str, tick: Tick, timestamp: i64) -> Result<AssetInfo, WorkerError> {
     let price_value =
         Decimal::from_f64(tick.last_price).ok_or(WorkerError::InvalidPrice(tick.last_price))?;
-    Ok(AssetInfo::new(id.to_string(), price_value, 0))
+    Ok(AssetInfo::new(id.to_string(), price_value, timestamp))
 }
 
 /// Stores tick information into the worker store.
-async fn store_tick(store: &WorkerStore, id: &str, tick: Tick) -> Result<(), WorkerError> {
-    store.set_asset(id, parse_tick(id, tick)?).await?;
+async fn store_tick(
+    store: &WorkerStore,
+    id: &str,
+    tick: Tick,
+    timestamp: i64,
+) -> Result<(), WorkerError> {
+    store
+        .set_asset(id, parse_tick(id, tick, timestamp)?)
+        .await?;
     debug!("stored data for id {}", id);
     Ok(())
 }
@@ -149,7 +156,7 @@ async fn process_response(
             debug!("received data update from channel {}", data.ch);
             if let Some(id) = data.ch.split('.').nth(1) {
                 // Handle processing of data update, e.g., storing tick data
-                match store_tick(store, id, data.tick).await {
+                match store_tick(store, id, data.tick, data.timestamp).await {
                     Ok(_) => debug!("saved data"),
                     Err(e) => error!("failed to save data: {}", e),
                 }
@@ -222,13 +229,13 @@ mod test {
         };
 
         // Parse the tick into AssetInfo
-        let result = parse_tick("btcusdt", tick);
+        let result = parse_tick("btcusdt", tick, 1000);
 
         // Expected AssetInfo object
         let expected = AssetInfo::new(
             "btcusdt".to_string(),
             Decimal::from_str("52735.63").unwrap(),
-            0,
+            1000,
         );
 
         // Assert that the parsed result matches the expected output
@@ -256,6 +263,6 @@ mod test {
         };
 
         // Assert that parsing the tick with an invalid price results in an error
-        assert!(parse_tick("btcusdt", tick).is_err());
+        assert!(parse_tick("btcusdt", tick, 1000).is_err());
     }
 }
