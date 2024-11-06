@@ -49,7 +49,7 @@ impl AssetWorker for BinanceWorker {
     async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), SetQueryIDError> {
         let (to_sub, to_unsub) = self
             .store
-            .set_query_ids(ids)
+            .compute_query_id_differences(ids)
             .await
             .map_err(|e| SetQueryIDError::new(e.to_string()))?;
 

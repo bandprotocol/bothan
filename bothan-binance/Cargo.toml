@@ -9,6 +9,7 @@ repository.workspace = true
 async-trait = { workspace = true }
 bothan-core = { workspace = true }
 humantime-serde = { workspace = true }
+opentelemetry = { workspace = true }
 rand = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }

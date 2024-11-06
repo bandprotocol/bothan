@@ -46,6 +46,7 @@ impl WorkerStore {
         self.store.insert_asset_infos(&self.prefix, assets).await
     }
 
+    // TODO: Deprecate when the new query_id system is in place
     pub async fn set_query_ids<K>(&self, ids: Vec<K>) -> Result<(Vec<String>, Vec<String>), Error>
     where
         K: Into<String> + Clone,
@@ -65,6 +66,30 @@ impl WorkerStore {
         self.store.set_query_ids(&self.prefix, new_ids).await?;
 
         Ok((added, removed))
+    }
+
+    // Computes the signals to add and remove from the query set if the given IDs is to replace
+    // the current query_id set
+    pub async fn compute_query_id_differences<K>(
+        &self,
+        ids: Vec<K>,
+    ) -> Result<(Vec<String>, Vec<String>), Error>
+    where
+        K: Into<String> + Clone,
+    {
+        let current_ids = self.get_query_ids().await?;
+        let new_ids: QueryIDs = HashSet::from_iter(ids.into_iter().map(Into::into));
+
+        let to_add = new_ids
+            .difference(&current_ids)
+            .cloned()
+            .collect::<Vec<String>>();
+        let to_remove = current_ids
+            .difference(&new_ids)
+            .cloned()
+            .collect::<Vec<String>>();
+
+        Ok((to_add, to_remove))
     }
 
     pub async fn add_query_ids<K>(&self, ids: Vec<K>) -> Result<Vec<K>, Error>
