@@ -9,6 +9,7 @@ use bothan_api::config::log::LogLevel;
 use bothan_api::config::AppConfig;
 
 use crate::commands::config::ConfigCli;
+use crate::commands::key::KeyCli;
 use crate::commands::request::RequestCli;
 use crate::commands::start::StartCli;
 
@@ -29,6 +30,8 @@ struct Cli {
 enum Command {
     /// Configuration command for the bothan-api server
     Config(ConfigCli),
+    /// Key command for the bothan-api server
+    Key(KeyCli),
     /// Request command for the bothan-api server
     Request(RequestCli),
     /// Starts the bothan-api server
@@ -80,6 +83,7 @@ async fn main() {
     if let Some(command) = &cli.command {
         match command {
             Command::Config(config_cli) => config_cli.run().await,
+            Command::Key(key_cli) => key_cli.run(app_config).await,
             Command::Request(request_cli) => request_cli.run(app_config).await,
             Command::Start(start_cli) => start_cli.run(app_config).await,
         }

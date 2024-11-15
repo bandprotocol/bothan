@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::{create_dir_all, read_to_string, File};
-use std::io::{BufReader, Write};
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -137,18 +137,9 @@ async fn init_signer(config: &AppConfig) -> anyhow::Result<Signer> {
 
         Signer::from_hex(&pk).with_context(|| "Failed to parse monitoring key file")
     } else {
-        let signer = Signer::random();
-
-        if let Some(parent) = config.monitoring.path.parent() {
-            create_dir_all(parent).with_context(|| "Failed to create monitoring key directory")?;
-        }
-
-        let mut file = File::create(&config.monitoring.path)
-            .with_context(|| "Failed to create monitoring key file")?;
-
-        file.write(signer.to_hex().as_bytes())
-            .with_context(|| "Failed to write monitoring key file")?;
-        Ok(signer)
+        Err(anyhow!(
+            "Key has not been generated, please run 'bothan key generate'"
+        ))
     }
 }
 
