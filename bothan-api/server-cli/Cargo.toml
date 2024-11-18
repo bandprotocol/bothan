@@ -1,6 +1,7 @@
 [package]
 name = "bothan-api-cli"
 version = "0.0.1-alpha.4"
+rust-version = "1.81"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
