@@ -35,8 +35,8 @@ impl ConfigCli {
         match &self.subcommand {
             ConfigSubCommand::Init { path, override_ } => {
                 let config_path = match path {
-                    Some(p) => p.clone(),
-                    None => bothan_home_dir().join("config.toml"),
+                    Some(p) => p,
+                    None => &bothan_home_dir().join("config.toml"),
                 };
 
                 //check if the file already exists
@@ -55,7 +55,7 @@ impl ConfigCli {
                 let config_string =
                     toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;
 
-                fs::write(&config_path, config_string).with_context(|| "Failed to write config")?;
+                fs::write(config_path, config_string).with_context(|| "Failed to write config")?;
                 info!("initialized default config at: {:?}", config_path);
                 Ok(())
             }

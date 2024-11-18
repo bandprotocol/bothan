@@ -48,10 +48,7 @@ async fn main() {
         }
     };
 
-    let config_path = cli
-        .config
-        .clone()
-        .unwrap_or(bothan_home_dir().join("config.toml"));
+    let config_path = &cli.config.unwrap_or(bothan_home_dir().join("config.toml"));
 
     let app_config = if config_path.is_file() {
         AppConfig::from(config_path).expect(

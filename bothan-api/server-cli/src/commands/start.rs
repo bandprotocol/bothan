@@ -158,7 +158,7 @@ async fn init_monitoring_client(
 }
 
 async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
-    let ipfs_builder = IpfsClientBuilder::new(config.ipfs.endpoint.clone());
+    let ipfs_builder = IpfsClientBuilder::new(&config.ipfs.endpoint);
     let ipfs_client = match &config.ipfs.authentication {
         IpfsAuthentication::Header { key, value } => {
             let header_name = HeaderName::from_str(key)?;

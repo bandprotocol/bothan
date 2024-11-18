@@ -43,7 +43,7 @@ impl RequestCli {
         let uri = self
             .uri
             .clone()
-            .unwrap_or(format!("https://{}", &app_config.grpc.addr.to_string()));
+            .unwrap_or(format!("https://{}", &app_config.grpc.addr));
         let client = GrpcClient::connect(&uri)
             .await
             .map_err(|e| anyhow!("Failed to connect to server: {e}"))?;
