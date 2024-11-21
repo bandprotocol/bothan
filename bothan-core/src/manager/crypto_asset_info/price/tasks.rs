@@ -447,7 +447,7 @@ mod tests {
                 "testusd".to_string(),
                 Decimal::default(),
                 vec![],
-                None,
+                Some(Decimal::default()),
             )],
             process_result: None,
             post_process_result: None,
@@ -512,7 +512,7 @@ mod tests {
             "testusd".to_string(),
             Decimal::new(1000, 0),
             vec![],
-            None,
+            Some(Decimal::new(1000, 0)),
         )];
         assert_eq!(res, expected_res);
         assert_eq!(source_records, &expected_source_records);
@@ -581,7 +581,7 @@ mod tests {
         );
         let res = compute_source_routes(&routes, start, &cache, &mut record);
 
-        let expected_value = Some(Decimal::from_str_exact("76.4").unwrap());
+        let expected_value = Some(Decimal::new(764, 1));
         let expected_record = SourceRecord::new(
             "test-source".to_string(),
             "test".to_string(),
@@ -592,7 +592,7 @@ mod tests {
                 OperationRecord::new("C".to_string(), Operation::Subtract, Decimal::from(13)),
                 OperationRecord::new("D".to_string(), Operation::Add, Decimal::from(89)),
             ],
-            None,
+            expected_value,
         );
 
         assert_eq!(res, Ok(expected_value));
