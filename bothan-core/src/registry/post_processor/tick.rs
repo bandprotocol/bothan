@@ -3,7 +3,7 @@ use num_traits::FromPrimitive;
 use rust_decimal::{Decimal, MathematicalOps};
 use serde::{Deserialize, Serialize};
 
-use crate::registry::post_processor::{PostProcess, PostProcessError};
+use crate::registry::post_processor::PostProcessError;
 
 const TICK: f64 = 1.0001;
 const MID_TICK: f64 = 262144.0;
@@ -14,10 +14,10 @@ const MIN_TICK: f64 = 1.0;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct TickPostProcessor {}
 
-impl PostProcess<Decimal> for TickPostProcessor {
+impl TickPostProcessor {
     /// Processes the given data into its tick value and returns it. If the data is out of bounds,
     /// it returns an error.
-    fn process(&self, data: Decimal) -> Result<Decimal, PostProcessError> {
+    pub fn process(&self, data: Decimal) -> Result<Decimal, PostProcessError> {
         // Unwrap here is safe because the constants are hardcoded.
         let tick = Decimal::from_f64(TICK).unwrap();
         let min_tick = Decimal::from_f64(MIN_TICK).unwrap();
@@ -43,7 +43,7 @@ mod tests {
     #[test]
     fn test_process() {
         let tick_convertor = PostProcessor::TickConvertor(TickPostProcessor {});
-        let result = tick_convertor.process(Decimal::from(20));
+        let result = tick_convertor.post_process(Decimal::from(20));
         assert_eq!(
             result.unwrap(),
             Decimal::from_str_exact("292102.82057671349939971087257").unwrap()

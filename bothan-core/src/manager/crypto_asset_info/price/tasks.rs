@@ -9,9 +9,9 @@ use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisite
 use crate::manager::crypto_asset_info::types::{
     PriceSignalComputationRecord, PriceState, WorkerMap,
 };
-use crate::monitoring::records::{OperationRecord, SignalComputationRecord, SourceRecord};
-use crate::registry::post_processor::PostProcess;
-use crate::registry::processor::Process;
+use crate::monitoring::records::{
+    OperationRecord, ProcessRecord, SignalComputationRecord, SourceRecord,
+};
 use crate::registry::signal::Signal;
 use crate::registry::source::{OperationRoute, SourceQuery};
 use crate::registry::{Registry, Valid};
@@ -89,18 +89,37 @@ async fn compute_signal_result<'a>(
             // We can unwrap here because we just pushed the record, so it's guaranteed to be there
             let record_ref = records.last_mut().unwrap();
 
+            // let processor_ref: Processor = &signal.processor;
             let process_signal_result = signal.processor.process(source_results);
-            record_ref.process_result = Some(process_signal_result.clone());
+            record_ref.process_result = Some(ProcessRecord::new(
+                signal.processor.name().to_string(),
+                process_signal_result.clone(),
+            ));
 
-            let processed_signal = process_signal_result?;
+            let mut processed_signal = process_signal_result?;
+            let mut post_process_records = Vec::with_capacity(signal.post_processors.len());
+            for post_processor in &signal.post_processors {
+                let post_process_signal_result = post_processor.post_process(processed_signal);
 
-            let post_process_signal_result = signal
-                .post_processors
-                .iter()
-                .try_fold(processed_signal, |acc, post| post.process(acc));
-            record_ref.post_process_result = Some(post_process_signal_result.clone());
+                post_process_records.push(ProcessRecord::new(
+                    post_processor.name().to_string(),
+                    post_process_signal_result.clone(),
+                ));
 
-            Ok(post_process_signal_result?)
+                match post_process_signal_result {
+                    Ok(post_processed) => {
+                        processed_signal = post_processed;
+                    }
+                    Err(e) => {
+                        record_ref.post_process_result = Some(post_process_records);
+                        return Err(Error::FailedToPostProcessSignal(e));
+                    }
+                }
+            }
+
+            record_ref.post_process_result = Some(post_process_records);
+
+            Ok(processed_signal)
         }
         None => Err(Error::InvalidSignal),
     }
@@ -216,6 +235,7 @@ fn compute_source_routes(
         .map(|(r, v)| OperationRecord::new(r.signal_id.clone(), r.operation.clone(), *v))
         .collect::<Vec<OperationRecord>>();
     record.operations = op_records;
+    record.final_value = price;
 
     Ok(price)
 }

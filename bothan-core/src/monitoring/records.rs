@@ -21,8 +21,8 @@ where
 {
     pub signal_id: String,
     pub sources: Vec<SourceRecord<T>>,
-    pub process_result: Option<Result<U, ProcessError>>,
-    pub post_process_result: Option<Result<U, PostProcessError>>,
+    pub process_result: Option<ProcessRecord<U, ProcessError>>,
+    pub post_process_result: Option<Vec<ProcessRecord<U, PostProcessError>>>,
 }
 
 impl<T, U> SignalComputationRecord<T, U> {
@@ -33,6 +33,21 @@ impl<T, U> SignalComputationRecord<T, U> {
             process_result: None,
             post_process_result: None,
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ProcessRecord<T, E>
+where
+    T: Sized,
+{
+    pub function: String,
+    pub result: Result<T, E>,
+}
+
+impl<T, E> ProcessRecord<T, E> {
+    pub fn new(function: String, result: Result<T, E>) -> Self {
+        ProcessRecord { function, result }
     }
 }
 

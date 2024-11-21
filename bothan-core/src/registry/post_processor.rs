@@ -17,11 +17,6 @@ impl PostProcessError {
     }
 }
 
-/// The PostProcessor trait defines the methods that a post-processor must implement.
-pub trait PostProcess<T> {
-    fn process(&self, data: T) -> Result<T, PostProcessError>;
-}
-
 /// The PostProcess enum represents the different types of post-processors that can be used.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
@@ -29,8 +24,14 @@ pub enum PostProcessor {
     TickConvertor(tick::TickPostProcessor),
 }
 
-impl PostProcess<Decimal> for PostProcessor {
-    fn process(&self, data: Decimal) -> Result<Decimal, PostProcessError> {
+impl PostProcessor {
+    pub fn name(&self) -> &str {
+        match self {
+            PostProcessor::TickConvertor(_) => "tick_convertor",
+        }
+    }
+
+    pub fn post_process(&self, data: Decimal) -> Result<Decimal, PostProcessError> {
         match self {
             PostProcessor::TickConvertor(tick) => tick.process(data),
         }
