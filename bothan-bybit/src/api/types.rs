@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// The default URL for the Bybit WebSocket API.
 pub const DEFAULT_URL: &str = "wss://stream.bybit.com/v5/public/spot";
+pub const MAX_ARGS: u32 = 10;
 
 /// Represents the different types of responses from the Bybit API.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

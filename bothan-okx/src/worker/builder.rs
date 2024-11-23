@@ -73,6 +73,18 @@ impl<'a> AssetWorkerBuilder<'a> for OkxWorkerBuilder {
         let (sub_tx, sub_rx) = channel(ch_size);
         let (unsub_tx, unsub_rx) = channel(ch_size);
 
+        let to_sub = self
+            .store
+            .get_query_ids()
+            .await?
+            .into_iter()
+            .collect::<Vec<String>>();
+
+        if !to_sub.is_empty() {
+            // Unwrap here as the channel is guaranteed to be open
+            sub_tx.send(to_sub).await.unwrap();
+        }
+
         let worker = Arc::new(OkxWorker::new(connector, self.store, sub_tx, unsub_tx));
 
         tokio::spawn(start_asset_worker(
