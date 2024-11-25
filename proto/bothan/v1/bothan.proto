@@ -41,7 +41,7 @@ message GetInfoResponse {
   string registry_ipfs_hash = 2;
   // The version requirements for the registry.
   string registry_version_requirement = 3;
- git // The active sources the Bothan instance is using
+  // The active sources the Bothan instance is using
   repeated string active_sources = 4;
   // Whether or not the Bothan instance has monitoring enabled
   bool monitoring_enabled = 5;
