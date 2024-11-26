@@ -20,7 +20,7 @@ where
     U: Sized,
 {
     pub signal_id: String,
-    pub sources: Vec<SourceRecord<T>>,
+    pub sources: Vec<SourceRecord<T, U>>,
     pub process_result: Option<ProcessRecord<U, ProcessError>>,
     pub post_process_result: Option<Vec<ProcessRecord<U, PostProcessError>>>,
 }
@@ -52,21 +52,21 @@ impl<T, E> ProcessRecord<T, E> {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SourceRecord<T: Sized> {
+pub struct SourceRecord<T: Sized, U: Sized> {
     pub source_id: String,
     pub query_id: String,
-    pub raw_source_value: T,
+    pub raw_source_value: Option<T>,
     pub operations: Vec<OperationRecord>,
-    pub final_value: Option<T>,
+    pub final_value: Option<U>,
 }
 
-impl<T> SourceRecord<T> {
+impl<T, U> SourceRecord<T, U> {
     pub fn new(
         source_id: String,
         query_id: String,
-        raw_source_value: T,
+        raw_source_value: Option<T>,
         operations: Vec<OperationRecord>,
-        final_value: Option<T>,
+        final_value: Option<U>,
     ) -> Self {
         SourceRecord {
             source_id,
