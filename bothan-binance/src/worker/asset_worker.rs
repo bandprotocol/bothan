@@ -125,6 +125,7 @@ async fn handle_reconnect(
 
             if subscribe(&ids_vec, connection).await.is_ok() {
                 info!("resubscribed to all ids");
+                return
             } else {
                 error!("failed to resubscribe to all ids");
             }
