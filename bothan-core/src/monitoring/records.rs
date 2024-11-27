@@ -14,11 +14,7 @@ pub struct SignalRecordsWithTxHash<T, U> {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SignalComputationRecord<T, U>
-where
-    T: Sized,
-    U: Sized,
-{
+pub struct SignalComputationRecord<T, U> {
     pub signal_id: String,
     pub sources: Vec<SourceRecord<T, U>>,
     pub process_result: Option<ProcessRecord<U, ProcessError>>,
@@ -37,10 +33,7 @@ impl<T, U> SignalComputationRecord<T, U> {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ProcessRecord<T, E>
-where
-    T: Sized,
-{
+pub struct ProcessRecord<T, E> {
     pub function: String,
     pub result: Result<T, E>,
 }
@@ -52,7 +45,7 @@ impl<T, E> ProcessRecord<T, E> {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SourceRecord<T: Sized, U: Sized> {
+pub struct SourceRecord<T, U> {
     pub source_id: String,
     pub query_id: String,
     pub raw_source_value: Option<T>,
