@@ -1,10 +1,10 @@
-use std::sync::Arc;
-
 use crate::store::error::Error as StoreError;
 use crate::store::WorkerStore;
 use crate::types::AssetInfo;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AssetState {
     Unsupported,
     Pending,

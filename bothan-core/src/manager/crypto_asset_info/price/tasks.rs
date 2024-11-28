@@ -9,9 +9,9 @@ use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisite
 use crate::manager::crypto_asset_info::types::{
     PriceSignalComputationRecord, PriceState, WorkerMap,
 };
-use crate::monitoring::records::{OperationRecord, SignalComputationRecord, SourceRecord};
-use crate::registry::post_processor::PostProcess;
-use crate::registry::processor::Process;
+use crate::monitoring::records::{
+    OperationRecord, ProcessRecord, SignalComputationRecord, SourceRecord,
+};
 use crate::registry::signal::Signal;
 use crate::registry::source::{OperationRoute, SourceQuery};
 use crate::registry::{Registry, Valid};
@@ -89,18 +89,37 @@ async fn compute_signal_result<'a>(
             // We can unwrap here because we just pushed the record, so it's guaranteed to be there
             let record_ref = records.last_mut().unwrap();
 
+            // let processor_ref: Processor = &signal.processor;
             let process_signal_result = signal.processor.process(source_results);
-            record_ref.process_result = Some(process_signal_result.clone());
+            record_ref.process_result = Some(ProcessRecord::new(
+                signal.processor.name().to_string(),
+                process_signal_result.clone(),
+            ));
 
-            let processed_signal = process_signal_result?;
+            let mut processed_signal = process_signal_result?;
+            let mut post_process_records = Vec::with_capacity(signal.post_processors.len());
+            for post_processor in &signal.post_processors {
+                let post_process_signal_result = post_processor.post_process(processed_signal);
 
-            let post_process_signal_result = signal
-                .post_processors
-                .iter()
-                .try_fold(processed_signal, |acc, post| post.process(acc));
-            record_ref.post_process_result = Some(post_process_signal_result.clone());
+                post_process_records.push(ProcessRecord::new(
+                    post_processor.name().to_string(),
+                    post_process_signal_result.clone(),
+                ));
 
-            Ok(post_process_signal_result?)
+                match post_process_signal_result {
+                    Ok(post_processed) => {
+                        processed_signal = post_processed;
+                    }
+                    Err(e) => {
+                        record_ref.post_process_result = Some(post_process_records);
+                        return Err(Error::FailedToPostProcessSignal(e));
+                    }
+                }
+            }
+
+            record_ref.post_process_result = Some(post_process_records);
+
+            Ok(processed_signal)
         }
         None => Err(Error::InvalidSignal),
     }
@@ -151,30 +170,39 @@ async fn process_source_query<'a>(
     source_query: &SourceQuery,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
-    source_records: &mut Vec<SourceRecord<Decimal>>,
+    source_records: &mut Vec<SourceRecord<AssetState, Decimal>>,
 ) -> Result<Option<(String, Decimal)>, MissingPrerequisiteError> {
     let source_id = &source_query.source_id;
     let query_id = &source_query.query_id;
-    match worker.get_asset(query_id).await {
-        Ok(AssetState::Available(a)) if a.timestamp.ge(&stale_cutoff) => {
-            // Create a record for the specific source
-            let source_record =
-                SourceRecord::new(source_id.clone(), query_id.clone(), a.price, vec![], None);
-            source_records.push(source_record);
-            // We can unwrap here because we just pushed the value, so it's guaranteed to be there
-            let record = source_records.last_mut().unwrap();
 
-            // Calculate the source route
-            compute_source_routes(&source_query.routes, a.price, cache, record)
-                .map(|opt| opt.map(|price| (source_id.clone(), price)))
-        }
-        Ok(AssetState::Available(_)) => {
-            warn!("asset state for {query_id} from {source_id} has timed out");
-            Ok(None)
-        }
-        Ok(_) => {
-            warn!("asset state for {query_id} from {source_id} is unavailable");
-            Ok(None)
+    // Create a record for the specific source
+    let source_record = SourceRecord::new(source_id.clone(), query_id.clone(), None, vec![], None);
+    source_records.push(source_record);
+    // We can unwrap here because we just pushed the value, so it's guaranteed to be there
+    let record = source_records.last_mut().unwrap();
+
+    match worker.get_asset(query_id).await {
+        Ok(asset_state) => {
+            record.raw_source_value = Some(asset_state.clone());
+            match asset_state {
+                AssetState::Available(a) if a.timestamp >= stale_cutoff => {
+                    // Calculate the source route
+                    compute_source_routes(&source_query.routes, a.price, cache, record)
+                        .map(|opt| opt.map(|price| (source_id.clone(), price)))
+                }
+                AssetState::Available(_) => {
+                    warn!("asset state for {query_id} from {source_id} is stale");
+                    Ok(None)
+                }
+                AssetState::Unsupported => {
+                    warn!("asset state for {query_id} from {source_id} is unsupported");
+                    Ok(None)
+                }
+                AssetState::Pending => {
+                    info!("asset state for {query_id} from {source_id} is pending");
+                    Ok(None)
+                }
+            }
         }
         Err(_) => {
             warn!("error while querying source {source_id} for {query_id}");
@@ -187,7 +215,7 @@ fn compute_source_routes(
     routes: &Vec<OperationRoute>,
     start: Decimal,
     cache: &PriceCache<String>,
-    record: &mut SourceRecord<Decimal>,
+    record: &mut SourceRecord<AssetState, Decimal>,
 ) -> Result<Option<Decimal>, MissingPrerequisiteError> {
     // Get all pre requisites
     let mut missing = Vec::with_capacity(routes.len());
@@ -216,6 +244,7 @@ fn compute_source_routes(
         .map(|(r, v)| OperationRecord::new(r.signal_id.clone(), r.operation.clone(), *v))
         .collect::<Vec<OperationRecord>>();
     record.operations = op_records;
+    record.final_value = price;
 
     Ok(price)
 }
@@ -406,10 +435,9 @@ mod tests {
         let signal = Signal::new(source_queries, processor, vec![]);
 
         let mut test_source_worker = MockWorker::default();
-        test_source_worker.add_expected_query(
-            "testusd".to_string(),
-            AssetState::Available(AssetInfo::new("testusd".to_string(), Decimal::default(), 0)),
-        );
+        let asset_state =
+            AssetState::Available(AssetInfo::new("testusd".to_string(), Decimal::default(), 0));
+        test_source_worker.add_expected_query("testusd".to_string(), asset_state.clone());
 
         let workers = mock_workers(vec![("test-source", test_source_worker)]);
 
@@ -425,9 +453,9 @@ mod tests {
             sources: vec![SourceRecord::new(
                 "test-source".to_string(),
                 "testusd".to_string(),
-                Decimal::default(),
+                Some(asset_state),
                 vec![],
-                None,
+                Some(Decimal::default()),
             )],
             process_result: None,
             post_process_result: None,
@@ -474,8 +502,9 @@ mod tests {
     async fn test_process_source_query() {
         let mut worker = MockWorker::default();
         let id = "testusd".to_string();
-        let asset_info = AssetInfo::new(id.clone(), Decimal::new(1000, 0), 10);
-        worker.add_expected_query("testusd".to_string(), AssetState::Available(asset_info));
+        let asset_state =
+            AssetState::Available(AssetInfo::new(id.clone(), Decimal::new(1000, 0), 10));
+        worker.add_expected_query("testusd".to_string(), asset_state.clone());
 
         let source_query = SourceQuery::new("test-source".to_string(), id.clone(), vec![]);
         let stale_cutoff = 5;
@@ -490,9 +519,9 @@ mod tests {
         let expected_source_records = vec![SourceRecord::new(
             "test-source".to_string(),
             "testusd".to_string(),
-            Decimal::new(1000, 0),
+            Some(asset_state),
             vec![],
-            None,
+            Some(Decimal::new(1000, 0)),
         )];
         assert_eq!(res, expected_res);
         assert_eq!(source_records, &expected_source_records);
@@ -503,7 +532,10 @@ mod tests {
         let mut worker = MockWorker::default();
         let id = "testusd".to_string();
         let asset_info = AssetInfo::new(id.clone(), Decimal::default(), 0);
-        worker.add_expected_query("testusd".to_string(), AssetState::Available(asset_info));
+        worker.add_expected_query(
+            "testusd".to_string(),
+            AssetState::Available(asset_info.clone()),
+        );
 
         let source_query = SourceQuery::new("test-source".to_string(), id.clone(), vec![]);
         let stale_cutoff = 1000;
@@ -513,8 +545,17 @@ mod tests {
         let res =
             process_source_query(&worker, &source_query, stale_cutoff, &cache, source_records)
                 .await;
+
+        let expected = vec![SourceRecord::new(
+            "test-source".to_string(),
+            "testusd".to_string(),
+            Some(AssetState::Available(asset_info)),
+            vec![],
+            None,
+        )];
+
         assert_eq!(res, Ok(None));
-        assert_eq!(source_records, &vec![]);
+        assert_eq!(source_records, &expected);
     }
 
     #[tokio::test]
@@ -531,8 +572,17 @@ mod tests {
         let res =
             process_source_query(&worker, &source_query, stale_cutoff, &cache, source_records)
                 .await;
+
+        let expected = vec![SourceRecord::new(
+            "test-source".to_string(),
+            "testusd".to_string(),
+            Some(AssetState::Unsupported),
+            vec![],
+            None,
+        )];
+
         assert_eq!(res, Ok(None));
-        assert_eq!(source_records, &vec![]);
+        assert_eq!(source_records, &expected);
     }
 
     #[test]
@@ -552,27 +602,29 @@ mod tests {
         cache.set_available("C".to_string(), Decimal::from(13));
         cache.set_available("D".to_string(), Decimal::from(89));
 
+        let asset_state =
+            AssetState::Available(AssetInfo::new("test".to_string(), Decimal::one(), 0));
         let mut record = SourceRecord::new(
             "test-source".to_string(),
             "test".to_string(),
-            Decimal::one(),
+            Some(asset_state.clone()),
             vec![],
             None,
         );
         let res = compute_source_routes(&routes, start, &cache, &mut record);
 
-        let expected_value = Some(Decimal::from_str_exact("76.4").unwrap());
+        let expected_value = Some(Decimal::new(764, 1));
         let expected_record = SourceRecord::new(
             "test-source".to_string(),
             "test".to_string(),
-            Decimal::one(),
+            Some(asset_state),
             vec![
                 OperationRecord::new("A".to_string(), Operation::Multiply, Decimal::from(2)),
                 OperationRecord::new("B".to_string(), Operation::Divide, Decimal::from(5)),
                 OperationRecord::new("C".to_string(), Operation::Subtract, Decimal::from(13)),
                 OperationRecord::new("D".to_string(), Operation::Add, Decimal::from(89)),
             ],
-            None,
+            expected_value,
         );
 
         assert_eq!(res, Ok(expected_value));
@@ -589,10 +641,12 @@ mod tests {
         let mut cache = PriceCache::new();
         cache.set_available("A".to_string(), Decimal::from(2));
 
+        let asset_state =
+            AssetState::Available(AssetInfo::new("test".to_string(), Decimal::one(), 0));
         let mut record = SourceRecord::new(
             "test-source".to_string(),
             "test".to_string(),
-            Decimal::one(),
+            Some(asset_state),
             vec![],
             None,
         );
@@ -617,10 +671,12 @@ mod tests {
         cache.set_available("A".to_string(), Decimal::from(1337));
         cache.set_unavailable("B".to_string());
 
+        let asset_state =
+            AssetState::Available(AssetInfo::new("test".to_string(), Decimal::one(), 0));
         let mut record = SourceRecord::new(
             "test-source".to_string(),
             "test".to_string(),
-            Decimal::one(),
+            Some(asset_state),
             vec![],
             None,
         );
@@ -645,10 +701,12 @@ mod tests {
         cache.set_unsupported("B".to_string());
         cache.set_available("C".to_string(), Decimal::from(10000));
 
+        let asset_state =
+            AssetState::Available(AssetInfo::new("test".to_string(), Decimal::one(), 0));
         let mut record = SourceRecord::new(
             "test-source".to_string(),
             "test".to_string(),
-            Decimal::one(),
+            Some(asset_state),
             vec![],
             None,
         );

@@ -7,7 +7,7 @@ use num_traits::{FromPrimitive, Zero};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::registry::processor::{Process, ProcessError};
+use crate::registry::processor::ProcessError;
 
 /// The `WeightedMedianProcessor` finds the weighted median of a given data set where the dataset
 /// contains the source and the value. It also has a `minimum_cumulative_weight` which is the
@@ -30,11 +30,11 @@ impl WeightedMedianProcessor {
     }
 }
 
-impl Process<(String, Decimal), Decimal> for WeightedMedianProcessor {
+impl WeightedMedianProcessor {
     /// Processes the given data and returns the weighted median. If the cumulative weights of the
     /// data sources are less than the minimum cumulative weight or the source associated
     /// with the data does not have an assigned weight, it returns an error.
-    fn process(&self, data: Vec<(String, Decimal)>) -> Result<Decimal, ProcessError> {
+    pub fn process(&self, data: Vec<(String, Decimal)>) -> Result<Decimal, ProcessError> {
         let cumulative_weight = data.iter().try_fold(0, |acc, (source, _)| {
             self.source_weights
                 .get(source)
