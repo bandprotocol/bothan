@@ -1,5 +1,5 @@
 # Start from the latest Rust image
-FROM rust:1.78-bookworm AS builder
+FROM rust:1.81-bookworm AS builder
 
 WORKDIR /builder
 # Copy entire source code
