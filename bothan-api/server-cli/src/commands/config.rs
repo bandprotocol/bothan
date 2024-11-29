@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context};
 use clap::{Parser, Subcommand};
-use std::fs;
+use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
 
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
@@ -43,7 +43,7 @@ impl ConfigCli {
                 }
 
                 if let Some(parent) = config_path.parent() {
-                    fs::create_dir_all(parent)
+                    create_dir_all(parent)
                         .with_context(|| "Failed to create parent directories")?;
                 }
 
@@ -52,7 +52,7 @@ impl ConfigCli {
 
                 let config_str =
                     toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;
-                fs::write(config_path, config_str)
+                write(config_path, config_str)
                     .with_context(|| "Failed to write config file")?;
 
                 Ok(())
