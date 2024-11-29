@@ -1,6 +1,6 @@
 [package]
 name = "bothan-cryptocompare"
-version = "0.0.1-alpha.4"
+version = "0.0.1-alpha.8"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
