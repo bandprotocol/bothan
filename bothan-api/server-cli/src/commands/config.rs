@@ -1,9 +1,7 @@
-use std::fs;
-use std::path::PathBuf;
-
 use anyhow::{anyhow, Context};
 use clap::{Parser, Subcommand};
-use tracing::info;
+use std::fs;
+use std::path::PathBuf;
 
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
@@ -41,22 +39,22 @@ impl ConfigCli {
 
                 //check if the file already exists
                 if config_path.exists() && !override_ {
-                    return Err(anyhow!("Config file already exists at: {:?}", config_path));
+                    return Err(anyhow!("Config file already exists at: {:#?}", config_path));
                 }
 
                 if let Some(parent) = config_path.parent() {
-                    fs::create_dir_all(parent).with_context(|| {
-                        format!("Failed to create parent directories for {:?}", path)
-                    })?;
+                    fs::create_dir_all(parent)
+                        .with_context(|| "Failed to create parent directories")?;
                 }
 
                 let mut app_config = AppConfig::default();
                 app_config.manager.crypto.source = CryptoSourceConfigs::with_default_sources();
-                let config_string =
-                    toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;
 
-                fs::write(config_path, config_string).with_context(|| "Failed to write config")?;
-                info!("initialized default config at: {:?}", config_path);
+                let config_str =
+                    toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;
+                fs::write(config_path, config_str)
+                    .with_context(|| "Failed to write config file")?;
+
                 Ok(())
             }
         }

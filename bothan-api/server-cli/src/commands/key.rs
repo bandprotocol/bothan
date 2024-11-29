@@ -1,10 +1,9 @@
+use anyhow::{anyhow, Context};
+use clap::{Parser, Subcommand};
+use inquire::{Password, PasswordDisplayMode};
 use std::fs;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
-use std::path::PathBuf;
-
-use anyhow::{anyhow, Context};
-use clap::{Parser, Subcommand};
 
 use bothan_api::config::AppConfig;
 use bothan_core::monitoring::Signer;
@@ -23,17 +22,10 @@ enum KeySubCommand {
         #[arg(short, long = "override")]
         override_: bool,
     },
-    /// Exports the monitoring key
-    Export {
-        /// The path to export the key to.
-        #[arg(short, long)]
-        path: Option<PathBuf>,
-    },
-    /// Imports a monitoring key
+    /// Exports Bothan's hex-encoded monitoring private key
+    Export {},
+    /// Imports a hex-encoded monitoring private key
     Import {
-        /// The path to import the key from.
-        #[arg(short, long)]
-        path: Option<PathBuf>,
         /// Whether to override the existing key.
         #[arg(short, long = "override")]
         override_: bool,
@@ -46,8 +38,8 @@ impl KeyCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         match &self.subcommand {
             KeySubCommand::Generate { override_ } => generate_key(&app_config, *override_),
-            KeySubCommand::Export { path } => export_key(&app_config, path),
-            KeySubCommand::Import { path, override_ } => import_key(&app_config, path, *override_),
+            KeySubCommand::Export {} => export_key(&app_config),
+            KeySubCommand::Import { override_ } => import_key(&app_config, *override_),
             KeySubCommand::Display { .. } => display_public_key(&app_config),
         }
     }
@@ -56,7 +48,7 @@ impl KeyCli {
 fn generate_key(config: &AppConfig, override_: bool) -> anyhow::Result<()> {
     if config.monitoring.path.is_file() && !override_ {
         return Err(anyhow!(
-            "Monitoring key file already exists. Use --override to overwrite."
+            "Monitoring key already exists. Use --override or -o to overwrite."
         ));
     }
 
@@ -68,48 +60,46 @@ fn generate_key(config: &AppConfig, override_: bool) -> anyhow::Result<()> {
 
     let mut file = File::create(&config.monitoring.path)
         .with_context(|| "Failed to create monitoring key file")?;
-
     file.write(signer.to_hex().as_bytes())
         .with_context(|| "Failed to write monitoring key file")?;
-
     Ok(())
 }
 
-fn export_key(config: &AppConfig, path: &Option<PathBuf>) -> anyhow::Result<()> {
-    let destination = match path {
-        Some(p) => p,
-        None => &std::env::current_dir()?.join("key.txt"),
-    };
-
-    fs::copy(&config.monitoring.path, destination)
-        .with_context(|| format!("Failed to copy monitoring key to {:?}", destination))?;
-
+fn export_key(config: &AppConfig) -> anyhow::Result<()> {
+    let pkb =
+        fs::read(&config.monitoring.path).with_context(|| "Failed to read monitoring key file")?;
+    let pk = String::from_utf8(pkb).with_context(|| "Failed to parse monitoring key file")?;
+    println!("Private Key:");
+    println!("{}", pk);
     Ok(())
 }
 
-fn import_key(config: &AppConfig, path: &Option<PathBuf>, override_: bool) -> anyhow::Result<()> {
+fn import_key(config: &AppConfig, override_: bool) -> anyhow::Result<()> {
     if config.monitoring.path.is_file() && !override_ {
         return Err(anyhow!(
-            "Monitoring key file already exists. Use --override to overwrite."
+            "Monitoring key already exists. Use --override or -o to overwrite."
         ));
     }
 
-    let file = match path {
-        Some(p) => p,
-        None => &std::env::current_dir()?.join("key.txt"),
-    };
+    let inquiry = Password::new("Enter the monitoring private key")
+        .with_display_toggle_enabled()
+        .with_display_mode(PasswordDisplayMode::Masked)
+        .without_confirmation();
 
-    fs::copy(file, &config.monitoring.path)
-        .with_context(|| format!("Failed to copy monitoring key from {:?}", file))?;
+    let key = inquiry.prompt().context("Failed to read private key")?;
+    Signer::from_hex(&key).context("Private key is not valid")?;
+    fs::write(&config.monitoring.path, key)
+        .with_context(|| "Failed to write monitoring key file")?;
 
+    println!("Monitoring key imported successfully");
     Ok(())
 }
 
 fn display_public_key(config: &AppConfig) -> anyhow::Result<()> {
-    let file = fs::read_to_string(&config.monitoring.path)
-        .with_context(|| "Failed to read monitoring key file")?;
-    let signer = Signer::from_hex(&file).with_context(|| "Failed to parse monitoring key")?;
+    let file = fs::read_to_string(&config.monitoring.path).expect("Failed to read monitoring key");
+    let signer = Signer::from_hex(&file).expect("Failed to parse monitoring key");
+    println!("Public Key");
+    println!("{}", signer.public_key());
 
-    println!("public key: {}", signer.public_key());
     Ok(())
 }

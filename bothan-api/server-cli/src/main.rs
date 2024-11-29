@@ -12,8 +12,10 @@ use crate::commands::config::ConfigCli;
 use crate::commands::key::KeyCli;
 use crate::commands::request::RequestCli;
 use crate::commands::start::StartCli;
+use crate::helper::Exitable;
 
 mod commands;
+mod helper;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]
@@ -78,13 +80,13 @@ async fn main() {
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
     if let Some(command) = &cli.command {
-        match command {
+        let res = match command {
             Command::Config(config_cli) => config_cli.run().await,
             Command::Key(key_cli) => key_cli.run(app_config).await,
             Command::Request(request_cli) => request_cli.run(app_config).await,
             Command::Start(start_cli) => start_cli.run(app_config).await,
-        }
-        .expect("Failed to run command");
+        };
+        res.exit_on_err(1);
     }
 }
 
