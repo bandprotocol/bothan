@@ -52,8 +52,7 @@ impl ConfigCli {
 
                 let config_str =
                     toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;
-                write(config_path, config_str)
-                    .with_context(|| "Failed to write config file")?;
+                write(config_path, config_str).with_context(|| "Failed to write config file")?;
 
                 Ok(())
             }
