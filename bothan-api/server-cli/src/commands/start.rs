@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::fs::{create_dir_all, read_to_string, remove_dir_all, File};
-use std::io::{BufReader, Write};
+use std::fs::{create_dir_all, read_to_string, remove_dir_all, write, File};
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -128,9 +128,7 @@ async fn init_signer(config: &AppConfig) -> anyhow::Result<Signer> {
             create_dir_all(parent).with_context(|| "Failed to create monitoring key directory")?;
         }
 
-        let mut file = File::create(&config.monitoring.path)
-            .with_context(|| "Failed to create monitoring key file")?;
-        file.write(signer.to_hex().as_bytes())
+        write(&config.monitoring.path, signer.to_hex().as_bytes())
             .with_context(|| "Failed to write monitoring key file")?;
 
         Ok(signer)

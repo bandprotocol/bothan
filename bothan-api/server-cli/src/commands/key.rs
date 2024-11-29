@@ -1,9 +1,7 @@
 use anyhow::{anyhow, Context};
 use clap::{Parser, Subcommand};
 use inquire::{Password, PasswordDisplayMode};
-use std::fs;
-use std::fs::{create_dir_all, File};
-use std::io::Write;
+use std::fs::{create_dir_all, read, read_to_string, write};
 
 use bothan_api::config::AppConfig;
 use bothan_core::monitoring::Signer;
@@ -58,16 +56,15 @@ fn generate_key(config: &AppConfig, override_: bool) -> anyhow::Result<()> {
         create_dir_all(parent).with_context(|| "Failed to create monitoring key directory")?;
     }
 
-    let mut file = File::create(&config.monitoring.path)
-        .with_context(|| "Failed to create monitoring key file")?;
-    file.write(signer.to_hex().as_bytes())
+    write(&config.monitoring.path, signer.to_hex().as_bytes())
         .with_context(|| "Failed to write monitoring key file")?;
+
     Ok(())
 }
 
 fn export_key(config: &AppConfig) -> anyhow::Result<()> {
     let pkb =
-        fs::read(&config.monitoring.path).with_context(|| "Failed to read monitoring key file")?;
+        read(&config.monitoring.path).with_context(|| "Failed to read monitoring key file")?;
     let pk = String::from_utf8(pkb).with_context(|| "Failed to parse monitoring key file")?;
     println!("Private Key");
     println!("{}", pk);
@@ -88,15 +85,14 @@ fn import_key(config: &AppConfig, override_: bool) -> anyhow::Result<()> {
 
     let key = inquiry.prompt().context("Failed to read private key")?;
     Signer::from_hex(&key).context("Private key is not valid")?;
-    fs::write(&config.monitoring.path, key)
-        .with_context(|| "Failed to write monitoring key file")?;
+    write(&config.monitoring.path, key).with_context(|| "Failed to write monitoring key file")?;
 
     println!("Monitoring key imported successfully");
     Ok(())
 }
 
 fn display_public_key(config: &AppConfig) -> anyhow::Result<()> {
-    let file = fs::read_to_string(&config.monitoring.path).expect("Failed to read monitoring key");
+    let file = read_to_string(&config.monitoring.path).expect("Failed to read monitoring key");
     let signer = Signer::from_hex(&file).expect("Failed to parse monitoring key");
     println!("Public Key");
     println!("{}", signer.public_key());
