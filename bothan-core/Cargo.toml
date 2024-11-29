@@ -1,6 +1,6 @@
 [package]
 name = "bothan-core"
-version = "0.0.1-alpha.4"
+version = "0.0.1-alpha.8"
 description = "Core library for Bothan"
 authors.workspace = true
 edition.workspace = true
