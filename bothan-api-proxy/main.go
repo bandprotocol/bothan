@@ -11,8 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/price"
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/signal"
+	bothan "github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
 )
 
 func main() {
@@ -41,12 +40,7 @@ func run(grpcEndpoint, proxyEndpoint string) error {
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
-	err := signal.RegisterSignalServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
-	if err != nil {
-		return err
-	}
-
-	err = price.RegisterPriceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
+	err := bothan.RegisterBothanServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}
