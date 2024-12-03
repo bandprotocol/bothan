@@ -37,7 +37,7 @@ impl Client {
     {
         self.post(
             uuid,
-            Topic::Records,
+            Topic::Record,
             SignalRecordsWithTxHash { tx_hash, records },
         )
         .await
@@ -71,7 +71,7 @@ impl Client {
 
         let resp = self
             .client
-            .post(self.url.clone())
+            .post(format!("{}/entries", self.url))
             .headers(header)
             .json(&entry)
             .send()
