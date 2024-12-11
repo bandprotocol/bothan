@@ -1,6 +1,6 @@
 [package]
 name = "bothan-api"
-version = "0.0.1-alpha.8"
+version = "0.0.1-beta.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -18,27 +18,12 @@ bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
 
-anyhow = { workspace = true }
-async-trait = { workspace = true }
-chrono = { workspace = true }
-humantime-serde = { workspace = true }
-itertools = { workspace = true }
 prost = { workspace = true }
-protoc-gen-prost = { workspace = true }
-protoc-gen-tonic = { workspace = true }
-reqwest = { workspace = true }
 rust_decimal = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-tokio = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 
-config = "0.14.0"
+config = "0.14.1"
 dirs = "5.0.1"
-glob = "0.3.1"
-
-[build-dependencies]
-tonic-build = "0.12.3"
