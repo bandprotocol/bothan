@@ -1,6 +1,6 @@
 [package]
 name = "bothan-api-cli"
-version = "0.0.1-alpha.8"
+version = "0.0.1-beta.1"
 rust-version = "1.81"
 edition.workspace = true
 license.workspace = true
@@ -11,6 +11,9 @@ name = "bothan"
 path = "src/main.rs"
 
 [dependencies]
+bothan-client = { workspace = true }
+bothan-core = { workspace = true }
+
 bothan-api = { workspace = true }
 bothan-binance = { workspace = true }
 bothan-bybit = { workspace = true }
@@ -21,10 +24,7 @@ bothan-cryptocompare = { workspace = true }
 bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
-bothan-client = { workspace = true }
-bothan-core = { workspace = true }
 
-async-trait = { workspace = true }
 reqwest = { workspace = true }
 semver = { workspace = true }
 serde_json = { workspace = true }
@@ -37,5 +37,4 @@ anyhow = "1.0.89"
 clap = { version = "4.5.20", features = ["derive"] }
 inquire = "0.7.5"
 dirs = "5.0.1"
-log = "0.4.22"
 toml = "0.8.19"

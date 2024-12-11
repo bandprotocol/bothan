@@ -1,6 +1,6 @@
 [package]
 name = "bothan-kraken"
-version = "0.0.1-alpha.8"
+version = "0.0.1-beta.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -11,6 +11,7 @@ futures-util = "0.3.29"
 async-trait = { workspace = true }
 bothan-core = { workspace = true }
 chrono = { workspace = true }
+humantime-serde = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -22,3 +23,6 @@ tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
 ws-mock = { git = "https://github.com/bandprotocol/ws-mock.git", branch = "master" }
+
+[package.metadata.cargo-machete]
+ignored = ["humantime-serde"]

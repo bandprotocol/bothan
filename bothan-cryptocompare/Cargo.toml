@@ -1,6 +1,6 @@
 [package]
 name = "bothan-cryptocompare"
-version = "0.0.1-alpha.8"
+version = "0.0.1-beta.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -8,10 +8,6 @@ repository.workspace = true
 [dependencies]
 async-trait = { workspace = true }
 bothan-core = { workspace = true }
-chrono = { workspace = true }
-futures = { workspace = true }
-humantime-serde = { workspace = true }
-reqwest = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -25,5 +21,4 @@ url = { workspace = true }
 futures-util = { version = "0.3.29", features = ["sink", "std"] }
 
 [dev-dependencies]
-mockito = { workspace = true }
 serde_json = { workspace = true }

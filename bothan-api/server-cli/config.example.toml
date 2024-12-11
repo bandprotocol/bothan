@@ -75,7 +75,7 @@ api_key = ""
 # User agent string for HTTP requests to Coingecko.
 user_agent = "Bothan"
 # Update interval for pulling data from Coingecko.
-update_interval = "1m"
+update_interval = "30s"
 
 # Configuration for CoinMarketCap.
 [manager.crypto.source.coinmarketcap]
