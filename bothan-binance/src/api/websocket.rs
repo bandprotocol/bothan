@@ -70,10 +70,11 @@ impl BinanceWebSocketConnection {
     /// ```
     pub async fn subscribe_mini_ticker_stream<K: AsRef<str>>(
         &mut self,
-        ids: &[K],
+        id: i64,
+        tickers: &[K],
     ) -> Result<(), SendError> {
         // Format the stream IDs for subscription.
-        let stream_ids = ids
+        let tickers = tickers
             .iter()
             .map(|id| format!("{}@miniTicker", id.as_ref()))
             .collect::<Vec<_>>();
@@ -81,8 +82,8 @@ impl BinanceWebSocketConnection {
         // Create the subscription payload.
         let payload = json!({
             "method": "SUBSCRIBE",
-            "params": stream_ids,
-            "id": rand::random::<u32>()
+            "params": tickers,
+            "id": id,
         });
 
         // Send the subscription message.
@@ -101,10 +102,11 @@ impl BinanceWebSocketConnection {
     /// ```
     pub async fn unsubscribe_mini_ticker_stream<K: AsRef<str>>(
         &mut self,
-        ids: &[K],
+        id: i64,
+        tickers: &[K],
     ) -> Result<(), SendError> {
         // Format the stream IDs for unsubscription.
-        let stream_ids = ids
+        let stream_ids = tickers
             .iter()
             .map(|id| format!("{}@miniTicker", id.as_ref()))
             .collect::<Vec<_>>();
@@ -113,7 +115,7 @@ impl BinanceWebSocketConnection {
         let payload = json!({
             "method": "UNSUBSCRIBE",
             "params": stream_ids,
-            "id": rand::random::<u32>()
+            "id":id,
         });
 
         // Send the unsubscription message.
