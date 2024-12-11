@@ -6,11 +6,11 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-flate2 = "1.0.25"
-futures-util = "0.3.29"
+flate2 = "1.0.35"
 
 async-trait = { workspace = true }
 bothan-core = { workspace = true }
+futures-util = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

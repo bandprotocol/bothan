@@ -25,5 +25,5 @@ serde = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 
-config = "0.14.0"
+config = "0.14.1"
 dirs = "5.0.1"
