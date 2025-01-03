@@ -6,7 +6,7 @@ use num_traits::FromPrimitive;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::registry::processor::{Process, ProcessError};
+use crate::registry::processor::ProcessError;
 
 /// The `MedianProcessor` finds the median of a given data set. It also has a `min_source_count` which
 /// is the minimum number of sources required to calculate the median. If the given data set has less
@@ -21,12 +21,8 @@ impl MedianProcessor {
     pub fn new(min_source_count: usize) -> Self {
         MedianProcessor { min_source_count }
     }
-}
 
-impl Process<Decimal, Decimal> for MedianProcessor {
-    /// Processes the given data and returns the median. If there are not enough sources, it
-    /// returns an error.
-    fn process(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessError> {
+    pub fn process(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessError> {
         if data.len() < max(self.min_source_count, 1) {
             Err(ProcessError::new("Not enough sources to calculate median"))
         } else {

@@ -1,6 +1,6 @@
 [package]
 name = "bothan-core"
-version = "0.0.1-alpha.4"
+version = "0.0.1-beta.1"
 description = "Core library for Bothan"
 authors.workspace = true
 edition.workspace = true
@@ -10,31 +10,21 @@ repository.workspace = true
 [dependencies]
 async-trait = { workspace = true }
 derive_more = { workspace = true }
-futures = { workspace = true }
-itertools = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true, features = ["rc"] }
 thiserror = { workspace = true }
 tokio = { workspace = true }
-tokio-util = { workspace = true }
-tonic = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
 rust_decimal = { workspace = true, features = ["maths", "serde-str"] }
 
-anyhow = "1.0.91"
 bincode = "2.0.0-rc.3"
-chrono = "0.4.38"
-clap = { version = "4.5.20", features = ["derive"] }
+chrono = "0.4.39"
 ed25519 = "2.2.3"
 ed25519-dalek = { version = "2.1.1", features = ["std", "rand_core"] }
 hex = "0.4.3"
-log = "0.4.22"
 mini-moka = "0.10.3"
 num-traits = "0.2.19"
-petgraph = "0.6.4"
-prost = "0.13.1"
 rand = "0.8.5"
-rust-rocksdb = "0.32.0"
-serde_json = "1.0.132"
-uuid = { version = "1.11.0", features = ["v4"] }
+rust-rocksdb = "0.34.0"
+serde_json = "1.0.133"

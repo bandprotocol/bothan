@@ -1,17 +1,16 @@
 [package]
 name = "bothan-htx"
-version = "0.0.1-alpha.4"
+version = "0.0.1-beta.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
 [dependencies]
-flate2 = "1.0.25"
-futures-util = "0.3.29"
+flate2 = "1.0.35"
 
 async-trait = { workspace = true }
 bothan-core = { workspace = true }
-chrono = { workspace = true }
+futures-util = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

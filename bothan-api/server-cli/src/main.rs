@@ -9,10 +9,13 @@ use bothan_api::config::log::LogLevel;
 use bothan_api::config::AppConfig;
 
 use crate::commands::config::ConfigCli;
+use crate::commands::key::KeyCli;
 use crate::commands::request::RequestCli;
 use crate::commands::start::StartCli;
+use crate::helper::Exitable;
 
 mod commands;
+mod helper;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]
@@ -29,6 +32,8 @@ struct Cli {
 enum Command {
     /// Configuration command for the bothan-api server
     Config(ConfigCli),
+    /// Key command for the bothan-api server
+    Key(KeyCli),
     /// Request command for the bothan-api server
     Request(RequestCli),
     /// Starts the bothan-api server
@@ -45,10 +50,7 @@ async fn main() {
         }
     };
 
-    let config_path = cli
-        .config
-        .clone()
-        .unwrap_or(bothan_home_dir().join("config.toml"));
+    let config_path = &cli.config.unwrap_or(bothan_home_dir().join("config.toml"));
 
     let app_config = if config_path.is_file() {
         AppConfig::from(config_path).expect(
@@ -78,12 +80,13 @@ async fn main() {
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
     if let Some(command) = &cli.command {
-        match command {
+        let res = match command {
             Command::Config(config_cli) => config_cli.run().await,
+            Command::Key(key_cli) => key_cli.run(app_config).await,
             Command::Request(request_cli) => request_cli.run(app_config).await,
             Command::Start(start_cli) => start_cli.run(app_config).await,
-        }
-        .expect("Failed to run command");
+        };
+        res.exit_on_err(1);
     }
 }
 

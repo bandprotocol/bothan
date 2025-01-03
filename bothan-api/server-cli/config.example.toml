@@ -7,6 +7,8 @@ addr = "0.0.0.0:50051"
 [log]
 # The logging level, which can be "trace", "debug", "info", "warn", or "error".
 level = "info"
+core_log_level = "Error"
+source_log_level = "Error"
 
 # IPFS configuration
 [ipfs]
@@ -24,6 +26,15 @@ authentication = "None"
 [store]
 # File system path where application data is stored. The default is "$HOME/.bothan".
 path = ""
+
+# Monitoring configuration
+[monitoring]
+# The endpoint for monitoring connection for Bothan to use.
+endpoint = "https://bothan-monitoring.bandchain.org"
+# File system path where broadcaster info is stored. The default is "$HOME/.bothan/keyring/broadcaster.info".
+path = ""
+# Enable or disable monitoring.
+enabled = false
 
 # Manager configuration for handling crypto data sources
 [manager.crypto]
@@ -64,7 +75,7 @@ api_key = ""
 # User agent string for HTTP requests to Coingecko.
 user_agent = "Bothan"
 # Update interval for pulling data from Coingecko.
-update_interval = "1m"
+update_interval = "30s"
 
 # Configuration for CoinMarketCap.
 [manager.crypto.source.coinmarketcap]

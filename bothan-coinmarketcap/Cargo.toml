@@ -1,6 +1,6 @@
 [package]
 name = "bothan-coinmarketcap"
-version = "0.0.1-alpha.4"
+version = "0.0.1-beta.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -9,7 +9,6 @@ repository.workspace = true
 async-trait = { workspace = true }
 bothan-core = { workspace = true }
 chrono = { workspace = true }
-futures = { workspace = true }
 humantime-serde = { workspace = true }
 itertools = { workspace = true }
 reqwest = { workspace = true }
@@ -24,3 +23,7 @@ url = { workspace = true }
 
 [dev-dependencies]
 mockito = { workspace = true }
+
+
+[package.metadata.cargo-machete]
+ignored = ["humantime-serde"]

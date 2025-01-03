@@ -11,6 +11,11 @@ pub(crate) enum WorkerError {
     SetFailed(#[from] store::error::Error),
 }
 
-#[derive(Error, Debug)]
-#[error(transparent)]
-pub struct BuildError(#[from] api::ConnectionError);
+#[derive(Debug, Error)]
+pub enum BuildError {
+    #[error("failed to connect: {0}")]
+    FailedToConnect(#[from] api::ConnectionError),
+
+    #[error("store error: {0}")]
+    StoreError(#[from] store::error::Error),
+}

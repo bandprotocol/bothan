@@ -8,7 +8,7 @@ pub const HEARTBEAT_INTERVAL: Duration = Duration::new(60, 0);
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Topic {
-    Records,
+    Record,
     Heartbeat,
 }
 
