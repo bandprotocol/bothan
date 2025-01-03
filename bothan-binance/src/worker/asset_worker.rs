@@ -1,5 +1,9 @@
+use std::collections::HashMap;
 use std::sync::Weak;
 
+use opentelemetry::{global, KeyValue};
+use rand::random;
+use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
@@ -9,12 +13,16 @@ use tracing::{debug, error, info, warn};
 use bothan_core::store::WorkerStore;
 use bothan_core::types::AssetInfo;
 
-use crate::api::error::{MessageError, SendError};
-use crate::api::msgs::{BinanceResponse, Data};
+use crate::api::error::MessageError;
+use crate::api::msgs::{BinanceResponse, Data, ErrorResponse, SuccessResponse};
 use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
-use crate::worker::error::WorkerError;
-use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
+use crate::worker::types::{DEFAULT_TIMEOUT, METER_NAME, RECONNECT_BUFFER};
 use crate::worker::BinanceWorker;
+
+enum Event {
+    Subscribe(Vec<String>),
+    Unsubscribe(Vec<String>),
+}
 
 pub(crate) async fn start_asset_worker(
     worker: Weak<BinanceWorker>,
@@ -22,14 +30,16 @@ pub(crate) async fn start_asset_worker(
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
+    let mut subscription_map = HashMap::new();
     while let Some(worker) = worker.upgrade() {
         select! {
-            Some(ids) = subscribe_rx.recv() => handle_subscribe_recv(ids, &worker.store, &mut connection).await,
-            Some(ids) = unsubscribe_rx.recv() => handle_unsubscribe_recv(ids, &worker.store, &mut connection).await,
+            Some(ids) = subscribe_rx.recv() => handle_subscribe_recv(ids, &mut connection, &mut subscription_map).await,
+            Some(ids) = unsubscribe_rx.recv() => handle_unsubscribe_recv(ids, &mut connection, &mut subscription_map).await,
             result = timeout(DEFAULT_TIMEOUT, connection.next()) => {
                 match result {
+                    // Assume that the connection has been closed on timeout and attempt to reconnect
                     Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
-                    Ok(binance_result) => handle_connection_recv(binance_result, &worker.connector, &mut connection, &worker.store).await,
+                    Ok(binance_result) => handle_connection_recv(binance_result, &worker.connector, &mut connection, &worker.store, &mut subscription_map).await,
                 }
             }
         }
@@ -45,60 +55,103 @@ pub(crate) async fn start_asset_worker(
     debug!("asset worker has been dropped, stopping asset worker");
 }
 
-async fn subscribe<T: AsRef<str>>(
-    ids: &[T],
-    connection: &mut BinanceWebSocketConnection,
-) -> Result<(), SendError> {
-    if !ids.is_empty() {
-        connection
-            .subscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>())
-            .await?
-    }
-
-    Ok(())
-}
-
 async fn handle_subscribe_recv(
     ids: Vec<String>,
-    worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
+    subscription_map: &mut HashMap<i64, Event>,
 ) {
-    match subscribe(&ids, connection).await {
-        Ok(_) => info!("subscribed to ids {:?}", ids),
+    if ids.is_empty() {
+        return;
+    }
+
+    let packet_id = random();
+    let tickers = ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
+
+    let meter = global::meter(METER_NAME);
+    meter.u64_counter("subscribe_attempt").init().add(
+        1,
+        &[
+            KeyValue::new("subscription.id", packet_id),
+            KeyValue::new("subscription.tickers", tickers.join(",")),
+        ],
+    );
+
+    match connection
+        .subscribe_mini_ticker_stream(packet_id, &tickers)
+        .await
+    {
+        Ok(_) => {
+            info!("attempt to subscribe to ids {:?}", ids);
+            subscription_map.insert(packet_id, Event::Subscribe(ids));
+        }
         Err(e) => {
-            error!("failed to subscribe to ids {:?}: {}", ids, e);
-            if worker_store.remove_query_ids(ids).await.is_err() {
-                error!("failed to remove query ids from store")
-            }
+            error!("failed attempt to subscribe to ids {:?}: {}", ids, e);
+            meter
+                .u64_counter("failed_subscribe_attempt")
+                .init()
+                .add(1, &[KeyValue::new("subscription.id", packet_id)]);
         }
     }
 }
 
-async fn unsubscribe<T: AsRef<str>>(
-    ids: &[T],
-    connection: &mut BinanceWebSocketConnection,
-) -> Result<(), SendError> {
-    if !ids.is_empty() {
-        connection
-            .unsubscribe_mini_ticker_stream(&ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>())
-            .await?
-    }
-
-    Ok(())
-}
-
 async fn handle_unsubscribe_recv(
     ids: Vec<String>,
-    worker_store: &WorkerStore,
     connection: &mut BinanceWebSocketConnection,
+    subscription_map: &mut HashMap<i64, Event>,
 ) {
-    match unsubscribe(&ids, connection).await {
-        Ok(_) => info!("unsubscribed to ids {:?}", ids),
+    if ids.is_empty() {
+        return;
+    }
+
+    let packet_id = random();
+    let tickers = ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
+
+    let meter = global::meter(METER_NAME);
+    meter.u64_counter("unsubscribe_attempt").init().add(
+        1,
+        &[
+            KeyValue::new("subscription.id", packet_id),
+            KeyValue::new("subscription.tickers", tickers.join(",")),
+        ],
+    );
+
+    match connection
+        .unsubscribe_mini_ticker_stream(packet_id, &tickers)
+        .await
+    {
+        Ok(_) => {
+            info!("attempt to unsubscribe to ids {:?}", ids);
+            subscription_map.insert(packet_id, Event::Unsubscribe(ids));
+        }
         Err(e) => {
-            error!("failed to unsubscribe to ids {:?}: {}", ids, e);
-            if worker_store.add_query_ids(ids).await.is_err() {
-                error!("failed to add query ids to store")
-            }
+            error!("failed attempt to unsubscribe to ids {:?}: {}", ids, e);
+            meter
+                .u64_counter("failed_unsubscribe_attempt")
+                .init()
+                .add(1, &[KeyValue::new("subscription.id", packet_id)]);
+        }
+    }
+}
+
+async fn handle_connection_recv(
+    recv_result: Result<BinanceResponse, MessageError>,
+    connector: &BinanceWebSocketConnector,
+    connection: &mut BinanceWebSocketConnection,
+    store: &WorkerStore,
+    subscription_map: &mut HashMap<i64, Event>,
+) {
+    match recv_result {
+        Ok(resp) => {
+            process_response(store, resp, subscription_map).await;
+        }
+        Err(MessageError::ChannelClosed) => {
+            handle_reconnect(connector, connection, store).await;
+        }
+        Err(MessageError::UnsupportedMessage) => {
+            error!("unsupported message received from binance");
+        }
+        Err(MessageError::Parse(..)) => {
+            error!("unable to parse message from binance");
         }
     }
 }
@@ -110,6 +163,9 @@ async fn handle_reconnect(
 ) {
     let mut retry_count: usize = 1;
     loop {
+        let meter = global::meter(METER_NAME);
+        meter.u64_counter("reconnect-attempts").init().add(1, &[]);
+
         warn!("reconnecting: attempt {}", retry_count);
 
         if let Ok(new_connection) = connector.connect().await {
@@ -123,7 +179,18 @@ async fn handle_reconnect(
 
             let ids_vec = ids.into_iter().collect::<Vec<String>>();
 
-            if subscribe(&ids_vec, connection).await.is_ok() {
+            if ids_vec.is_empty() {
+                info!("no ids to resubscribe to");
+                return;
+            }
+
+            let packet_id = random();
+
+            if connection
+                .subscribe_mini_ticker_stream(packet_id, &ids_vec)
+                .await
+                .is_ok()
+            {
                 info!("resubscribed to all ids");
                 return;
             } else {
@@ -138,58 +205,98 @@ async fn handle_reconnect(
     }
 }
 
-async fn store_data(store: &WorkerStore, data: Data) -> Result<(), WorkerError> {
+async fn process_response(
+    store: &WorkerStore,
+    resp: BinanceResponse,
+    subscription_map: &mut HashMap<i64, Event>,
+) {
+    match resp {
+        BinanceResponse::Stream(r) => store_data(store, r.data).await,
+        BinanceResponse::Success(r) => process_success(store, r, subscription_map).await,
+        BinanceResponse::Ping => process_ping(),
+        BinanceResponse::Error(e) => process_error(e),
+    }
+}
+
+async fn store_data(store: &WorkerStore, data: Data) {
     match data {
         Data::MiniTicker(ticker) => {
             let id = ticker.symbol.to_lowercase();
-            let price = Decimal::from_str_exact(&ticker.close_price)?;
+            let Ok(price) = Decimal::from_str_exact(&ticker.close_price) else {
+                error!("failed to parse price for id {}", id);
+                return;
+            };
+
             let timestamp = ticker.event_time / 1000;
             let asset_info = AssetInfo::new(id.clone(), price, timestamp);
 
-            store.set_asset(&id, asset_info).await?;
-            debug!("stored data for id {}", id);
-        }
-    }
-
-    Ok(())
-}
-
-async fn process_response(store: &WorkerStore, resp: BinanceResponse) {
-    match resp {
-        BinanceResponse::Stream(resp) => match store_data(store, resp.data).await {
-            Ok(_) => debug!("saved data"),
-            Err(e) => error!("failed to save data: {}", e),
-        },
-        BinanceResponse::Success(_) => {
-            info!("subscription success");
-        }
-        BinanceResponse::Ping => {
-            debug!("received ping from binance");
-        }
-        BinanceResponse::Error(e) => {
-            error!("error code {} received from binance: {}", e.code, e.msg);
+            match store.set_asset(&id, asset_info).await {
+                Ok(_) => {
+                    info!("stored data for id {}", id);
+                    global::meter(METER_NAME)
+                        .f64_gauge("asset-prices")
+                        .init()
+                        .record(
+                            price.to_f64().unwrap(), // Prices should never be NaN so unwrap here
+                            &[KeyValue::new("asset.symbol", id)],
+                        );
+                }
+                Err(e) => error!("failed to store data for id {}: {}", id, e),
+            }
         }
     }
 }
 
-async fn handle_connection_recv(
-    recv_result: Result<BinanceResponse, MessageError>,
-    connector: &BinanceWebSocketConnector,
-    connection: &mut BinanceWebSocketConnection,
+async fn process_success(
     store: &WorkerStore,
+    success_response: SuccessResponse,
+    subscription_map: &mut HashMap<i64, Event>,
 ) {
-    match recv_result {
-        Ok(resp) => {
-            process_response(store, resp).await;
+    let meter = global::meter(METER_NAME);
+
+    match subscription_map.remove(&success_response.id) {
+        Some(Event::Subscribe(ids)) => {
+            info!("subscribed to ids {:?}", ids);
+            meter
+                .u64_counter("subscribe_success")
+                .init()
+                .add(1, &[KeyValue::new("id", success_response.id)]);
+            if store.add_query_ids(ids).await.is_err() {
+                error!("failed to add query ids to store");
+            };
         }
-        Err(MessageError::ChannelClosed) => {
-            handle_reconnect(connector, connection, store).await;
+        Some(Event::Unsubscribe(ids)) => {
+            info!("unsubscribed to ids {:?}", ids);
+            meter
+                .u64_counter("unsubscribe_success")
+                .init()
+                .add(1, &[KeyValue::new("subscription.id", success_response.id)]);
+            if store.remove_query_ids(ids).await.is_err() {
+                error!("failed to remove query ids from store");
+            };
         }
-        Err(MessageError::UnsupportedMessage) => {
-            error!("unsupported message received from binance");
-        }
-        Err(MessageError::Parse(..)) => {
-            error!("unable to parse message from binance");
-        }
+        None => error!("received response for unknown id: {}", success_response.id),
     }
+}
+
+fn process_ping() {
+    debug!("received ping from binance");
+    global::meter(METER_NAME)
+        .u64_counter("pings")
+        .init()
+        .add(1, &[]);
+}
+
+fn process_error(error: ErrorResponse) {
+    error!(
+        "error code {} received from binance: {}",
+        error.code, error.msg
+    );
+    global::meter(METER_NAME).u64_counter("errors").init().add(
+        1,
+        &[
+            KeyValue::new("msg.code", error.code as i64),
+            KeyValue::new("msg.error", error.msg),
+        ],
+    );
 }
