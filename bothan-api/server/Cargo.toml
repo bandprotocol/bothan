@@ -6,14 +6,15 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+bothan-lib = { workspace = true }
 bothan-core = { workspace = true }
 
 bothan-binance = { workspace = true }
+bothan-bitfinex = { workspace = true }
 bothan-bybit = { workspace = true }
 bothan-coinbase = { workspace = true }
 bothan-coingecko = { workspace = true }
 bothan-coinmarketcap = { workspace = true }
-bothan-cryptocompare = { workspace = true }
 bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }

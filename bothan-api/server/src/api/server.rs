@@ -4,32 +4,32 @@ use semver::Version;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
-use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
-use bothan_core::manager::CryptoAssetInfoManager;
-
 use crate::api::utils::parse_price_state;
 use crate::proto::bothan::v1::{
     BothanService, GetInfoRequest, GetInfoResponse, GetPricesRequest, GetPricesResponse, Price,
     PushMonitoringRecordsRequest, PushMonitoringRecordsResponse, UpdateRegistryRequest,
     UpdateRegistryResponse,
 };
+use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
+use bothan_core::manager::CryptoAssetInfoManager;
+use bothan_lib::store::Store;
 
 pub const PRECISION: u32 = 9;
 
 /// The `BothanServer` struct represents a server that implements the `BothanService` trait.
-pub struct BothanServer {
-    manager: Arc<CryptoAssetInfoManager<'static>>,
+pub struct BothanServer<S: Store + 'static> {
+    manager: Arc<CryptoAssetInfoManager<S>>,
 }
 
-impl BothanServer {
+impl<S: Store> BothanServer<S> {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: Arc<CryptoAssetInfoManager<'static>>) -> Self {
+    pub fn new(manager: Arc<CryptoAssetInfoManager<S>>) -> Self {
         BothanServer { manager }
     }
 }
 
 #[tonic::async_trait]
-impl BothanService for BothanServer {
+impl<S: Store> BothanService for BothanServer<S> {
     async fn get_info(
         &self,
         _: Request<GetInfoRequest>,
@@ -91,8 +91,8 @@ impl BothanService for BothanServer {
                 error!("invalid IPFS hash");
                 Err(Status::invalid_argument("Invalid IPFS hash"))
             }
-            Err(SetRegistryError::FailedToSetRegistry(e)) => {
-                error!("failed to set registry: {e}");
+            Err(SetRegistryError::FailedToSetRegistry) => {
+                error!("failed to set registry");
                 Err(Status::internal("Failed to set registry"))
             }
         }

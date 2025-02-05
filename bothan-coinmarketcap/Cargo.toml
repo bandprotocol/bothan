@@ -6,8 +6,9 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+bothan-lib = { workspace = true }
+
 async-trait = { workspace = true }
-bothan-core = { workspace = true }
 chrono = { workspace = true }
 futures = { workspace = true }
 humantime-serde = { workspace = true }

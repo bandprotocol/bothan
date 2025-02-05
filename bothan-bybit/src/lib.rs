@@ -1,8 +1,6 @@
-pub use api::websocket::{BybitWebSocketConnection, BybitWebSocketConnector};
-pub use worker::builder::BybitWorkerBuilder;
-pub use worker::error::BuildError;
-pub use worker::opts::BybitWorkerBuilderOpts;
-pub use worker::BybitWorker;
+pub use api::websocket::{WebSocketConnection, WebSocketConnector};
+pub use worker::opts::WorkerOpts;
+pub use worker::Worker;
 
 pub mod api;
 pub mod worker;

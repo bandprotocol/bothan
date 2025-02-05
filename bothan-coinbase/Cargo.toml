@@ -8,8 +8,9 @@ repository.workspace = true
 [dependencies]
 futures-util = "0.3.29"
 
+bothan-lib = { workspace = true }
+
 async-trait = { workspace = true }
-bothan-core = { workspace = true }
 chrono = { workspace = true }
 rand = { workspace = true }
 rust_decimal = { workspace = true }

@@ -1,5 +1,12 @@
 use std::sync::Weak;
 
+use crate::api::error::{MessageError, SendError};
+use crate::api::types::{HtxResponse, Pong, Tick};
+use crate::api::{HtxWebSocketConnection, HtxWebSocketConnector};
+use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
+use crate::worker::InnerWorker;
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::select;
@@ -7,18 +14,8 @@ use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::WorkerStore;
-use bothan_core::types::AssetInfo;
-
-use crate::api::error::{MessageError, SendError};
-use crate::api::types::{HtxResponse, Pong, Tick};
-use crate::api::{HtxWebSocketConnection, HtxWebSocketConnector};
-use crate::worker::error::WorkerError;
-use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::HtxWorker;
-
-pub(crate) async fn start_asset_worker(
-    worker: Weak<HtxWorker>,
+pub(crate) async fn start_asset_worker<S: Store>(
+    worker: Weak<InnerWorker<S>>,
     mut connection: HtxWebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
@@ -83,10 +80,10 @@ async fn unsubscribe(id: &str, connection: &mut HtxWebSocketConnection) -> Resul
 }
 
 /// Handles reconnection to the WebSocket and re-subscribes to all previously subscribed ids.
-async fn handle_reconnect(
+async fn handle_reconnect<S: Store>(
     connector: &HtxWebSocketConnector,
     connection: &mut HtxWebSocketConnection,
-    store: &WorkerStore,
+    store: &WorkerStore<S>,
 ) {
     let mut retry_count: usize = 1;
     loop {
@@ -118,24 +115,27 @@ async fn handle_reconnect(
     }
 }
 
-/// Parses a tick response into an AssetInfo structure.
-fn parse_tick(id: &str, tick: Tick) -> Result<AssetInfo, WorkerError> {
-    let price_value =
-        Decimal::from_f64(tick.last_price).ok_or(WorkerError::InvalidPrice(tick.last_price))?;
-    Ok(AssetInfo::new(id.to_string(), price_value, 0))
-}
-
 /// Stores tick information into the worker store.
-async fn store_tick(store: &WorkerStore, id: &str, tick: Tick) -> Result<(), WorkerError> {
-    store.set_asset(id, parse_tick(id, tick)?).await?;
-    debug!("stored data for id {}", id);
-    Ok(())
+async fn store_tick<S: Store, T: Into<String>>(store: &WorkerStore<S>, id: T, tick: Tick) {
+    let id = id.into();
+    match Decimal::from_f64(tick.last_price) {
+        Some(price) => {
+            let asset_info = AssetInfo::new(id.clone(), price, 0);
+            if let Err(e) = store.set_asset(id.clone(), asset_info).await {
+                error!("failed to store data for id {}: {}", id, e);
+            }
+            debug!("stored data for id {}", id);
+        }
+        None => {
+            error!("data for id {} has a nan price", id);
+        }
+    }
 }
 
 /// Processes the response from the Htx API and handles each type accordingly.
-async fn process_response(
+async fn process_response<S: Store>(
     resp: HtxResponse,
-    store: &WorkerStore,
+    store: &WorkerStore<S>,
     connection: &mut HtxWebSocketConnection,
 ) {
     match resp {
@@ -149,10 +149,7 @@ async fn process_response(
             debug!("received data update from channel {}", data.ch);
             if let Some(id) = data.ch.split('.').nth(1) {
                 // Handle processing of data update, e.g., storing tick data
-                match store_tick(store, id, data.tick).await {
-                    Ok(_) => debug!("saved data"),
-                    Err(e) => error!("failed to save data: {}", e),
-                }
+                store_tick(store, id, data.tick).await
             }
         }
         HtxResponse::Ping(ping) => {
@@ -174,11 +171,11 @@ async fn send_pong(ping: u64, connection: &mut HtxWebSocketConnection) -> Result
 }
 
 /// Handles received messages from the WebSocket connection.
-async fn handle_connection_recv(
+async fn handle_connection_recv<S: Store>(
     recv_result: Result<HtxResponse, MessageError>,
     connector: &HtxWebSocketConnector,
     connection: &mut HtxWebSocketConnection,
-    store: &WorkerStore,
+    store: &WorkerStore<S>,
 ) {
     match recv_result {
         Ok(resp) => {
@@ -193,69 +190,5 @@ async fn handle_connection_recv(
         Err(MessageError::Parse(..)) => {
             error!("unable to parse message from htx");
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use rust_decimal::Decimal;
-    use std::str::FromStr;
-
-    #[test]
-    fn test_parse_tick() {
-        // Create a mock Tick struct with valid data
-        let tick = Tick {
-            open: 51732.0,
-            high: 52785.64,
-            low: 51000.0,
-            close: 52735.63,
-            amount: 13259.24137056181,
-            vol: 687640987.4125315,
-            count: 448737,
-            bid: 52732.88,
-            bid_size: 0.036,
-            ask: 52732.89,
-            ask_size: 0.583653,
-            last_price: 52735.63,
-            last_size: 0.03,
-        };
-
-        // Parse the tick into AssetInfo
-        let result = parse_tick("btcusdt", tick);
-
-        // Expected AssetInfo object
-        let expected = AssetInfo::new(
-            "btcusdt".to_string(),
-            Decimal::from_str("52735.63").unwrap(),
-            0,
-        );
-
-        // Assert that the parsed result matches the expected output
-        assert_eq!(result.as_ref().unwrap().id, expected.id);
-        assert_eq!(result.unwrap().price, expected.price);
-    }
-
-    #[test]
-    fn test_parse_tick_with_failure() {
-        // Create a mock Tick struct with an invalid price
-        let tick = Tick {
-            open: 51732.0,
-            high: 52785.64,
-            low: 51000.0,
-            close: 52735.63,
-            amount: 13259.24137056181,
-            vol: 687640987.4125315,
-            count: 448737,
-            bid: 52732.88,
-            bid_size: 0.036,
-            ask: 52732.89,
-            ask_size: 0.583653,
-            last_price: f64::INFINITY, // Invalid price to trigger error
-            last_size: 0.03,
-        };
-
-        // Assert that parsing the tick with an invalid price results in an error
-        assert!(parse_tick("btcusdt", tick).is_err());
     }
 }

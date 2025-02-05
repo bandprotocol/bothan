@@ -1,24 +1,24 @@
-use std::sync::Weak;
-
 use rust_decimal::Decimal;
+use std::sync::Weak;
+use std::time::Duration;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::WorkerStore;
-use bothan_core::types::AssetInfo;
-
 use crate::api::error::{MessageError, SendError};
 use crate::api::types::{ChannelResponse, OkxResponse, TickerData};
-use crate::api::{OkxWebSocketConnection, OkxWebSocketConnector};
-use crate::worker::error::WorkerError;
-use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::OkxWorker;
+use crate::api::{WebSocketConnection, WebsocketConnector};
+use crate::worker::InnerWorker;
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
 
-pub(crate) async fn start_asset_worker(
-    worker: Weak<OkxWorker>,
-    mut connection: OkxWebSocketConnection,
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
+const RECONNECT_BUFFER: Duration = Duration::from_secs(5);
+
+pub(crate) async fn start_asset_worker<S: Store>(
+    worker: Weak<InnerWorker<S>>,
+    mut connection: WebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
@@ -49,10 +49,7 @@ pub(crate) async fn start_asset_worker(
     debug!("asset worker has been dropped, stopping asset worker");
 }
 
-async fn subscribe(
-    ids: &[String],
-    connection: &mut OkxWebSocketConnection,
-) -> Result<(), SendError> {
+async fn subscribe(ids: &[String], connection: &mut WebSocketConnection) -> Result<(), SendError> {
     if !ids.is_empty() {
         let ids_vec = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         connection.subscribe_ticker(&ids_vec).await?
@@ -61,7 +58,7 @@ async fn subscribe(
     Ok(())
 }
 
-async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut OkxWebSocketConnection) {
+async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut WebSocketConnection) {
     if let Err(e) = subscribe(&ids, connection).await {
         error!("failed to subscribe to ids {:?}: {}", ids, e);
     } else {
@@ -71,7 +68,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut OkxWebSocketCo
 
 async fn unsubscribe(
     ids: &[String],
-    connection: &mut OkxWebSocketConnection,
+    connection: &mut WebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
         connection
@@ -82,7 +79,7 @@ async fn unsubscribe(
     Ok(())
 }
 
-async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut OkxWebSocketConnection) {
+async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut WebSocketConnection) {
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
@@ -90,10 +87,10 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut OkxWebSocket
     }
 }
 
-async fn handle_reconnect(
-    connector: &OkxWebSocketConnector,
-    connection: &mut OkxWebSocketConnection,
-    query_ids: &WorkerStore,
+async fn handle_reconnect<S: Store>(
+    connector: &WebsocketConnector,
+    connection: &mut WebSocketConnection,
+    query_ids: &WorkerStore<S>,
 ) {
     let mut retry_count: usize = 1;
     loop {
@@ -128,31 +125,31 @@ async fn handle_reconnect(
     }
 }
 
-fn parse_ticker(ticker: TickerData) -> Result<AssetInfo, WorkerError> {
+async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: TickerData, timestamp: i64) {
     let id = ticker.inst_id.clone();
-    let price_value = Decimal::from_str_exact(&ticker.last)?;
-    let timestamp = chrono::Utc::now().timestamp();
-    Ok(AssetInfo::new(id, price_value, timestamp))
-}
-
-async fn store_ticker(store: &WorkerStore, ticker: TickerData) -> Result<(), WorkerError> {
-    let id = ticker.inst_id.clone();
-    store.set_asset(id.clone(), parse_ticker(ticker)?).await?;
-    debug!("stored data for id {}", id);
-    Ok(())
+    match Decimal::from_str_exact(&ticker.last) {
+        Ok(price) => {
+            let asset_info = AssetInfo::new(id.clone(), price, timestamp);
+            if let Err(e) = store.set_asset(id.clone(), asset_info).await {
+                error!("failed to store data for id {}: {}", id, e);
+            } else {
+                debug!("stored data for id {}", id);
+            }
+        }
+        Err(e) => {
+            error!("failed to parse price for id {}: {}", id, e);
+        }
+    }
 }
 
 /// Processes the response from the Okx API.
-async fn process_response(resp: OkxResponse, store: &WorkerStore) {
+async fn process_response<S: Store>(resp: OkxResponse, store: &WorkerStore<S>) {
     match resp {
         OkxResponse::ChannelResponse(resp) => match resp {
             ChannelResponse::Ticker(push_data) => {
-                let tickers = push_data.data;
-                for ticker in tickers {
-                    match store_ticker(store, ticker).await {
-                        Ok(_) => debug!("saved data"),
-                        Err(e) => error!("failed to save data: {}", e),
-                    }
+                let timestamp = chrono::Utc::now().timestamp();
+                for ticker in push_data.data {
+                    store_ticker(store, ticker, timestamp).await
                 }
             }
         },
@@ -162,11 +159,11 @@ async fn process_response(resp: OkxResponse, store: &WorkerStore) {
     }
 }
 
-async fn handle_connection_recv(
+async fn handle_connection_recv<S: Store>(
     recv_result: Result<OkxResponse, MessageError>,
-    connector: &OkxWebSocketConnector,
-    connection: &mut OkxWebSocketConnection,
-    store: &WorkerStore,
+    connector: &WebsocketConnector,
+    connection: &mut WebSocketConnection,
+    store: &WorkerStore<S>,
 ) {
     match recv_result {
         Ok(resp) => {
@@ -181,63 +178,5 @@ async fn handle_connection_recv(
         Err(MessageError::Parse(..)) => {
             error!("unable to parse message from okx");
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_parse_market() {
-        let ticker = TickerData {
-            inst_type: "SPOT".to_string(),
-            inst_id: "BTC-USDT".to_string(),
-            last: "42000.99".to_string(),
-            last_sz: "5000".to_string(),
-            ask_px: "10001".to_string(),
-            ask_sz: "5000".to_string(),
-            bid_px: "9999".to_string(),
-            bid_sz: "5000".to_string(),
-            open_24h: "10000".to_string(),
-            high_24h: "10000".to_string(),
-            low_24h: "10000".to_string(),
-            vol_ccy_24h: "10000".to_string(),
-            vol_24h: "10000".to_string(),
-            sod_utc0: "10000".to_string(),
-            sod_utc8: "10000".to_string(),
-            ts: "10000".to_string(),
-        };
-        let result = parse_ticker(ticker);
-        let expected = AssetInfo::new(
-            "BTC-USDT".to_string(),
-            Decimal::from_str_exact("42000.99").unwrap(),
-            0,
-        );
-        assert_eq!(result.as_ref().unwrap().id, expected.id);
-        assert_eq!(result.unwrap().price, expected.price);
-    }
-
-    #[test]
-    fn test_parse_market_with_failure() {
-        let ticker = TickerData {
-            inst_type: "SPOT".to_string(),
-            inst_id: "BTC-USDT".to_string(),
-            last: f64::INFINITY.to_string(),
-            last_sz: "5000".to_string(),
-            ask_px: "10001".to_string(),
-            ask_sz: "5000".to_string(),
-            bid_px: "9999".to_string(),
-            bid_sz: "5000".to_string(),
-            open_24h: "10000".to_string(),
-            high_24h: "10000".to_string(),
-            low_24h: "10000".to_string(),
-            vol_ccy_24h: "10000".to_string(),
-            vol_24h: "10000".to_string(),
-            sod_utc0: "10000".to_string(),
-            sod_utc8: "10000".to_string(),
-            ts: "10000".to_string(),
-        };
-        assert!(parse_ticker(ticker).is_err());
     }
 }

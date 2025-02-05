@@ -6,7 +6,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
@@ -19,21 +19,16 @@ use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::AppConfig;
 use bothan_api::proto::bothan::v1::BothanServiceServer;
 use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
-use bothan_binance::BinanceWorkerBuilder;
-use bothan_bybit::BybitWorkerBuilder;
-use bothan_coinbase::CoinbaseWorkerBuilder;
-use bothan_coingecko::CoinGeckoWorkerBuilder;
-use bothan_coinmarketcap::CoinMarketCapWorkerBuilder;
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
+use bothan_core::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
+use bothan_core::manager::crypto_asset_info::worker::CryptoAssetWorker;
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
-use bothan_core::registry::{Registry, Valid};
-use bothan_core::store::SharedStore;
-use bothan_core::worker::{AssetWorker, AssetWorkerBuilder};
-use bothan_cryptocompare::CryptoCompareWorkerBuilder;
-use bothan_htx::HtxWorkerBuilder;
-use bothan_kraken::KrakenWorkerBuilder;
-use bothan_okx::OkxWorkerBuilder;
+use bothan_core::store::rocks_db::RocksDbStore;
+use bothan_lib::registry::{Registry, Valid};
+use bothan_lib::store::{ManagerStore, Store};
+use bothan_lib::worker::error::AssetWorkerError;
+use bothan_lib::worker::AssetWorker;
 
 #[derive(Parser)]
 pub struct StartCli {
@@ -84,7 +79,7 @@ async fn start_server(
     registry: Registry<Valid>,
     reset: bool,
 ) -> anyhow::Result<()> {
-    let store = init_store(&app_config, registry, reset).await?;
+    let store = init_rocks_db_store(&app_config, registry, reset).await?;
     let ipfs_client = init_ipfs_client(&app_config).await?;
     let monitoring_client = init_monitoring_client(&app_config).await?;
 
@@ -100,11 +95,11 @@ async fn start_server(
     Ok(())
 }
 
-async fn init_store(
+async fn init_rocks_db_store(
     config: &AppConfig,
     registry: Registry<Valid>,
     reset: bool,
-) -> anyhow::Result<SharedStore> {
+) -> anyhow::Result<RocksDbStore> {
     if reset {
         if let Err(e) = std::fs::remove_dir_all(&config.store.path) {
             eprintln!("Failed to remove store directory: {}", e);
@@ -115,17 +110,18 @@ async fn init_store(
         create_dir_all(&config.store.path).with_context(|| "Failed to create home directory")?;
     }
 
-    let mut store = SharedStore::new(registry, &config.store.path)
-        .await
-        .with_context(|| "Failed to create store")?;
-    debug!("store created successfully at {:?}", &config.store.path);
+    let flush_path = config
+        .store
+        .path
+        .to_str()
+        .with_context(|| "Failed to convert store path to string")?;
 
-    if !reset {
-        store
-            .restore()
-            .await
-            .with_context(|| "Failed to restore store state")?;
-    }
+    let store = match reset {
+        true => RocksDbStore::new(registry, flush_path)?,
+        false => RocksDbStore::load(flush_path)?,
+    };
+
+    debug!("store created successfully at {:?}", &config.store.path);
 
     Ok(store)
 }
@@ -182,13 +178,13 @@ async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
     Ok(ipfs_client)
 }
 
-async fn init_bothan_server(
+async fn init_bothan_server<S: Store + 'static>(
     config: &AppConfig,
-    store: SharedStore,
+    store: S,
     ipfs_client: IpfsClient,
     monitoring_client: Option<Arc<MonitoringClient>>,
-) -> anyhow::Result<Arc<BothanServer>> {
-    let manager_store = SharedStore::create_manager_store(&store);
+) -> anyhow::Result<Arc<BothanServer<S>>> {
+    let manager_store = ManagerStore::new(store.clone());
 
     let stale_threshold = config.manager.crypto.stale_threshold;
     let bothan_version =
@@ -196,7 +192,11 @@ async fn init_bothan_server(
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
 
-    let workers = init_crypto_workers(&store, &config.manager.crypto.source).await?;
+    let workers = match init_crypto_workers(&store, &config.manager.crypto.source).await {
+        Ok(workers) => workers,
+        Err(e) => bail!("failed to initialize crypto workers: {e}"),
+    };
+
     let manager = CryptoAssetInfoManager::new(
         workers,
         manager_store,
@@ -227,79 +227,40 @@ async fn init_bothan_server(
     Ok(Arc::new(BothanServer::new(manager)))
 }
 
-async fn init_crypto_workers(
-    store: &SharedStore,
+async fn init_crypto_workers<S: Store + 'static>(
+    store: &S,
     source: &CryptoSourceConfigs,
-) -> anyhow::Result<HashMap<String, Arc<dyn AssetWorker>>> {
-    type Binance = BinanceWorkerBuilder;
-    type Bybit = BybitWorkerBuilder;
-    type Coinbase = CoinbaseWorkerBuilder;
-    type CoinGecko = CoinGeckoWorkerBuilder;
-    type CoinMarketCap = CoinMarketCapWorkerBuilder;
-    type CryptoCompare = CryptoCompareWorkerBuilder;
-    type Htx = HtxWorkerBuilder;
-    type Kraken = KrakenWorkerBuilder;
-    type Okx = OkxWorkerBuilder;
-
+) -> Result<HashMap<String, CryptoAssetWorker<S>>, AssetWorkerError> {
     let mut workers = HashMap::new();
 
-    if let Some(opts) = &source.binance {
-        add_worker::<Binance>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.bybit {
-        add_worker::<Bybit>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.coinbase {
-        add_worker::<Coinbase>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.coingecko {
-        add_worker::<CoinGecko>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.coinmarketcap {
-        add_worker::<CoinMarketCap>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.cryptocompare {
-        add_worker::<CryptoCompare>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.htx {
-        add_worker::<Htx>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.kraken {
-        add_worker::<Kraken>(&mut workers, store, opts).await?;
-    }
-
-    if let Some(opts) = &source.okx {
-        add_worker::<Okx>(&mut workers, store, opts).await?;
-    }
+    add_worker(&mut workers, store, &source.binance).await?;
+    add_worker(&mut workers, store, &source.bitfinex).await?;
+    add_worker(&mut workers, store, &source.bybit).await?;
+    add_worker(&mut workers, store, &source.coinbase).await?;
+    add_worker(&mut workers, store, &source.coingecko).await?;
+    add_worker(&mut workers, store, &source.coinmarketcap).await?;
+    add_worker(&mut workers, store, &source.htx).await?;
+    add_worker(&mut workers, store, &source.kraken).await?;
+    add_worker(&mut workers, store, &source.okx).await?;
 
     Ok(workers)
 }
 
-async fn add_worker<B>(
-    workers: &mut HashMap<String, Arc<dyn AssetWorker>>,
-    store: &SharedStore,
-    opts: &B::Opts,
-) -> anyhow::Result<()>
+async fn add_worker<S, O>(
+    workers: &mut HashMap<String, CryptoAssetWorker<S>>,
+    store: &S,
+    opts: &Option<O>,
+) -> Result<(), AssetWorkerError>
 where
-    B: AssetWorkerBuilder<'static>,
-    B::Error: Send + Sync + 'static,
-    B::Opts: Clone,
+    S: Store + 'static,
+    O: Clone + Into<CryptoAssetWorkerOpts>,
 {
-    let worker_name = B::worker_name();
-    let worker_store = SharedStore::create_worker_store(store, worker_name);
-    let worker = B::new(worker_store, opts.clone())
-        .build()
-        .await
-        .with_context(|| format!("Failed to build worker {worker_name}"))?;
+    if let Some(opts) = opts {
+        let worker = CryptoAssetWorker::build(opts.clone().into(), store).await?;
+        let worker_name = worker.name();
+        workers.insert(worker_name.to_string(), worker);
+        info!("loaded {} worker", worker_name);
+    }
 
-    workers.insert(worker_name.to_string(), worker);
-    info!("loaded {} worker", worker_name);
     Ok(())
 }

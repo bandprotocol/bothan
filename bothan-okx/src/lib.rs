@@ -1,8 +1,6 @@
-pub use api::websocket::{OkxWebSocketConnection, OkxWebSocketConnector};
-pub use worker::builder::OkxWorkerBuilder;
-pub use worker::error::BuildError;
-pub use worker::opts::OkxWorkerBuilderOpts;
-pub use worker::OkxWorker;
+pub use api::websocket::{WebSocketConnection, WebsocketConnector};
+pub use worker::opts::WorkerOpts;
+pub use worker::Worker;
 
 pub mod api;
 pub mod worker;

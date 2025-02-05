@@ -1,5 +1,5 @@
-pub use builder::CoinMarketCapRestAPIBuilder;
-pub use rest::CoinMarketCapRestAPI;
+pub use builder::RestApiBuilder;
+pub use rest::RestApi;
 
 pub mod builder;
 pub mod error;

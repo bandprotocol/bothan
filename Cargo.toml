@@ -10,16 +10,7 @@ members = [
     "bothan-api/client/rust-client",
     "bothan-api/server",
     "bothan-api/server-cli",
-    "bothan-binance",
-    "bothan-bybit",
-    "bothan-coinbase",
-    "bothan-coingecko",
-    "bothan-coinmarketcap",
-    "bothan-core",
-    "bothan-cryptocompare",
-    "bothan-htx",
-    "bothan-kraken",
-    "bothan-okx",
+    "bothan-*",
 ]
 exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
@@ -52,17 +43,18 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = "2.5.0"
 
-bothan-core = { path = "bothan-core" }
+bothan-lib = { path = "bothan-lib" }
 
+bothan-core = { path = "bothan-core" }
 bothan-client = { path = "bothan-api/client/rust-client" }
 bothan-api = { path = "bothan-api/server" }
 
 bothan-binance = { path = "bothan-binance" }
+bothan-bitfinex = { path = "bothan-bitfinex" }
 bothan-bybit = { path = "bothan-bybit" }
 bothan-coinbase = { path = "bothan-coinbase" }
 bothan-coingecko = { path = "bothan-coingecko" }
 bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
-bothan-cryptocompare = { path = "bothan-cryptocompare" }
 bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
 bothan-okx = { path = "bothan-okx" }

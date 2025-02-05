@@ -1,6 +1,5 @@
-pub use worker::builder::CoinGeckoWorkerBuilder;
-pub use worker::opts::CoinGeckoWorkerBuilderOpts;
-pub use worker::CoinGeckoWorker;
+pub use worker::opts::WorkerOpts;
+pub use worker::Worker;
 
 pub mod api;
 pub mod worker;

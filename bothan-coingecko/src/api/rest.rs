@@ -1,25 +1,27 @@
 use std::collections::HashMap;
 
+use crate::api::error::ProviderError;
+use crate::api::types::{Coin, Price};
+use bothan_lib::types::AssetInfo;
+use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, RequestBuilder, Url};
+use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
 
-use crate::api::error::SendError;
-use crate::api::types::{Coin, Price};
-
 /// A client for interacting with the CoinGecko REST API.
-pub struct CoinGeckoRestAPI {
+pub struct RestApi {
     url: Url,
     client: Client,
 }
 
-impl CoinGeckoRestAPI {
+impl RestApi {
     /// Creates a new instance of `CoinGeckoRestAPI`.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
     /// Retrieves a list of coins from the CoinGecko API.
-    pub async fn get_coins_list(&self) -> Result<Vec<Coin>, SendError> {
+    pub async fn get_coins_list(&self) -> Result<Vec<Coin>, reqwest::Error> {
         let url = format!("{}coins/list", self.url);
         let builder = self.client.get(url);
 
@@ -30,7 +32,7 @@ impl CoinGeckoRestAPI {
     pub async fn get_simple_price_usd<T: AsRef<str>>(
         &self,
         ids: &[T],
-    ) -> Result<HashMap<String, Price>, SendError> {
+    ) -> Result<HashMap<String, Price>, reqwest::Error> {
         let url = format!("{}simple/price", self.url);
         let joined_ids = ids
             .iter()
@@ -51,35 +53,42 @@ impl CoinGeckoRestAPI {
     }
 }
 
-async fn request<T: DeserializeOwned>(request_builder: RequestBuilder) -> Result<T, SendError> {
-    let response = request_builder
-        .send()
-        .await
-        .map_err(|e| SendError::FailedRequest(e.to_string()))?;
+async fn request<T: DeserializeOwned>(
+    request_builder: RequestBuilder,
+) -> Result<T, reqwest::Error> {
+    let response = request_builder.send().await?.error_for_status()?;
 
-    let status = response.status();
-    if !status.is_success() {
-        return Err(SendError::UnsuccessfulResponse(status));
+    response.json::<T>().await
+}
+
+#[async_trait::async_trait]
+impl AssetInfoProvider for RestApi {
+    type Error = ProviderError;
+
+    async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
+        self.get_simple_price_usd(ids)
+            .await?
+            .into_iter()
+            .map(|(id, p)| {
+                let price = Decimal::from_f64_retain(p.usd).ok_or(ProviderError::InvalidValue)?;
+                Ok(AssetInfo::new(id, price, p.last_updated_at))
+            })
+            .collect()
     }
-
-    response
-        .json::<T>()
-        .await
-        .map_err(|e| SendError::ParseResponseFailed(e.to_string()))
 }
 
 #[cfg(test)]
 pub(crate) mod test {
     use mockito::{Matcher, Mock, Server, ServerGuard};
 
-    use crate::api::CoinGeckoRestAPIBuilder;
+    use crate::api::RestApiBuilder;
 
     use super::*;
 
-    pub(crate) async fn setup() -> (ServerGuard, CoinGeckoRestAPI) {
+    pub(crate) async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;
 
-        let api = CoinGeckoRestAPIBuilder::default()
+        let api = RestApiBuilder::default()
             .with_url(server.url())
             .build()
             .unwrap();
@@ -205,7 +214,7 @@ pub(crate) mod test {
         let result = client.get_simple_price_usd(&["bitcoin"]).await;
 
         mocks.assert();
-        assert_eq!(result, Ok(prices));
+        assert_eq!(result.unwrap(), prices);
     }
 
     #[tokio::test]
@@ -226,7 +235,7 @@ pub(crate) mod test {
         let result = client.get_simple_price_usd(ids).await;
 
         mocks.assert();
-        assert_eq!(result, Ok(prices));
+        assert_eq!(result.unwrap(), prices);
     }
 
     #[tokio::test]
@@ -240,9 +249,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err =
-            SendError::ParseResponseFailed("error decoding response body".to_string());
-        assert_eq!(result, Err(expected_err));
+        assert!(result.is_err());
     }
 
     #[tokio::test]

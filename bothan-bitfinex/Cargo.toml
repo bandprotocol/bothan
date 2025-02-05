@@ -1,0 +1,31 @@
+[package]
+name = "bothan-bitfinex"
+version = "0.0.1-alpha.4"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bothan-lib = { workspace = true }
+opentelemetry = { workspace = true }
+futures = { workspace = true }
+humantime-serde = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+rust_decimal = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+url = { workspace = true }
+
+futures-util = { version = "0.3.31", features = ["sink", "std"] }
+chrono = "0.4.38"
+
+[dev-dependencies]
+ws-mock = { git = "https://github.com/bandprotocol/ws-mock.git", branch = "master" }

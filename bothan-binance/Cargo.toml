@@ -7,7 +7,7 @@ repository.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-bothan-core = { workspace = true }
+bothan-lib = { workspace = true }
 humantime-serde = { workspace = true }
 opentelemetry = { workspace = true }
 rand = { workspace = true }

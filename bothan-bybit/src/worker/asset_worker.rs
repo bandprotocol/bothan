@@ -1,24 +1,21 @@
 use std::sync::Weak;
 
+use crate::api::error::{MessageError, SendError};
+use crate::api::types::{BybitResponse, Ticker};
+use crate::api::{WebSocketConnection, WebSocketConnector};
+use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
+use crate::worker::InnerWorker;
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
 use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::WorkerStore;
-use bothan_core::types::AssetInfo;
-
-use crate::api::error::{MessageError, SendError};
-use crate::api::types::{BybitResponse, Ticker};
-use crate::api::{BybitWebSocketConnection, BybitWebSocketConnector};
-use crate::worker::error::WorkerError;
-use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::BybitWorker;
-
-pub(crate) async fn start_asset_worker(
-    worker: Weak<BybitWorker>,
-    mut connection: BybitWebSocketConnection,
+pub(crate) async fn start_asset_worker<S: Store>(
+    inner_worker: Weak<InnerWorker<S>>,
+    mut connection: WebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
@@ -27,7 +24,7 @@ pub(crate) async fn start_asset_worker(
             Some(ids) = subscribe_rx.recv() => handle_subscribe_recv(ids, &mut connection).await,
             Some(ids) = unsubscribe_rx.recv() => handle_unsubscribe_recv(ids, &mut connection).await,
             result = timeout(DEFAULT_TIMEOUT, connection.next()) => {
-                if let Some(worker) = worker.upgrade() {
+                if let Some(worker) = inner_worker.upgrade() {
                     match result {
                         Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
                         Ok(bybit_result) => handle_connection_recv(bybit_result, &worker.connector, &mut connection, &worker.store).await,
@@ -49,10 +46,7 @@ pub(crate) async fn start_asset_worker(
     debug!("asset worker has been dropped, stopping asset worker");
 }
 
-async fn subscribe(
-    ids: &[String],
-    connection: &mut BybitWebSocketConnection,
-) -> Result<(), SendError> {
+async fn subscribe(ids: &[String], connection: &mut WebSocketConnection) -> Result<(), SendError> {
     if !ids.is_empty() {
         let ids_vec = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         connection.subscribe_ticker(&ids_vec).await?
@@ -61,7 +55,7 @@ async fn subscribe(
     Ok(())
 }
 
-async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BybitWebSocketConnection) {
+async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut WebSocketConnection) {
     if let Err(e) = subscribe(&ids, connection).await {
         error!("failed to subscribe to ids {:?}: {}", ids, e);
     } else {
@@ -71,7 +65,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut BybitWebSocket
 
 async fn unsubscribe(
     ids: &[String],
-    connection: &mut BybitWebSocketConnection,
+    connection: &mut WebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
         connection
@@ -82,7 +76,7 @@ async fn unsubscribe(
     Ok(())
 }
 
-async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut BybitWebSocketConnection) {
+async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut WebSocketConnection) {
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
@@ -90,10 +84,10 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut BybitWebSock
     }
 }
 
-async fn handle_reconnect(
-    connector: &BybitWebSocketConnector,
-    connection: &mut BybitWebSocketConnection,
-    query_ids: &WorkerStore,
+async fn handle_reconnect<S: Store>(
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
+    query_ids: &WorkerStore<S>,
 ) {
     let mut retry_count: usize = 1;
     loop {
@@ -128,41 +122,45 @@ async fn handle_reconnect(
     }
 }
 
-fn parse_ticker(ticker: Ticker) -> Result<AssetInfo, WorkerError> {
+fn parse_ticker(ticker: Ticker) -> Result<AssetInfo, rust_decimal::Error> {
     let id = ticker.symbol.clone();
     let price_value = Decimal::from_str_exact(&ticker.last_price)?;
     let timestamp = chrono::Utc::now().timestamp();
     Ok(AssetInfo::new(id, price_value, timestamp))
 }
 
-async fn store_ticker(store: &WorkerStore, ticker: Ticker) -> Result<(), WorkerError> {
+async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: Ticker) {
     let id = ticker.symbol.clone();
-    store.set_asset(id.clone(), parse_ticker(ticker)?).await?;
-    debug!("stored data for id {}", id);
-    Ok(())
+    let asset_info = match parse_ticker(ticker) {
+        Ok(asset_info) => asset_info,
+        Err(e) => {
+            error!("failed to parse ticker data for id {}: {}", id, e);
+            return;
+        }
+    };
+
+    if let Err(e) = store.set_asset(id.clone(), asset_info).await {
+        error!("failed to store ticker data for id {}: {}", id, e);
+    } else {
+        debug!("stored data for id {}", id);
+    }
 }
 
 /// Processes the response from the Bybit API.
-async fn process_response(resp: BybitResponse, store: &WorkerStore) {
+async fn process_response<S: Store>(resp: BybitResponse, store: &WorkerStore<S>) {
     match resp {
-        BybitResponse::PublicTicker(resp) => {
-            // Assuming MarketData is used as a vector of tickers, update if it's not the case
-            match store_ticker(store, resp.data).await {
-                Ok(_) => debug!("saved ticker data"),
-                Err(e) => error!("failed to save ticker data: {}", e),
-            }
-        }
+        BybitResponse::PublicTicker(resp) => store_ticker(store, resp.data).await,
         BybitResponse::PublicMessage(resp) => {
-            debug!("received public message from Bybit: {:?}", resp);
+            debug!("received public message from Bybit: {:?}", resp)
         }
     }
 }
 
-async fn handle_connection_recv(
+async fn handle_connection_recv<S: Store>(
     recv_result: Result<BybitResponse, MessageError>,
-    connector: &BybitWebSocketConnector,
-    connection: &mut BybitWebSocketConnection,
-    store: &WorkerStore,
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
+    store: &WorkerStore<S>,
 ) {
     match recv_result {
         Ok(resp) => {

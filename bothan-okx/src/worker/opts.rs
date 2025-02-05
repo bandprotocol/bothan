@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::api::types::DEFAULT_URL;
-use crate::worker::types::DEFAULT_CHANNEL_SIZE;
+
+pub const DEFAULT_CHANNEL_SIZE: usize = 1000;
 
 /// Options for configuring the `OkxWorkerBuilder`.
 ///
@@ -9,7 +10,7 @@ use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 /// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
 /// which will be used during the construction of the `OkxWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct OkxWorkerBuilderOpts {
+pub struct WorkerOpts {
     #[serde(default = "default_url")]
     pub url: String,
     #[serde(default = "default_internal_ch_size")]
@@ -24,7 +25,7 @@ fn default_internal_ch_size() -> usize {
     DEFAULT_CHANNEL_SIZE
 }
 
-impl Default for OkxWorkerBuilderOpts {
+impl Default for WorkerOpts {
     fn default() -> Self {
         Self {
             url: default_url(),

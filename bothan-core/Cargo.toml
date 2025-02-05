@@ -8,6 +8,18 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+bothan-lib = { workspace = true }
+
+bothan-binance = { workspace = true }
+bothan-bitfinex = { workspace = true }
+bothan-bybit = { workspace = true }
+bothan-coinbase = { workspace = true }
+bothan-coingecko = { workspace = true }
+bothan-coinmarketcap = { workspace = true }
+bothan-htx = { workspace = true }
+bothan-kraken = { workspace = true }
+bothan-okx = { workspace = true }
+
 async-trait = { workspace = true }
 derive_more = { workspace = true }
 futures = { workspace = true }
@@ -34,7 +46,11 @@ mini-moka = "0.10.3"
 num-traits = "0.2.19"
 petgraph = "0.6.4"
 prost = "0.13.1"
+quote = "1.0.38"
 rand = "0.8.5"
 rust-rocksdb = "0.32.0"
 serde_json = "1.0.132"
+syn = "2.0.95"
 uuid = { version = "1.11.0", features = ["v4"] }
+
+
