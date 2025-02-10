@@ -22,7 +22,7 @@ pub struct Worker<S: Store> {
 }
 
 #[async_trait::async_trait]
-impl<S: Store> AssetWorker<S> for Worker<S> {
+impl<S: Store + 'static> AssetWorker<S> for Worker<S> {
     type Opts = WorkerOpts;
 
     fn name(&self) -> &'static str {
@@ -33,12 +33,12 @@ impl<S: Store> AssetWorker<S> for Worker<S> {
         let api = Arc::new(RestApiBuilder::new(&opts.url).build()?);
 
         let worker_store = WorkerStore::new(store, WORKER_NAME);
-        start_polling(
+
+        tokio::spawn(start_polling(
             opts.update_interval,
             Arc::downgrade(&api) as Weak<dyn AssetInfoProvider<Error = ProviderError>>,
             worker_store.clone(),
-        )
-        .await;
+        ));
 
         let worker = Worker {
             api,
@@ -48,7 +48,7 @@ impl<S: Store> AssetWorker<S> for Worker<S> {
     }
 
     async fn get_asset(&self, id: &str) -> Result<AssetState, AssetWorkerError> {
-        Ok(self.store.get_asset(&id).await?)
+        Ok(self.store.get_asset(id).await?)
     }
 
     async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), AssetWorkerError> {
