@@ -7,7 +7,6 @@ use rust_decimal::Decimal;
 
 pub const DEFAULT_URL: &str = "https://api-pub.bitfinex.com/v2/";
 
-/// A client for interacting with the Bitfinex REST API.
 pub struct RestApi {
     url: Url,
     client: Client,

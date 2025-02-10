@@ -80,12 +80,12 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::UnsupportedVersion) => {
-                error!("invalid registry");
-                Err(Status::invalid_argument("Registry is invalid"))
+                error!("unsupported registry version");
+                Err(Status::invalid_argument("Registry version is unsupported"))
             }
             Err(SetRegistryError::FailedToParse) => {
                 error!("failed to parse registry");
-                Err(Status::invalid_argument("Registry is invalid"))
+                Err(Status::invalid_argument("Unable to parse registry version"))
             }
             Err(SetRegistryError::InvalidHash) => {
                 error!("invalid IPFS hash");

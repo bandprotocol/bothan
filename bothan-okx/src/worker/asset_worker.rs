@@ -142,7 +142,6 @@ async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: TickerData, time
     }
 }
 
-/// Processes the response from the Okx API.
 async fn process_response<S: Store>(resp: OkxResponse, store: &WorkerStore<S>) {
     match resp {
         OkxResponse::ChannelResponse(resp) => match resp {

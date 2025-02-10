@@ -10,12 +10,12 @@ name = "bothan"
 path = "src/main.rs"
 
 [dependencies]
-bothan-core = { workspace = true }
-bothan-lib = { workspace = true }
 bothan-api = { workspace = true }
-
+bothan-core = { workspace = true }
 bothan-client = { workspace = true }
+bothan-lib = { workspace = true }
 
+dirs = { workspace = true }
 reqwest = { workspace = true }
 semver = { workspace = true }
 serde_json = { workspace = true }
@@ -24,8 +24,6 @@ tonic = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-anyhow = "1.0.89"
-clap = { version = "4.5.20", features = ["derive"] }
-dirs = "5.0.1"
-log = "0.4.22"
-toml = "0.8.19"
+anyhow = "1.0.95"
+clap = { version = "4.5.28", features = ["derive"] }
+toml = "0.8.20"

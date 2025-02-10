@@ -9,8 +9,6 @@ exclude.workspace = true
 
 [dependencies]
 prost = { workspace = true }
-protoc-gen-prost = { workspace = true }
-protoc-gen-tonic = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
 reqwest = { workspace = true }

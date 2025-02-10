@@ -68,7 +68,7 @@ async fn handle_subscribe_recv(
     let tickers = ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
 
     let meter = global::meter(METER_NAME);
-    meter.u64_counter("subscribe_attempt").init().add(
+    meter.u64_counter("subscribe_attempt").build().add(
         1,
         &[
             KeyValue::new("subscription.id", packet_id),
@@ -88,7 +88,7 @@ async fn handle_subscribe_recv(
             error!("failed attempt to subscribe to ids {:?}: {}", ids, e);
             meter
                 .u64_counter("failed_subscribe_attempt")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("subscription.id", packet_id)]);
         }
     }
@@ -107,7 +107,7 @@ async fn handle_unsubscribe_recv(
     let tickers = ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
 
     let meter = global::meter(METER_NAME);
-    meter.u64_counter("unsubscribe_attempt").init().add(
+    meter.u64_counter("unsubscribe_attempt").build().add(
         1,
         &[
             KeyValue::new("subscription.id", packet_id),
@@ -127,7 +127,7 @@ async fn handle_unsubscribe_recv(
             error!("failed attempt to unsubscribe to ids {:?}: {}", ids, e);
             meter
                 .u64_counter("failed_unsubscribe_attempt")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("subscription.id", packet_id)]);
         }
     }
@@ -164,7 +164,7 @@ async fn handle_reconnect<S: Store>(
     let mut retry_count: usize = 1;
     loop {
         let meter = global::meter(METER_NAME);
-        meter.u64_counter("reconnect-attempts").init().add(1, &[]);
+        meter.u64_counter("reconnect-attempts").build().add(1, &[]);
 
         warn!("reconnecting: attempt {}", retry_count);
 
@@ -234,7 +234,7 @@ async fn store_data<S: Store>(store: &WorkerStore<S>, data: Data) {
                     info!("stored data for id {}", id);
                     global::meter(METER_NAME)
                         .f64_gauge("asset-prices")
-                        .init()
+                        .build()
                         .record(
                             price.to_f64().unwrap(), // Prices should never be NaN so unwrap here
                             &[KeyValue::new("asset.symbol", id)],
@@ -258,7 +258,7 @@ async fn process_success<S: Store>(
             info!("subscribed to ids {:?}", ids);
             meter
                 .u64_counter("subscribe_success")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("id", success_response.id)]);
             if store.add_query_ids(ids).await.is_err() {
                 error!("failed to add query ids to store");
@@ -268,7 +268,7 @@ async fn process_success<S: Store>(
             info!("unsubscribed to ids {:?}", ids);
             meter
                 .u64_counter("unsubscribe_success")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("subscription.id", success_response.id)]);
             if store.remove_query_ids(&ids).await.is_err() {
                 error!("failed to remove query ids from store");
@@ -282,7 +282,7 @@ fn process_ping() {
     debug!("received ping from binance");
     global::meter(METER_NAME)
         .u64_counter("pings")
-        .init()
+        .build()
         .add(1, &[]);
 }
 
@@ -291,7 +291,7 @@ fn process_error(error: ErrorResponse) {
         "error code {} received from binance: {}",
         error.code, error.msg
     );
-    global::meter(METER_NAME).u64_counter("errors").init().add(
+    global::meter(METER_NAME).u64_counter("errors").build().add(
         1,
         &[
             KeyValue::new("msg.code", error.code as i64),

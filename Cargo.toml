@@ -16,38 +16,10 @@ exclude = ["bothan-api", "bothan-api-proxy"]
 resolver = "2"
 
 [workspace.dependencies]
-anyhow = "1.0.86"
-async-trait = "0.1.77"
-chrono = "0.4.38"
-derive_more = { version = "1.0.0-beta.6", features = ["full"] }
-futures = "0.3.30"
-humantime-serde = "1.1.1"
-itertools = "0.13.0"
-mockito = "1.4.0"
-opentelemetry = { version = "0.26.0", features = ["metrics"] }
-prost = "0.13.1"
-protoc-gen-prost = "0.4.0"
-protoc-gen-tonic = "0.4.1"
-rand = "0.8.5"
-reqwest = { version = "0.12.3", features = ["json"] }
-rust_decimal = "1.10.2"
-semver = "1.0.23"
-serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
-serde_json = "1.0.116"
-thiserror = "1.0.57"
-tokio = { version = "1.36.0", features = ["full"] }
-tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
-tokio-util = "0.7.10"
-tonic = "0.12.1"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-url = "2.5.0"
-
-bothan-lib = { path = "bothan-lib" }
-
+bothan-api = { path = "bothan-api/server" }
 bothan-core = { path = "bothan-core" }
 bothan-client = { path = "bothan-api/client/rust-client" }
-bothan-api = { path = "bothan-api/server" }
+bothan-lib = { path = "bothan-lib" }
 
 bothan-binance = { path = "bothan-binance" }
 bothan-bitfinex = { path = "bothan-bitfinex" }
@@ -58,3 +30,33 @@ bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
 bothan-htx = { path = "bothan-htx" }
 bothan-kraken = { path = "bothan-kraken" }
 bothan-okx = { path = "bothan-okx" }
+
+anyhow = "1.0.86"
+async-trait = "0.1.77"
+bincode = "2.0.0-rc.3"
+chrono = "0.4.39"
+derive_more = { version = "2.0.1", features = ["full"] }
+dirs = "6.0.0"
+futures = "0.3.30"
+futures-util = "0.3.31"
+humantime-serde = "1.1.1"
+itertools = "0.14.0"
+mockito = "1.4.0"
+num-traits = "0.2.19"
+opentelemetry = { version = "0.27.1", features = ["metrics"] }
+prost = "0.13.1"
+protoc-gen-prost = "0.4.0"
+protoc-gen-tonic = "0.4.1"
+rand = "0.8.5"
+reqwest = { version = "0.12.3", features = ["json"] }
+rust_decimal = "1.10.2"
+semver = "1.0.23"
+serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
+serde_json = "1.0.138"
+thiserror = "2.0.11"
+tokio = { version = "1.36.0", features = ["full"] }
+tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
+tonic = "0.12.1"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+url = "2.5.0"
