@@ -12,7 +12,6 @@ mod worker;
 // Note: All implementations here should be atomic
 #[async_trait]
 pub trait Store: Send + Sync + Clone {
-    // TODO: find a way to do this without static
     type Error: StdError + Send + Sync + 'static;
 
     async fn set_registry(

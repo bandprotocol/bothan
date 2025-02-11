@@ -104,7 +104,6 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    // use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
     use crate::api::types::{BybitResponse, PublicMessageResponse, PublicTickerResponse, Ticker};
 
     use super::*;

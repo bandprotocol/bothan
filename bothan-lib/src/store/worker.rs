@@ -81,7 +81,6 @@ impl<S: Store> WorkerStore<S> {
         self.store.remove_query_ids(&self.prefix, ids).await
     }
 
-    // TODO: check if i really need this?
     /// Completely overwrite the current query ids with the new set of query ids.
     pub async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), S::Error> {
         self.store.set_query_ids(&self.prefix, ids).await

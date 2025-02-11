@@ -23,13 +23,17 @@ pub async fn start_polling<S: Store, E: Display>(
         interval.tick().await;
 
         let ids = match store.get_query_ids().await {
-            // TODO FIX
-            Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
+            Ok(ids) => ids,
             Err(e) => {
                 error!("failed to get query ids with error: {}", e);
-                Vec::new()
+                continue;
             }
         };
+
+        if let Err(e) = store.get_query_ids().await {
+            error!("failed to get query ids with error: {}", e);
+            continue;
+        }
 
         if ids.is_empty() {
             debug!("no ids to update, skipping update");
@@ -49,7 +53,6 @@ pub async fn start_polling<S: Store, E: Display>(
                 }
             }
             Ok(Err(e)) => {
-                // TODO add proper error
                 error!("failed to update asset info with error: {e}");
             }
             Err(_) => {
