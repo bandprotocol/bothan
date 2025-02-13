@@ -12,7 +12,7 @@ use crate::worker::opts::BinanceWorkerBuilderOpts;
 use crate::worker::BinanceWorker;
 
 /// Builds a `BinanceWorker` with custom options.
-/// Methods can be chained to set the configuration values and the
+/// Methods can be chained to set the configuration values, and the
 /// service is constructed by calling the [`build`](BinanceWorkerBuilder::build) method.
 pub struct BinanceWorkerBuilder {
     store: WorkerStore,

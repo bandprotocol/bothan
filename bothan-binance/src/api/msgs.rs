@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SuccessResponse {
     pub result: Option<String>,
-    pub id: u64,
+    pub id: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ErrorResponse {
-    pub code: u16,
+    pub code: i16,
     pub msg: String,
-    pub id: u64,
+    pub id: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
