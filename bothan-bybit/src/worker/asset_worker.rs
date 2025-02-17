@@ -48,8 +48,13 @@ pub(crate) async fn start_asset_worker<S: Store>(
 
 async fn subscribe(ids: &[String], connection: &mut WebSocketConnection) -> Result<(), SendError> {
     if !ids.is_empty() {
-        let ids_vec = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-        connection.subscribe_ticker(&ids_vec).await?
+        for batched_ids in ids.chunks(MAX_ARGS as usize) {
+            let symbols = batched_ids
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<&str>>();
+            connection.subscribe_ticker(&symbols).await?
+        }
     }
 
     Ok(())
@@ -68,9 +73,13 @@ async fn unsubscribe(
     connection: &mut WebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
-        connection
-            .unsubscribe_ticker(&ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>())
-            .await?
+        for batched_ids in ids.chunks(MAX_ARGS as usize) {
+            let symbols = batched_ids
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<&str>>();
+            connection.unsubscribe_ticker(&symbols).await?
+        }
     }
 
     Ok(())

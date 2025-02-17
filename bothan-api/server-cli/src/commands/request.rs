@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::Context;
 use clap::{Parser, Subcommand};
 
 use bothan_api::config::AppConfig;
@@ -43,29 +43,46 @@ impl RequestCli {
         let uri = self
             .uri
             .clone()
-            .unwrap_or(format!("https://{}", &app_config.grpc.addr.to_string()));
-        let client = GrpcClient::connect(&uri)
-            .await
-            .map_err(|e| anyhow!("Failed to connect to server: {e}"))?;
+            .unwrap_or(format!("https://{}", &app_config.grpc.addr));
+        let client = match GrpcClient::connect(&uri).await {
+            Ok(client) => client,
+            Err(e) => {
+                eprintln!("Failed to connect to server: {:#?}", e);
+                std::process::exit(1);
+            }
+        };
 
         match &self.subcommand {
             RequestSubCommand::GetInfo => {
-                let response = client.get_info().await?;
-                println!("{:?}", response);
+                let info = client
+                    .get_info()
+                    .await
+                    .with_context(|| "Failed to get info")?;
+                println!("{:#?}", info);
             }
             RequestSubCommand::UpdateRegistry { ipfs_hash, version } => {
-                client.update_registry(ipfs_hash, version).await?;
+                client
+                    .update_registry(ipfs_hash, version)
+                    .await
+                    .with_context(|| "Failed to update registry")?;
+                println!("Registry updated");
             }
             RequestSubCommand::PushMonitoringRecords { uuid, tx_hash } => {
-                client.push_monitoring_records(uuid, tx_hash).await?;
+                client
+                    .push_monitoring_records(uuid, tx_hash)
+                    .await
+                    .with_context(|| "Failed to push monitoring records")?;
+                println!("Monitoring records pushed");
             }
             RequestSubCommand::GetPrices { signal_ids } => {
                 let ids = signal_ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-                let response = client.get_prices(&ids).await?;
-                println!("{:?}", response);
+                let prices = client
+                    .get_prices(&ids)
+                    .await
+                    .with_context(|| "Failed to get prices")?;
+                println!("{:#?}", prices);
             }
         }
-
         Ok(())
     }
 }

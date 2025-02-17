@@ -192,6 +192,7 @@ async fn handle_reconnect<S: Store>(
                 .is_ok()
             {
                 info!("resubscribed to all ids");
+                return;
             } else {
                 error!("failed to resubscribe to all ids");
             }

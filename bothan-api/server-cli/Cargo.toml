@@ -1,6 +1,7 @@
 [package]
 name = "bothan-api-cli"
-version = "0.0.1-alpha.4"
+version = "0.0.1-beta.1"
+rust-version = "1.81"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -25,5 +26,5 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 anyhow = "1.0.95"
-clap = { version = "4.5.28", features = ["derive"] }
+clap = { version = "4.5.29", features = ["derive"] }
 toml = "0.8.20"

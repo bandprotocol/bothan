@@ -12,9 +12,9 @@ pub struct IpfsClientBuilder {
 }
 
 impl IpfsClientBuilder {
-    pub fn new(url: String) -> Self {
+    pub fn new<T: Into<String>>(url: T) -> Self {
         IpfsClientBuilder {
-            url,
+            url: url.into(),
             header: HeaderMap::new(),
             timeout: None,
         }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use semver::Version;
 use tonic::{Request, Response, Status};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use crate::api::utils::parse_price_state;
 use crate::proto::bothan::v1::{
@@ -28,12 +28,14 @@ impl<S: Store> BothanServer<S> {
     }
 }
 
+// TODO: cleanup logging with span
 #[tonic::async_trait]
 impl<S: Store> BothanService for BothanServer<S> {
     async fn get_info(
         &self,
         _: Request<GetInfoRequest>,
     ) -> Result<Response<GetInfoResponse>, Status> {
+        info!("received get info request");
         let info = self
             .manager
             .get_info()
@@ -47,7 +49,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             active_sources: info.active_sources,
             monitoring_enabled: info.monitoring_enabled,
         });
-
+        debug!("response: {:?}", response);
         Ok(response)
     }
 
@@ -56,6 +58,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         request: Request<UpdateRegistryRequest>,
     ) -> Result<Response<UpdateRegistryResponse>, Status> {
         info!("received update registry request");
+        debug!("request: {:?}", request);
         let update_registry_request = request.into_inner();
 
         let version = Version::parse(&update_registry_request.version)
@@ -103,6 +106,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         request: Request<PushMonitoringRecordsRequest>,
     ) -> Result<Response<PushMonitoringRecordsResponse>, Status> {
         info!("received push monitoring records request");
+        debug!("request: {:?}", request);
         let request = request.into_inner();
         let push_result = self
             .manager
@@ -142,6 +146,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         request: Request<GetPricesRequest>,
     ) -> Result<Response<GetPricesResponse>, Status> {
         info!("received get price request");
+        debug!("request: {:?}", request);
         let price_request = request.into_inner();
         let (uuid, price_states) = self
             .manager
@@ -158,7 +163,8 @@ impl<S: Store> BothanService for BothanServer<S> {
             .zip(price_states)
             .map(|(id, state)| parse_price_state(id, state))
             .collect::<Vec<Price>>();
-
-        Ok(Response::new(GetPricesResponse { uuid, prices }))
+        let response = Response::new(GetPricesResponse { uuid, prices });
+        debug!("response: {:?}", response);
+        Ok(response)
     }
 }

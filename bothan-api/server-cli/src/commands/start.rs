@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use std::fs::{create_dir_all, read_to_string, File};
-use std::io::{BufReader, Write};
+use std::fs::{create_dir_all, read_to_string, remove_dir_all, write, File};
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{anyhow, bail, Context};
+use anyhow::Context;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
@@ -53,46 +53,32 @@ impl StartCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         let registry = match &self.registry {
             Some(p) => {
-                let file =
-                    File::open(p).map_err(|e| anyhow!("Failed to open registry file: {e}"))?;
+                let file = File::open(p).with_context(|| "Failed to open registry file")?;
                 let reader = BufReader::new(file);
-                serde_json::from_reader(reader)
-                    .map_err(|e| anyhow!("Failed to parse registry file: {e}"))?
+                serde_json::from_reader(reader).with_context(|| "Failed to parse registry")?
             }
             None => Registry::default(),
         };
 
         let valid_registry = registry
             .validate()
-            .map_err(|e| anyhow!("Invalid registry: {e}"))?;
+            .with_context(|| "Failed to validate registry")?;
 
-        if let Err(e) = start_server(app_config, valid_registry, self.unsafe_reset).await {
-            eprintln!("Failed to start server: {}", e);
-            std::process::exit(1);
-        }
+        let store = init_rocks_db_store(&app_config, valid_registry, self.unsafe_reset).await?;
+        let ipfs_client = init_ipfs_client(&app_config).await?;
+        let monitoring_client = init_monitoring_client(&app_config).await?;
+
+        let bothan_server =
+            init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
+
+        info!("server started");
+        Server::builder()
+            .add_service(BothanServiceServer::from_arc(bothan_server))
+            .serve(app_config.grpc.addr)
+            .await?;
+
         Ok(())
     }
-}
-
-async fn start_server(
-    app_config: AppConfig,
-    registry: Registry<Valid>,
-    reset: bool,
-) -> anyhow::Result<()> {
-    let store = init_rocks_db_store(&app_config, registry, reset).await?;
-    let ipfs_client = init_ipfs_client(&app_config).await?;
-    let monitoring_client = init_monitoring_client(&app_config).await?;
-
-    let bothan_server =
-        init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
-
-    info!("server started");
-    Server::builder()
-        .add_service(BothanServiceServer::from_arc(bothan_server))
-        .serve(app_config.grpc.addr)
-        .await?;
-
-    Ok(())
 }
 
 async fn init_rocks_db_store(
@@ -101,9 +87,7 @@ async fn init_rocks_db_store(
     reset: bool,
 ) -> anyhow::Result<RocksDbStore> {
     if reset {
-        if let Err(e) = std::fs::remove_dir_all(&config.store.path) {
-            eprintln!("Failed to remove store directory: {}", e);
-        }
+        remove_dir_all(&config.store.path).with_context(|| "Failed to remove store directory")?;
     }
 
     if !config.store.path.is_dir() {
@@ -139,11 +123,9 @@ async fn init_signer(config: &AppConfig) -> anyhow::Result<Signer> {
             create_dir_all(parent).with_context(|| "Failed to create monitoring key directory")?;
         }
 
-        let mut file = File::create(&config.monitoring.path)
-            .with_context(|| "Failed to create monitoring key file")?;
-
-        file.write(signer.to_hex().as_bytes())
+        write(&config.monitoring.path, signer.to_hex().as_bytes())
             .with_context(|| "Failed to write monitoring key file")?;
+
         Ok(signer)
     }
 }
@@ -163,7 +145,7 @@ async fn init_monitoring_client(
 }
 
 async fn init_ipfs_client(config: &AppConfig) -> anyhow::Result<IpfsClient> {
-    let ipfs_builder = IpfsClientBuilder::new(config.ipfs.endpoint.clone());
+    let ipfs_builder = IpfsClientBuilder::new(&config.ipfs.endpoint);
     let ipfs_client = match &config.ipfs.authentication {
         IpfsAuthentication::Header { key, value } => {
             let header_name = HeaderName::from_str(key)?;
@@ -192,11 +174,7 @@ async fn init_bothan_server<S: Store + 'static>(
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
 
-    let workers = match init_crypto_workers(&store, &config.manager.crypto.source).await {
-        Ok(workers) => workers,
-        Err(e) => bail!("failed to initialize crypto workers: {e}"),
-    };
-
+    let workers = init_crypto_workers(&store, &config.manager.crypto.source).await.with_context(|| "failed to initialize crypto workers")?;
     let manager = CryptoAssetInfoManager::new(
         workers,
         manager_store,

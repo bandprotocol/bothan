@@ -43,7 +43,7 @@ humantime-serde = "1.1.1"
 itertools = "0.14.0"
 mockito = "1.4.0"
 num-traits = "0.2.19"
-opentelemetry = { version = "0.27.1", features = ["metrics"] }
+opentelemetry = { version = "0.28.0", features = ["metrics"] }
 prost = "0.13.1"
 protoc-gen-prost = "0.4.0"
 protoc-gen-tonic = "0.4.1"

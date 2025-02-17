@@ -1,6 +1,6 @@
 [package]
 name = "bothan-api"
-version = "0.0.1-alpha.4"
+version = "0.0.1-beta.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -28,7 +28,4 @@ serde = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 
-config = "0.15.7"
-
-[build-dependencies]
-tonic-build = "0.12.3"
+config = "0.15.8"

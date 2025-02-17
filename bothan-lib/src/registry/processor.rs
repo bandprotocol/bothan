@@ -18,11 +18,6 @@ impl ProcessError {
     }
 }
 
-/// The Processor trait defines the methods that a processor must implement.
-pub trait Process<T, U> {
-    fn process(&self, data: Vec<T>) -> Result<U, ProcessError>;
-}
-
 /// The Process enum represents the different types of processors that can be used.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "snake_case", tag = "function", content = "params")]
@@ -31,19 +26,15 @@ pub enum Processor {
     WeightedMedian(weighted_median::WeightedMedianProcessor),
 }
 
-impl Process<Decimal, Decimal> for Processor {
-    fn process(&self, data: Vec<Decimal>) -> Result<Decimal, ProcessError> {
+impl Processor {
+    pub fn name(&self) -> &str {
         match self {
-            Processor::Median(median) => median.process(data),
-            Processor::WeightedMedian(_) => Err(ProcessError::new(
-                "Weighted median not implemented for T: Decimal",
-            )),
+            Processor::Median(_) => "median",
+            Processor::WeightedMedian(_) => "weighted_median",
         }
     }
-}
 
-impl Process<(String, Decimal), Decimal> for Processor {
-    fn process(&self, data: Vec<(String, Decimal)>) -> Result<Decimal, ProcessError> {
+    pub fn process(&self, data: Vec<(String, Decimal)>) -> Result<Decimal, ProcessError> {
         match self {
             Processor::Median(median) => {
                 let data = data.into_iter().map(|(_, value)| value).collect();
