@@ -11,6 +11,7 @@ pub struct WorkerStore<S: Store> {
 }
 
 impl<S: Store> WorkerStore<S> {
+    /// Creates a new WorkerStore with the specified store and unique prefix key.
     pub fn new<T: Into<String>>(store: &S, prefix: T) -> Self {
         Self {
             store: store.clone(),
@@ -18,6 +19,7 @@ impl<S: Store> WorkerStore<S> {
         }
     }
 
+    /// Get the asset state for the specified query id.
     pub async fn get_asset(&self, id: &str) -> Result<AssetState, S::Error> {
         if !self.store.contains_query_id(&self.prefix, id).await? {
             return Ok(AssetState::Unsupported);
@@ -29,18 +31,21 @@ impl<S: Store> WorkerStore<S> {
         }
     }
 
+    /// Set the asset state for the specified query id.
     pub async fn set_asset(&self, id: String, asset_info: AssetInfo) -> Result<(), S::Error> {
         self.store
             .insert_asset_info(&self.prefix, (id, asset_info))
             .await
     }
 
+    /// Sets multiple asset states for the specified query ids.
     pub async fn set_assets(&self, assets: Vec<(String, AssetInfo)>) -> Result<(), S::Error> {
         self.store
             .insert_asset_info_batch(&self.prefix, assets)
             .await
     }
 
+    /// Gets multiple asset states for the specified query ids.
     pub async fn get_query_ids(&self) -> Result<Vec<String>, S::Error> {
         let query_ids = self
             .store

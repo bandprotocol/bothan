@@ -3,10 +3,10 @@ use crate::types::AssetInfo;
 use async_trait::async_trait;
 use std::error::Error as StdError;
 
-pub use manager::ManagerStore;
+pub use registry::RegistryStore;
 pub use worker::WorkerStore;
 
-mod manager;
+mod registry;
 mod worker;
 
 // Note: All implementations here should be atomic

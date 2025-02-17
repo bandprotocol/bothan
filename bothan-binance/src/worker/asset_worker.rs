@@ -187,7 +187,7 @@ async fn handle_reconnect<S: Store>(
             let packet_id = random();
 
             if connection
-                .unsubscribe_mini_ticker_stream(packet_id, &ids_vec)
+                .subscribe_mini_ticker_stream(packet_id, &ids_vec)
                 .await
                 .is_ok()
             {

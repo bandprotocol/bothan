@@ -26,7 +26,7 @@ use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocks_db::RocksDbStore;
 use bothan_lib::registry::{Registry, Valid};
-use bothan_lib::store::{ManagerStore, Store};
+use bothan_lib::store::{RegistryStore, Store};
 use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::AssetWorker;
 
@@ -184,7 +184,7 @@ async fn init_bothan_server<S: Store + 'static>(
     ipfs_client: IpfsClient,
     monitoring_client: Option<Arc<MonitoringClient>>,
 ) -> anyhow::Result<Arc<BothanServer<S>>> {
-    let manager_store = ManagerStore::new(store.clone());
+    let manager_store = RegistryStore::new(store.clone());
 
     let stale_threshold = config.manager.crypto.stale_threshold;
     let bothan_version =

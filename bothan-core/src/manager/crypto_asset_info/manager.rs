@@ -13,14 +13,14 @@ use crate::manager::crypto_asset_info::types::{
 use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
 use crate::monitoring::{create_uuid, Client as MonitoringClient};
 use bothan_lib::registry::{Invalid, Registry};
-use bothan_lib::store::{ManagerStore, Store};
+use bothan_lib::store::{RegistryStore, Store};
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
 
 pub struct CryptoAssetInfoManager<S: Store + 'static> {
     workers: HashMap<String, CryptoAssetWorker<S>>,
-    store: ManagerStore<S>,
+    store: RegistryStore<S>,
     stale_threshold: i64,
     ipfs_client: IpfsClient,
     bothan_version: Version,
@@ -32,7 +32,7 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
 impl<S: Store + 'static> CryptoAssetInfoManager<S> {
     pub fn new(
         workers: HashMap<String, CryptoAssetWorker<S>>,
-        store: ManagerStore<S>,
+        store: RegistryStore<S>,
         ipfs_client: IpfsClient,
         stale_threshold: i64,
         bothan_version: Version,
