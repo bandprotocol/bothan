@@ -9,13 +9,12 @@ use crate::manager::crypto_asset_info::types::{PriceSignalComputationRecord, Pri
 use crate::monitoring::records::{
     OperationRecord, ProcessRecord, SignalComputationRecord, SourceRecord,
 };
-use bothan_lib::registry::post_processor::PostProcessor;
-use bothan_lib::registry::processor::Processor;
 use bothan_lib::registry::signal::Signal;
 use bothan_lib::registry::source::{OperationRoute, SourceQuery};
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
-use bothan_lib::worker::{AssetState, AssetWorker};
+use bothan_lib::types::AssetState;
+use bothan_lib::worker::AssetWorker;
 
 // TODO: Allow records to be Option<T>
 pub async fn get_signal_price_states<S: Store + 'static, W: AssetWorker<S>>(
@@ -513,7 +512,7 @@ mod tests {
         let mut test_source_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         let asset_state =
             AssetState::Available(AssetInfo::new("testusd".to_string(), Decimal::default(), 0));
-        test_source_worker.add_expected_query("testusd".to_string(), asset_state);
+        test_source_worker.add_expected_query("testusd".to_string(), asset_state.clone());
 
         let mut workers = HashMap::new();
         workers.insert("test-source".to_string(), test_source_worker);

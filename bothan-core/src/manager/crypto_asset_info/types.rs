@@ -1,12 +1,13 @@
 use std::time::Duration;
 
 use crate::monitoring::records::SignalComputationRecord;
+use bothan_lib::types::AssetState;
 use rust_decimal::Decimal;
 
 pub const MONITORING_TTL: Duration = Duration::from_secs(60);
 pub const HEARTBEAT: Duration = Duration::from_secs(60);
 
-pub type PriceSignalComputationRecord = SignalComputationRecord<Decimal, Decimal>;
+pub type PriceSignalComputationRecord = SignalComputationRecord<AssetState, Decimal>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PriceState {

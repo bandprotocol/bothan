@@ -1,7 +1,7 @@
 use std::sync::Weak;
 
 use crate::api::error::{MessageError, SendError};
-use crate::api::types::{BybitResponse, Ticker};
+use crate::api::types::{BybitResponse, Ticker, MAX_ARGS};
 use crate::api::{WebSocketConnection, WebSocketConnector};
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 use crate::worker::InnerWorker;

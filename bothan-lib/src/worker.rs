@@ -1,5 +1,5 @@
 use crate::store::Store;
-pub use crate::types::AssetState;
+use crate::types::AssetState;
 use error::AssetWorkerError;
 
 pub mod error;

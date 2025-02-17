@@ -6,7 +6,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
@@ -174,7 +174,12 @@ async fn init_bothan_server<S: Store + 'static>(
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
 
-    let workers = init_crypto_workers(&store, &config.manager.crypto.source).await.with_context(|| "failed to initialize crypto workers")?;
+    let workers = match init_crypto_workers(&store, &config.manager.crypto.source).await {
+        Ok(workers) => workers,
+        Err(e) => {
+            bail!("failed to initialize workers: {:?}", e);
+        }
+    };
     let manager = CryptoAssetInfoManager::new(
         workers,
         manager_store,
