@@ -13,6 +13,9 @@ pub trait AssetInfoProvider: Send + Sync {
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error>;
 }
 
+/// Starts polling asset information from a provider at the specified update interval. This function
+/// will not return until the asset_info_provider is dropped.
+/// Any errors that occur during the polling process will be logged.
 pub async fn start_polling<S: Store, E: Display>(
     update_interval: Duration,
     asset_info_provider: Weak<dyn AssetInfoProvider<Error = E>>,

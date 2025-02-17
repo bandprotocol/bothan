@@ -27,6 +27,7 @@ pub enum Processor {
 }
 
 impl Processor {
+    /// Returns the name of the processor.
     pub fn name(&self) -> &str {
         match self {
             Processor::Median(_) => "median",
@@ -34,6 +35,7 @@ impl Processor {
         }
     }
 
+    /// Runs the processor on the given data.
     pub fn process(&self, data: Vec<(String, Decimal)>) -> Result<Decimal, ProcessError> {
         match self {
             Processor::Median(median) => {

@@ -25,12 +25,14 @@ pub enum PostProcessor {
 }
 
 impl PostProcessor {
+    /// Returns the name of the post-processor.
     pub fn name(&self) -> &str {
         match self {
             PostProcessor::TickConvertor(_) => "tick_convertor",
         }
     }
 
+    /// Runs the post-processor on the given data.
     pub fn post_process(&self, data: Decimal) -> Result<Decimal, PostProcessError> {
         match self {
             PostProcessor::TickConvertor(tick) => tick.process(data),
