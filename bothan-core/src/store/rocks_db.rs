@@ -20,24 +20,23 @@ pub struct RocksDbStore {
 }
 
 impl RocksDbStore {
-    pub fn new(registry: Registry<Valid>, flush_path: &str) -> Result<Self, rust_rocksdb::Error> {
+    pub fn new(flush_path: &str) -> Result<Self, rust_rocksdb::Error> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         DB::destroy(&opts, flush_path)?;
 
         let db = Arc::new(DB::open(&opts, flush_path)?);
-
         Ok(RocksDbStore {
             db,
-            registry: Arc::new(RwLock::new(registry)),
+            registry: Arc::new(RwLock::new(Registry::default())),
         })
     }
 
-    pub fn load(path: &str) -> Result<Self, LoadError> {
+    pub fn load(flush_path: &str) -> Result<Self, LoadError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
 
-        let db = Arc::new(DB::open(&opts, path)?);
+        let db = Arc::new(DB::open(&opts, flush_path)?);
         let unvalidated_registry = db
             .get(Key::Registry.to_prefixed_bytes())?
             .map(|b| decode_from_slice::<Registry, _>(&b, config::standard()))

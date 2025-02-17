@@ -62,7 +62,7 @@ impl<T> Registry<T> {
     }
 }
 
-impl Default for Registry<Invalid> {
+impl Default for Registry<Valid> {
     fn default() -> Self {
         Registry {
             inner: HashMap::new(),

@@ -283,7 +283,7 @@ mod tests {
         }
 
         async fn get_registry(&self) -> Registry<Valid> {
-            Registry::default().validate().unwrap()
+            Registry::default()
         }
 
         async fn get_registry_ipfs_hash(&self) -> Result<Option<String>, Self::Error> {

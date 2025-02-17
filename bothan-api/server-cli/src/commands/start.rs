@@ -55,16 +55,14 @@ impl StartCli {
             Some(p) => {
                 let file = File::open(p).with_context(|| "Failed to open registry file")?;
                 let reader = BufReader::new(file);
-                serde_json::from_reader(reader).with_context(|| "Failed to parse registry")?
+                let registry =
+                    serde_json::from_reader(reader).with_context(|| "Failed to parse registry")?;
+                Some(registry)
             }
-            None => Registry::default(),
+            None => None,
         };
 
-        let valid_registry = registry
-            .validate()
-            .with_context(|| "Failed to validate registry")?;
-
-        let store = init_rocks_db_store(&app_config, valid_registry, self.unsafe_reset).await?;
+        let store = init_rocks_db_store(&app_config, registry, self.unsafe_reset).await?;
         let ipfs_client = init_ipfs_client(&app_config).await?;
         let monitoring_client = init_monitoring_client(&app_config).await?;
 
@@ -83,27 +81,36 @@ impl StartCli {
 
 async fn init_rocks_db_store(
     config: &AppConfig,
-    registry: Registry<Valid>,
+    registry: Option<Registry<Valid>>,
     reset: bool,
 ) -> anyhow::Result<RocksDbStore> {
-    if reset {
-        remove_dir_all(&config.store.path).with_context(|| "Failed to remove store directory")?;
-    }
-
-    if !config.store.path.is_dir() {
-        create_dir_all(&config.store.path).with_context(|| "Failed to create home directory")?;
-    }
-
     let flush_path = config
         .store
         .path
         .to_str()
         .with_context(|| "Failed to convert store path to string")?;
 
-    let store = match reset {
-        true => RocksDbStore::new(registry, flush_path)?,
-        false => RocksDbStore::load(flush_path)?,
+    let store = match (reset, config.store.path.is_dir()) {
+        // If reset is true and the path is a directory, remove the directory and create a new store
+        (true, true) => {
+            remove_dir_all(&config.store.path)
+                .with_context(|| "Failed to create home directory")?;
+            RocksDbStore::new(flush_path)?
+        }
+        // If no reset, load the store
+        (false, true) => RocksDbStore::load(flush_path)?,
+        // If the path does not exist, create the directory and create a new store
+        (_, false) => {
+            create_dir_all(&config.store.path)
+                .with_context(|| "Failed to create home directory")?;
+            RocksDbStore::new(flush_path)?
+        }
     };
+
+    // If a registry is provided, overwrite the registry
+    if let Some(registry) = registry {
+        store.set_registry(registry, "".to_string()).await?;
+    }
 
     debug!("store created successfully at {:?}", &config.store.path);
 
