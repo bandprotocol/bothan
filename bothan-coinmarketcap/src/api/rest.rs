@@ -63,7 +63,7 @@ impl AssetInfoProvider for RestApi {
             .await?
             .into_iter()
             .map(|q| match q {
-                None => return Err(ProviderError::MissingValue),
+                None => Err(ProviderError::MissingValue),
                 Some(quote) => {
                     let price_float = quote
                         .price_quotes

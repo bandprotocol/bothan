@@ -67,7 +67,7 @@ impl<S: Store + 'static> AssetWorker<S> for Worker<S> {
     }
 
     async fn get_asset(&self, id: &str) -> Result<AssetState, AssetWorkerError> {
-        Ok(self.inner.store.get_asset(&id).await?)
+        Ok(self.inner.store.get_asset(id).await?)
     }
 
     async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), AssetWorkerError> {

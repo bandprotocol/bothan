@@ -10,56 +10,56 @@ pub enum CryptoAssetWorkerOpts {
     Okx(bothan_okx::WorkerOpts),
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_binance::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::Binance(self)
+impl From<bothan_binance::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_binance::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Binance(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_bitfinex::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::Bitfinex(self)
+impl From<bothan_bitfinex::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_bitfinex::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Bitfinex(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_bybit::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::Bybit(self)
+impl From<bothan_bybit::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_bybit::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Bybit(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_coinbase::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::Coinbase(self)
+impl From<bothan_coinbase::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_coinbase::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Coinbase(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_coingecko::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::CoinGecko(self)
+impl From<bothan_coingecko::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_coingecko::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::CoinGecko(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_coinmarketcap::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::CoinMarketCap(self)
+impl From<bothan_coinmarketcap::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_coinmarketcap::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::CoinMarketCap(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_htx::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::Htx(self)
+impl From<bothan_htx::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_htx::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Htx(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_kraken::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::Kraken(self)
+impl From<bothan_kraken::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_kraken::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Kraken(value)
     }
 }
 
-impl Into<CryptoAssetWorkerOpts> for bothan_okx::WorkerOpts {
-    fn into(self) -> CryptoAssetWorkerOpts {
-        CryptoAssetWorkerOpts::Okx(self)
+impl From<bothan_okx::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_okx::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Okx(value)
     }
 }
