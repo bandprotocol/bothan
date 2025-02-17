@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
+use bothan_lib::registry::post_processor::PostProcessError;
+use bothan_lib::registry::processor::ProcessError;
+use bothan_lib::registry::source::Operation;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-
-use crate::registry::post_processor::PostProcessError;
-use crate::registry::processor::ProcessError;
-use crate::registry::source::Operation;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignalRecordsWithTxHash<T, U> {

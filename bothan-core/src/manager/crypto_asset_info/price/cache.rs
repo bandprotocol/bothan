@@ -14,12 +14,14 @@ impl<K> PriceCache<K>
 where
     K: Hash + Eq,
 {
+    /// Creates an empty `PriceCache`.
     pub fn new() -> Self {
         PriceCache {
             cache: HashMap::new(),
         }
     }
 
+    /// Returns a reference to the `PriceState` corresponding to the given `id`.
     pub fn get<Q>(&self, id: &Q) -> Option<&PriceState>
     where
         K: Borrow<Q>,
@@ -28,18 +30,22 @@ where
         self.cache.get(id)
     }
 
+    /// Inserts a new `PriceState::Available` with the given `id` and `value`.
     pub fn set_available(&mut self, id: K, value: Decimal) -> Option<PriceState> {
         self.cache.insert(id, PriceState::Available(value))
     }
 
+    /// Inserts a new `PriceState::Unavailable` with the given `id`.
     pub fn set_unavailable(&mut self, id: K) -> Option<PriceState> {
         self.cache.insert(id, PriceState::Unavailable)
     }
 
+    /// Inserts a new `PriceState::Unsupported` with the given `id`.
     pub fn set_unsupported(&mut self, id: K) -> Option<PriceState> {
         self.cache.insert(id, PriceState::Unsupported)
     }
 
+    /// Returns `true` if the cache contains the given `id`.
     pub fn contains<Q>(&self, id: &Q) -> bool
     where
         K: Borrow<Q>,

@@ -3,7 +3,8 @@ use std::time::Duration;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::api::types::{DEFAULT_URL, DEFAULT_USER_AGENT};
-use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
+
+const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 
 /// Options for configuring the `CoinGeckoWorkerBuilder`.
 ///
@@ -11,7 +12,7 @@ use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
 /// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
 /// which will be used during the construction of the `CoinGeckoWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CoinGeckoWorkerBuilderOpts {
+pub struct WorkerOpts {
     #[serde(default = "default_url")]
     pub url: String,
     #[serde(default)]
@@ -37,7 +38,7 @@ fn default_update_interval() -> Duration {
     DEFAULT_UPDATE_INTERVAL
 }
 
-impl Default for CoinGeckoWorkerBuilderOpts {
+impl Default for WorkerOpts {
     fn default() -> Self {
         Self {
             url: default_url(),
