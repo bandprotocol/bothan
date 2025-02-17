@@ -30,6 +30,7 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
 }
 
 impl<S: Store + 'static> CryptoAssetInfoManager<S> {
+    /// Creates a new `CryptoAssetInfoManager`.
     pub fn new(
         workers: HashMap<String, CryptoAssetWorker<S>>,
         store: RegistryStore<S>,
@@ -55,6 +56,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         }
     }
 
+    /// Gets the `CryptoAssetManagerInfo`.
     pub async fn get_info(&self) -> Result<CryptoAssetManagerInfo, S::Error> {
         let bothan_version = self.bothan_version.to_string();
         let registry_hash = self
@@ -74,6 +76,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         ))
     }
 
+    /// Posts a heartbeat to the monitoring service.
     pub async fn post_heartbeat(&self) -> Result<String, PostHeartbeatError> {
         let client = self
             .monitoring_client
@@ -127,6 +130,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         Ok((uuid, price_states))
     }
 
+    /// Pushes a monitoring record to the monitoring service.
     pub async fn push_monitoring_record(
         &self,
         uuid: String,
@@ -151,6 +155,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         Ok(())
     }
 
+    /// Sets the registry from an IPFS hash.
     pub async fn set_registry_from_ipfs(
         &self,
         hash: &str,

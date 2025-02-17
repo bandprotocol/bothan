@@ -17,6 +17,7 @@ use bothan_lib::types::AssetState;
 use bothan_lib::worker::AssetWorker;
 
 // TODO: Allow records to be Option<T>
+/// Computes the price states for a list of signal ids.
 pub async fn get_signal_price_states<S: Store + 'static, W: AssetWorker<S>>(
     ids: Vec<String>,
     workers: &HashMap<String, W>,

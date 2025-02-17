@@ -46,17 +46,19 @@ impl Registry<Invalid> {
 }
 
 impl<T> Registry<T> {
+    /// Returns the signal for a given signal id.
     pub fn get(&self, signal_id: &str) -> Option<&Signal> {
         self.inner.get(signal_id)
     }
+    /// Returns `true` if the registry contains the given signal id.
     pub fn contains(&self, signal_id: &str) -> bool {
         self.inner.contains_key(signal_id)
     }
-
-    pub fn keys(&self) -> impl Iterator<Item = &String> {
+    /// An iterator visiting all signal ids in the registry in arbitrary order.
+    pub fn signal_ids(&self) -> impl Iterator<Item = &String> {
         self.inner.keys()
     }
-
+    /// An iterator visiting all the signal ids and their signals in the registry in arbitrary order.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &Signal)> {
         self.inner.iter()
     }

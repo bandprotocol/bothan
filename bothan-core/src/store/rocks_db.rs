@@ -95,16 +95,16 @@ impl Store for RocksDbStore {
         Ok(hash)
     }
 
-    async fn set_query_ids(&self, source_id: &str, ids: Vec<String>) -> Result<(), Self::Error> {
-        let key = Key::QueryIDs { source_id };
+    async fn set_query_ids(&self, prefix: &str, ids: Vec<String>) -> Result<(), Self::Error> {
+        let key = Key::QueryIDs { source_id: prefix };
         let set: HashSet<_, RandomState> = HashSet::from_iter(ids.into_iter());
         let encoded = encode_to_vec(&set, config::standard())?;
         self.db.put(key.to_prefixed_bytes(), encoded)?;
         Ok(())
     }
 
-    async fn get_query_ids(&self, source_id: &str) -> Result<Option<Vec<String>>, Self::Error> {
-        let key = Key::QueryIDs { source_id };
+    async fn get_query_ids(&self, prefix: &str) -> Result<Option<Vec<String>>, Self::Error> {
+        let key = Key::QueryIDs { source_id: prefix };
 
         let query_ids = self
             .db
@@ -115,8 +115,8 @@ impl Store for RocksDbStore {
         Ok(query_ids)
     }
 
-    async fn insert_query_ids(&self, source_id: &str, ids: Vec<String>) -> Result<(), Self::Error> {
-        let key = Key::QueryIDs { source_id };
+    async fn insert_query_ids(&self, prefix: &str, ids: Vec<String>) -> Result<(), Self::Error> {
+        let key = Key::QueryIDs { source_id: prefix };
 
         let mut query_ids = self
             .db
@@ -132,8 +132,8 @@ impl Store for RocksDbStore {
         Ok(())
     }
 
-    async fn remove_query_ids(&self, source_id: &str, ids: &[String]) -> Result<(), Self::Error> {
-        let key = Key::QueryIDs { source_id };
+    async fn remove_query_ids(&self, prefix: &str, ids: &[String]) -> Result<(), Self::Error> {
+        let key = Key::QueryIDs { source_id: prefix };
 
         let mut query_ids = self
             .db
@@ -152,8 +152,8 @@ impl Store for RocksDbStore {
         Ok(())
     }
 
-    async fn contains_query_id(&self, source_id: &str, id: &str) -> Result<bool, Self::Error> {
-        let key = Key::QueryIDs { source_id };
+    async fn contains_query_id(&self, prefix: &str, id: &str) -> Result<bool, Self::Error> {
+        let key = Key::QueryIDs { source_id: prefix };
 
         let query_ids = self
             .db
@@ -168,10 +168,13 @@ impl Store for RocksDbStore {
 
     async fn get_asset_info(
         &self,
-        source_id: &str,
+        prefix: &str,
         id: &str,
     ) -> Result<Option<AssetInfo>, Self::Error> {
-        let key = Key::AssetStore { source_id, id };
+        let key = Key::AssetStore {
+            source_id: prefix,
+            id,
+        };
 
         let encoded = self.db.get(key.to_prefixed_bytes())?;
         let asset_info = encoded
@@ -183,11 +186,11 @@ impl Store for RocksDbStore {
 
     async fn insert_asset_info(
         &self,
-        source_id: &str,
+        prefix: &str,
         asset_info: (String, AssetInfo),
     ) -> Result<(), Self::Error> {
         let key = Key::AssetStore {
-            source_id,
+            source_id: prefix,
             id: &asset_info.0,
         };
 
@@ -198,12 +201,15 @@ impl Store for RocksDbStore {
 
     async fn insert_asset_info_batch(
         &self,
-        source_id: &str,
+        prefix: &str,
         asset_infos: Vec<(String, AssetInfo)>,
     ) -> Result<(), Self::Error> {
         let mut write_batch = WriteBatch::default();
         for (id, asset_info) in asset_infos {
-            let key = Key::AssetStore { source_id, id: &id };
+            let key = Key::AssetStore {
+                source_id: prefix,
+                id: &id,
+            };
             let encoded = encode_to_vec(&asset_info, config::standard())?;
             write_batch.put(key.to_prefixed_bytes(), encoded);
         }

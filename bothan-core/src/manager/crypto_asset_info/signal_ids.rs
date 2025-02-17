@@ -5,6 +5,8 @@ use bothan_lib::worker::AssetWorker;
 use std::collections::{HashMap, HashSet, VecDeque};
 use tracing::{error, info};
 
+/// Sets the query ids for each worker based on the registry. If the registry contains a worker that
+/// is not in the worker map, it will be ignored and logged.
 pub async fn set_workers_query_ids<S: Store + 'static>(
     workers: &HashMap<String, CryptoAssetWorker<S>>,
     registry: &Registry<Valid>,
@@ -25,7 +27,7 @@ fn get_source_batched_query_ids(registry: &Registry<Valid>) -> HashMap<String, H
     // Seen signal_ids
     let mut seen = HashSet::<String>::new();
 
-    let mut queue = VecDeque::from_iter(registry.keys());
+    let mut queue = VecDeque::from_iter(registry.signal_ids());
     while let Some(signal_id) = queue.pop_front() {
         if seen.contains(signal_id) {
             continue;
