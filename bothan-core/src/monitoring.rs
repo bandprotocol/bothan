@@ -5,7 +5,6 @@ pub use utils::create_uuid;
 
 mod client;
 pub mod error;
-pub mod records;
 mod signer;
-mod types;
+pub(crate) mod types;
 mod utils;

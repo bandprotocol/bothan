@@ -7,7 +7,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SignalRecordsWithTxHash<T, U> {
+pub struct SignalTransactionRecord<T, U> {
     pub tx_hash: String,
     pub records: Arc<Vec<SignalComputationRecord<T, U>>>,
 }

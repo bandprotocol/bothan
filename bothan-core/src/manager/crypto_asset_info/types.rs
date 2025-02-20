@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::monitoring::records::SignalComputationRecord;
+use crate::monitoring::types::SignalComputationRecord;
 use bothan_lib::types::AssetState;
 use rust_decimal::Decimal;
 

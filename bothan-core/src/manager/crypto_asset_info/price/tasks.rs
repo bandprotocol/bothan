@@ -6,7 +6,7 @@ use tracing::{debug, info, warn};
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
 use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisiteError};
 use crate::manager::crypto_asset_info::types::{PriceSignalComputationRecord, PriceState};
-use crate::monitoring::records::{
+use crate::monitoring::types::{
     OperationRecord, ProcessRecord, SignalComputationRecord, SourceRecord,
 };
 use bothan_lib::registry::signal::Signal;
