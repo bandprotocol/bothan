@@ -26,6 +26,9 @@ struct Cli {
     // global args
     #[arg(long, global = true)]
     config: Option<PathBuf>,
+
+    #[arg(long, short)]
+    version: bool,
 }
 
 #[derive(Subcommand)]
@@ -49,6 +52,11 @@ async fn main() {
             std::process::exit(1);
         }
     };
+
+    if cli.version {
+        println!("bothan-api {}", env!("CARGO_PKG_VERSION"));
+        std::process::exit(0);
+    }
 
     let config_path = &cli.config.unwrap_or(bothan_home_dir().join("config.toml"));
 

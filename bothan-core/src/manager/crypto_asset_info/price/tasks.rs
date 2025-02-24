@@ -1,26 +1,26 @@
-use std::collections::{HashSet, VecDeque};
-
 use num_traits::Zero;
 use rust_decimal::Decimal;
+use std::collections::{HashMap, HashSet, VecDeque};
 use tracing::{debug, info, warn};
 
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
 use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisiteError};
-use crate::manager::crypto_asset_info::types::{
-    PriceSignalComputationRecord, PriceState, WorkerMap,
-};
-use crate::monitoring::records::{
+use crate::manager::crypto_asset_info::types::{PriceSignalComputationRecord, PriceState};
+use crate::monitoring::types::{
     OperationRecord, ProcessRecord, SignalComputationRecord, SourceRecord,
 };
-use crate::registry::signal::Signal;
-use crate::registry::source::{OperationRoute, SourceQuery};
-use crate::registry::{Registry, Valid};
-use crate::worker::{AssetState, AssetWorker};
+use bothan_lib::registry::signal::Signal;
+use bothan_lib::registry::source::{OperationRoute, SourceQuery};
+use bothan_lib::registry::{Registry, Valid};
+use bothan_lib::store::Store;
+use bothan_lib::types::AssetState;
+use bothan_lib::worker::AssetWorker;
 
 // TODO: Allow records to be Option<T>
-pub async fn get_signal_price_states<'a>(
+/// Computes the price states for a list of signal ids.
+pub async fn get_signal_price_states<S: Store + 'static, W: AssetWorker<S>>(
     ids: Vec<String>,
-    workers: &WorkerMap<'a>,
+    workers: &HashMap<String, W>,
     registry: &Registry<Valid>,
     stale_cutoff: i64,
     records: &mut Vec<PriceSignalComputationRecord>,
@@ -70,9 +70,9 @@ pub async fn get_signal_price_states<'a>(
         .collect()
 }
 
-async fn compute_signal_result<'a>(
+async fn compute_signal_result<S: Store + 'static, W: AssetWorker<S>>(
     id: &str,
-    workers: &WorkerMap<'a>,
+    workers: &HashMap<String, W>,
     registry: &Registry<Valid>,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
@@ -125,9 +125,9 @@ async fn compute_signal_result<'a>(
     }
 }
 
-async fn compute_source_result<'a>(
+async fn compute_source_result<S: Store + 'static, W: AssetWorker<S>>(
     signal: &Signal,
-    workers: &WorkerMap<'a>,
+    workers: &HashMap<String, W>,
     cache: &PriceCache<String>,
     stale_cutoff: i64,
     record: &mut PriceSignalComputationRecord,
@@ -141,7 +141,7 @@ async fn compute_source_result<'a>(
     for source_query in &signal.source_queries {
         if let Some(worker) = workers.get(&source_query.source_id) {
             let source_value_opt = process_source_query(
-                worker.as_ref(),
+                worker,
                 source_query,
                 stale_cutoff,
                 cache,
@@ -165,8 +165,8 @@ async fn compute_source_result<'a>(
     Ok(source_values)
 }
 
-async fn process_source_query<'a>(
-    worker: &'a dyn AssetWorker,
+async fn process_source_query<S: Store + 'static, W: AssetWorker<S>>(
+    worker: &W,
     source_query: &SourceQuery,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
@@ -217,7 +217,7 @@ fn compute_source_routes(
     cache: &PriceCache<String>,
     record: &mut SourceRecord<AssetState, Decimal>,
 ) -> Result<Option<Decimal>, MissingPrerequisiteError> {
-    // Get all pre requisites
+    // Get all prerequisites
     let mut missing = Vec::with_capacity(routes.len());
     let mut values = Vec::with_capacity(routes.len());
     for route in routes {
@@ -251,35 +251,115 @@ fn compute_source_routes(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
-
-    use num_traits::One;
-
-    use crate::registry::processor::median::MedianProcessor;
-    use crate::registry::processor::Processor;
-    use crate::registry::source::Operation;
-    use crate::registry::tests::valid_mock_registry;
-    use crate::store::error::Error as StoreError;
-    use crate::types::AssetInfo;
-    use crate::worker::SetQueryIDError;
-
     use super::*;
+    use bothan_lib::registry::processor::median::MedianProcessor;
+    use bothan_lib::registry::processor::Processor;
+    use bothan_lib::registry::source::Operation;
+    use bothan_lib::types::AssetInfo;
+    use bothan_lib::worker::error::AssetWorkerError;
+    use derive_more::Error;
+    use num_traits::One;
+    use std::collections::HashMap;
+    use std::fmt;
+    use std::marker::PhantomData;
 
-    #[derive(Default)]
-    struct MockWorker {
-        expected_results: HashMap<String, AssetState>,
+    #[derive(Debug, Error)]
+    struct MockError {}
+
+    impl fmt::Display for MockError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "mock error")
+        }
     }
 
-    impl MockWorker {
+    #[derive(Clone)]
+    struct MockStore {}
+
+    #[async_trait::async_trait]
+    impl Store for MockStore {
+        type Error = MockError;
+
+        async fn set_registry(&self, _: Registry<Valid>, _: String) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        async fn get_registry(&self) -> Registry<Valid> {
+            Registry::default()
+        }
+
+        async fn get_registry_ipfs_hash(&self) -> Result<Option<String>, Self::Error> {
+            Ok(None)
+        }
+
+        async fn set_query_ids(&self, _: &str, _: Vec<String>) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        async fn get_query_ids(&self, _: &str) -> Result<Option<Vec<String>>, Self::Error> {
+            Ok(None)
+        }
+
+        async fn insert_query_ids(&self, _: &str, _: Vec<String>) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        async fn remove_query_ids(&self, _: &str, _: &[String]) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        async fn contains_query_id(&self, _: &str, _: &str) -> Result<bool, Self::Error> {
+            Ok(false)
+        }
+
+        async fn get_asset_info(&self, _: &str, _: &str) -> Result<Option<AssetInfo>, Self::Error> {
+            Ok(None)
+        }
+
+        async fn insert_asset_info(
+            &self,
+            _: &str,
+            _: (String, AssetInfo),
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        async fn insert_asset_info_batch(
+            &self,
+            _: &str,
+            _: Vec<(String, AssetInfo)>,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    #[derive(Default)]
+    struct MockWorker<S: Store> {
+        expected_results: HashMap<String, AssetState>,
+        phantom_data: PhantomData<S>,
+    }
+
+    impl<S: Store> MockWorker<S> {
         fn add_expected_query(&mut self, id: String, asset_state: AssetState) {
             self.expected_results.insert(id, asset_state);
         }
     }
 
     #[async_trait::async_trait]
-    impl AssetWorker for MockWorker {
-        async fn get_asset(&self, id: &str) -> Result<AssetState, StoreError> {
+    impl<S: Store> AssetWorker<S> for MockWorker<S> {
+        type Opts = ();
+
+        fn name(&self) -> &'static str {
+            "mock"
+        }
+
+        async fn build(_: Self::Opts, _: &S) -> Result<Self, AssetWorkerError> {
+            Ok(MockWorker {
+                expected_results: HashMap::new(),
+                phantom_data: PhantomData,
+            })
+        }
+
+        async fn get_asset(&self, id: &str) -> Result<AssetState, AssetWorkerError> {
             Ok(self
                 .expected_results
                 .get(id)
@@ -287,23 +367,22 @@ mod tests {
                 .clone())
         }
 
-        async fn set_query_ids(&self, _: Vec<String>) -> Result<(), SetQueryIDError> {
+        async fn set_query_ids(&self, _: Vec<String>) -> Result<(), AssetWorkerError> {
             Ok(())
         }
     }
 
-    fn mock_workers<'a, K: Into<String>>(workers: Vec<(K, MockWorker)>) -> WorkerMap<'a> {
-        workers
-            .into_iter()
-            .map(|(id, worker)| (id.into(), Arc::new(worker) as Arc<dyn AssetWorker>))
-            .collect()
+    pub fn mock_registry() -> Registry<Valid> {
+        let json_string = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"coingecko\",\"id\":\"tether\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:BTC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"btcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]},{\"source_id\":\"coingecko\",\"id\":\"bitcoin\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
+        let registry = serde_json::from_str::<Registry>(json_string).unwrap();
+        registry.validate().unwrap()
     }
 
     #[tokio::test]
     async fn test_get_signal_price_states() {
         let ids = vec!["CS:BTC-USD".to_string(), "CS:USDT-USD".to_string()];
 
-        let mut binance_worker = MockWorker::default();
+        let mut binance_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         binance_worker.add_expected_query(
             "btcusdt".to_string(),
             AssetState::Available(AssetInfo::new(
@@ -313,7 +392,7 @@ mod tests {
             )),
         );
 
-        let mut coingecko_worker = MockWorker::default();
+        let mut coingecko_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         coingecko_worker.add_expected_query(
             "bitcoin".to_string(),
             AssetState::Available(AssetInfo::new(
@@ -327,12 +406,11 @@ mod tests {
             AssetState::Available(AssetInfo::new("tether".to_string(), Decimal::one(), 11002)),
         );
 
-        let workers = mock_workers(vec![
-            ("binance", binance_worker),
-            ("coingecko", coingecko_worker),
-        ]);
+        let mut workers = HashMap::new();
+        workers.insert("binance".to_string(), binance_worker);
+        workers.insert("coingecko".to_string(), coingecko_worker);
 
-        let registry = valid_mock_registry().validate().unwrap();
+        let registry = mock_registry();
         let stale_cutoff = 0;
         let mut records = Vec::new();
 
@@ -349,19 +427,18 @@ mod tests {
     #[tokio::test]
     async fn test_get_signal_price_states_with_unavailable() {
         let ids = vec!["CS:BTC-USD".to_string(), "CS:USDT-USD".to_string()];
-        let mut binance_worker = MockWorker::default();
+        let mut binance_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         binance_worker.add_expected_query("btcusdt".to_string(), AssetState::Unsupported);
 
-        let mut coingecko_worker = MockWorker::default();
+        let mut coingecko_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         coingecko_worker.add_expected_query("bitcoin".to_string(), AssetState::Unsupported);
         coingecko_worker.add_expected_query("tether".to_string(), AssetState::Unsupported);
 
-        let workers = mock_workers(vec![
-            ("binance", binance_worker),
-            ("coingecko", coingecko_worker),
-        ]);
+        let mut workers = HashMap::new();
+        workers.insert("binance".to_string(), binance_worker);
+        workers.insert("coingecko".to_string(), coingecko_worker);
 
-        let registry = valid_mock_registry().validate().unwrap();
+        let registry = mock_registry();
         let stale_cutoff = 0;
         let mut records = Vec::new();
 
@@ -380,7 +457,7 @@ mod tests {
             "CS:DNE-USD".to_string(),
         ];
 
-        let mut binance_worker = MockWorker::default();
+        let mut binance_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         binance_worker.add_expected_query(
             "btcusdt".to_string(),
             AssetState::Available(AssetInfo::new(
@@ -390,7 +467,7 @@ mod tests {
             )),
         );
 
-        let mut coingecko_worker = MockWorker::default();
+        let mut coingecko_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         coingecko_worker.add_expected_query(
             "bitcoin".to_string(),
             AssetState::Available(AssetInfo::new(
@@ -404,12 +481,11 @@ mod tests {
             AssetState::Available(AssetInfo::new("tether".to_string(), Decimal::one(), 11002)),
         );
 
-        let workers = mock_workers(vec![
-            ("binance", binance_worker),
-            ("coingecko", coingecko_worker),
-        ]);
+        let mut workers = HashMap::new();
+        workers.insert("binance".to_string(), binance_worker);
+        workers.insert("coingecko".to_string(), coingecko_worker);
 
-        let registry = valid_mock_registry().validate().unwrap();
+        let registry = mock_registry();
         let stale_cutoff = 10000;
         let mut records = Vec::new();
 
@@ -434,12 +510,13 @@ mod tests {
         let processor = Processor::Median(MedianProcessor::new(1));
         let signal = Signal::new(source_queries, processor, vec![]);
 
-        let mut test_source_worker = MockWorker::default();
+        let mut test_source_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         let asset_state =
             AssetState::Available(AssetInfo::new("testusd".to_string(), Decimal::default(), 0));
         test_source_worker.add_expected_query("testusd".to_string(), asset_state.clone());
 
-        let workers = mock_workers(vec![("test-source", test_source_worker)]);
+        let mut workers = HashMap::new();
+        workers.insert("test-source".to_string(), test_source_worker);
 
         let cache = PriceCache::new();
         let stale_cutoff = 0;
@@ -477,13 +554,14 @@ mod tests {
         let processor = Processor::Median(MedianProcessor::new(1));
         let signal = Signal::new(source_queries, processor, vec![]);
 
-        let mut test_source_worker = MockWorker::default();
+        let mut test_source_worker = MockWorker::build((), &MockStore {}).await.unwrap();
         test_source_worker.add_expected_query(
             "testusd".to_string(),
             AssetState::Available(AssetInfo::new("testusd".to_string(), Decimal::default(), 0)),
         );
 
-        let workers = mock_workers(vec![("test-source", test_source_worker)]);
+        let mut workers = HashMap::new();
+        workers.insert("test-source".to_string(), test_source_worker);
 
         let cache = PriceCache::new();
         let stale_cutoff = 0;
@@ -500,7 +578,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_process_source_query() {
-        let mut worker = MockWorker::default();
+        let mut worker = MockWorker::build((), &MockStore {}).await.unwrap();
         let id = "testusd".to_string();
         let asset_state =
             AssetState::Available(AssetInfo::new(id.clone(), Decimal::new(1000, 0), 10));
@@ -529,7 +607,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_process_source_query_with_timeout() {
-        let mut worker = MockWorker::default();
+        let mut worker = MockWorker::build((), &MockStore {}).await.unwrap();
         let id = "testusd".to_string();
         let asset_info = AssetInfo::new(id.clone(), Decimal::default(), 0);
         worker.add_expected_query(
@@ -560,7 +638,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_process_source_query_with_unsupported_asset_state() {
-        let mut worker = MockWorker::default();
+        let mut worker = MockWorker::build((), &MockStore {}).await.unwrap();
         worker.add_expected_query("testusd".to_string(), AssetState::Unsupported);
 
         let source_query =

@@ -1,6 +1,5 @@
-pub use worker::builder::HtxWorkerBuilder;
-pub use worker::opts::HtxWorkerBuilderOpts;
-pub use worker::HtxWorker;
+pub use worker::opts::WorkerOpts;
+pub use worker::Worker;
 
 pub mod api;
 pub mod worker;
