@@ -28,25 +28,22 @@ use crate::api::RestApi;
 /// }
 /// ```
 pub struct RestApiBuilder {
-    url: String,
+    url: Option<String>,
     user_agent: String,
     api_key: Option<String>,
-    // Flag to determine if the user modified the URL.
-    mod_url: bool,
 }
 
 impl RestApiBuilder {
-    pub fn new<T, U, V>(url: T, user_agent: U, api_key: Option<V>) -> Self
+    pub fn new<T, U, V>(url: Option<T>, user_agent: U, api_key: Option<V>) -> Self
     where
         T: Into<String>,
         U: Into<String>,
         V: Into<String>,
     {
         RestApiBuilder {
-            url: url.into(),
+            url: url.map(|v| v.into()),
             user_agent: user_agent.into(),
             api_key: api_key.map(Into::into),
-            mod_url: true,
         }
     }
 
@@ -54,8 +51,7 @@ impl RestApiBuilder {
     /// If not specified, the default URL is `DEFAULT_URL` when no API key is provided,
     /// and `DEFAULT_PRO_URL` when an API key is provided.
     pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
-        self.url = url.into();
-        self.mod_url = true;
+        self.url = Some(url.into());
         self
     }
 
@@ -80,10 +76,10 @@ impl RestApiBuilder {
         let agent = HeaderValue::from_str(&self.user_agent)?;
         headers.insert("User-Agent", agent);
 
-        let url = match (&self.mod_url, &self.api_key) {
-            (true, _) => &self.url,
-            (false, Some(_)) => DEFAULT_PRO_URL,
-            (false, None) => DEFAULT_URL,
+        let url = match (&self.url, &self.api_key) {
+            (Some(url), _) => url,
+            (None, Some(_)) => DEFAULT_PRO_URL,
+            (None, None) => DEFAULT_URL,
         };
         let parsed_url = Url::parse(url)?;
 
@@ -102,10 +98,9 @@ impl Default for RestApiBuilder {
     /// Creates a default `CoinGeckoRestAPIBuilder` instance with default values.
     fn default() -> Self {
         RestApiBuilder {
-            url: DEFAULT_URL.into(),
+            url: Some(DEFAULT_URL.into()),
             api_key: None,
             user_agent: DEFAULT_USER_AGENT.into(),
-            mod_url: false,
         }
     }
 }

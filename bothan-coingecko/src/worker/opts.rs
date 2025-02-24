@@ -13,8 +13,8 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 /// which will be used during the construction of the `CoinGeckoWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorkerOpts {
-    #[serde(default = "default_url")]
-    pub url: String,
+    #[serde(serialize_with = "none_is_default_url")]
+    pub url: Option<String>,
     #[serde(default)]
     #[serde(deserialize_with = "empty_string_is_none")]
     #[serde(serialize_with = "none_is_empty_string")]
@@ -24,10 +24,6 @@ pub struct WorkerOpts {
     #[serde(default = "default_update_interval")]
     #[serde(with = "humantime_serde")]
     pub update_interval: Duration,
-}
-
-fn default_url() -> String {
-    DEFAULT_URL.to_string()
 }
 
 fn default_user_agent() -> String {
@@ -41,7 +37,7 @@ fn default_update_interval() -> Duration {
 impl Default for WorkerOpts {
     fn default() -> Self {
         Self {
-            url: default_url(),
+            url: None,
             api_key: None,
             user_agent: default_user_agent(),
             update_interval: default_update_interval(),
@@ -63,5 +59,15 @@ fn none_is_empty_string<S: Serializer>(
     match value {
         Some(val) => serializer.serialize_str(val),
         None => serializer.serialize_str(""),
+    }
+}
+
+fn none_is_default_url<S: Serializer>(
+    value: &Option<String>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match value {
+        Some(val) => serializer.serialize_str(val),
+        None => serializer.serialize_str(DEFAULT_URL),
     }
 }

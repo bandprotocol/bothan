@@ -399,7 +399,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-api-cli"
-version = "0.0.1-beta.1"
+version = "0.0.1-beta.2"
 dependencies = [
  "anyhow",
  "bothan-api",
