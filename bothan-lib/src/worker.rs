@@ -1,6 +1,7 @@
 use crate::store::Store;
 use crate::types::AssetState;
 use error::AssetWorkerError;
+use std::collections::HashSet;
 
 pub mod error;
 pub mod rest;
@@ -17,5 +18,5 @@ pub trait AssetWorker<S: Store>: Send + Sync + Sized {
     /// Get the asset info for the given id.
     async fn get_asset(&self, id: &str) -> Result<AssetState, AssetWorkerError>;
     /// Set the query ids for the worker.
-    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), AssetWorkerError>;
+    async fn set_query_ids(&self, ids: HashSet<String>) -> Result<(), AssetWorkerError>;
 }

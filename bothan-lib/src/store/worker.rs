@@ -3,11 +3,14 @@ use crate::types::AssetInfo;
 use crate::types::AssetState;
 use std::collections::HashSet;
 use std::hash::RandomState;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct WorkerStore<S: Store> {
     store: S,
     prefix: String,
+    query_ids_lock: Arc<Mutex<()>>,
 }
 
 impl<S: Store> WorkerStore<S> {
@@ -16,6 +19,7 @@ impl<S: Store> WorkerStore<S> {
         Self {
             store: store.clone(),
             prefix: prefix.into(),
+            query_ids_lock: Arc::new(Mutex::new(())),
         }
     }
 
@@ -32,21 +36,17 @@ impl<S: Store> WorkerStore<S> {
     }
 
     /// Set the asset state for the specified query id.
-    pub async fn set_asset(&self, id: String, asset_info: AssetInfo) -> Result<(), S::Error> {
-        self.store
-            .insert_asset_info(&self.prefix, (id, asset_info))
-            .await
+    pub async fn set_asset_info(&self, asset: AssetInfo) -> Result<(), S::Error> {
+        self.store.insert_asset_info(&self.prefix, asset).await
     }
 
     /// Sets multiple asset states for the specified query ids.
-    pub async fn set_assets(&self, assets: Vec<(String, AssetInfo)>) -> Result<(), S::Error> {
-        self.store
-            .insert_asset_info_batch(&self.prefix, assets)
-            .await
+    pub async fn set_asset_infos(&self, assets: Vec<AssetInfo>) -> Result<(), S::Error> {
+        self.store.insert_asset_infos(&self.prefix, assets).await
     }
 
     /// Gets multiple asset states for the specified query ids.
-    pub async fn get_query_ids(&self) -> Result<Vec<String>, S::Error> {
+    pub async fn get_query_ids(&self) -> Result<HashSet<String>, S::Error> {
         let query_ids = self
             .store
             .get_query_ids(&self.prefix)
@@ -58,18 +58,17 @@ impl<S: Store> WorkerStore<S> {
     /// Calculates the [Difference] between the current query ids and a new set of query ids.
     pub async fn compute_query_id_difference(
         &self,
-        ids: Vec<String>,
+        ids: HashSet<String>,
     ) -> Result<Difference, S::Error> {
         let query_ids = self.get_query_ids().await?;
         let current_ids: HashSet<String, RandomState> = HashSet::from_iter(query_ids.into_iter());
-        let new_ids = HashSet::from_iter(ids.into_iter());
 
-        let added = new_ids
+        let added = ids
             .difference(&current_ids)
             .cloned()
             .collect::<Vec<String>>();
         let removed = current_ids
-            .difference(&new_ids)
+            .difference(&ids)
             .cloned()
             .collect::<Vec<String>>();
 
@@ -78,16 +77,49 @@ impl<S: Store> WorkerStore<S> {
 
     /// Adds the specified query ids to the current set of query ids.
     pub async fn add_query_ids(&self, ids: Vec<String>) -> Result<(), S::Error> {
-        self.store.insert_query_ids(&self.prefix, ids).await
+        if ids.is_empty() {
+            return Ok(());
+        }
+
+        // Guard will be dropped at the end of this
+        let _ = self.query_ids_lock.lock().await;
+        let mut query_ids = self
+            .store
+            .get_query_ids(&self.prefix)
+            .await?
+            .unwrap_or_default();
+        query_ids.extend(ids.into_iter());
+        self.set_query_ids(query_ids).await
     }
 
     /// Removes the specified query ids from the current set of query ids.
     pub async fn remove_query_ids(&self, ids: &[String]) -> Result<(), S::Error> {
-        self.store.remove_query_ids(&self.prefix, ids).await
+        if ids.is_empty() {
+            return Ok(());
+        }
+
+        let _ = self.query_ids_lock.lock().await;
+        let mut query_ids = self
+            .store
+            .get_query_ids(&self.prefix)
+            .await?
+            .unwrap_or_default();
+
+        let curr_len = query_ids.len();
+        for id in ids {
+            query_ids.remove(id);
+        }
+
+        // Value is not overwritten if no changes are made to query id set
+        if curr_len == query_ids.len() {
+            Ok(())
+        } else {
+            self.set_query_ids(query_ids).await
+        }
     }
 
     /// Completely overwrite the current query ids with the new set of query ids.
-    pub async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), S::Error> {
+    pub async fn set_query_ids(&self, ids: HashSet<String>) -> Result<(), S::Error> {
         self.store.set_query_ids(&self.prefix, ids).await
     }
 }

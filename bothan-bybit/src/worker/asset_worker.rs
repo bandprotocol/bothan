@@ -148,7 +148,7 @@ async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: Ticker) {
         }
     };
 
-    if let Err(e) = store.set_asset(id.clone(), asset_info).await {
+    if let Err(e) = store.set_asset_info(asset_info).await {
         error!("failed to store ticker data for id {}: {}", id, e);
     } else {
         debug!("stored data for id {}", id);

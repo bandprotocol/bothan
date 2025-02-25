@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::mpsc::{channel, Sender};
 
@@ -69,7 +70,7 @@ impl<S: Store + 'static> AssetWorker<S> for Worker<S> {
         Ok(self.inner.store.get_asset(id).await?)
     }
 
-    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), AssetWorkerError> {
+    async fn set_query_ids(&self, ids: HashSet<String>) -> Result<(), AssetWorkerError> {
         let diff = self.inner.store.compute_query_id_difference(ids).await?;
 
         self.inner.subscribe_tx.send(diff.added).await?;

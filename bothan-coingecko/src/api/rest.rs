@@ -78,14 +78,14 @@ impl AssetInfoProvider for RestApi {
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+mod test {
     use mockito::{Matcher, Mock, Server, ServerGuard};
 
     use crate::api::RestApiBuilder;
 
     use super::*;
 
-    pub(crate) async fn setup() -> (ServerGuard, RestApi) {
+    async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;
 
         let api = RestApiBuilder::default()
@@ -96,7 +96,7 @@ pub(crate) mod test {
         (server, api)
     }
 
-    pub(crate) trait MockCoinGecko {
+    trait MockCoinGecko {
         fn set_successful_coin_list(&mut self, coin_list: &[Coin]) -> Mock;
         fn set_failed_coin_list(&mut self) -> Mock;
         fn set_successful_simple_price(

@@ -230,7 +230,7 @@ async fn store_data<S: Store>(store: &WorkerStore<S>, data: Data) {
             let timestamp = ticker.event_time / 1000;
             let asset_info = AssetInfo::new(id.clone(), price, timestamp);
 
-            match store.set_asset(id.clone(), asset_info).await {
+            match store.set_asset_info(asset_info).await {
                 Ok(_) => {
                     info!("stored data for id {}", id);
                     global::meter(METER_NAME)

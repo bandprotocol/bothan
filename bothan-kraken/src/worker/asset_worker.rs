@@ -127,23 +127,12 @@ async fn handle_reconnect<S: Store>(
     }
 }
 
-// fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, WorkerError> {
-//     let id = ticker.symbol.clone();
-//     let price_value =
-//         Decimal::from_f64(ticker.last).ok_or(WorkerError::InvalidPrice(ticker.last))?;
-//     Ok(AssetInfo::new(
-//         id,
-//         price_value,
-//         chrono::Utc::now().timestamp(),
-//     ))
-// }
-
 async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: TickerResponse, timestamp: i64) {
     let id = ticker.symbol.clone();
     match Decimal::from_f64_retain(ticker.last) {
         Some(price) => {
             let asset_info = AssetInfo::new(id.clone(), price, timestamp);
-            if let Err(e) = store.set_asset(id.clone(), asset_info).await {
+            if let Err(e) = store.set_asset_info(asset_info).await {
                 error!("failed to store data for id {}: {}", id, e);
             } else {
                 debug!("stored data for id {}", id);

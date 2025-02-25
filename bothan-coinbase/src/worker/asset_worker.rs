@@ -138,14 +138,14 @@ fn parse_ticker(ticker: &Ticker) -> Result<AssetInfo, rust_decimal::Error> {
 
 async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: &Ticker) {
     let id = ticker.product_id.clone();
-    let ticker = match parse_ticker(ticker) {
+    let asset_info = match parse_ticker(ticker) {
         Ok(ticker) => ticker,
         Err(e) => {
             error!("failed to parse ticker: {}", e);
             return;
         }
     };
-    match store.set_asset(id.clone(), ticker).await {
+    match store.set_asset_info(asset_info).await {
         Ok(_) => debug!("stored data for id {}", id),
         Err(e) => error!("failed to save data: {}", e),
     }

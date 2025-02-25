@@ -15,7 +15,7 @@ impl<'a> Display for Key<'a> {
             Key::Registry => "registry".to_string(),
             Key::RegistryIpfsHash => "registry_ipfs_hash".to_string(),
         };
-        write!(f, "bothan::{}", s)
+        write!(f, "{}", s)
     }
 }
 

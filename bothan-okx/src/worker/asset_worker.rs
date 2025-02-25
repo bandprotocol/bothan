@@ -130,7 +130,7 @@ async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: TickerData, time
     match Decimal::from_str_exact(&ticker.last) {
         Ok(price) => {
             let asset_info = AssetInfo::new(id.clone(), price, timestamp);
-            if let Err(e) = store.set_asset(id.clone(), asset_info).await {
+            if let Err(e) = store.set_asset_info(asset_info).await {
                 error!("failed to store data for id {}: {}", id, e);
             } else {
                 debug!("stored data for id {}", id);

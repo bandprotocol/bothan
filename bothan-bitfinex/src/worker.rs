@@ -7,6 +7,7 @@ use bothan_lib::types::AssetState;
 use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::rest::{start_polling, AssetInfoProvider};
 use bothan_lib::worker::AssetWorker;
+use std::collections::HashSet;
 use std::sync::{Arc, Weak};
 
 const WORKER_NAME: &str = "bitfinex";
@@ -51,7 +52,7 @@ impl<S: Store + 'static> AssetWorker<S> for Worker<S> {
         Ok(self.store.get_asset(id).await?)
     }
 
-    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), AssetWorkerError> {
+    async fn set_query_ids(&self, ids: HashSet<String>) -> Result<(), AssetWorkerError> {
         self.store.set_query_ids(ids).await?;
         Ok(())
     }

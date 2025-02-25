@@ -11,9 +11,9 @@ pub async fn set_workers_query_ids<S: Store + 'static>(
     workers: &HashMap<String, CryptoAssetWorker<S>>,
     registry: &Registry<Valid>,
 ) {
-    for (source, mut query_ids) in get_source_batched_query_ids(registry).drain() {
+    for (source, query_ids) in get_source_batched_query_ids(registry).drain() {
         match workers.get(&source) {
-            Some(worker) => match worker.set_query_ids(query_ids.drain().collect()).await {
+            Some(worker) => match worker.set_query_ids(query_ids).await {
                 Ok(_) => info!("set query ids for {} worker", source),
                 Err(e) => error!("failed to set query ids for {} worker: {}", source, e),
             },

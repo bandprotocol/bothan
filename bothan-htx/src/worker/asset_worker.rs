@@ -121,7 +121,7 @@ async fn store_tick<S: Store, T: Into<String>>(store: &WorkerStore<S>, id: T, ti
     match Decimal::from_f64(tick.last_price) {
         Some(price) => {
             let asset_info = AssetInfo::new(id.clone(), price, 0);
-            if let Err(e) = store.set_asset(id.clone(), asset_info).await {
+            if let Err(e) = store.set_asset_info(asset_info).await {
                 error!("failed to store data for id {}: {}", id, e);
             }
             debug!("stored data for id {}", id);

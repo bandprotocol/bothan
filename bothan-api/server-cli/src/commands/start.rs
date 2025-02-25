@@ -95,15 +95,23 @@ async fn init_rocks_db_store(
         (true, true) => {
             remove_dir_all(&config.store.path)
                 .with_context(|| "Failed to create home directory")?;
-            RocksDbStore::new(flush_path)?
+            let db = RocksDbStore::new(flush_path)?;
+            debug!("store reset successfully at {:?}", &config.store.path);
+            db
         }
         // If no reset, load the store
-        (false, true) => RocksDbStore::load(flush_path)?,
+        (false, true) => {
+            let db = RocksDbStore::load(flush_path)?;
+            debug!("store loaded successfully at {:?}", &config.store.path);
+            db
+        }
         // If the path does not exist, create the directory and create a new store
         (_, false) => {
             create_dir_all(&config.store.path)
                 .with_context(|| "Failed to create home directory")?;
-            RocksDbStore::new(flush_path)?
+            let db = RocksDbStore::new(flush_path)?;
+            debug!("store created successfully at {:?}", &config.store.path);
+            db
         }
     };
 
@@ -111,8 +119,6 @@ async fn init_rocks_db_store(
     if let Some(registry) = registry {
         store.set_registry(registry, "".to_string()).await?;
     }
-
-    debug!("store created successfully at {:?}", &config.store.path);
 
     Ok(store)
 }

@@ -26,7 +26,7 @@ pub async fn start_polling<S: Store, E: Display>(
         interval.tick().await;
 
         let ids = match store.get_query_ids().await {
-            Ok(ids) => ids,
+            Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
             Err(e) => {
                 error!("failed to get query ids with error: {}", e);
                 continue;
@@ -45,11 +45,7 @@ pub async fn start_polling<S: Store, E: Display>(
 
         match timeout(interval.period(), provider.get_asset_info(&ids)).await {
             Ok(Ok(asset_info)) => {
-                // save state
-                if let Err(e) = store
-                    .set_assets(ids.into_iter().zip(asset_info.into_iter()).collect())
-                    .await
-                {
+                if let Err(e) = store.set_asset_infos(asset_info).await {
                     error!("failed to update asset info with error: {e}");
                 } else {
                     debug!("asset info updated successfully");

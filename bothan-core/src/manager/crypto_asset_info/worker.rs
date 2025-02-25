@@ -6,6 +6,7 @@ use bothan_lib::types::AssetState;
 use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::AssetWorker;
 use derive_more::From;
+use std::collections::HashSet;
 
 #[derive(From)]
 pub enum CryptoAssetWorker<S: Store> {
@@ -84,7 +85,7 @@ impl<S: Store + 'static> AssetWorker<S> for CryptoAssetWorker<S> {
         }
     }
 
-    async fn set_query_ids(&self, ids: Vec<String>) -> Result<(), AssetWorkerError> {
+    async fn set_query_ids(&self, ids: HashSet<String>) -> Result<(), AssetWorkerError> {
         match self {
             CryptoAssetWorker::Binance(worker) => worker.set_query_ids(ids).await,
             CryptoAssetWorker::Bitfinex(worker) => worker.set_query_ids(ids).await,

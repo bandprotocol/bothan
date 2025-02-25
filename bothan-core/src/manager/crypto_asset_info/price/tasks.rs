@@ -18,13 +18,17 @@ use bothan_lib::worker::AssetWorker;
 
 // TODO: Allow records to be Option<T>
 /// Computes the price states for a list of signal ids.
-pub async fn get_signal_price_states<S: Store + 'static, W: AssetWorker<S>>(
+pub async fn get_signal_price_states<S, W>(
     ids: Vec<String>,
     workers: &HashMap<String, W>,
     registry: &Registry<Valid>,
     stale_cutoff: i64,
     records: &mut Vec<PriceSignalComputationRecord>,
-) -> Vec<PriceState> {
+) -> Vec<PriceState>
+where
+    S: Store + 'static,
+    W: AssetWorker<S>,
+{
     let mut cache = PriceCache::new();
 
     let mut queue = VecDeque::from(ids.clone());
@@ -70,14 +74,18 @@ pub async fn get_signal_price_states<S: Store + 'static, W: AssetWorker<S>>(
         .collect()
 }
 
-async fn compute_signal_result<S: Store + 'static, W: AssetWorker<S>>(
+async fn compute_signal_result<S, W>(
     id: &str,
     workers: &HashMap<String, W>,
     registry: &Registry<Valid>,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
     records: &mut Vec<PriceSignalComputationRecord>,
-) -> Result<Decimal, Error> {
+) -> Result<Decimal, Error>
+where
+    S: Store + 'static,
+    W: AssetWorker<S>,
+{
     match registry.get(id) {
         Some(signal) => {
             let mut record = SignalComputationRecord::new(id.to_string());
@@ -89,7 +97,6 @@ async fn compute_signal_result<S: Store + 'static, W: AssetWorker<S>>(
             // We can unwrap here because we just pushed the record, so it's guaranteed to be there
             let record_ref = records.last_mut().unwrap();
 
-            // let processor_ref: Processor = &signal.processor;
             let process_signal_result = signal.processor.process(source_results);
             record_ref.process_result = Some(ProcessRecord::new(
                 signal.processor.name().to_string(),
@@ -125,13 +132,17 @@ async fn compute_signal_result<S: Store + 'static, W: AssetWorker<S>>(
     }
 }
 
-async fn compute_source_result<S: Store + 'static, W: AssetWorker<S>>(
+async fn compute_source_result<S, W>(
     signal: &Signal,
     workers: &HashMap<String, W>,
     cache: &PriceCache<String>,
     stale_cutoff: i64,
     record: &mut PriceSignalComputationRecord,
-) -> Result<Vec<(String, Decimal)>, MissingPrerequisiteError> {
+) -> Result<Vec<(String, Decimal)>, MissingPrerequisiteError>
+where
+    S: Store + 'static,
+    W: AssetWorker<S>,
+{
     // Create a temporary cache here as we don't want to write to the main record until we can
     // confirm that all prerequisites are settled
     let mut records_cache = Vec::new();
@@ -165,13 +176,17 @@ async fn compute_source_result<S: Store + 'static, W: AssetWorker<S>>(
     Ok(source_values)
 }
 
-async fn process_source_query<S: Store + 'static, W: AssetWorker<S>>(
+async fn process_source_query<S, W>(
     worker: &W,
     source_query: &SourceQuery,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
     source_records: &mut Vec<SourceRecord<AssetState, Decimal>>,
-) -> Result<Option<(String, Decimal)>, MissingPrerequisiteError> {
+) -> Result<Option<(String, Decimal)>, MissingPrerequisiteError>
+where
+    S: Store + 'static,
+    W: AssetWorker<S>,
+{
     let source_id = &source_query.source_id;
     let query_id = &source_query.query_id;
 
@@ -291,20 +306,12 @@ mod tests {
             Ok(None)
         }
 
-        async fn set_query_ids(&self, _: &str, _: Vec<String>) -> Result<(), Self::Error> {
+        async fn set_query_ids(&self, _: &str, _: HashSet<String>) -> Result<(), Self::Error> {
             Ok(())
         }
 
-        async fn get_query_ids(&self, _: &str) -> Result<Option<Vec<String>>, Self::Error> {
+        async fn get_query_ids(&self, _: &str) -> Result<Option<HashSet<String>>, Self::Error> {
             Ok(None)
-        }
-
-        async fn insert_query_ids(&self, _: &str, _: Vec<String>) -> Result<(), Self::Error> {
-            Ok(())
-        }
-
-        async fn remove_query_ids(&self, _: &str, _: &[String]) -> Result<(), Self::Error> {
-            Ok(())
         }
 
         async fn contains_query_id(&self, _: &str, _: &str) -> Result<bool, Self::Error> {
@@ -315,19 +322,11 @@ mod tests {
             Ok(None)
         }
 
-        async fn insert_asset_info(
-            &self,
-            _: &str,
-            _: (String, AssetInfo),
-        ) -> Result<(), Self::Error> {
+        async fn insert_asset_info(&self, _: &str, _: AssetInfo) -> Result<(), Self::Error> {
             Ok(())
         }
 
-        async fn insert_asset_info_batch(
-            &self,
-            _: &str,
-            _: Vec<(String, AssetInfo)>,
-        ) -> Result<(), Self::Error> {
+        async fn insert_asset_infos(&self, _: &str, _: Vec<AssetInfo>) -> Result<(), Self::Error> {
             Ok(())
         }
     }
@@ -367,7 +366,7 @@ mod tests {
                 .clone())
         }
 
-        async fn set_query_ids(&self, _: Vec<String>) -> Result<(), AssetWorkerError> {
+        async fn set_query_ids(&self, _: HashSet<String>) -> Result<(), AssetWorkerError> {
             Ok(())
         }
     }
