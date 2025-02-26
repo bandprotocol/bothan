@@ -363,7 +363,7 @@ mod tests {
 
         assert_eq!(
             funding_ticker.err().unwrap().to_string(),
-            "invalid length 16, expected tuple with length 11 at line 1 column 178"
+            "invalid length 16, expected tuple with length 15 at line 1 column 178"
         );
     }
 
@@ -411,7 +411,7 @@ mod tests {
 
         assert_eq!(
             funding_ticker.err().unwrap().to_string(),
-            "missing field `frr_amount_available` at line 1 column 313"
+            "missing field `frr_amount_available` at line 1 column 317"
         );
     }
 
