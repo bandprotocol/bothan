@@ -1,1 +1,2 @@
-pub mod rocks_db;
+#[cfg(feature = "rocksdb")]
+pub mod rocksdb;

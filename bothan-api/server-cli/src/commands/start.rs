@@ -24,7 +24,7 @@ use bothan_core::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts
 use bothan_core::manager::crypto_asset_info::worker::CryptoAssetWorker;
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
-use bothan_core::store::rocks_db::RocksDbStore;
+use bothan_core::store::rocksdb::RocksDbStore;
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::{RegistryStore, Store};
 use bothan_lib::worker::error::AssetWorkerError;

@@ -1,8 +1,8 @@
 pub mod error;
 mod key;
 
-use crate::store::rocks_db::error::{LoadError, RocksDbError};
-use crate::store::rocks_db::key::Key;
+use crate::store::rocksdb::error::{LoadError, RocksDbError};
+use crate::store::rocksdb::key::Key;
 use bincode::{config, decode_from_slice, encode_to_vec, Decode, Encode};
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;

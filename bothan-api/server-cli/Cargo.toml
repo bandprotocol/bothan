@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 bothan-api = { workspace = true }
-bothan-core = { workspace = true }
+bothan-core = { workspace = true, features = ["rocksdb"] }
 bothan-client = { workspace = true }
 bothan-lib = { workspace = true }
 
