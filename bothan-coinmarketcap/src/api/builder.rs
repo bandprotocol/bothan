@@ -47,12 +47,9 @@ impl RestApiBuilder {
 
         let parsed_url = Url::parse(&self.url)?;
 
-        let key = match &self.api_key {
-            Some(key) => key,
-            None => return Err(BuildError::MissingAPIKey),
-        };
+        let api_key = self.api_key.ok_or(BuildError::MissingAPIKey)?;
 
-        let mut val = HeaderValue::from_str(key)?;
+        let mut val = HeaderValue::from_str(&api_key)?;
         val.set_sensitive(true);
         headers.insert("X-CMC_PRO_API_KEY", val);
 

@@ -23,7 +23,7 @@ pub struct Ticker {
     // The amount that the last price has changed since yesterday
     pub daily_change: f64,
     // Relative price change since yesterday (*100 for percentage change)
-    pub daily_change_perc: f64,
+    pub daily_change_relative: f64,
     // Price of the last trade
     pub last_price: f64,
     // Daily volume
@@ -53,7 +53,7 @@ impl<'de> Deserialize<'de> for Ticker {
             AskPeriod,
             AskSize,
             DailyChange,
-            DailyChangePerc,
+            DailyChangeRelative,
             LastPrice,
             Volume,
             High,
@@ -66,7 +66,7 @@ impl<'de> Deserialize<'de> for Ticker {
             type Value = Ticker;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("tuple with length 11")
+                formatter.write_str("tuple with length 15")
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<Ticker, V::Error>
@@ -100,7 +100,7 @@ impl<'de> Deserialize<'de> for Ticker {
                 let daily_change = seq
                     .next_element()?
                     .ok_or_else(|| de::Error::invalid_length(8, &self))?;
-                let daily_change_perc = seq
+                let daily_change_relative = seq
                     .next_element()?
                     .ok_or_else(|| de::Error::invalid_length(9, &self))?;
                 let last_price = seq
@@ -136,7 +136,7 @@ impl<'de> Deserialize<'de> for Ticker {
                     ask_period,
                     ask_size,
                     daily_change,
-                    daily_change_perc,
+                    daily_change_relative,
                     last_price,
                     volume,
                     high,
@@ -159,7 +159,7 @@ impl<'de> Deserialize<'de> for Ticker {
                 let mut ask_period = None;
                 let mut ask_size = None;
                 let mut daily_change = None;
-                let mut daily_change_perc = None;
+                let mut daily_change_relative = None;
                 let mut last_price = None;
                 let mut volume = None;
                 let mut high = None;
@@ -222,11 +222,11 @@ impl<'de> Deserialize<'de> for Ticker {
                             }
                             daily_change = Some(map.next_value()?);
                         }
-                        Field::DailyChangePerc => {
-                            if daily_change_perc.is_some() {
-                                return Err(de::Error::duplicate_field("daily_change_perc"));
+                        Field::DailyChangeRelative => {
+                            if daily_change_relative.is_some() {
+                                return Err(de::Error::duplicate_field("daily_change_relative"));
                             }
-                            daily_change_perc = Some(map.next_value()?);
+                            daily_change_relative = Some(map.next_value()?);
                         }
                         Field::LastPrice => {
                             if last_price.is_some() {
@@ -273,8 +273,8 @@ impl<'de> Deserialize<'de> for Ticker {
                 let ask_size = ask_size.ok_or_else(|| de::Error::missing_field("ask_size"))?;
                 let daily_change =
                     daily_change.ok_or_else(|| de::Error::missing_field("daily_change"))?;
-                let daily_change_perc = daily_change_perc
-                    .ok_or_else(|| de::Error::missing_field("daily_change_perc"))?;
+                let daily_change_relative = daily_change_relative
+                    .ok_or_else(|| de::Error::missing_field("daily_change_relative"))?;
                 let last_price =
                     last_price.ok_or_else(|| de::Error::missing_field("last_price"))?;
                 let volume = volume.ok_or_else(|| de::Error::missing_field("volume"))?;
@@ -293,7 +293,7 @@ impl<'de> Deserialize<'de> for Ticker {
                     ask_period,
                     ask_size,
                     daily_change,
-                    daily_change_perc,
+                    daily_change_relative,
                     last_price,
                     volume,
                     high,
@@ -315,7 +315,7 @@ impl<'de> Deserialize<'de> for Ticker {
             "ask_period",
             "ask_size",
             "daily_change",
-            "daily_change_perc",
+            "daily_change_relative",
             "last_price",
             "volume",
             "high",
@@ -345,7 +345,7 @@ mod tests {
             ask_period: 2,
             ask_size: 28117235.06098758,
             daily_change: -0.0000278,
-            daily_change_perc: -0.2528,
+            daily_change_relative: -0.2528,
             last_price: 0.00008219,
             volume: 413386933.358769,
             high: 0.000137,
@@ -380,7 +380,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_funding_ticker_from_map() {
-        let json = r#"{"symbol":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_perc":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814}"#;
+        let json = r#"{"symbol":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_relative":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814}"#;
         let funding_ticker: Ticker = serde_json::from_str(json).unwrap();
 
         let expected = Ticker {
@@ -393,7 +393,7 @@ mod tests {
             ask_period: 2,
             ask_size: 28117235.06098758,
             daily_change: -0.0000278,
-            daily_change_perc: -0.2528,
+            daily_change_relative: -0.2528,
             last_price: 0.00008219,
             volume: 413386933.358769,
             high: 0.000137,
@@ -406,7 +406,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_funding_ticker_from_map_with_missing_field() {
-        let json = r#"{"symbol":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_perc":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025}"#;
+        let json = r#"{"symbol":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_relative":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025}"#;
         let funding_ticker: Result<Ticker, _> = serde_json::from_str(json);
 
         assert_eq!(
@@ -417,18 +417,18 @@ mod tests {
 
     #[test]
     fn test_deserialize_funding_ticker_from_map_with_invalid_key() {
-        let json = r#"{"abc":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_perc":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814}"#;
+        let json = r#"{"abc":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_relative":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814}"#;
         let funding_ticker: Result<Ticker, _> = serde_json::from_str(json);
 
         assert_eq!(
             funding_ticker.err().unwrap().to_string(),
-            "unknown field `abc`, expected one of `symbol`, `frr`, `bid`, `bid_period`, `bid_size`, `ask`, `ask_period`, `ask_size`, `daily_change`, `daily_change_perc`, `last_price`, `volume`, `high`, `low`, `frr_amount_available` at line 1 column 6"
+            "unknown field `abc`, expected one of `symbol`, `frr`, `bid`, `bid_period`, `bid_size`, `ask`, `ask_period`, `ask_size`, `daily_change`, `daily_change_relative`, `last_price`, `volume`, `high`, `low`, `frr_amount_available` at line 1 column 6"
         );
     }
 
     #[test]
     fn test_deserialize_funding_ticker_from_map_with_invalid_value() {
-        let json = r#"{"symbol": 0,"frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_perc":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814}"#;
+        let json = r#"{"symbol": 0,"frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_relative":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814}"#;
         let funding_ticker: Result<Ticker, _> = serde_json::from_str(json);
 
         assert_eq!(

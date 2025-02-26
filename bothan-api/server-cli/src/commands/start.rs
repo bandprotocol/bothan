@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fs::{create_dir_all, read_to_string, remove_dir_all, write, File};
+use std::fs::{create_dir_all, read_to_string, write, File};
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -84,33 +84,26 @@ async fn init_rocks_db_store(
     registry: Option<Registry<Valid>>,
     reset: bool,
 ) -> anyhow::Result<RocksDbStore> {
-    let flush_path = config
-        .store
-        .path
-        .to_str()
-        .with_context(|| "Failed to convert store path to string")?;
+    let flush_path = &config.store.path;
 
-    let store = match (reset, config.store.path.is_dir()) {
+    let store = match (reset, flush_path.is_dir()) {
         // If reset is true and the path is a directory, remove the directory and create a new store
         (true, true) => {
-            remove_dir_all(&config.store.path)
-                .with_context(|| "Failed to create home directory")?;
             let db = RocksDbStore::new(flush_path)?;
-            debug!("store reset successfully at {:?}", &config.store.path);
+            debug!("store reset successfully at {:?}", &flush_path);
             db
         }
         // If no reset, load the store
         (false, true) => {
             let db = RocksDbStore::load(flush_path)?;
-            debug!("store loaded successfully at {:?}", &config.store.path);
+            debug!("store loaded successfully at {:?}", &flush_path);
             db
         }
         // If the path does not exist, create the directory and create a new store
         (_, false) => {
-            create_dir_all(&config.store.path)
-                .with_context(|| "Failed to create home directory")?;
+            create_dir_all(&flush_path).with_context(|| "Failed to create home directory")?;
             let db = RocksDbStore::new(flush_path)?;
-            debug!("store created successfully at {:?}", &config.store.path);
+            debug!("store created successfully at {:?}", &flush_path);
             db
         }
     };

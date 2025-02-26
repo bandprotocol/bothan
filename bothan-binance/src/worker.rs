@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::mpsc::{channel, Sender};
 
-use crate::api::websocket::BinanceWebSocketConnector;
+use crate::api::websocket::WebSocketConnector;
 use crate::worker::asset_worker::start_asset_worker;
 use crate::WorkerOpts;
 use bothan_lib::store::{Store, WorkerStore};
@@ -21,7 +21,7 @@ pub struct Worker<S: Store> {
 }
 
 struct InnerWorker<S: Store> {
-    connector: BinanceWebSocketConnector,
+    connector: WebSocketConnector,
     store: WorkerStore<S>,
     subscribe_tx: Sender<Vec<String>>,
     unsubscribe_tx: Sender<Vec<String>>,
@@ -39,7 +39,7 @@ impl<S: Store + 'static> AssetWorker<S> for Worker<S> {
         let url = opts.url;
         let ch_size = opts.internal_ch_size;
 
-        let connector = BinanceWebSocketConnector::new(url);
+        let connector = WebSocketConnector::new(url);
         let connection = connector.connect().await?;
 
         let (sub_tx, sub_rx) = channel(ch_size);

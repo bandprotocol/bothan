@@ -59,7 +59,7 @@ mod test {
                 ask_period: 2,
                 ask_size: 39208.22419296,
                 daily_change: -0.00005519,
-                daily_change_perc: -0.5017,
+                daily_change_relative: -0.5017,
                 last_price: 0.00005481,
                 volume: 406448929.8255126,
                 high: 0.000137,

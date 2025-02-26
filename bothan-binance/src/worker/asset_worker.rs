@@ -15,7 +15,7 @@ use bothan_lib::types::AssetInfo;
 
 use crate::api::error::MessageError;
 use crate::api::msgs::{BinanceResponse, Data, ErrorResponse, SuccessResponse};
-use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
+use crate::api::{WebSocketConnection, WebSocketConnector};
 use crate::worker::types::{DEFAULT_TIMEOUT, METER_NAME, RECONNECT_BUFFER};
 use crate::worker::InnerWorker;
 
@@ -26,7 +26,7 @@ enum Event {
 
 pub(crate) async fn start_asset_worker<S: Store>(
     inner_worker: Weak<InnerWorker<S>>,
-    mut connection: BinanceWebSocketConnection,
+    mut connection: WebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
@@ -57,7 +57,7 @@ pub(crate) async fn start_asset_worker<S: Store>(
 
 async fn handle_subscribe_recv(
     ids: Vec<String>,
-    connection: &mut BinanceWebSocketConnection,
+    connection: &mut WebSocketConnection,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
     if ids.is_empty() {
@@ -96,7 +96,7 @@ async fn handle_subscribe_recv(
 
 async fn handle_unsubscribe_recv(
     ids: Vec<String>,
-    connection: &mut BinanceWebSocketConnection,
+    connection: &mut WebSocketConnection,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
     if ids.is_empty() {
@@ -135,8 +135,8 @@ async fn handle_unsubscribe_recv(
 
 async fn handle_connection_recv<S: Store>(
     recv_result: Result<BinanceResponse, MessageError>,
-    connector: &BinanceWebSocketConnector,
-    connection: &mut BinanceWebSocketConnection,
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
     store: &WorkerStore<S>,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
@@ -157,8 +157,8 @@ async fn handle_connection_recv<S: Store>(
 }
 
 async fn handle_reconnect<S: Store>(
-    connector: &BinanceWebSocketConnector,
-    connection: &mut BinanceWebSocketConnection,
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
     query_ids: &WorkerStore<S>,
 ) {
     let mut retry_count: usize = 1;

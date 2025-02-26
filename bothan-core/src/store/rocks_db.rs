@@ -9,6 +9,7 @@ use bothan_lib::store::Store;
 use bothan_lib::types::AssetInfo;
 use rust_rocksdb::{Options, WriteBatch, DB};
 use std::collections::HashSet;
+use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -19,23 +20,23 @@ pub struct RocksDbStore {
 }
 
 impl RocksDbStore {
-    pub fn new(flush_path: &str) -> Result<Self, rust_rocksdb::Error> {
+    pub fn new<P: AsRef<Path>>(flush_path: P) -> Result<Self, rust_rocksdb::Error> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
-        DB::destroy(&opts, flush_path)?;
+        DB::destroy(&opts, &flush_path)?;
 
-        let db = Arc::new(DB::open(&opts, flush_path)?);
+        let db = Arc::new(DB::open(&opts, &flush_path)?);
         Ok(RocksDbStore {
             db,
             registry: Arc::new(RwLock::new(Registry::default())),
         })
     }
 
-    pub fn load(flush_path: &str) -> Result<Self, LoadError> {
+    pub fn load<P: AsRef<Path>>(flush_path: P) -> Result<Self, LoadError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
 
-        let db = Arc::new(DB::open(&opts, flush_path)?);
+        let db = Arc::new(DB::open(&opts, &flush_path)?);
         let unvalidated_registry = db
             .get(Key::Registry.to_prefixed_bytes())?
             .map(|b| decode_from_slice::<Registry, _>(&b, config::standard()))

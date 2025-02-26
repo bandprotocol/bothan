@@ -22,18 +22,6 @@ pub enum Error {
 
     #[error("failed request: {0}")]
     FailedRequest(#[from] reqwest::Error),
-    //
-    // #[error("invalid id")]
-    // InvalidID,
-    //
-    // #[error("failed to parse")]
-    // Parse,
-    //
-    // #[error("serde error: {0}")]
-    // Serde(String),
-    //
-    // #[error("reqwest error: {0}")]
-    // Reqwest(String),
 }
 
 #[derive(Debug, Error)]
