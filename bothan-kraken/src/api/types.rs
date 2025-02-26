@@ -1,9 +1,8 @@
+pub use channel::ChannelResponse;
+pub use channel::ticker::TickerResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::api::types::message::PublicMessageResponse;
-
-pub use channel::ticker::TickerResponse;
-pub use channel::ChannelResponse;
 
 pub mod channel;
 pub mod message;

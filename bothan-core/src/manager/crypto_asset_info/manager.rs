@@ -1,28 +1,28 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use bothan_lib::registry::{Invalid, Registry};
+use bothan_lib::store::{RegistryStore, Store};
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
 
-use crate::ipfs::{error::Error as IpfsError, IpfsClient};
+use crate::ipfs::IpfsClient;
+use crate::ipfs::error::Error as IpfsError;
 use crate::manager::crypto_asset_info::error::{
     PostHeartbeatError, PushMonitoringRecordError, SetRegistryError,
 };
 use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::{
-    CryptoAssetManagerInfo, PriceSignalComputationRecord, PriceState, MONITORING_TTL,
+    CryptoAssetManagerInfo, MONITORING_TTL, PriceSignalComputationRecord, PriceState,
 };
-use crate::monitoring::{create_uuid, Client as MonitoringClient};
-use crate::registry::{Invalid, Registry};
-use crate::store::error::Error as StoreError;
-use crate::store::ManagerStore;
-use crate::worker::AssetWorker;
+use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
+use crate::monitoring::{Client as MonitoringClient, create_uuid};
 
-pub struct CryptoAssetInfoManager<'a> {
-    workers: HashMap<String, Arc<dyn AssetWorker + 'a>>,
-    store: ManagerStore,
+pub struct CryptoAssetInfoManager<S: Store + 'static> {
+    workers: HashMap<String, CryptoAssetWorker<S>>,
+    store: RegistryStore<S>,
     stale_threshold: i64,
     ipfs_client: IpfsClient,
     bothan_version: Version,
@@ -31,10 +31,11 @@ pub struct CryptoAssetInfoManager<'a> {
     monitoring_cache: Option<Cache<String, Arc<Vec<PriceSignalComputationRecord>>>>,
 }
 
-impl<'a> CryptoAssetInfoManager<'a> {
+impl<S: Store + 'static> CryptoAssetInfoManager<S> {
+    /// Creates a new `CryptoAssetInfoManager`.
     pub fn new(
-        workers: HashMap<String, Arc<dyn AssetWorker + 'a>>,
-        store: ManagerStore,
+        workers: HashMap<String, CryptoAssetWorker<S>>,
+        store: RegistryStore<S>,
         ipfs_client: IpfsClient,
         stale_threshold: i64,
         bothan_version: Version,
@@ -57,11 +58,12 @@ impl<'a> CryptoAssetInfoManager<'a> {
         }
     }
 
-    pub async fn get_info(&self) -> Result<CryptoAssetManagerInfo, StoreError> {
+    /// Gets the `CryptoAssetManagerInfo`.
+    pub async fn get_info(&self) -> Result<CryptoAssetManagerInfo, S::Error> {
         let bothan_version = self.bothan_version.to_string();
         let registry_hash = self
             .store
-            .get_registry_hash()
+            .get_registry_ipfs_hash()
             .await?
             .unwrap_or(String::new()); // If value doesn't exist, return an empty string
         let registry_version_requirement = self.registry_version_requirement.to_string();
@@ -76,6 +78,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
         ))
     }
 
+    /// Posts a heartbeat to the monitoring service.
     pub async fn post_heartbeat(&self) -> Result<String, PostHeartbeatError> {
         let client = self
             .monitoring_client
@@ -88,7 +91,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
             .store
-            .get_registry_hash()
+            .get_registry_ipfs_hash()
             .await
             .map_err(|_| PostHeartbeatError::FailedToGetRegistryHash)?
             .unwrap_or_else(|| "".to_string());
@@ -105,7 +108,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
     pub async fn get_prices(
         &self,
         ids: Vec<String>,
-    ) -> Result<(String, Vec<PriceState>), StoreError> {
+    ) -> Result<(String, Vec<PriceState>), S::Error> {
         let registry = self.store.get_registry().await;
 
         let current_time = chrono::Utc::now().timestamp();
@@ -129,6 +132,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
         Ok((uuid, price_states))
     }
 
+    /// Pushes a monitoring record to the monitoring service.
     pub async fn push_monitoring_record(
         &self,
         uuid: String,
@@ -153,6 +157,7 @@ impl<'a> CryptoAssetInfoManager<'a> {
         Ok(())
     }
 
+    /// Sets the registry from an IPFS hash.
     pub async fn set_registry_from_ipfs(
         &self,
         hash: &str,
@@ -182,7 +187,10 @@ impl<'a> CryptoAssetInfoManager<'a> {
             .validate()
             .map_err(|e| SetRegistryError::InvalidRegistry(e.to_string()))?;
 
-        self.store.set_registry(registry, hash.to_string()).await?;
+        self.store
+            .set_registry(registry, hash.to_string())
+            .await
+            .map_err(|_| SetRegistryError::FailedToSetRegistry)?;
 
         set_workers_query_ids(&self.workers, &self.store.get_registry().await).await;
 

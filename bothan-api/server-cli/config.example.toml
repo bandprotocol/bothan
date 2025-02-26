@@ -52,6 +52,13 @@ url = "wss://stream.binance.com:9443/stream"
 # Internal channel size for Binance data streams.
 internal_ch_size = 1000
 
+# Configuration for Bitfinex.
+[manager.crypto.source.bitfinex]
+# REST API URL for querying data from Bitfinex.
+url = "https://api-pub.bitfinex.com/v2/"
+# Update interval for polling data from Bitfinex.
+update_interval = "1m"
+
 # Configuration for Bybit.
 [manager.crypto.source.bybit]
 # WebSocket URL for streaming data from Bybit.
@@ -68,13 +75,13 @@ internal_ch_size = 1000
 
 # Configuration for Coingecko.
 [manager.crypto.source.coingecko]
-# REST API URL for querying data from Coingecko.
+# REST API URL for querying data from CoinGecko.
 url = "https://api.coingecko.com/api/v3/"
 # API key for authentication (if required).
 api_key = ""
-# User agent string for HTTP requests to Coingecko.
+# User agent string for HTTP requests to CoinGecko.
 user_agent = "Bothan"
-# Update interval for pulling data from Coingecko.
+# Update interval for polling data from CoinGecko.
 update_interval = "30s"
 
 # Configuration for CoinMarketCap.
@@ -85,15 +92,6 @@ url = "https://pro-api.coinmarketcap.com"
 api_key = ""
 # Update interval for pulling data from CoinMarketCap.
 update_interval = "1m"
-
-# Configuration for CryptoCompare.
-[manager.crypto.source.cryptocompare]
-# REST API URL for querying data from CryptoCompare.
-url = "wss://data-streamer.cryptocompare.com"
-# API key for authentication (required for access).
-api_key = ""
-# Internal channel size for cryptocompare data streams.
-internal_ch_size = 1000
 
 # Configuration for HTX (Huobi).
 [manager.crypto.source.htx]

@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 
+use bothan_lib::registry::post_processor::PostProcessError;
+use bothan_lib::registry::processor::ProcessError;
 use thiserror::Error;
-
-use crate::registry::post_processor::PostProcessError;
-use crate::registry::processor::ProcessError;
 
 #[derive(Debug, Error)]
 pub enum Error {

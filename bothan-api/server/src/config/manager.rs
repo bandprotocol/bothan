@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
-
 use crypto_info::CryptoInfoManagerConfig;
+use serde::{Deserialize, Serialize};
 
 pub mod crypto_info;
 

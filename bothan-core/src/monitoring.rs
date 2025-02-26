@@ -1,11 +1,10 @@
 pub use client::Client;
 pub use signer::Signer;
-pub use types::{BothanInfo, Entry, Topic, HEARTBEAT_INTERVAL};
+pub use types::{BothanInfo, Entry, HEARTBEAT_INTERVAL, Topic};
 pub use utils::create_uuid;
 
-mod client;
+pub mod client;
 pub mod error;
-pub mod records;
 mod signer;
-mod types;
+pub mod types;
 mod utils;

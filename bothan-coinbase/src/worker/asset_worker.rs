@@ -1,25 +1,23 @@
 use std::sync::Weak;
 
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
 use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::WorkerStore;
-use bothan_core::types::AssetInfo;
-
 use crate::api::error::{MessageError, SendError};
-use crate::api::types::channels::Channel;
 use crate::api::types::CoinbaseResponse;
-use crate::api::{CoinbaseWebSocketConnection, CoinbaseWebSocketConnector, Ticker};
-use crate::worker::error::WorkerError;
+use crate::api::types::channels::Channel;
+use crate::api::{Ticker, WebSocketConnection, WebSocketConnector};
+use crate::worker::InnerWorker;
 use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::CoinbaseWorker;
 
-pub(crate) async fn start_asset_worker(
-    worker: Weak<CoinbaseWorker>,
-    mut connection: CoinbaseWebSocketConnection,
+pub(crate) async fn start_asset_worker<S: Store>(
+    inner_worker: Weak<InnerWorker<S>>,
+    mut connection: WebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
@@ -28,7 +26,7 @@ pub(crate) async fn start_asset_worker(
             Some(ids) = subscribe_rx.recv() => handle_subscribe_recv(ids, &mut connection).await,
             Some(ids) = unsubscribe_rx.recv() => handle_unsubscribe_recv(ids, &mut connection).await,
             result = timeout(DEFAULT_TIMEOUT, connection.next()) => {
-                if let Some(worker) = worker.upgrade() {
+                if let Some(worker) = inner_worker.upgrade() {
                     match result {
                         Err(_) => handle_reconnect(&worker.connector, &mut connection, &worker.store).await,
                         Ok(coinbase_result) => handle_connection_recv(coinbase_result, &worker.connector, &mut connection, &worker.store).await,
@@ -50,10 +48,7 @@ pub(crate) async fn start_asset_worker(
     debug!("asset worker has been dropped, stopping asset worker");
 }
 
-async fn subscribe(
-    ids: &[String],
-    connection: &mut CoinbaseWebSocketConnection,
-) -> Result<(), SendError> {
+async fn subscribe(ids: &[String], connection: &mut WebSocketConnection) -> Result<(), SendError> {
     if !ids.is_empty() {
         let ids_vec = ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         connection
@@ -64,7 +59,7 @@ async fn subscribe(
     Ok(())
 }
 
-async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut CoinbaseWebSocketConnection) {
+async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut WebSocketConnection) {
     if let Err(e) = subscribe(&ids, connection).await {
         error!("failed to subscribe to ids {:?}: {}", ids, e);
     } else {
@@ -74,7 +69,7 @@ async fn handle_subscribe_recv(ids: Vec<String>, connection: &mut CoinbaseWebSoc
 
 async fn unsubscribe(
     ids: &[String],
-    connection: &mut CoinbaseWebSocketConnection,
+    connection: &mut WebSocketConnection,
 ) -> Result<(), SendError> {
     if !ids.is_empty() {
         connection
@@ -88,7 +83,7 @@ async fn unsubscribe(
     Ok(())
 }
 
-async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut CoinbaseWebSocketConnection) {
+async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut WebSocketConnection) {
     if let Err(e) = unsubscribe(&ids, connection).await {
         error!("failed to unsubscribe to ids {:?}: {}", ids, e);
     } else {
@@ -96,10 +91,10 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut CoinbaseWebS
     }
 }
 
-async fn handle_reconnect(
-    connector: &CoinbaseWebSocketConnector,
-    connection: &mut CoinbaseWebSocketConnection,
-    query_ids: &WorkerStore,
+async fn handle_reconnect<S: Store>(
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
+    query_ids: &WorkerStore<S>,
 ) {
     let mut retry_count: usize = 1;
     loop {
@@ -134,27 +129,32 @@ async fn handle_reconnect(
     }
 }
 
-fn parse_ticker(ticker: &Ticker) -> Result<AssetInfo, WorkerError> {
+fn parse_ticker(ticker: &Ticker) -> Result<AssetInfo, rust_decimal::Error> {
     let id = ticker.product_id.clone();
     let price_value = Decimal::from_str_exact(&ticker.price)?;
     let timestamp = chrono::Utc::now().timestamp();
     Ok(AssetInfo::new(id, price_value, timestamp))
 }
 
-async fn store_ticker(store: &WorkerStore, ticker: &Ticker) -> Result<(), WorkerError> {
+async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: &Ticker) {
     let id = ticker.product_id.clone();
-    store.set_asset(id.clone(), parse_ticker(ticker)?).await?;
-    debug!("stored data for id {}", id);
-    Ok(())
+    let asset_info = match parse_ticker(ticker) {
+        Ok(ticker) => ticker,
+        Err(e) => {
+            error!("failed to parse ticker: {}", e);
+            return;
+        }
+    };
+    match store.set_asset_info(asset_info).await {
+        Ok(_) => debug!("stored data for id {}", id),
+        Err(e) => error!("failed to save data: {}", e),
+    }
 }
 
 /// Processes the response from the Coinbase API.
-async fn process_response(resp: CoinbaseResponse, store: &WorkerStore) {
+async fn process_response<S: Store>(resp: CoinbaseResponse, store: &WorkerStore<S>) {
     match resp {
-        CoinbaseResponse::Ticker(ticker) => match store_ticker(store, &ticker).await {
-            Ok(_) => debug!("saved data"),
-            Err(e) => error!("failed to save data: {}", e),
-        },
+        CoinbaseResponse::Ticker(ticker) => store_ticker(store, &ticker).await,
         CoinbaseResponse::Ping => debug!("received ping"),
         CoinbaseResponse::Subscriptions(_) => {
             info!("received request response");
@@ -162,11 +162,11 @@ async fn process_response(resp: CoinbaseResponse, store: &WorkerStore) {
     }
 }
 
-async fn handle_connection_recv(
+async fn handle_connection_recv<S: Store>(
     recv_result: Result<CoinbaseResponse, MessageError>,
-    connector: &CoinbaseWebSocketConnector,
-    connection: &mut CoinbaseWebSocketConnection,
-    store: &WorkerStore,
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
+    store: &WorkerStore<S>,
 ) {
     match recv_result {
         Ok(resp) => {

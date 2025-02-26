@@ -1,3 +1,4 @@
+#![allow(clippy::all)]
 pub mod bothan {
     pub mod v1 {
         pub use bothan_service_client::BothanServiceClient;

@@ -1,8 +1,7 @@
 use anyhow::Context;
-use clap::{Parser, Subcommand};
-
 use bothan_api::config::AppConfig;
 use bothan_client::client::GrpcClient;
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 pub struct RequestCli {

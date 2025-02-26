@@ -1,10 +1,10 @@
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 use tracing::warn;
 
 use crate::api::error::{ConnectionError, MessageError, SendError};
@@ -13,18 +13,18 @@ use crate::api::types::request::{Request, RequestType};
 use crate::api::types::{CoinbaseResponse, DEFAULT_URL};
 
 /// A connector for establishing a WebSocket connection to the Coinbase API.
-pub struct CoinbaseWebSocketConnector {
+pub struct WebSocketConnector {
     url: String,
 }
 
-impl CoinbaseWebSocketConnector {
+impl WebSocketConnector {
     /// Creates a new `CoinbaseWebSocketConnector`.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
     /// Connects to the WebSocket and returns a `CoinbaseWebSocketConnection`.
-    pub async fn connect(&self) -> Result<CoinbaseWebSocketConnection, ConnectionError> {
+    pub async fn connect(&self) -> Result<WebSocketConnection, ConnectionError> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
         let status = resp.status();
@@ -35,11 +35,11 @@ impl CoinbaseWebSocketConnector {
             ));
         }
 
-        Ok(CoinbaseWebSocketConnection::new(wss))
+        Ok(WebSocketConnection::new(wss))
     }
 }
 
-impl Default for CoinbaseWebSocketConnector {
+impl Default for WebSocketConnector {
     /// Creates a default `CoinbaseWebSocketConnector` with the default URL.
     fn default() -> Self {
         Self {
@@ -49,12 +49,12 @@ impl Default for CoinbaseWebSocketConnector {
 }
 
 /// A connection to the Coinbase WebSocket API.
-pub struct CoinbaseWebSocketConnection {
+pub struct WebSocketConnection {
     sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 }
 
-impl CoinbaseWebSocketConnection {
+impl WebSocketConnection {
     /// Creates a new `CoinbaseWebSocketConnection`.
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
@@ -126,10 +126,9 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::types::CoinbaseResponse;
-    use crate::api::Ticker;
-
     use super::*;
+    use crate::api::Ticker;
+    use crate::api::types::CoinbaseResponse;
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -139,7 +138,7 @@ pub(crate) mod test {
     async fn test_recv_ticker() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = CoinbaseWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock ticker response.
@@ -183,7 +182,7 @@ pub(crate) mod test {
     async fn test_recv_close() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = CoinbaseWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Mount the mock WebSocket server and send a close message.

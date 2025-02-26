@@ -1,24 +1,24 @@
 use std::sync::Weak;
+use std::time::Duration;
 
-use rust_decimal::prelude::FromPrimitive;
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
 use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::WorkerStore;
-use bothan_core::types::AssetInfo;
-
 use crate::api::error::{MessageError, SendError};
 use crate::api::types::{ChannelResponse, KrakenResponse, TickerResponse};
 use crate::api::{KrakenWebSocketConnection, KrakenWebSocketConnector};
-use crate::worker::error::WorkerError;
-use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::KrakenWorker;
+use crate::worker::InnerWorker;
 
-pub(crate) async fn start_asset_worker(
-    worker: Weak<KrakenWorker>,
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
+pub const RECONNECT_BUFFER: Duration = Duration::from_secs(5);
+
+pub(crate) async fn start_asset_worker<S: Store>(
+    worker: Weak<InnerWorker<S>>,
     mut connection: KrakenWebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
@@ -91,10 +91,10 @@ async fn handle_unsubscribe_recv(ids: Vec<String>, connection: &mut KrakenWebSoc
     }
 }
 
-async fn handle_reconnect(
+async fn handle_reconnect<S: Store>(
     connector: &KrakenWebSocketConnector,
     connection: &mut KrakenWebSocketConnection,
-    query_ids: &WorkerStore,
+    query_ids: &WorkerStore<S>,
 ) {
     let mut retry_count: usize = 1;
     loop {
@@ -129,34 +129,31 @@ async fn handle_reconnect(
     }
 }
 
-fn parse_ticker(ticker: TickerResponse) -> Result<AssetInfo, WorkerError> {
+async fn store_ticker<S: Store>(store: &WorkerStore<S>, ticker: TickerResponse, timestamp: i64) {
     let id = ticker.symbol.clone();
-    let price_value =
-        Decimal::from_f64(ticker.last).ok_or(WorkerError::InvalidPrice(ticker.last))?;
-    Ok(AssetInfo::new(
-        id,
-        price_value,
-        chrono::Utc::now().timestamp(),
-    ))
-}
-
-async fn store_ticker(store: &WorkerStore, ticker: TickerResponse) -> Result<(), WorkerError> {
-    let id = ticker.symbol.clone();
-    store.set_asset(id.clone(), parse_ticker(ticker)?).await?;
-    debug!("stored data for id {}", id);
-    Ok(())
+    match Decimal::from_f64_retain(ticker.last) {
+        Some(price) => {
+            let asset_info = AssetInfo::new(id.clone(), price, timestamp);
+            if let Err(e) = store.set_asset_info(asset_info).await {
+                error!("failed to store data for id {}: {}", id, e);
+            } else {
+                debug!("stored data for id {}", id);
+            }
+        }
+        None => {
+            error!("failed to parse price for id {}", id);
+        }
+    }
 }
 
 /// Processes the response from the Kraken API.
-async fn process_response(resp: KrakenResponse, store: &WorkerStore) {
+async fn process_response<S: Store>(resp: KrakenResponse, store: &WorkerStore<S>) {
     match resp {
         KrakenResponse::Channel(resp) => match resp {
             ChannelResponse::Ticker(tickers) => {
+                let timestamp = chrono::Utc::now().timestamp();
                 for ticker in tickers {
-                    match store_ticker(store, ticker).await {
-                        Ok(_) => debug!("saved data"),
-                        Err(e) => error!("failed to save data: {}", e),
-                    }
+                    store_ticker(store, ticker, timestamp).await
                 }
             }
             ChannelResponse::Heartbeat => {
@@ -175,11 +172,11 @@ async fn process_response(resp: KrakenResponse, store: &WorkerStore) {
     }
 }
 
-async fn handle_connection_recv(
+async fn handle_connection_recv<S: Store>(
     recv_result: Result<KrakenResponse, MessageError>,
     connector: &KrakenWebSocketConnector,
     connection: &mut KrakenWebSocketConnection,
-    store: &WorkerStore,
+    store: &WorkerStore<S>,
 ) {
     match recv_result {
         Ok(resp) => {
@@ -194,55 +191,5 @@ async fn handle_connection_recv(
         Err(MessageError::Parse(..)) => {
             error!("unable to parse message from kraken");
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_parse_market() {
-        let ticker = TickerResponse {
-            symbol: "BTC".to_string(),
-            bid: 42000.00,
-            bid_qty: 50000.00,
-            ask: 42001.00,
-            ask_qty: 50000.00,
-            last: 42000.99,
-            volume: 100000.00,
-            vwap: 42000.00,
-            low: 40000.00,
-            high: 44000.00,
-            change: 2000.00,
-            change_pct: 0.05,
-        };
-        let result = parse_ticker(ticker);
-        let expected = AssetInfo::new(
-            "BTC".to_string(),
-            Decimal::from_str_exact("42000.99").unwrap(),
-            0,
-        );
-        assert_eq!(result.as_ref().unwrap().id, expected.id);
-        assert_eq!(result.unwrap().price, expected.price);
-    }
-
-    #[test]
-    fn test_parse_market_with_failure() {
-        let ticker = TickerResponse {
-            symbol: "BTC".to_string(),
-            bid: 42000.00,
-            bid_qty: 50000.00,
-            ask: 42001.00,
-            ask_qty: 50000.00,
-            last: f64::INFINITY,
-            volume: 100000.00,
-            vwap: 42000.00,
-            low: 40000.00,
-            high: 44000.00,
-            change: 2000.00,
-            change_pct: 0.05,
-        };
-        assert!(parse_ticker(ticker).is_err());
     }
 }

@@ -2,7 +2,7 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 
 use crate::api::error::{ConnectionError, MessageError, SendError};
 use crate::api::msgs::BinanceResponse;
@@ -10,11 +10,11 @@ use crate::api::msgs::BinanceResponse;
 pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
 
 /// A connector for establishing WebSocket connections to Binance.
-pub struct BinanceWebSocketConnector {
+pub struct WebSocketConnector {
     url: String,
 }
 
-impl BinanceWebSocketConnector {
+impl WebSocketConnector {
     /// Creates a new `BinanceWebSocketConnector` with the given URL.
     ///
     /// # Examples
@@ -34,7 +34,7 @@ impl BinanceWebSocketConnector {
     /// let connector = BinanceWebSocketConnector::new("wss://example.com/socket");
     /// let connection = connector.connect().await?;
     /// ```
-    pub async fn connect(&self) -> Result<BinanceWebSocketConnection, ConnectionError> {
+    pub async fn connect(&self) -> Result<WebSocketConnection, ConnectionError> {
         // Attempt to establish a WebSocket connection.
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
@@ -45,16 +45,16 @@ impl BinanceWebSocketConnector {
         }
 
         // Return the WebSocket connection.
-        Ok(BinanceWebSocketConnection::new(wss))
+        Ok(WebSocketConnection::new(wss))
     }
 }
 
 /// Represents an active WebSocket connection to Binance.
-pub struct BinanceWebSocketConnection {
+pub struct WebSocketConnection {
     ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
-impl BinanceWebSocketConnection {
+impl WebSocketConnection {
     /// Creates a new `BinanceWebSocketConnection`
     pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         Self { ws_stream }
@@ -160,9 +160,8 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
-
     use super::*;
+    use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -172,7 +171,7 @@ pub(crate) mod test {
     async fn test_recv_ticker() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = BinanceWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock mini ticker response.
@@ -211,7 +210,7 @@ pub(crate) mod test {
     async fn test_recv_ping() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = BinanceWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Mount the mock WebSocket server and send a ping message.
@@ -231,7 +230,7 @@ pub(crate) mod test {
     async fn test_recv_close() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = BinanceWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Mount the mock WebSocket server and send a close message.

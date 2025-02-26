@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Context};
-use clap::{Parser, Subcommand};
 use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
 
-use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
+use anyhow::{Context, anyhow};
 use bothan_api::config::AppConfig;
+use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
+use clap::{Parser, Subcommand};
 
 use crate::bothan_home_dir;
 

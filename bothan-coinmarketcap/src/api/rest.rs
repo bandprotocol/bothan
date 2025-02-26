@@ -1,18 +1,21 @@
 use std::collections::HashMap;
 
+use bothan_lib::types::AssetInfo;
+use bothan_lib::worker::rest::AssetInfoProvider;
 use itertools::Itertools;
-use reqwest::{Client, RequestBuilder, Response, Url};
+use reqwest::{Client, Url};
+use rust_decimal::Decimal;
 
-use crate::api::error::RestAPIError;
 use crate::api::types::{Quote, Response as CmcResponse};
+use crate::worker::error::ProviderError;
 
 /// CoinMarketCap REST API client.
-pub struct CoinMarketCapRestAPI {
+pub struct RestApi {
     url: Url,
     client: Client,
 }
 
-impl CoinMarketCapRestAPI {
+impl RestApi {
     /// Creates a new CoinMarketCap REST API client.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
@@ -23,13 +26,14 @@ impl CoinMarketCapRestAPI {
     pub async fn get_latest_quotes(
         &self,
         ids: &[usize],
-    ) -> Result<Vec<Option<Quote>>, RestAPIError> {
+    ) -> Result<Vec<Option<Quote>>, reqwest::Error> {
         let url = format!("{}v2/cryptocurrency/quotes/latest", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
         let params = vec![("id", ids_string)];
 
-        let builder_with_query = self.client.get(&url).query(&params);
-        let response = send_request(builder_with_query).await?;
+        let request_builder = self.client.get(&url).query(&params);
+        let response = request_builder.send().await?.error_for_status()?;
+
         let cmc_response = response
             .json::<CmcResponse<HashMap<String, Quote>>>()
             .await?;
@@ -43,30 +47,59 @@ impl CoinMarketCapRestAPI {
     }
 }
 
-async fn send_request(request_builder: RequestBuilder) -> Result<Response, RestAPIError> {
-    let response = request_builder.send().await?;
+#[async_trait::async_trait]
+impl AssetInfoProvider for RestApi {
+    type Error = ProviderError;
 
-    let status = response.status();
-    if status.is_client_error() || status.is_server_error() {
-        return Err(RestAPIError::Http(status));
+    async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
+        let int_ids = ids
+            .iter()
+            .map(|id| {
+                id.parse::<usize>()
+                    .map_err(|_| ProviderError::InvalidId(id.clone()))
+            })
+            .collect::<Result<Vec<usize>, _>>()?;
+
+        self.get_latest_quotes(&int_ids)
+            .await?
+            .into_iter()
+            .map(|q| match q {
+                None => Err(ProviderError::MissingValue),
+                Some(quote) => {
+                    let price_float = quote
+                        .price_quotes
+                        .usd
+                        .price
+                        .ok_or_else(|| ProviderError::MissingValue)?;
+                    let price_dec = Decimal::from_f64_retain(price_float)
+                        .ok_or_else(|| ProviderError::InvalidValue)?;
+                    let ts = quote
+                        .price_quotes
+                        .usd
+                        .last_updated
+                        .parse::<chrono::DateTime<chrono::Utc>>()
+                        .map_err(|_| ProviderError::InvalidValue)?
+                        .timestamp();
+                    let ai = AssetInfo::new(quote.symbol, price_dec, ts);
+                    Ok(ai)
+                }
+            })
+            .collect()
     }
-
-    Ok(response)
 }
 
 #[cfg(test)]
 pub(crate) mod test {
     use mockito::{Matcher, Mock, Server, ServerGuard};
 
-    use crate::api::types::{PriceQuote, PriceQuotes, Status};
-    use crate::api::CoinMarketCapRestAPIBuilder;
-
     use super::*;
+    use crate::api::RestApiBuilder;
+    use crate::api::types::{PriceQuote, PriceQuotes, Status};
 
-    pub(crate) async fn setup() -> (ServerGuard, CoinMarketCapRestAPI) {
+    pub(crate) async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;
 
-        let builder = CoinMarketCapRestAPIBuilder::default()
+        let builder = RestApiBuilder::default()
             .with_url(&server.url())
             .with_api_key("test");
         let api = builder.build().unwrap();
@@ -159,9 +192,9 @@ pub(crate) mod test {
         let mock = server.set_successful_quotes(&["1"], &quotes);
 
         let result = client.get_latest_quotes(&[1]).await;
-        let expected_result = quotes.into_iter().map(Some).collect();
+        let expected_result = quotes.into_iter().map(Some).collect::<Vec<Option<Quote>>>();
         mock.assert();
-        assert_eq!(result, Ok(expected_result));
+        assert_eq!(result.unwrap(), expected_result);
     }
 
     #[tokio::test]
@@ -176,7 +209,7 @@ pub(crate) mod test {
 
         mock.assert();
         let expected_result = vec![Some(quotes[0].clone()), None];
-        assert_eq!(result, Ok(expected_result));
+        assert_eq!(result.unwrap(), expected_result);
     }
 
     #[tokio::test]
@@ -189,8 +222,7 @@ pub(crate) mod test {
 
         mock.assert();
 
-        let expected_err = RestAPIError::Reqwest("error decoding response body".to_string());
-        assert_eq!(result, Err(expected_err));
+        assert!(result.is_err());
     }
 
     #[tokio::test]
