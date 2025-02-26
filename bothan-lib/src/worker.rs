@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
+use error::AssetWorkerError;
+
 use crate::store::Store;
 use crate::types::AssetState;
-use error::AssetWorkerError;
-use std::collections::HashSet;
 
 pub mod error;
 pub mod rest;

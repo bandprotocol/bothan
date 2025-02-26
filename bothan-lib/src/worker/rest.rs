@@ -1,10 +1,12 @@
-use crate::store::{Store, WorkerStore};
-use crate::types::AssetInfo;
 use std::fmt::Display;
 use std::sync::Weak;
 use std::time::Duration;
+
 use tokio::time::{interval, timeout};
 use tracing::{debug, error};
+
+use crate::store::{Store, WorkerStore};
+use crate::types::AssetInfo;
 
 #[async_trait::async_trait]
 pub trait AssetInfoProvider: Send + Sync {

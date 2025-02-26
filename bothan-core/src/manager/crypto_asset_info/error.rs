@@ -1,5 +1,6 @@
-use crate::monitoring::error::Error as MonitoringError;
 use thiserror::Error;
+
+use crate::monitoring::error::Error as MonitoringError;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum SetRegistryError {

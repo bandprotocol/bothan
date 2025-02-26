@@ -1,18 +1,19 @@
 use std::sync::Weak;
 
-use crate::api::error::{MessageError, SendError};
-use crate::api::types::{HtxResponse, Pong, Tick};
-use crate::api::{HtxWebSocketConnection, HtxWebSocketConnector};
-use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::InnerWorker;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::types::AssetInfo;
-use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
+
+use crate::api::error::{MessageError, SendError};
+use crate::api::types::{HtxResponse, Pong, Tick};
+use crate::api::{HtxWebSocketConnection, HtxWebSocketConnector};
+use crate::worker::InnerWorker;
+use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 
 pub(crate) async fn start_asset_worker<S: Store>(
     worker: Weak<InnerWorker<S>>,
@@ -167,7 +168,8 @@ async fn process_response<S: Store>(
 /// Sends a pong response back to the WebSocket connection.
 async fn send_pong(ping: u64, connection: &mut HtxWebSocketConnection) -> Result<(), SendError> {
     let pong_payload = Pong { pong: ping }; // Create the Pong struct with the ping timestamp
-    connection.send_pong(pong_payload).await // Assuming send_pong is implemented to send Pong struct
+    connection.send_pong(pong_payload).await // Assuming send_pong is implemented to send Pong
+    // struct
 }
 
 /// Handles received messages from the WebSocket connection.

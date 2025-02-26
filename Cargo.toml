@@ -1,6 +1,6 @@
 [workspace.package]
 authors = ["Band Protocol <dev@bandprotocol.com>"]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/bandprotocol/bothan"
 exclude = [".github/"]

@@ -6,8 +6,8 @@ use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 /// Options for configuring the `BybitWorkerBuilder`.
 ///
 /// `BybitWorkerBuilderOpts` provides a way to specify custom settings for creating a `BybitWorker`.
-/// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
-/// which will be used during the construction of the `BybitWorker`.
+/// This struct allows users to set optional parameters such as the WebSocket URL and the internal
+/// channel size, which will be used during the construction of the `BybitWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorkerOpts {
     #[serde(default = "default_url")]

@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 use std::sync::Arc;
-use tokio::sync::mpsc::{channel, Sender};
 
-use crate::api::websocket::HtxWebSocketConnector;
-use crate::worker::asset_worker::start_asset_worker;
-use crate::WorkerOpts;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::types::AssetState;
-use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::AssetWorker;
+use bothan_lib::worker::error::AssetWorkerError;
+use tokio::sync::mpsc::{Sender, channel};
+
+use crate::WorkerOpts;
+use crate::api::websocket::HtxWebSocketConnector;
+use crate::worker::asset_worker::start_asset_worker;
 
 mod asset_worker;
 pub mod opts;

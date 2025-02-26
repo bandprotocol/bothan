@@ -1,6 +1,9 @@
-use rust_decimal::Decimal;
 use std::sync::Weak;
 use std::time::Duration;
+
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
+use rust_decimal::Decimal;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
@@ -10,8 +13,6 @@ use crate::api::error::{MessageError, SendError};
 use crate::api::types::{ChannelResponse, OkxResponse, TickerData};
 use crate::api::{WebSocketConnection, WebsocketConnector};
 use crate::worker::InnerWorker;
-use bothan_lib::store::{Store, WorkerStore};
-use bothan_lib::types::AssetInfo;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 const RECONNECT_BUFFER: Duration = Duration::from_secs(5);

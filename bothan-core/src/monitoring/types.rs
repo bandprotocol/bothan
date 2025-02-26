@@ -1,10 +1,9 @@
-use tokio::time::Duration;
-
 pub use entry::Entry;
 pub use info::BothanInfo;
 pub use record::{
     OperationRecord, ProcessRecord, SignalComputationRecord, SignalTransactionRecord, SourceRecord,
 };
+use tokio::time::Duration;
 pub use topic::Topic;
 
 mod entry;

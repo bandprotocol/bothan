@@ -2,10 +2,10 @@ use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 use tracing::warn;
 
 use crate::api::error::{ConnectionError, MessageError, SendError};
@@ -104,9 +104,8 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::types::{BybitResponse, PublicMessageResponse, PublicTickerResponse, Ticker};
-
     use super::*;
+    use crate::api::types::{BybitResponse, PublicMessageResponse, PublicTickerResponse, Ticker};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await

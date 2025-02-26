@@ -1,6 +1,7 @@
-use serde::de::{MapAccess, SeqAccess, Visitor};
-use serde::{de, Deserialize, Deserializer, Serialize};
 use std::fmt;
+
+use serde::de::{MapAccess, SeqAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, de};
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Ticker {

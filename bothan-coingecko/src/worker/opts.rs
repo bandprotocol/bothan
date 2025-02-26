@@ -8,9 +8,10 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 
 /// Options for configuring the `CoinGeckoWorkerBuilder`.
 ///
-/// `CoinGeckoWorkerBuilderOpts` provides a way to specify custom settings for creating a `CoinGeckoWorker`.
-/// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
-/// which will be used during the construction of the `CoinGeckoWorker`.
+/// `CoinGeckoWorkerBuilderOpts` provides a way to specify custom settings for creating a
+/// `CoinGeckoWorker`. This struct allows users to set optional parameters such as the WebSocket URL
+/// and the internal channel size, which will be used during the construction of the
+/// `CoinGeckoWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorkerOpts {
     #[serde(serialize_with = "none_is_default_url")]

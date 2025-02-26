@@ -1,10 +1,11 @@
-use crate::store::Store;
-use crate::types::AssetInfo;
-use crate::types::AssetState;
 use std::collections::HashSet;
 use std::hash::RandomState;
 use std::sync::Arc;
+
 use tokio::sync::Mutex;
+
+use crate::store::Store;
+use crate::types::{AssetInfo, AssetState};
 
 #[derive(Clone)]
 pub struct WorkerStore<S: Store> {

@@ -1,12 +1,11 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use clap::{Parser, Subcommand};
-use tracing_subscriber::filter::Directive;
-use tracing_subscriber::EnvFilter;
-
-use bothan_api::config::log::LogLevel;
 use bothan_api::config::AppConfig;
+use bothan_api::config::log::LogLevel;
+use clap::{Parser, Subcommand};
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::filter::Directive;
 
 use crate::commands::config::ConfigCli;
 use crate::commands::key::KeyCli;

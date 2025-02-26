@@ -1,6 +1,8 @@
-use crate::api::rest::DEFAULT_URL;
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
+
+use crate::api::rest::DEFAULT_URL;
 
 const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 

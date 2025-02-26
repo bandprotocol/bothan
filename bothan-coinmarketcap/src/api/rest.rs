@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use crate::api::types::{Quote, Response as CmcResponse};
-use crate::worker::error::ProviderError;
 use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::rest::AssetInfoProvider;
 use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
+
+use crate::api::types::{Quote, Response as CmcResponse};
+use crate::worker::error::ProviderError;
 
 /// CoinMarketCap REST API client.
 pub struct RestApi {
@@ -89,11 +90,11 @@ impl AssetInfoProvider for RestApi {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::api::types::{PriceQuote, PriceQuotes, Status};
-    use crate::api::RestApiBuilder;
     use mockito::{Matcher, Mock, Server, ServerGuard};
 
     use super::*;
+    use crate::api::RestApiBuilder;
+    use crate::api::types::{PriceQuote, PriceQuotes, Status};
 
     pub(crate) async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;

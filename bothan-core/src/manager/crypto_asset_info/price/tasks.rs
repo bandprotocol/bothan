@@ -1,6 +1,13 @@
+use std::collections::{HashMap, HashSet, VecDeque};
+
+use bothan_lib::registry::signal::Signal;
+use bothan_lib::registry::source::{OperationRoute, SourceQuery};
+use bothan_lib::registry::{Registry, Valid};
+use bothan_lib::store::Store;
+use bothan_lib::types::AssetState;
+use bothan_lib::worker::AssetWorker;
 use num_traits::Zero;
 use rust_decimal::Decimal;
-use std::collections::{HashMap, HashSet, VecDeque};
 use tracing::{debug, info, warn};
 
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
@@ -9,12 +16,6 @@ use crate::manager::crypto_asset_info::types::{PriceSignalComputationRecord, Pri
 use crate::monitoring::types::{
     OperationRecord, ProcessRecord, SignalComputationRecord, SourceRecord,
 };
-use bothan_lib::registry::signal::Signal;
-use bothan_lib::registry::source::{OperationRoute, SourceQuery};
-use bothan_lib::registry::{Registry, Valid};
-use bothan_lib::store::Store;
-use bothan_lib::types::AssetState;
-use bothan_lib::worker::AssetWorker;
 
 // TODO: Allow records to be Option<T>
 /// Computes the price states for a list of signal ids.
@@ -266,17 +267,19 @@ fn compute_source_routes(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use bothan_lib::registry::processor::median::MedianProcessor;
+    use std::collections::HashMap;
+    use std::fmt;
+    use std::marker::PhantomData;
+
     use bothan_lib::registry::processor::Processor;
+    use bothan_lib::registry::processor::median::MedianProcessor;
     use bothan_lib::registry::source::Operation;
     use bothan_lib::types::AssetInfo;
     use bothan_lib::worker::error::AssetWorkerError;
     use derive_more::Error;
     use num_traits::One;
-    use std::collections::HashMap;
-    use std::fmt;
-    use std::marker::PhantomData;
+
+    use super::*;
 
     #[derive(Debug, Error)]
     struct MockError {}

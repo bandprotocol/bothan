@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use crate::api::error::ProviderError;
-use crate::api::types::{Coin, Price};
 use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, RequestBuilder, Url};
 use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
+
+use crate::api::error::ProviderError;
+use crate::api::types::{Coin, Price};
 
 /// A client for interacting with the CoinGecko REST API.
 pub struct RestApi {
@@ -81,9 +82,8 @@ impl AssetInfoProvider for RestApi {
 mod test {
     use mockito::{Matcher, Mock, Server, ServerGuard};
 
-    use crate::api::RestApiBuilder;
-
     use super::*;
+    use crate::api::RestApiBuilder;
 
     async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;

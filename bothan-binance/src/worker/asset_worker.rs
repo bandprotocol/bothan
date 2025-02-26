@@ -1,23 +1,22 @@
 use std::collections::HashMap;
 use std::sync::Weak;
 
-use opentelemetry::{global, KeyValue};
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
+use opentelemetry::{KeyValue, global};
 use rand::random;
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_lib::store::{Store, WorkerStore};
-use bothan_lib::types::AssetInfo;
-
 use crate::api::error::MessageError;
 use crate::api::msgs::{BinanceResponse, Data, ErrorResponse, SuccessResponse};
 use crate::api::{WebSocketConnection, WebSocketConnector};
-use crate::worker::types::{DEFAULT_TIMEOUT, METER_NAME, RECONNECT_BUFFER};
 use crate::worker::InnerWorker;
+use crate::worker::types::{DEFAULT_TIMEOUT, METER_NAME, RECONNECT_BUFFER};
 
 enum Event {
     Subscribe(Vec<String>),

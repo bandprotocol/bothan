@@ -1,34 +1,33 @@
 use std::collections::HashMap;
-use std::fs::{create_dir_all, read_to_string, write, File};
+use std::fs::{File, create_dir_all, read_to_string, write};
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
+use bothan_api::api::BothanServer;
+use bothan_api::config::AppConfig;
+use bothan_api::config::ipfs::IpfsAuthentication;
+use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
+use bothan_api::proto::bothan::v1::BothanServiceServer;
+use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
+use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
+use bothan_core::manager::CryptoAssetInfoManager;
+use bothan_core::manager::crypto_asset_info::worker::CryptoAssetWorker;
+use bothan_core::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
+use bothan_core::monitoring::{Client as MonitoringClient, Signer};
+use bothan_core::store::rocksdb::RocksDbStore;
+use bothan_lib::registry::{Registry, Valid};
+use bothan_lib::store::{RegistryStore, Store};
+use bothan_lib::worker::AssetWorker;
+use bothan_lib::worker::error::AssetWorkerError;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
 use tonic::transport::Server;
 use tracing::{debug, error, info};
-
-use bothan_api::api::BothanServer;
-use bothan_api::config::ipfs::IpfsAuthentication;
-use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
-use bothan_api::config::AppConfig;
-use bothan_api::proto::bothan::v1::BothanServiceServer;
-use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
-use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
-use bothan_core::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
-use bothan_core::manager::crypto_asset_info::worker::CryptoAssetWorker;
-use bothan_core::manager::CryptoAssetInfoManager;
-use bothan_core::monitoring::{Client as MonitoringClient, Signer};
-use bothan_core::store::rocksdb::RocksDbStore;
-use bothan_lib::registry::{Registry, Valid};
-use bothan_lib::store::{RegistryStore, Store};
-use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::AssetWorker;
 
 #[derive(Parser)]
 pub struct StartCli {

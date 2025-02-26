@@ -2,7 +2,7 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 
 use crate::api::error::{ConnectionError, MessageError, SendError};
 use crate::api::msgs::BinanceResponse;
@@ -160,9 +160,8 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
-
     use super::*;
+    use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await

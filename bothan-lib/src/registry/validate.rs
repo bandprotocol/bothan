@@ -25,7 +25,7 @@ pub(crate) fn validate_signal(
 ) -> Result<(), ValidationError> {
     match visited.get(signal_id) {
         Some(VisitState::InProgress) => {
-            return Err(ValidationError::CycleDetected(signal_id.to_string()))
+            return Err(ValidationError::CycleDetected(signal_id.to_string()));
         }
         Some(VisitState::Complete) => return Ok(()),
         None => {

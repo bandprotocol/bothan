@@ -1,10 +1,5 @@
 use std::sync::Weak;
 
-use crate::api::error::{MessageError, SendError};
-use crate::api::types::{BybitResponse, Ticker, MAX_ARGS};
-use crate::api::{WebSocketConnection, WebSocketConnector};
-use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
-use crate::worker::InnerWorker;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::types::AssetInfo;
 use rust_decimal::Decimal;
@@ -12,6 +7,12 @@ use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
+
+use crate::api::error::{MessageError, SendError};
+use crate::api::types::{BybitResponse, MAX_ARGS, Ticker};
+use crate::api::{WebSocketConnection, WebSocketConnector};
+use crate::worker::InnerWorker;
+use crate::worker::types::{DEFAULT_TIMEOUT, RECONNECT_BUFFER};
 
 pub(crate) async fn start_asset_worker<S: Store>(
     inner_worker: Weak<InnerWorker<S>>,

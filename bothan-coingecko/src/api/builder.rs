@@ -1,10 +1,10 @@
-use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::ClientBuilder;
+use reqwest::header::{HeaderMap, HeaderValue};
 use url::Url;
 
+use crate::api::RestApi;
 use crate::api::error::BuildError;
 use crate::api::types::{API_KEY_HEADER, DEFAULT_PRO_URL, DEFAULT_URL, DEFAULT_USER_AGENT};
-use crate::api::RestApi;
 
 /// Builder for creating instances of `CoinGeckoRestAPI`.
 /// Methods can be chained to set the configuration values and the
@@ -13,7 +13,6 @@ use crate::api::RestApi;
 /// # Example
 /// ```
 /// use bothan_coingecko::api::RestApiBuilder;
-///
 ///
 /// #[tokio::main]
 /// async fn main() {

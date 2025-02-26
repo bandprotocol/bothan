@@ -1,17 +1,19 @@
 pub mod error;
 mod key;
 
-use crate::store::rocksdb::error::{LoadError, RocksDbError};
-use crate::store::rocksdb::key::Key;
-use bincode::{config, decode_from_slice, encode_to_vec, Decode, Encode};
-use bothan_lib::registry::{Registry, Valid};
-use bothan_lib::store::Store;
-use bothan_lib::types::AssetInfo;
-use rust_rocksdb::{Options, WriteBatch, DB};
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
+
+use bincode::{Decode, Encode, config, decode_from_slice, encode_to_vec};
+use bothan_lib::registry::{Registry, Valid};
+use bothan_lib::store::Store;
+use bothan_lib::types::AssetInfo;
+use rust_rocksdb::{DB, Options, WriteBatch};
 use tokio::sync::RwLock;
+
+use crate::store::rocksdb::error::{LoadError, RocksDbError};
+use crate::store::rocksdb::key::Key;
 
 #[derive(Clone)]
 pub struct RocksDbStore {

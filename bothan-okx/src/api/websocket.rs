@@ -1,15 +1,15 @@
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 use tracing::warn;
 
 use crate::api::error::{ConnectionError, MessageError, SendError};
-use crate::api::types::message::{InstrumentType, Op, PriceRequestArgument, WebSocketMessage};
 use crate::api::types::OkxResponse;
+use crate::api::types::message::{InstrumentType, Op, PriceRequestArgument, WebSocketMessage};
 
 /// A connector for establishing a WebSocket connection to the OKX API.
 pub struct WebsocketConnector {
@@ -125,9 +125,8 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::types::{ChannelArgument, ChannelResponse, OkxResponse, PushData, TickerData};
-
     use super::*;
+    use crate::api::types::{ChannelArgument, ChannelResponse, OkxResponse, PushData, TickerData};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await

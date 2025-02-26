@@ -1,14 +1,16 @@
+use std::collections::HashSet;
+use std::sync::{Arc, Weak};
+
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetState;
+use bothan_lib::worker::AssetWorker;
+use bothan_lib::worker::error::AssetWorkerError;
+use bothan_lib::worker::rest::{AssetInfoProvider, start_polling};
+
 use crate::api::builder::RestApiBuilder;
 use crate::api::error::ProviderError;
 use crate::api::rest::RestApi;
 use crate::worker::opts::WorkerOpts;
-use bothan_lib::store::{Store, WorkerStore};
-use bothan_lib::types::AssetState;
-use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::rest::{start_polling, AssetInfoProvider};
-use bothan_lib::worker::AssetWorker;
-use std::collections::HashSet;
-use std::sync::{Arc, Weak};
 
 const WORKER_NAME: &str = "bitfinex";
 

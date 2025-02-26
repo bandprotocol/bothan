@@ -35,10 +35,9 @@ impl TickPostProcessor {
 
 #[cfg(test)]
 mod tests {
-    use crate::registry::post_processor::tick::TickPostProcessor;
-    use crate::registry::post_processor::PostProcessor;
-
     use super::*;
+    use crate::registry::post_processor::PostProcessor;
+    use crate::registry::post_processor::tick::TickPostProcessor;
 
     #[test]
     fn test_process() {

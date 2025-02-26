@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use reqwest::header::HeaderMap;
 use reqwest::Response;
+use reqwest::header::HeaderMap;
 use semver::Version;
 use serde::Serialize;
 

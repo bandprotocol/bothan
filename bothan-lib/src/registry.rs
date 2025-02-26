@@ -8,8 +8,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::registry::signal::Signal;
-use crate::registry::validate::validate_signal;
 pub use crate::registry::validate::ValidationError;
+use crate::registry::validate::validate_signal;
 
 pub mod post_processor;
 pub mod processor;
@@ -58,7 +58,8 @@ impl<T> Registry<T> {
     pub fn signal_ids(&self) -> impl Iterator<Item = &String> {
         self.inner.keys()
     }
-    /// An iterator visiting all the signal ids and their signals in the registry in arbitrary order.
+    /// An iterator visiting all the signal ids and their signals in the registry in arbitrary
+    /// order.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &Signal)> {
         self.inner.iter()
     }

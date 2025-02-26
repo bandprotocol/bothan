@@ -1,12 +1,14 @@
 pub mod opts;
 
-use crate::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
+use std::collections::HashSet;
+
 use bothan_lib::store::Store;
 use bothan_lib::types::AssetState;
-use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::AssetWorker;
+use bothan_lib::worker::error::AssetWorkerError;
 use derive_more::From;
-use std::collections::HashSet;
+
+use crate::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
 
 #[derive(From)]
 pub enum CryptoAssetWorker<S: Store> {

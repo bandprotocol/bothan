@@ -1,13 +1,15 @@
-use crate::api::error::ProviderError;
-use crate::api::{RestApi, RestApiBuilder};
-use crate::WorkerOpts;
-use bothan_lib::store::{Store, WorkerStore};
-use bothan_lib::types::AssetState;
-use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::rest::{start_polling, AssetInfoProvider};
-use bothan_lib::worker::AssetWorker;
 use std::collections::HashSet;
 use std::sync::{Arc, Weak};
+
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetState;
+use bothan_lib::worker::AssetWorker;
+use bothan_lib::worker::error::AssetWorkerError;
+use bothan_lib::worker::rest::{AssetInfoProvider, start_polling};
+
+use crate::WorkerOpts;
+use crate::api::error::ProviderError;
+use crate::api::{RestApi, RestApiBuilder};
 
 pub mod opts;
 

@@ -1,5 +1,6 @@
-use super::topic::Topic;
 use serde::Serialize;
+
+use super::topic::Topic;
 
 #[derive(Serialize)]
 pub struct Entry<T: Serialize> {

@@ -1,22 +1,24 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::ipfs::{error::Error as IpfsError, IpfsClient};
+use bothan_lib::registry::{Invalid, Registry};
+use bothan_lib::store::{RegistryStore, Store};
+use mini_moka::sync::Cache;
+use semver::{Version, VersionReq};
+use serde_json::from_str;
+
+use crate::ipfs::IpfsClient;
+use crate::ipfs::error::Error as IpfsError;
 use crate::manager::crypto_asset_info::error::{
     PostHeartbeatError, PushMonitoringRecordError, SetRegistryError,
 };
 use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
 use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::{
-    CryptoAssetManagerInfo, PriceSignalComputationRecord, PriceState, MONITORING_TTL,
+    CryptoAssetManagerInfo, MONITORING_TTL, PriceSignalComputationRecord, PriceState,
 };
 use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
-use crate::monitoring::{create_uuid, Client as MonitoringClient};
-use bothan_lib::registry::{Invalid, Registry};
-use bothan_lib::store::{RegistryStore, Store};
-use mini_moka::sync::Cache;
-use semver::{Version, VersionReq};
-use serde_json::from_str;
+use crate::monitoring::{Client as MonitoringClient, create_uuid};
 
 pub struct CryptoAssetInfoManager<S: Store + 'static> {
     workers: HashMap<String, CryptoAssetWorker<S>>,

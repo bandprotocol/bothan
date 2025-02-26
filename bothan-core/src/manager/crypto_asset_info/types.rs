@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use crate::monitoring::types::SignalComputationRecord;
 use bothan_lib::types::AssetState;
 use rust_decimal::Decimal;
+
+use crate::monitoring::types::SignalComputationRecord;
 
 pub const MONITORING_TTL: Duration = Duration::from_secs(60);
 pub const HEARTBEAT: Duration = Duration::from_secs(60);

@@ -1,9 +1,10 @@
-use crate::api::error::ProviderError;
-use crate::api::msg::ticker::Ticker;
 use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
+
+use crate::api::error::ProviderError;
+use crate::api::msg::ticker::Ticker;
 
 pub const DEFAULT_URL: &str = "https://api-pub.bitfinex.com/v2/";
 

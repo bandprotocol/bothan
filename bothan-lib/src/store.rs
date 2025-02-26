@@ -1,11 +1,12 @@
-use crate::registry::{Registry, Valid};
-use crate::types::AssetInfo;
-use async_trait::async_trait;
 use std::collections::HashSet;
 use std::error::Error as StdError;
 
+use async_trait::async_trait;
 pub use registry::RegistryStore;
 pub use worker::WorkerStore;
+
+use crate::registry::{Registry, Valid};
+use crate::types::AssetInfo;
 
 mod registry;
 mod worker;

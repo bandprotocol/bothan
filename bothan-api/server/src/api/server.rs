@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use bothan_core::manager::CryptoAssetInfoManager;
+use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
+use bothan_lib::store::Store;
 use semver::Version;
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, info};
@@ -10,9 +13,6 @@ use crate::proto::bothan::v1::{
     PushMonitoringRecordsRequest, PushMonitoringRecordsResponse, UpdateRegistryRequest,
     UpdateRegistryResponse,
 };
-use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
-use bothan_core::manager::CryptoAssetInfoManager;
-use bothan_lib::store::Store;
 
 pub const PRECISION: u32 = 9;
 

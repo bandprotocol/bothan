@@ -1,6 +1,6 @@
 use semver::Version;
-use serde::ser::SerializeStruct;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 
 pub struct BothanInfo {
     pub active_sources: Vec<String>,

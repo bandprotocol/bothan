@@ -1,9 +1,9 @@
+#![allow(clippy::all)]
 pub mod bothan {
     pub mod v1 {
-        use serde::ser::SerializeStruct;
-        use serde::Serialize;
-
         pub use bothan_service_server::{BothanService, BothanServiceServer};
+        use serde::Serialize;
+        use serde::ser::SerializeStruct;
 
         include!("proto/bothan.v1.rs");
         impl Price {

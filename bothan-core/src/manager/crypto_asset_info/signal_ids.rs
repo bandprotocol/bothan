@@ -1,9 +1,11 @@
-use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
+use std::collections::{HashMap, HashSet, VecDeque};
+
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::worker::AssetWorker;
-use std::collections::{HashMap, HashSet, VecDeque};
 use tracing::{error, info};
+
+use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
 
 /// Sets the query ids for each worker based on the registry. If the registry contains a worker that
 /// is not in the worker map, it will be ignored and logged.
@@ -57,8 +59,9 @@ fn get_source_batched_query_ids(registry: &Registry<Valid>) -> HashMap<String, H
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use bothan_lib::registry::Invalid;
+
+    use super::*;
 
     fn mock_registry() -> Registry<Invalid> {
         let json_string = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"coingecko\",\"id\":\"tether\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:BTC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"btcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]},{\"source_id\":\"coingecko\",\"id\":\"bitcoin\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";

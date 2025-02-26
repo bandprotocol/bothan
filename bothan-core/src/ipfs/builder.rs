@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::ClientBuilder;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::ipfs::client::IpfsClient;
 

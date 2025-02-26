@@ -6,9 +6,9 @@ pub const DEFAULT_CHANNEL_SIZE: usize = 1000;
 
 /// Options for configuring the `KrakenWorkerBuilder`.
 ///
-/// `KrakenWorkerBuilderOpts` provides a way to specify custom settings for creating a `KrakenWorker`.
-/// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
-/// which will be used during the construction of the `KrakenWorker`.
+/// `KrakenWorkerBuilderOpts` provides a way to specify custom settings for creating a
+/// `KrakenWorker`. This struct allows users to set optional parameters such as the WebSocket URL
+/// and the internal channel size, which will be used during the construction of the `KrakenWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorkerOpts {
     #[serde(default = "default_url")]

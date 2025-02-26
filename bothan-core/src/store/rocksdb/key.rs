@@ -7,7 +7,7 @@ pub enum Key<'a> {
     RegistryIpfsHash,
 }
 
-impl<'a> Display for Key<'a> {
+impl Display for Key<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Key::AssetStore { source_id, id } => format!("asset_store::{}::{}", source_id, id),
@@ -19,7 +19,7 @@ impl<'a> Display for Key<'a> {
     }
 }
 
-impl<'a> Key<'a> {
+impl Key<'_> {
     pub fn to_prefixed_bytes(&self) -> Vec<u8> {
         let prefix = "bothan::".as_bytes();
         let content = self.to_string().into_bytes();

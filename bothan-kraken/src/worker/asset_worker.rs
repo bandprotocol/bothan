@@ -1,16 +1,18 @@
-use crate::api::error::{MessageError, SendError};
-use crate::api::types::{ChannelResponse, KrakenResponse, TickerResponse};
-use crate::api::{KrakenWebSocketConnection, KrakenWebSocketConnector};
-use crate::worker::InnerWorker;
+use std::sync::Weak;
+use std::time::Duration;
+
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::types::AssetInfo;
 use rust_decimal::Decimal;
-use std::sync::Weak;
-use std::time::Duration;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
+
+use crate::api::error::{MessageError, SendError};
+use crate::api::types::{ChannelResponse, KrakenResponse, TickerResponse};
+use crate::api::{KrakenWebSocketConnection, KrakenWebSocketConnector};
+use crate::worker::InnerWorker;
 
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 pub const RECONNECT_BUFFER: Duration = Duration::from_secs(5);

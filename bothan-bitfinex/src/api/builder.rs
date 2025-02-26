@@ -1,7 +1,8 @@
-use crate::api::error::BuildError;
-use crate::api::rest::{RestApi, DEFAULT_URL};
 use reqwest::ClientBuilder;
 use url::Url;
+
+use crate::api::error::BuildError;
+use crate::api::rest::{DEFAULT_URL, RestApi};
 
 pub struct RestApiBuilder {
     url: String,

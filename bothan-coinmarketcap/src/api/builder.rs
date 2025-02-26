@@ -1,10 +1,10 @@
-use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::ClientBuilder;
+use reqwest::header::{HeaderMap, HeaderValue};
 use url::Url;
 
+use crate::api::RestApi;
 use crate::api::error::BuildError;
 use crate::api::types::DEFAULT_URL;
-use crate::api::RestApi;
 
 /// Builds a CoinMarketCapRestAPI with custom parameters.
 /// Methods can be chained to set the parameters and the
