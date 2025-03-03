@@ -1,7 +1,6 @@
+use bothan_core::manager::crypto_asset_info::types::PriceState;
 use rust_decimal::prelude::Zero;
 use tracing::warn;
-
-use bothan_core::manager::crypto_asset_info::types::PriceState;
 
 use crate::api::server::PRECISION;
 use crate::proto::bothan::v1::{Price, Status};

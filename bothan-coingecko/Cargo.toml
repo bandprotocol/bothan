@@ -1,6 +1,6 @@
 [package]
 name = "bothan-coingecko"
-version = "0.0.1-beta.1"
+version = "0.0.1-beta.2"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -8,17 +8,15 @@ repository.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bothan-lib = { workspace = true }
+
 async-trait = { workspace = true }
-bothan-core = { workspace = true }
-chrono = { workspace = true }
 humantime-serde = { workspace = true }
 reqwest = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
 url = { workspace = true }
 
 [dev-dependencies]

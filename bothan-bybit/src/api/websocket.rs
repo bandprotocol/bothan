@@ -2,28 +2,28 @@ use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 use tracing::warn;
 
 use crate::api::error::{ConnectionError, MessageError, SendError};
 use crate::api::types::BybitResponse;
 
 /// A connector for establishing a WebSocket connection to the Bybit API.
-pub struct BybitWebSocketConnector {
+pub struct WebSocketConnector {
     url: String,
 }
 
-impl BybitWebSocketConnector {
+impl WebSocketConnector {
     /// Creates a new instance of `BybitWebSocketConnector`.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
     /// Connects to the Bybit WebSocket API.
-    pub async fn connect(&self) -> Result<BybitWebSocketConnection, ConnectionError> {
+    pub async fn connect(&self) -> Result<WebSocketConnection, ConnectionError> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
         let status = resp.status();
@@ -34,17 +34,17 @@ impl BybitWebSocketConnector {
             ));
         }
 
-        Ok(BybitWebSocketConnection::new(wss))
+        Ok(WebSocketConnection::new(wss))
     }
 }
 
 /// Represents an active WebSocket connection to the Bybit API.
-pub struct BybitWebSocketConnection {
+pub struct WebSocketConnection {
     sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 }
 
-impl BybitWebSocketConnection {
+impl WebSocketConnection {
     /// Creates a new `BybitWebSocketConnection` instance.
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
@@ -104,10 +104,8 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    // use crate::api::msgs::{Data, MiniTickerInfo, StreamResponse};
-    use crate::api::types::{BybitResponse, PublicMessageResponse, PublicTickerResponse, Ticker};
-
     use super::*;
+    use crate::api::types::{BybitResponse, PublicMessageResponse, PublicTickerResponse, Ticker};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -117,7 +115,7 @@ pub(crate) mod test {
     async fn test_recv_public_ticker() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = BybitWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock ticker response.
@@ -165,7 +163,7 @@ pub(crate) mod test {
     async fn test_recv_public_message() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = BybitWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock public message response.
@@ -202,7 +200,7 @@ pub(crate) mod test {
     async fn test_recv_close() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = BybitWebSocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Mount the mock WebSocket server and send a close message.

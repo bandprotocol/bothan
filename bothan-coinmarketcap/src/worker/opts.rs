@@ -7,11 +7,12 @@ use crate::worker::types::DEFAULT_UPDATE_INTERVAL;
 
 /// Options for configuring the `CoinMarketCapWorkerBuilder`.
 ///
-/// `CoinMarketCapWorkerBuilderOpts` provides a way to specify custom settings for creating a `CoinMarketCapWorker`.
-/// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
-/// which will be used during the construction of the `CoinMarketCapWorker`.
+/// `CoinMarketCapWorkerBuilderOpts` provides a way to specify custom settings for creating a
+/// `CoinMarketCapWorker`. This struct allows users to set optional parameters such as the WebSocket
+/// URL and the internal channel size, which will be used during the construction of the
+/// `CoinMarketCapWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CoinMarketCapWorkerBuilderOpts {
+pub struct WorkerOpts {
     #[serde(default = "default_url")]
     pub url: String,
     #[serde(default)]
@@ -31,7 +32,7 @@ fn default_update_interval() -> Duration {
     DEFAULT_UPDATE_INTERVAL
 }
 
-impl Default for CoinMarketCapWorkerBuilderOpts {
+impl Default for WorkerOpts {
     fn default() -> Self {
         Self {
             url: default_url(),

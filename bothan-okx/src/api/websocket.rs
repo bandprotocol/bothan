@@ -1,29 +1,29 @@
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 use tracing::warn;
 
 use crate::api::error::{ConnectionError, MessageError, SendError};
-use crate::api::types::message::{InstrumentType, Op, PriceRequestArgument, WebSocketMessage};
 use crate::api::types::OkxResponse;
+use crate::api::types::message::{InstrumentType, Op, PriceRequestArgument, WebSocketMessage};
 
 /// A connector for establishing a WebSocket connection to the OKX API.
-pub struct OkxWebSocketConnector {
+pub struct WebsocketConnector {
     url: String,
 }
 
-impl OkxWebSocketConnector {
+impl WebsocketConnector {
     /// Creates a new instance of `OkxWebSocketConnector`.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
     /// Connects to the OKX WebSocket API.
-    pub async fn connect(&self) -> Result<OkxWebSocketConnection, ConnectionError> {
+    pub async fn connect(&self) -> Result<WebSocketConnection, ConnectionError> {
         let (wss, resp) = connect_async(self.url.clone()).await?;
 
         let status = resp.status();
@@ -34,17 +34,17 @@ impl OkxWebSocketConnector {
             ));
         }
 
-        Ok(OkxWebSocketConnection::new(wss))
+        Ok(WebSocketConnection::new(wss))
     }
 }
 
 /// Represents an active WebSocket connection to the OKX API.
-pub struct OkxWebSocketConnection {
+pub struct WebSocketConnection {
     sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 }
 
-impl OkxWebSocketConnection {
+impl WebSocketConnection {
     /// Creates a new `OkxWebSocketConnection` instance.
     pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         let (sender, receiver) = web_socket_stream.split();
@@ -125,9 +125,8 @@ pub(crate) mod test {
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
-    use crate::api::types::{ChannelArgument, ChannelResponse, OkxResponse, PushData, TickerData};
-
     use super::*;
+    use crate::api::types::{ChannelArgument, ChannelResponse, OkxResponse, PushData, TickerData};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -137,7 +136,7 @@ pub(crate) mod test {
     async fn test_recv_ticker() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = OkxWebSocketConnector::new(server.uri().await);
+        let connector = WebsocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock ticker data.
@@ -187,7 +186,7 @@ pub(crate) mod test {
     async fn test_recv_close() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = OkxWebSocketConnector::new(server.uri().await);
+        let connector = WebsocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Mount the mock WebSocket server and send a close message.

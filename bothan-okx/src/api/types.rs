@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 pub use channel::{ChannelArgument, ChannelResponse, PushData, TickerData};
 pub use message::WebSocketMessageResponse;
+use serde::{Deserialize, Serialize};
 
 pub mod channel;
 pub mod message;

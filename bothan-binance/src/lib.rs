@@ -1,8 +1,6 @@
-pub use api::websocket::{BinanceWebSocketConnection, BinanceWebSocketConnector};
-pub use worker::builder::BinanceWorkerBuilder;
-pub use worker::error::BuildError;
-pub use worker::opts::BinanceWorkerBuilderOpts;
-pub use worker::BinanceWorker;
+pub use api::websocket::{WebSocketConnection, WebSocketConnector};
+pub use worker::Worker;
+pub use worker::opts::WorkerOpts;
 
 pub mod api;
 pub mod worker;

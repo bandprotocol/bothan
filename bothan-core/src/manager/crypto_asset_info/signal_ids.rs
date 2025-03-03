@@ -1,18 +1,21 @@
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::Arc;
 
+use bothan_lib::registry::{Registry, Valid};
+use bothan_lib::store::Store;
+use bothan_lib::worker::AssetWorker;
 use tracing::{error, info};
 
-use crate::registry::{Registry, Valid};
-use crate::worker::AssetWorker;
+use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
 
-pub async fn set_workers_query_ids<'a>(
-    workers: &HashMap<String, Arc<dyn AssetWorker + 'a>>,
+/// Sets the query ids for each worker based on the registry. If the registry contains a worker that
+/// is not in the worker map, it will be ignored and logged.
+pub async fn set_workers_query_ids<S: Store + 'static>(
+    workers: &HashMap<String, CryptoAssetWorker<S>>,
     registry: &Registry<Valid>,
 ) {
-    for (source, mut query_ids) in get_source_batched_query_ids(registry).drain() {
+    for (source, query_ids) in get_source_batched_query_ids(registry).drain() {
         match workers.get(&source) {
-            Some(worker) => match worker.set_query_ids(query_ids.drain().collect()).await {
+            Some(worker) => match worker.set_query_ids(query_ids).await {
                 Ok(_) => info!("set query ids for {} worker", source),
                 Err(e) => error!("failed to set query ids for {} worker: {}", source, e),
             },
@@ -26,7 +29,7 @@ fn get_source_batched_query_ids(registry: &Registry<Valid>) -> HashMap<String, H
     // Seen signal_ids
     let mut seen = HashSet::<String>::new();
 
-    let mut queue = VecDeque::from_iter(registry.keys());
+    let mut queue = VecDeque::from_iter(registry.signal_ids());
     while let Some(signal_id) = queue.pop_front() {
         if seen.contains(signal_id) {
             continue;
@@ -56,12 +59,18 @@ fn get_source_batched_query_ids(registry: &Registry<Valid>) -> HashMap<String, H
 
 #[cfg(test)]
 mod tests {
+    use bothan_lib::registry::Invalid;
+
     use super::*;
-    use crate::registry::tests::valid_mock_registry;
+
+    fn mock_registry() -> Registry<Invalid> {
+        let json_string = "{\"CS:USDT-USD\":{\"sources\":[{\"source_id\":\"coingecko\",\"id\":\"tether\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]},\"CS:BTC-USD\":{\"sources\":[{\"source_id\":\"binance\",\"id\":\"btcusdt\",\"routes\":[{\"signal_id\":\"CS:USDT-USD\",\"operation\":\"*\"}]},{\"source_id\":\"coingecko\",\"id\":\"bitcoin\",\"routes\":[]}],\"processor\":{\"function\":\"median\",\"params\":{\"min_source_count\":1}},\"post_processors\":[]}}";
+        serde_json::from_str::<Registry>(json_string).unwrap()
+    }
 
     #[test]
     fn test_get_source_batched_query_ids() {
-        let registry = valid_mock_registry().validate().unwrap();
+        let registry = mock_registry().validate().unwrap();
 
         let diff = get_source_batched_query_ids(&registry);
         let expected = HashMap::from_iter([

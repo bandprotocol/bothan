@@ -1,16 +1,13 @@
-use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::Duration;
 
+use bothan_lib::types::AssetState;
 use rust_decimal::Decimal;
 
-use crate::monitoring::records::SignalComputationRecord;
-use crate::worker::{AssetState, AssetWorker};
+use crate::monitoring::types::SignalComputationRecord;
 
 pub const MONITORING_TTL: Duration = Duration::from_secs(60);
 pub const HEARTBEAT: Duration = Duration::from_secs(60);
 
-pub type WorkerMap<'a> = HashMap<String, Arc<dyn AssetWorker + 'a>>;
 pub type PriceSignalComputationRecord = SignalComputationRecord<AssetState, Decimal>;
 
 #[derive(Debug, Clone, PartialEq)]

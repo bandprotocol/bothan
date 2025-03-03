@@ -1,23 +1,22 @@
-use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::ClientBuilder;
+use reqwest::header::{HeaderMap, HeaderValue};
 use url::Url;
 
+use crate::api::RestApi;
 use crate::api::error::BuildError;
 use crate::api::types::{API_KEY_HEADER, DEFAULT_PRO_URL, DEFAULT_URL, DEFAULT_USER_AGENT};
-use crate::api::CoinGeckoRestAPI;
 
 /// Builder for creating instances of `CoinGeckoRestAPI`.
 /// Methods can be chained to set the configuration values and the
-/// service is constructed by calling the [`build`](CoinGeckoRestAPIBuilder::build) method.
+/// service is constructed by calling the [`build`](RestApiBuilder::build) method.
 ///
 /// # Example
 /// ```
-/// use bothan_coingecko::api::CoinGeckoRestAPIBuilder;
-///
+/// use bothan_coingecko::api::RestApiBuilder;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let mut api = CoinGeckoRestAPIBuilder::default()
+///     let mut api = RestApiBuilder::default()
 ///         .with_url("https://api.coingecko.com/api/v3")
 ///         .with_api_key("your_api_key")
 ///         .with_user_agent("your_user_agent")
@@ -27,26 +26,23 @@ use crate::api::CoinGeckoRestAPI;
 ///     // use api ...
 /// }
 /// ```
-pub struct CoinGeckoRestAPIBuilder {
+pub struct RestApiBuilder {
+    url: Option<String>,
     user_agent: String,
-    url: String,
     api_key: Option<String>,
-    // Flag to determine if the URL was modified by the user.
-    mod_url: bool,
 }
 
-impl CoinGeckoRestAPIBuilder {
-    pub fn new<T, U, V>(user_agent: T, url: U, api_key: Option<V>) -> Self
+impl RestApiBuilder {
+    pub fn new<T, U, V>(url: Option<T>, user_agent: U, api_key: Option<V>) -> Self
     where
         T: Into<String>,
         U: Into<String>,
         V: Into<String>,
     {
-        CoinGeckoRestAPIBuilder {
+        RestApiBuilder {
+            url: url.map(|v| v.into()),
             user_agent: user_agent.into(),
-            url: url.into(),
             api_key: api_key.map(Into::into),
-            mod_url: true,
         }
     }
 
@@ -54,8 +50,7 @@ impl CoinGeckoRestAPIBuilder {
     /// If not specified, the default URL is `DEFAULT_URL` when no API key is provided,
     /// and `DEFAULT_PRO_URL` when an API key is provided.
     pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
-        self.url = url.into();
-        self.mod_url = true;
+        self.url = Some(url.into());
         self
     }
 
@@ -74,48 +69,37 @@ impl CoinGeckoRestAPIBuilder {
     }
 
     /// Builds the `CoinGeckoRestAPI` instance.
-    pub fn build(self) -> Result<CoinGeckoRestAPI, BuildError> {
+    pub fn build(self) -> Result<RestApi, BuildError> {
         let mut headers = HeaderMap::new();
-        let agent = match HeaderValue::from_str(&self.user_agent) {
-            Ok(agent) => agent,
-            Err(_) => return Err(BuildError::InvalidHeaderValue(self.user_agent)),
-        };
 
+        let agent = HeaderValue::from_str(&self.user_agent)?;
         headers.insert("User-Agent", agent);
 
-        let url = match (&self.mod_url, &self.api_key) {
-            (true, _) => &self.url,
-            (false, Some(_)) => DEFAULT_PRO_URL,
-            (false, None) => DEFAULT_URL,
+        let url = match (&self.url, &self.api_key) {
+            (Some(url), _) => url,
+            (None, Some(_)) => DEFAULT_PRO_URL,
+            (None, None) => DEFAULT_URL,
         };
         let parsed_url = Url::parse(url)?;
 
         if let Some(key) = &self.api_key {
-            let mut api_key = match HeaderValue::from_str(key) {
-                Ok(key) => key,
-                Err(_) => return Err(BuildError::InvalidHeaderValue(key.clone())),
-            };
+            let mut api_key = HeaderValue::from_str(key)?;
             api_key.set_sensitive(true);
             headers.insert(API_KEY_HEADER, api_key);
         }
 
-        let client = ClientBuilder::new()
-            .default_headers(headers)
-            .build()
-            .map_err(|e| BuildError::BuildFailed(e.to_string()))?;
-
-        Ok(CoinGeckoRestAPI::new(parsed_url, client))
+        let client = ClientBuilder::new().default_headers(headers).build()?;
+        Ok(RestApi::new(parsed_url, client))
     }
 }
 
-impl Default for CoinGeckoRestAPIBuilder {
+impl Default for RestApiBuilder {
     /// Creates a default `CoinGeckoRestAPIBuilder` instance with default values.
     fn default() -> Self {
-        CoinGeckoRestAPIBuilder {
-            url: DEFAULT_URL.into(),
+        RestApiBuilder {
+            url: None,
             api_key: None,
             user_agent: DEFAULT_USER_AGENT.into(),
-            mod_url: false,
         }
     }
 }

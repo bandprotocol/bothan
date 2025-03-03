@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Context};
-use clap::{Parser, Subcommand};
-use inquire::{Password, PasswordDisplayMode};
 use std::fs::{create_dir_all, read, read_to_string, write};
 
+use anyhow::{Context, anyhow};
 use bothan_api::config::AppConfig;
 use bothan_core::monitoring::Signer;
+use clap::{Parser, Subcommand};
+use inquire::{Password, PasswordDisplayMode};
 
 #[derive(Parser)]
 pub struct KeyCli {

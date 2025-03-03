@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
-use reqwest::header::HeaderMap;
 use reqwest::Response;
+use reqwest::header::HeaderMap;
 use semver::Version;
 use serde::Serialize;
 
 use crate::monitoring::error::Error;
-use crate::monitoring::records::{SignalComputationRecord, SignalRecordsWithTxHash};
 use crate::monitoring::signer::Signer;
-use crate::monitoring::types::{BothanInfo, Entry, Topic};
+use crate::monitoring::types::{
+    BothanInfo, Entry, SignalComputationRecord, SignalTransactionRecord, Topic,
+};
 
 pub struct Client {
     url: String,
@@ -38,7 +39,7 @@ impl Client {
         self.post(
             uuid,
             Topic::Record,
-            SignalRecordsWithTxHash { tx_hash, records },
+            SignalTransactionRecord { tx_hash, records },
         )
         .await
     }

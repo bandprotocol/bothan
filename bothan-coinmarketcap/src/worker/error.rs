@@ -1,11 +1,16 @@
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum ParseError {
-    #[error("missing price data")]
-    MissingPriceData,
+use thiserror::Error;
 
-    #[error("invalid price: {0}")]
-    InvalidPrice(f64),
+#[derive(Debug, Error)]
+pub enum ProviderError {
+    #[error("ids contains non integer value: {0}")]
+    InvalidId(String),
 
-    #[error("invalid timestamp: {0}")]
-    InvalidTimestamp(#[from] chrono::ParseError),
+    #[error("failed to fetch tickers: {0}")]
+    RequestError(#[from] reqwest::Error),
+
+    #[error("missing value")]
+    MissingValue,
+
+    #[error("value contains nan")]
+    InvalidValue,
 }

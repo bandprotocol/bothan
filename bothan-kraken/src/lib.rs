@@ -1,8 +1,6 @@
 pub use api::websocket::{KrakenWebSocketConnection, KrakenWebSocketConnector};
-pub use worker::builder::KrakenWorkerBuilder;
-pub use worker::error::BuildError;
-pub use worker::opts::KrakenWorkerBuilderOpts;
-pub use worker::KrakenWorker;
+pub use worker::Worker;
+pub use worker::opts::WorkerOpts;
 
 pub mod api;
 pub mod worker;

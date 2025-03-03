@@ -1,5 +1,5 @@
-pub use builder::CoinGeckoRestAPIBuilder;
-pub use rest::CoinGeckoRestAPI;
+pub use builder::RestApiBuilder;
+pub use rest::RestApi;
 
 pub mod builder;
 pub mod error;

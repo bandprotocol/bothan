@@ -1,23 +1,22 @@
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum BuildError {
-    #[error("invalid header value: {0}")]
-    InvalidHeaderValue(String),
+use thiserror::Error;
 
+#[derive(Debug, Error)]
+pub enum BuildError {
     #[error("invalid url")]
     InvalidURL(#[from] url::ParseError),
 
-    #[error("build failed with error: {0}")]
-    BuildFailed(String),
+    #[error("invalid header value")]
+    InvalidHeaderValue(#[from] reqwest::header::InvalidHeaderValue),
+
+    #[error("failed to build with error: {0}")]
+    FailedToBuild(#[from] reqwest::Error),
 }
 
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
-pub enum SendError {
-    #[error("failed to send request with error: {0}")]
-    FailedRequest(String),
+#[derive(Debug, Error)]
+pub enum ProviderError {
+    #[error("failed to fetch tickers: {0}")]
+    RequestError(#[from] reqwest::Error),
 
-    #[error("received non-2xx http status: {0}")]
-    UnsuccessfulResponse(reqwest::StatusCode),
-
-    #[error("failed to parse response with error: {0}")]
-    ParseResponseFailed(String),
+    #[error("value contains nan")]
+    InvalidValue,
 }

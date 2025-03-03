@@ -1,12 +1,11 @@
 use thiserror::Error;
 
 use crate::monitoring::error::Error as MonitoringError;
-use crate::store::error::Error as StoreError;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum SetRegistryError {
-    #[error("Failed to set registry: {0}")]
-    FailedToSetRegistry(#[from] StoreError),
+    #[error("Failed to set registry")]
+    FailedToSetRegistry,
 
     #[error("Failed to get registry from IPFS")]
     FailedToRetrieve(String),

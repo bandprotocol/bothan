@@ -1,5 +1,5 @@
-use rand::rngs::OsRng;
 use rand::RngCore;
+use rand::rngs::OsRng;
 
 pub fn create_uuid() -> String {
     let mut uuid_bytes = [0u8; 16];

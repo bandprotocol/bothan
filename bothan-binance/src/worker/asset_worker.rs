@@ -1,37 +1,36 @@
 use std::collections::HashMap;
 use std::sync::Weak;
 
-use opentelemetry::{global, KeyValue};
+use bothan_lib::store::{Store, WorkerStore};
+use bothan_lib::types::AssetInfo;
+use opentelemetry::{KeyValue, global};
 use rand::random;
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use tokio::select;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
 
-use bothan_core::store::WorkerStore;
-use bothan_core::types::AssetInfo;
-
 use crate::api::error::MessageError;
 use crate::api::msgs::{BinanceResponse, Data, ErrorResponse, SuccessResponse};
-use crate::api::{BinanceWebSocketConnection, BinanceWebSocketConnector};
+use crate::api::{WebSocketConnection, WebSocketConnector};
+use crate::worker::InnerWorker;
 use crate::worker::types::{DEFAULT_TIMEOUT, METER_NAME, RECONNECT_BUFFER};
-use crate::worker::BinanceWorker;
 
 enum Event {
     Subscribe(Vec<String>),
     Unsubscribe(Vec<String>),
 }
 
-pub(crate) async fn start_asset_worker(
-    worker: Weak<BinanceWorker>,
-    mut connection: BinanceWebSocketConnection,
+pub(crate) async fn start_asset_worker<S: Store>(
+    inner_worker: Weak<InnerWorker<S>>,
+    mut connection: WebSocketConnection,
     mut subscribe_rx: Receiver<Vec<String>>,
     mut unsubscribe_rx: Receiver<Vec<String>>,
 ) {
     let mut subscription_map = HashMap::new();
-    while let Some(worker) = worker.upgrade() {
+    while let Some(worker) = inner_worker.upgrade() {
         select! {
             Some(ids) = subscribe_rx.recv() => handle_subscribe_recv(ids, &mut connection, &mut subscription_map).await,
             Some(ids) = unsubscribe_rx.recv() => handle_unsubscribe_recv(ids, &mut connection, &mut subscription_map).await,
@@ -57,7 +56,7 @@ pub(crate) async fn start_asset_worker(
 
 async fn handle_subscribe_recv(
     ids: Vec<String>,
-    connection: &mut BinanceWebSocketConnection,
+    connection: &mut WebSocketConnection,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
     if ids.is_empty() {
@@ -68,7 +67,7 @@ async fn handle_subscribe_recv(
     let tickers = ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
 
     let meter = global::meter(METER_NAME);
-    meter.u64_counter("subscribe_attempt").init().add(
+    meter.u64_counter("subscribe_attempt").build().add(
         1,
         &[
             KeyValue::new("subscription.id", packet_id),
@@ -88,7 +87,7 @@ async fn handle_subscribe_recv(
             error!("failed attempt to subscribe to ids {:?}: {}", ids, e);
             meter
                 .u64_counter("failed_subscribe_attempt")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("subscription.id", packet_id)]);
         }
     }
@@ -96,7 +95,7 @@ async fn handle_subscribe_recv(
 
 async fn handle_unsubscribe_recv(
     ids: Vec<String>,
-    connection: &mut BinanceWebSocketConnection,
+    connection: &mut WebSocketConnection,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
     if ids.is_empty() {
@@ -107,7 +106,7 @@ async fn handle_unsubscribe_recv(
     let tickers = ids.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
 
     let meter = global::meter(METER_NAME);
-    meter.u64_counter("unsubscribe_attempt").init().add(
+    meter.u64_counter("unsubscribe_attempt").build().add(
         1,
         &[
             KeyValue::new("subscription.id", packet_id),
@@ -127,17 +126,17 @@ async fn handle_unsubscribe_recv(
             error!("failed attempt to unsubscribe to ids {:?}: {}", ids, e);
             meter
                 .u64_counter("failed_unsubscribe_attempt")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("subscription.id", packet_id)]);
         }
     }
 }
 
-async fn handle_connection_recv(
+async fn handle_connection_recv<S: Store>(
     recv_result: Result<BinanceResponse, MessageError>,
-    connector: &BinanceWebSocketConnector,
-    connection: &mut BinanceWebSocketConnection,
-    store: &WorkerStore,
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
+    store: &WorkerStore<S>,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
     match recv_result {
@@ -156,15 +155,15 @@ async fn handle_connection_recv(
     }
 }
 
-async fn handle_reconnect(
-    connector: &BinanceWebSocketConnector,
-    connection: &mut BinanceWebSocketConnection,
-    query_ids: &WorkerStore,
+async fn handle_reconnect<S: Store>(
+    connector: &WebSocketConnector,
+    connection: &mut WebSocketConnection,
+    query_ids: &WorkerStore<S>,
 ) {
     let mut retry_count: usize = 1;
     loop {
         let meter = global::meter(METER_NAME);
-        meter.u64_counter("reconnect-attempts").init().add(1, &[]);
+        meter.u64_counter("reconnect-attempts").build().add(1, &[]);
 
         warn!("reconnecting: attempt {}", retry_count);
 
@@ -205,8 +204,8 @@ async fn handle_reconnect(
     }
 }
 
-async fn process_response(
-    store: &WorkerStore,
+async fn process_response<S: Store>(
+    store: &WorkerStore<S>,
     resp: BinanceResponse,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
@@ -218,7 +217,7 @@ async fn process_response(
     }
 }
 
-async fn store_data(store: &WorkerStore, data: Data) {
+async fn store_data<S: Store>(store: &WorkerStore<S>, data: Data) {
     match data {
         Data::MiniTicker(ticker) => {
             let id = ticker.symbol.to_lowercase();
@@ -230,12 +229,12 @@ async fn store_data(store: &WorkerStore, data: Data) {
             let timestamp = ticker.event_time / 1000;
             let asset_info = AssetInfo::new(id.clone(), price, timestamp);
 
-            match store.set_asset(&id, asset_info).await {
+            match store.set_asset_info(asset_info).await {
                 Ok(_) => {
                     info!("stored data for id {}", id);
                     global::meter(METER_NAME)
                         .f64_gauge("asset-prices")
-                        .init()
+                        .build()
                         .record(
                             price.to_f64().unwrap(), // Prices should never be NaN so unwrap here
                             &[KeyValue::new("asset.symbol", id)],
@@ -247,8 +246,8 @@ async fn store_data(store: &WorkerStore, data: Data) {
     }
 }
 
-async fn process_success(
-    store: &WorkerStore,
+async fn process_success<S: Store>(
+    store: &WorkerStore<S>,
     success_response: SuccessResponse,
     subscription_map: &mut HashMap<i64, Event>,
 ) {
@@ -259,7 +258,7 @@ async fn process_success(
             info!("subscribed to ids {:?}", ids);
             meter
                 .u64_counter("subscribe_success")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("id", success_response.id)]);
             if store.add_query_ids(ids).await.is_err() {
                 error!("failed to add query ids to store");
@@ -269,9 +268,9 @@ async fn process_success(
             info!("unsubscribed to ids {:?}", ids);
             meter
                 .u64_counter("unsubscribe_success")
-                .init()
+                .build()
                 .add(1, &[KeyValue::new("subscription.id", success_response.id)]);
-            if store.remove_query_ids(ids).await.is_err() {
+            if store.remove_query_ids(&ids).await.is_err() {
                 error!("failed to remove query ids from store");
             };
         }
@@ -283,7 +282,7 @@ fn process_ping() {
     debug!("received ping from binance");
     global::meter(METER_NAME)
         .u64_counter("pings")
-        .init()
+        .build()
         .add(1, &[]);
 }
 
@@ -292,7 +291,7 @@ fn process_error(error: ErrorResponse) {
         "error code {} received from binance: {}",
         error.code, error.msg
     );
-    global::meter(METER_NAME).u64_counter("errors").init().add(
+    global::meter(METER_NAME).u64_counter("errors").build().add(
         1,
         &[
             KeyValue::new("msg.code", error.code as i64),

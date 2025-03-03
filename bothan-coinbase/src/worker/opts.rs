@@ -5,11 +5,12 @@ use crate::worker::types::DEFAULT_CHANNEL_SIZE;
 
 /// Options for configuring the `CoinbaseWorkerBuilder`.
 ///
-/// `CoinbaseWorkerBuilderOpts` provides a way to specify custom settings for creating a `CoinbaseWorker`.
-/// This struct allows users to set optional parameters such as the WebSocket URL and the internal channel size,
-/// which will be used during the construction of the `CoinbaseWorker`.
+/// `CoinbaseWorkerBuilderOpts` provides a way to specify custom settings for creating a
+/// `CoinbaseWorker`. This struct allows users to set optional parameters such as the WebSocket URL
+/// and the internal channel size, which will be used during the construction of the
+/// `CoinbaseWorker`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CoinbaseWorkerBuilderOpts {
+pub struct WorkerOpts {
     #[serde(default = "default_url")]
     pub url: String,
     #[serde(default = "default_internal_ch_size")]
@@ -24,7 +25,7 @@ fn default_internal_ch_size() -> usize {
     DEFAULT_CHANNEL_SIZE
 }
 
-impl Default for CoinbaseWorkerBuilderOpts {
+impl Default for WorkerOpts {
     fn default() -> Self {
         Self {
             url: default_url(),

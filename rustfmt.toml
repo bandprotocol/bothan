@@ -1,2 +1,6 @@
+unstable_features = true
+
 max_width = 100
-reorder_imports = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+imports_layout = "Mixed"
