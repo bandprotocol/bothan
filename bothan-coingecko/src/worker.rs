@@ -1,59 +1,50 @@
-use std::collections::HashSet;
-use std::sync::{Arc, Weak};
-
 use bothan_lib::store::{Store, WorkerStore};
-use bothan_lib::types::AssetState;
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::rest::{AssetInfoProvider, start_polling};
+use bothan_lib::worker::rest::start_polling;
+use tokio_util::sync::{CancellationToken, DropGuard};
 
 use crate::WorkerOpts;
-use crate::api::error::ProviderError;
-use crate::api::{RestApi, RestApiBuilder};
+use crate::api::RestApiBuilder;
 
 pub mod opts;
 
 const WORKER_NAME: &str = "coingecko";
 
-pub struct Worker<S: Store> {
-    // The `api` is owned by this struct to ensure that any weak references
-    // are properly cleaned up when the worker is dropped.
-    #[allow(dead_code)]
-    api: Arc<RestApi>,
-    store: WorkerStore<S>,
+pub struct Worker {
+    // We keep this DropGuard to ensure that all internal processes
+    // to ensure that all internal processes that the worker holds are dropped
+    // when the worker is dropped.
+    _drop_guard: DropGuard,
 }
 
 #[async_trait::async_trait]
-impl<S: Store + 'static> AssetWorker<S> for Worker<S> {
+impl AssetWorker for Worker {
     type Opts = WorkerOpts;
 
     fn name(&self) -> &'static str {
         WORKER_NAME
     }
 
-    async fn build(opts: Self::Opts, store: &S) -> Result<Self, AssetWorkerError> {
-        let api = Arc::new(RestApiBuilder::new(opts.url, opts.user_agent, opts.api_key).build()?);
-
+    async fn build<S: Store + 'static>(
+        opts: Self::Opts,
+        store: &S,
+        ids: Vec<String>,
+    ) -> Result<Self, AssetWorkerError> {
+        let api = RestApiBuilder::new(opts.url, opts.user_agent, opts.api_key).build()?;
         let worker_store = WorkerStore::new(store, WORKER_NAME);
+        let token = CancellationToken::new();
 
         tokio::spawn(start_polling(
+            token.child_token(),
             opts.update_interval,
-            Arc::downgrade(&api) as Weak<dyn AssetInfoProvider<Error = ProviderError>>,
-            worker_store.clone(),
+            api,
+            worker_store,
+            ids,
         ));
 
         Ok(Worker {
-            api,
-            store: worker_store,
+            _drop_guard: token.drop_guard(),
         })
-    }
-
-    async fn get_asset(&self, id: &str) -> Result<AssetState, AssetWorkerError> {
-        Ok(self.store.get_asset(id).await?)
-    }
-
-    async fn set_query_ids(&self, ids: HashSet<String>) -> Result<(), AssetWorkerError> {
-        self.store.set_query_ids(ids).await?;
-        Ok(())
     }
 }

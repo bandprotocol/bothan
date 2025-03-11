@@ -5,10 +5,10 @@ pub const DEFAULT_URL: &str = "wss://api.huobi.pro/ws";
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", untagged)]
-pub enum HtxResponse {
-    SubResponse(SubResponse),
-    UnsubResponse(UnsubResponse),
-    DataUpdate(DataUpdate),
+pub enum Response {
+    Subscribe(SubResponse),
+    Unsubscribe(UnsubResponse),
+    DataUpdate(Data),
     Ping(Ping),
 }
 
@@ -34,7 +34,7 @@ pub struct UnsubResponse {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct DataUpdate {
+pub struct Data {
     pub ch: String,
     #[serde(rename = "ts")]
     pub timestamp: i64,

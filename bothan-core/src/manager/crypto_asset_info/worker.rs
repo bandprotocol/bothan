@@ -1,30 +1,32 @@
 pub mod opts;
 
-use std::collections::HashSet;
+use std::collections::HashMap;
 
+use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
-use bothan_lib::types::AssetState;
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
 use derive_more::From;
+use tracing::{error, info};
 
+use crate::manager::crypto_asset_info::signal_ids::get_source_batched_query_ids;
 use crate::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
 
 #[derive(From)]
-pub enum CryptoAssetWorker<S: Store> {
-    Binance(bothan_binance::Worker<S>),
-    Bitfinex(bothan_bitfinex::Worker<S>),
-    Bybit(bothan_bybit::Worker<S>),
-    Coinbase(bothan_coinbase::Worker<S>),
-    CoinGecko(bothan_coingecko::Worker<S>),
-    CoinMarketCap(bothan_coinmarketcap::Worker<S>),
-    Htx(bothan_htx::Worker<S>),
-    Kraken(bothan_kraken::Worker<S>),
-    Okx(bothan_okx::Worker<S>),
+pub enum CryptoAssetWorker {
+    Binance(bothan_binance::Worker),
+    Bitfinex(bothan_bitfinex::Worker),
+    Bybit(bothan_bybit::Worker),
+    Coinbase(bothan_coinbase::Worker),
+    CoinGecko(bothan_coingecko::Worker),
+    CoinMarketCap(bothan_coinmarketcap::Worker),
+    Htx(bothan_htx::Worker),
+    Kraken(bothan_kraken::Worker),
+    Okx(bothan_okx::Worker),
 }
 
 #[async_trait::async_trait]
-impl<S: Store + 'static> AssetWorker<S> for CryptoAssetWorker<S> {
+impl AssetWorker for CryptoAssetWorker {
     type Opts = CryptoAssetWorkerOpts;
 
     fn name(&self) -> &'static str {
@@ -41,63 +43,66 @@ impl<S: Store + 'static> AssetWorker<S> for CryptoAssetWorker<S> {
         }
     }
 
-    async fn build(opts: Self::Opts, store: &S) -> Result<Self, AssetWorkerError> {
+    async fn build<S: Store + 'static>(
+        opts: Self::Opts,
+        store: &S,
+        ids: Vec<String>,
+    ) -> Result<Self, AssetWorkerError> {
         Ok(match opts {
             CryptoAssetWorkerOpts::Binance(opts) => {
-                CryptoAssetWorker::from(bothan_binance::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_binance::Worker::build(opts, store, ids).await?)
             }
             CryptoAssetWorkerOpts::Bitfinex(opts) => {
-                CryptoAssetWorker::from(bothan_bitfinex::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_bitfinex::Worker::build(opts, store, ids).await?)
             }
             CryptoAssetWorkerOpts::Bybit(opts) => {
-                CryptoAssetWorker::from(bothan_bybit::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_bybit::Worker::build(opts, store, ids).await?)
             }
             CryptoAssetWorkerOpts::Coinbase(opts) => {
-                CryptoAssetWorker::from(bothan_coinbase::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_coinbase::Worker::build(opts, store, ids).await?)
             }
             CryptoAssetWorkerOpts::CoinGecko(opts) => {
-                CryptoAssetWorker::from(bothan_coingecko::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_coingecko::Worker::build(opts, store, ids).await?)
             }
-            CryptoAssetWorkerOpts::CoinMarketCap(opts) => {
-                CryptoAssetWorker::from(bothan_coinmarketcap::Worker::build(opts, store).await?)
-            }
+            CryptoAssetWorkerOpts::CoinMarketCap(opts) => CryptoAssetWorker::from(
+                bothan_coinmarketcap::Worker::build(opts, store, ids).await?,
+            ),
             CryptoAssetWorkerOpts::Htx(opts) => {
-                CryptoAssetWorker::from(bothan_htx::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_htx::Worker::build(opts, store, ids).await?)
             }
             CryptoAssetWorkerOpts::Kraken(opts) => {
-                CryptoAssetWorker::from(bothan_kraken::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_kraken::Worker::build(opts, store, ids).await?)
             }
             CryptoAssetWorkerOpts::Okx(opts) => {
-                CryptoAssetWorker::from(bothan_okx::Worker::build(opts, store).await?)
+                CryptoAssetWorker::from(bothan_okx::Worker::build(opts, store, ids).await?)
             }
         })
     }
+}
 
-    async fn get_asset(&self, id: &str) -> Result<AssetState, AssetWorkerError> {
-        match self {
-            CryptoAssetWorker::Binance(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::Bitfinex(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::Bybit(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::Coinbase(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::CoinGecko(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::CoinMarketCap(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::Htx(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::Kraken(worker) => worker.get_asset(id).await,
-            CryptoAssetWorker::Okx(worker) => worker.get_asset(id).await,
+pub async fn build_workers<S: Store + 'static>(
+    registry: &Registry<Valid>,
+    opts: &HashMap<String, CryptoAssetWorkerOpts>,
+    store: S,
+) -> Vec<CryptoAssetWorker> {
+    let mut workers = Vec::with_capacity(opts.len());
+    for (source_id, query_id) in get_source_batched_query_ids(registry).drain() {
+        match opts.get(&source_id) {
+            Some(opts) => {
+                let ids = query_id.into_iter().collect();
+                let builder_callable = CryptoAssetWorker::build(opts.clone(), &store, ids);
+                let worker = match builder_callable.await {
+                    Ok(worker) => worker,
+                    Err(e) => {
+                        error!("failed to build worker {}: {}", source_id, e);
+                        continue;
+                    }
+                };
+                workers.push(worker);
+            }
+            None => info!("worker {} not activated", source_id),
         }
     }
 
-    async fn set_query_ids(&self, ids: HashSet<String>) -> Result<(), AssetWorkerError> {
-        match self {
-            CryptoAssetWorker::Binance(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::Bitfinex(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::Bybit(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::Coinbase(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::CoinGecko(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::CoinMarketCap(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::Htx(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::Kraken(worker) => worker.set_query_ids(ids).await,
-            CryptoAssetWorker::Okx(worker) => worker.set_query_ids(ids).await,
-        }
-    }
+    workers
 }

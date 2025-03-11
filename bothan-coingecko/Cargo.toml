@@ -17,6 +17,7 @@ rust_decimal = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
+tokio-util = { workspace = true }
 url = { workspace = true }
 
 [dev-dependencies]

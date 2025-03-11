@@ -11,12 +11,14 @@ bothan-lib = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }
 futures-util = { workspace = true }
+itertools = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-tungstenite = { workspace = true }
+tokio-util = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]

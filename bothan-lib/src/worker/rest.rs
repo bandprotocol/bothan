@@ -1,8 +1,10 @@
 use std::fmt::Display;
-use std::sync::Weak;
 use std::time::Duration;
 
+use tokio::select;
+use tokio::time::error::Elapsed;
 use tokio::time::{interval, timeout};
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, error};
 
 use crate::store::{Store, WorkerStore};
@@ -18,47 +20,52 @@ pub trait AssetInfoProvider: Send + Sync {
 /// Starts polling asset information from a provider at the specified update interval. This function
 /// will not return until the asset_info_provider is dropped.
 /// Any errors that occur during the polling process will be logged.
-pub async fn start_polling<S: Store, E: Display>(
+pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>>(
+    cancellation_token: CancellationToken,
     update_interval: Duration,
-    asset_info_provider: Weak<dyn AssetInfoProvider<Error = E>>,
+    provider: P,
     store: WorkerStore<S>,
+    ids: Vec<String>,
 ) {
+    if ids.is_empty() {
+        debug!("no ids to poll");
+        return;
+    }
     let mut interval = interval(update_interval);
-    while let Some(provider) = asset_info_provider.upgrade() {
-        interval.tick().await;
 
-        let ids = match store.get_query_ids().await {
-            Ok(ids) => ids.into_iter().collect::<Vec<String>>(),
-            Err(e) => {
-                error!("failed to get query ids with error: {}", e);
-                continue;
-            }
-        };
-
-        if let Err(e) = store.get_query_ids().await {
-            error!("failed to get query ids with error: {}", e);
-            continue;
+    loop {
+        select! {
+            _ = cancellation_token.cancelled() => break,
+            _ = interval.tick() => {},
         }
 
-        if ids.is_empty() {
-            debug!("no ids to update, skipping update");
-            continue;
+        select! {
+            _ = cancellation_token.cancelled() => break,
+            r = timeout(interval.period(), provider.get_asset_info(&ids)) => handle_polling_result(r, &store).await,
         }
+    }
+}
 
-        match timeout(interval.period(), provider.get_asset_info(&ids)).await {
-            Ok(Ok(asset_info)) => {
-                if let Err(e) = store.set_asset_infos(asset_info).await {
-                    error!("failed to update asset info with error: {e}");
-                } else {
-                    debug!("asset info updated successfully");
-                }
-            }
-            Ok(Err(e)) => {
+async fn handle_polling_result<S, E>(
+    poll_result: Result<Result<Vec<AssetInfo>, E>, Elapsed>,
+    store: &WorkerStore<S>,
+) where
+    S: Store,
+    E: Display,
+{
+    match poll_result {
+        Ok(Ok(asset_info)) => {
+            if let Err(e) = store.set_batch_asset_info(asset_info).await {
                 error!("failed to update asset info with error: {e}");
+            } else {
+                debug!("asset info updated successfully");
             }
-            Err(_) => {
-                error!("updating interval exceeded timeout");
-            }
+        }
+        Ok(Err(e)) => {
+            error!("failed to update asset info with error: {e}");
+        }
+        Err(_) => {
+            error!("updating interval exceeded timeout");
         }
     }
 }

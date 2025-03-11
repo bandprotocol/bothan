@@ -25,6 +25,7 @@ prost = { workspace = true }
 rust_decimal = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true }
+tokio = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 

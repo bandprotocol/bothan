@@ -15,13 +15,11 @@ use bothan_api::proto::bothan::v1::BothanServiceServer;
 use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
 use bothan_core::manager::CryptoAssetInfoManager;
-use bothan_core::manager::crypto_asset_info::worker::CryptoAssetWorker;
-use bothan_core::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
+use bothan_core::manager::crypto_asset_info::CryptoAssetWorkerOpts;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
 use bothan_lib::registry::{Registry, Valid};
-use bothan_lib::store::{RegistryStore, Store};
-use bothan_lib::worker::AssetWorker;
+use bothan_lib::store::Store;
 use bothan_lib::worker::error::AssetWorkerError;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -171,29 +169,34 @@ async fn init_bothan_server<S: Store + 'static>(
     ipfs_client: IpfsClient,
     monitoring_client: Option<Arc<MonitoringClient>>,
 ) -> anyhow::Result<Arc<BothanServer<S>>> {
-    let manager_store = RegistryStore::new(store.clone());
-
     let stale_threshold = config.manager.crypto.stale_threshold;
     let bothan_version =
         Version::from_str(VERSION).with_context(|| "Failed to parse bothan version")?;
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
 
-    let workers = match init_crypto_workers(&store, &config.manager.crypto.source).await {
+    let opts = match init_crypto_opts(&config.manager.crypto.source).await {
         Ok(workers) => workers,
         Err(e) => {
             bail!("failed to initialize workers: {:?}", e);
         }
     };
-    let manager = CryptoAssetInfoManager::new(
-        workers,
-        manager_store,
+    let manager = match CryptoAssetInfoManager::build(
+        store,
+        opts,
         ipfs_client,
         stale_threshold,
         bothan_version,
         registry_version_requirement,
         monitoring_client,
-    );
+    )
+    .await
+    {
+        Ok(manager) => manager,
+        Err(e) => {
+            bail!("failed to build manager: {:?}", e);
+        }
+    };
 
     let manager = Arc::new(manager);
     let cloned_manager = manager.clone();
@@ -215,39 +218,33 @@ async fn init_bothan_server<S: Store + 'static>(
     Ok(Arc::new(BothanServer::new(manager)))
 }
 
-async fn init_crypto_workers<S: Store + 'static>(
-    store: &S,
+async fn init_crypto_opts(
     source: &CryptoSourceConfigs,
-) -> Result<HashMap<String, CryptoAssetWorker<S>>, AssetWorkerError> {
-    let mut workers = HashMap::new();
+) -> Result<HashMap<String, CryptoAssetWorkerOpts>, AssetWorkerError> {
+    let mut opts = HashMap::new();
 
-    add_worker(&mut workers, store, &source.binance).await?;
-    add_worker(&mut workers, store, &source.bitfinex).await?;
-    add_worker(&mut workers, store, &source.bybit).await?;
-    add_worker(&mut workers, store, &source.coinbase).await?;
-    add_worker(&mut workers, store, &source.coingecko).await?;
-    add_worker(&mut workers, store, &source.coinmarketcap).await?;
-    add_worker(&mut workers, store, &source.htx).await?;
-    add_worker(&mut workers, store, &source.kraken).await?;
-    add_worker(&mut workers, store, &source.okx).await?;
+    add_opts(&mut opts, &source.binance).await?;
+    add_opts(&mut opts, &source.bitfinex).await?;
+    add_opts(&mut opts, &source.bybit).await?;
+    add_opts(&mut opts, &source.coinbase).await?;
+    add_opts(&mut opts, &source.coingecko).await?;
+    add_opts(&mut opts, &source.coinmarketcap).await?;
+    add_opts(&mut opts, &source.htx).await?;
+    add_opts(&mut opts, &source.kraken).await?;
+    add_opts(&mut opts, &source.okx).await?;
 
-    Ok(workers)
+    Ok(opts)
 }
 
-async fn add_worker<S, O>(
-    workers: &mut HashMap<String, CryptoAssetWorker<S>>,
-    store: &S,
+async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
+    workers: &mut HashMap<String, CryptoAssetWorkerOpts>,
     opts: &Option<O>,
-) -> Result<(), AssetWorkerError>
-where
-    S: Store + 'static,
-    O: Clone + Into<CryptoAssetWorkerOpts>,
-{
+) -> Result<(), AssetWorkerError> {
     if let Some(opts) = opts {
-        let worker = CryptoAssetWorker::build(opts.clone().into(), store).await?;
-        let worker_name = worker.name();
-        workers.insert(worker_name.to_string(), worker);
+        let worker_opts = opts.clone().into();
+        let worker_name = worker_opts.name();
         info!("loaded {} worker", worker_name);
+        workers.insert(worker_name.to_string(), worker_opts);
     }
 
     Ok(())

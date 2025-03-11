@@ -1,21 +1,36 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SuccessResponse {
+#[serde(untagged)]
+pub enum Event {
+    Success(SuccessEvent),
+    Error(ErrorEvent),
+    Stream(StreamEvent),
+    Ping,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SuccessEvent {
     pub result: Option<String>,
     pub id: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ErrorResponse {
+pub struct ErrorEvent {
     pub code: i16,
     pub msg: String,
     pub id: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct StreamEvent {
+    pub stream: String,
+    pub data: StreamEventData,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "e")]
-pub enum Data {
+pub enum StreamEventData {
     #[serde(rename = "24hrMiniTicker")]
     MiniTicker(MiniTickerInfo),
 }
@@ -45,19 +60,4 @@ pub struct MiniTickerInfo {
 
     #[serde(rename = "q")]
     pub quote_volume: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct StreamResponse {
-    pub stream: String,
-    pub data: Data,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum BinanceResponse {
-    Success(SuccessResponse),
-    Error(ErrorResponse),
-    Stream(StreamResponse),
-    Ping,
 }

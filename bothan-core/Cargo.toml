@@ -40,6 +40,7 @@ ed25519-dalek = { version = "2.1.1", features = ["std", "rand_core"] }
 hex = "0.4.3"
 mini-moka = "0.10.3"
 rust-rocksdb = { version = "0.36.0", optional = true }
+futures = "0.3.31"
 
 [features]
 default = []

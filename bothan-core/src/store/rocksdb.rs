@@ -1,7 +1,6 @@
 pub mod error;
 mod key;
 
-use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -60,7 +59,7 @@ impl RocksDbStore {
         Ok(())
     }
 
-    fn get<V: Decode>(&self, key: &Key) -> Result<Option<V>, RocksDbError> {
+    fn get<V: Decode<()>>(&self, key: &Key) -> Result<Option<V>, RocksDbError> {
         let value = self
             .db
             .get(key.to_prefixed_bytes())?
@@ -107,22 +106,6 @@ impl Store for RocksDbStore {
         self.get(&Key::RegistryIpfsHash)
     }
 
-    async fn set_query_ids(&self, prefix: &str, ids: HashSet<String>) -> Result<(), Self::Error> {
-        self.set(&Key::QueryIDs { source_id: prefix }, &ids)
-    }
-
-    async fn get_query_ids(&self, prefix: &str) -> Result<Option<HashSet<String>>, Self::Error> {
-        self.get(&Key::QueryIDs { source_id: prefix })
-    }
-
-    async fn contains_query_id(&self, prefix: &str, id: &str) -> Result<bool, Self::Error> {
-        let bool = self
-            .get::<HashSet<String>>(&Key::QueryIDs { source_id: prefix })?
-            .unwrap_or_default()
-            .contains(id);
-        Ok(bool)
-    }
-
     async fn get_asset_info(
         &self,
         prefix: &str,
@@ -130,7 +113,7 @@ impl Store for RocksDbStore {
     ) -> Result<Option<AssetInfo>, Self::Error> {
         self.get(&Key::AssetStore {
             source_id: prefix,
-            id,
+            asset_id: id,
         })
     }
 
@@ -141,12 +124,12 @@ impl Store for RocksDbStore {
     ) -> Result<(), Self::Error> {
         let key = Key::AssetStore {
             source_id: prefix,
-            id: &asset_info.id,
+            asset_id: &asset_info.id,
         };
         self.set(&key, &asset_info)
     }
 
-    async fn insert_asset_infos(
+    async fn insert_batch_asset_info(
         &self,
         prefix: &str,
         asset_infos: Vec<AssetInfo>,
@@ -155,7 +138,7 @@ impl Store for RocksDbStore {
         for asset_info in asset_infos {
             let key = Key::AssetStore {
                 source_id: prefix,
-                id: &asset_info.id,
+                asset_id: &asset_info.id,
             };
             let encoded = encode_to_vec(&asset_info, config::standard())?;
             write_batch.put(key.to_prefixed_bytes(), encoded);
