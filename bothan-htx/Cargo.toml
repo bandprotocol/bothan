@@ -17,7 +17,6 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-tungstenite = { workspace = true }
 tokio-util = { workspace = true }
-tracing = { workspace = true }
 
 flate2 = "1.0.35"
 
