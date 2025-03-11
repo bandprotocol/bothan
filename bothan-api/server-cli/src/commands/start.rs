@@ -86,7 +86,7 @@ async fn init_rocks_db_store(
     let store = match (reset, flush_path.is_dir()) {
         // If reset is true and the path is a directory, remove the directory and create a new store
         (true, true) => {
-            let db = RocksDbStore::new(flush_path)?;
+            let db = RocksDbStore::new(flush_path).await?;
             debug!("store reset successfully at {:?}", &flush_path);
             db
         }
@@ -99,7 +99,7 @@ async fn init_rocks_db_store(
         // If the path does not exist, create the directory and create a new store
         (_, false) => {
             create_dir_all(flush_path).with_context(|| "Failed to create home directory")?;
-            let db = RocksDbStore::new(flush_path)?;
+            let db = RocksDbStore::new(flush_path).await?;
             debug!("store created successfully at {:?}", &flush_path);
             db
         }

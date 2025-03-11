@@ -21,16 +21,20 @@ pub struct RocksDbStore {
 }
 
 impl RocksDbStore {
-    pub fn new<P: AsRef<Path>>(flush_path: P) -> Result<Self, rust_rocksdb::Error> {
+    pub async fn new<P: AsRef<Path>>(flush_path: P) -> Result<Self, RocksDbError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         DB::destroy(&opts, &flush_path)?;
+        let registry = Registry::default();
 
         let db = Arc::new(DB::open(&opts, &flush_path)?);
-        Ok(RocksDbStore {
+        let store = RocksDbStore {
             db,
-            registry: Arc::new(RwLock::new(Registry::default())),
-        })
+            registry: Arc::new(RwLock::new(registry)),
+        };
+
+        store.flush_registry().await?;
+        Ok(store)
     }
 
     pub fn load<P: AsRef<Path>>(flush_path: P) -> Result<Self, LoadError> {
@@ -67,6 +71,12 @@ impl RocksDbStore {
             .transpose()?
             .map(|(v, _)| v);
         Ok(value)
+    }
+
+    async fn flush_registry(&self) -> Result<(), RocksDbError> {
+        let registry = self.registry.read().await.clone();
+        let hash = self.get_registry_ipfs_hash().await?.unwrap_or_default();
+        self.set_registry(registry, hash).await
     }
 }
 
