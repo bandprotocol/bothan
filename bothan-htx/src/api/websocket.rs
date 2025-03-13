@@ -175,7 +175,7 @@ pub(crate) mod test {
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
     use super::*;
-    use crate::api::types::{Data, Ping, Response, Subcribed, Tick, Unsubscribed};
+    use crate::api::types::{Data, Ping, Response, Subscribed, Tick, Unsubscribed};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -241,7 +241,7 @@ pub(crate) mod test {
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock subscribe response.
-        let mock_sub_resp = Subcribed {
+        let mock_sub_resp = Subscribed {
             id: Some("id1".to_string()),
             status: "ok".to_string(),
             subbed: "market.btcusdt.kline.1min".to_string(),

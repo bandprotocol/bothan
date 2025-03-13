@@ -6,7 +6,7 @@ pub const DEFAULT_URL: &str = "wss://api.huobi.pro/ws";
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum Response {
-    Subscribed(Subcribed),
+    Subscribed(Subscribed),
     Unsubscribed(Unsubscribed),
     DataUpdate(Data),
     Ping(Ping),
@@ -14,7 +14,7 @@ pub enum Response {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct Subcribed {
+pub struct Subscribed {
     pub id: Option<String>,
     pub status: String,
     pub subbed: String,
