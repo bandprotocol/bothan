@@ -167,11 +167,15 @@ async fn reply_pong(connection: &mut WebSocketConnection, ping: u64) -> Result<D
 
 #[cfg(test)]
 pub(crate) mod test {
+    use std::io::Write;
+
+    use flate2::Compression;
+    use flate2::write::GzEncoder;
     use tokio::sync::mpsc;
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
     use super::*;
-    use crate::api::types::{Data, Ping, Response, SubResponse, Tick, UnsubResponse};
+    use crate::api::types::{Data, Ping, Response, Subcribed, Tick, Unsubscribed};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -190,15 +194,18 @@ pub(crate) mod test {
         };
         let mock_resp = Response::Ping(mock_ping);
 
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        let _ = encoder
+            .write(serde_json::to_string(&mock_resp).unwrap().as_bytes())
+            .unwrap();
+        let encoded = encoder.finish().unwrap();
+
         // Mount the mock WebSocket server and send the mock response.
         WsMock::new()
             .forward_from_channel(mpsc_recv)
             .mount(&server)
             .await;
-        mpsc_send
-            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
-            .await
-            .unwrap();
+        mpsc_send.send(Message::Binary(encoded)).await.unwrap();
 
         // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
@@ -222,8 +229,8 @@ pub(crate) mod test {
 
         // Connect to the mock WebSocket server and verify the connection closure.
         let mut connection = connector.connect().await.unwrap();
-        let resp = connection.next().await.unwrap();
-        assert!(resp.is_err());
+        let resp = connection.next().await;
+        assert!(resp.is_none());
     }
 
     #[tokio::test]
@@ -234,23 +241,26 @@ pub(crate) mod test {
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock subscribe response.
-        let mock_sub_resp = SubResponse {
+        let mock_sub_resp = Subcribed {
             id: Some("id1".to_string()),
             status: "ok".to_string(),
             subbed: "market.btcusdt.kline.1min".to_string(),
             timestamp: 1489474081631,
         };
-        let mock_resp = Response::Subscribe(mock_sub_resp);
+        let mock_resp = Response::Subscribed(mock_sub_resp);
+
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        let _ = encoder
+            .write(serde_json::to_string(&mock_resp).unwrap().as_bytes())
+            .unwrap();
+        let encoded = encoder.finish().unwrap();
 
         // Mount the mock WebSocket server and send the mock response.
         WsMock::new()
             .forward_from_channel(mpsc_recv)
             .mount(&server)
             .await;
-        mpsc_send
-            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
-            .await
-            .unwrap();
+        mpsc_send.send(Message::Binary(encoded)).await.unwrap();
 
         // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
@@ -266,23 +276,26 @@ pub(crate) mod test {
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock unsubscribe response.
-        let mock_unsub_resp = UnsubResponse {
+        let mock_unsub_resp = Unsubscribed {
             id: Some("id4".to_string()),
             status: "ok".to_string(),
             unsubbed: "market.btcusdt.trade.detail".to_string(),
             timestamp: 1494326028889,
         };
-        let mock_resp = Response::Unsubscribe(mock_unsub_resp);
+        let mock_resp = Response::Unsubscribed(mock_unsub_resp);
+
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        let _ = encoder
+            .write(serde_json::to_string(&mock_resp).unwrap().as_bytes())
+            .unwrap();
+        let encoded = encoder.finish().unwrap();
 
         // Mount the mock WebSocket server and send the mock response.
         WsMock::new()
             .forward_from_channel(mpsc_recv)
             .mount(&server)
             .await;
-        mpsc_send
-            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
-            .await
-            .unwrap();
+        mpsc_send.send(Message::Binary(encoded)).await.unwrap();
 
         // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
@@ -323,15 +336,18 @@ pub(crate) mod test {
 
         let mock_resp = Response::DataUpdate(mock_data_update);
 
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        let _ = encoder
+            .write(serde_json::to_string(&mock_resp).unwrap().as_bytes())
+            .unwrap();
+        let encoded = encoder.finish().unwrap();
+
         // Mount the mock WebSocket server and send the mock response.
         WsMock::new()
             .forward_from_channel(mpsc_recv)
             .mount(&server)
             .await;
-        mpsc_send
-            .send(Message::Text(serde_json::to_string(&mock_resp).unwrap()))
-            .await
-            .unwrap();
+        mpsc_send.send(Message::Binary(encoded)).await.unwrap();
 
         // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
