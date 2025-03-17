@@ -19,9 +19,9 @@ use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::manager::crypto_asset_info::CryptoAssetWorkerOpts;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
+use bothan_core::telemetry;
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
-use bothan_lib::telemetry;
 use bothan_lib::worker::error::AssetWorkerError;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -185,7 +185,7 @@ async fn init_bothan_server<S: Store + 'static>(
         Ok(workers) => workers,
         Err(e) => {
             bail!("failed to initialize workers: {:?}", e);
-        }
+        }       
     };
     let manager = match CryptoAssetInfoManager::build(
         store,
@@ -266,8 +266,8 @@ fn init_telemetry_server(config: &AppConfig) {
 
     let addr: SocketAddr = telemetry_config.addr;
 
-    let state = match telemetry::init() {
-        Ok(state) => state,
+    let registry = match telemetry::init_telemetry_registry() {
+        Ok(registry) => registry,
         Err(e) => {
             error!("failed to initialize telemetry: {e}");
             return;
@@ -275,7 +275,7 @@ fn init_telemetry_server(config: &AppConfig) {
     };
 
     task::spawn(async move {
-       let result = telemetry::spawn_server(addr, state.clone());
+       let result = telemetry::spawn_server(addr, registry.clone());
        match result {
         Ok((addr, handle)) => {
             info!("telemetry service running, exposing metrics at http://{addr}/metrics");

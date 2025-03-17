@@ -1,18 +1,32 @@
 use std::error::Error;
-use std::net::SocketAddr;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 use axum::{Extension, Router};
 use axum::response::IntoResponse;
 use axum::routing::get;
 
-use prometheus::{Encoder, TextEncoder};
+use prometheus::{Encoder, Registry, TextEncoder};
+use tokio::task::JoinHandle;
 
-use crate::telemetry::state::TelemetryState;
+pub type BoxError = Box<dyn Error + Send + Sync>;
 
-pub async fn listen(
+pub fn spawn_server<A>(
+    addr: A,
+    registry: Arc<Registry>,
+) -> Result<(SocketAddr, JoinHandle<Result<(), BoxError>>), BoxError>
+where
+    A: ToSocketAddrs + Send + 'static,
+{
+    let addr = addr.to_socket_addrs()?.next().unwrap();
+    let handle = tokio::spawn(listen(addr, registry));
+
+    Ok((addr, handle))
+}
+
+async fn listen(
     addr: SocketAddr,
-    state: Arc<TelemetryState>,
+    state: Arc<Registry>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let app = Router::new()
         .route("/metrics", get(get_metrics))
@@ -25,7 +39,7 @@ pub async fn listen(
 }
 
 async fn get_metrics(
-    Extension(state): Extension<Arc<TelemetryState>>,
+    Extension(state): Extension<Arc<Registry>>,
 ) -> impl IntoResponse {
     let encoder = TextEncoder::new();
     let mut buffer = Vec::new();

@@ -613,6 +613,7 @@ name = "bothan-core"
 version = "0.0.1-beta.2"
 dependencies = [
  "async-trait",
+ "axum 0.8.1",
  "bincode",
  "bothan-binance",
  "bothan-bitfinex",
@@ -631,6 +632,10 @@ dependencies = [
  "hex",
  "mini-moka",
  "num-traits",
+ "opentelemetry",
+ "opentelemetry-prometheus",
+ "opentelemetry_sdk",
+ "prometheus",
  "rand",
  "reqwest",
  "rust-rocksdb",
@@ -684,16 +689,10 @@ name = "bothan-lib"
 version = "0.0.1-alpha.4"
 dependencies = [
  "async-trait",
- "axum 0.8.1",
  "bincode",
  "derive_more",
- "hyper",
  "num-traits",
- "once_cell",
  "opentelemetry",
- "opentelemetry-prometheus",
- "opentelemetry_sdk",
- "prometheus",
  "rust_decimal",
  "serde",
  "serde_json",
