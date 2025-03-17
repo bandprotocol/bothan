@@ -19,3 +19,9 @@ rust_decimal = { workspace = true, features = ["maths", "serde-str"] }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 tracing = { workspace = true }
+prometheus = "0.13.4"
+opentelemetry_sdk = "0.28.0"
+opentelemetry-prometheus = "0.28.0"
+axum = "0.8.1"
+hyper = "1.6.0"
+once_cell = "1.21.1"

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all, read_to_string, write};
 use std::io::BufReader;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -20,10 +21,12 @@ use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
+use bothan_lib::telemetry;
 use bothan_lib::worker::error::AssetWorkerError;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
+use tokio::task;
 use tonic::transport::Server;
 use tracing::{debug, error, info};
 
@@ -66,7 +69,10 @@ impl StartCli {
         let bothan_server =
             init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
+        init_telemetry_server(&app_config);
+
         info!("server started");
+
         Server::builder()
             .add_service(BothanServiceServer::from_arc(bothan_server))
             .serve(app_config.grpc.addr)
@@ -248,4 +254,37 @@ async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
     }
 
     Ok(())
+}
+
+fn init_telemetry_server(config: &AppConfig) {
+    let telemetry_config = config.telemetry.clone();
+
+    if telemetry_config.enabled {
+        info!("telemetry disabled");
+        return
+    }
+
+    let addr: SocketAddr = telemetry_config.addr;
+
+    let state = match telemetry::init() {
+        Ok(state) => state,
+        Err(e) => {
+            error!("failed to initialize telemetry: {e}");
+            return;
+        }
+    };
+
+    task::spawn(async move {
+       let result = telemetry::spawn_server(addr, state.clone());
+       match result {
+        Ok((addr, handle)) => {
+            info!("telemetry service running, exposing metrics at http://{addr}/metrics");
+
+            if let Err(e) = handle.await {
+                error!("telemetry crashed with error: {e}");
+            }
+        }
+        Err(e) => error!("failed to start telemetry: {e}"),
+    }
+    });
 }

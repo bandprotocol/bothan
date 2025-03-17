@@ -29,3 +29,8 @@ tonic = { workspace = true }
 tracing = { workspace = true }
 
 config = "0.15.8"
+prometheus = "0.13.4"
+opentelemetry.workspace = true
+opentelemetry_sdk = "0.28.0"
+hyper = "1.6.0"
+hyper-util = "0.1.10"
