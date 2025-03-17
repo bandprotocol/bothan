@@ -259,7 +259,7 @@ async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
 fn init_telemetry_server(config: &AppConfig) {
     let telemetry_config = config.telemetry.clone();
 
-    if telemetry_config.enabled {
+    if !telemetry_config.enabled {
         info!("telemetry disabled");
         return
     }
