@@ -69,9 +69,9 @@ impl StartCli {
         let bothan_server =
             init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
-        init_telemetry_server(&app_config);
-
         info!("server started");
+
+        init_telemetry_server(&app_config).await?;
 
         Server::builder()
             .add_service(BothanServiceServer::from_arc(bothan_server))
@@ -185,7 +185,7 @@ async fn init_bothan_server<S: Store + 'static>(
         Ok(workers) => workers,
         Err(e) => {
             bail!("failed to initialize workers: {:?}", e);
-        }       
+        }
     };
     let manager = match CryptoAssetInfoManager::build(
         store,
@@ -256,12 +256,12 @@ async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
     Ok(())
 }
 
-fn init_telemetry_server(config: &AppConfig) {
+async fn init_telemetry_server(config: &AppConfig) -> anyhow::Result<()> {
     let telemetry_config = config.telemetry.clone();
 
     if !telemetry_config.enabled {
         info!("telemetry disabled");
-        return
+        return Ok(());
     }
 
     let addr: SocketAddr = telemetry_config.addr;
@@ -269,8 +269,7 @@ fn init_telemetry_server(config: &AppConfig) {
     let registry = match telemetry::init_telemetry_registry() {
         Ok(registry) => registry,
         Err(e) => {
-            error!("failed to initialize telemetry: {e}");
-            return;
+            return Err(anyhow::anyhow!(e));
         }
     };
 
@@ -287,4 +286,6 @@ fn init_telemetry_server(config: &AppConfig) {
         Err(e) => error!("failed to start telemetry: {e}"),
     }
     });
+
+    Ok(())
 }
