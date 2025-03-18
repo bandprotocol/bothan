@@ -236,7 +236,7 @@ pub(crate) mod test {
             .forward_from_channel(mpsc_recv)
             .mount(&server)
             .await;
-        mpsc_send.send(Message::Pong(vec![])).await.unwrap();
+        mpsc_send.send(Message::Ping(vec![])).await.unwrap();
 
         // Connect to the mock WebSocket server and retrieve the ping response.
         let mut connection = connector.connect().await.unwrap();
@@ -260,7 +260,7 @@ pub(crate) mod test {
 
         // Connect to the mock WebSocket server and verify the connection closure.
         let mut connection = connector.connect().await.unwrap();
-        let resp = connection.next().await.unwrap();
-        assert!(resp.is_err());
+        let resp = connection.next().await;
+        assert!(resp.is_none());
     }
 }
