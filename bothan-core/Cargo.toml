@@ -40,6 +40,7 @@ axum = "0.8.1"
 ed25519 = "2.2.3"
 ed25519-dalek = { version = "2.1.1", features = ["std", "rand_core"] }
 hex = "0.4.3"
+hyper = "1.6.0"
 mini-moka = "0.10.3"
 opentelemetry-prometheus = "0.28.0"
 opentelemetry_sdk = "0.28.0"

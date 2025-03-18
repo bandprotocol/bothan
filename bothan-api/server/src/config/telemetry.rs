@@ -5,15 +5,11 @@ use serde::{Deserialize, Serialize};
 /// The configuration for all bothan-api's telemetry.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TelemetryConfig {
-    #[serde(default = "default_enabled")]
+    #[serde(default)]
     pub enabled: bool,
-    
+
     #[serde(default = "default_addr")]
     pub addr: SocketAddr,
-}
-
-fn default_enabled() -> bool {
-    false
 }
 
 fn default_addr() -> SocketAddr {
@@ -23,7 +19,7 @@ fn default_addr() -> SocketAddr {
 impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
-            enabled: default_enabled(),
+            enabled: Default::default(),
             addr: default_addr(),
         }
     }

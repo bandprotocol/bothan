@@ -6,7 +6,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{anyhow, Context, bail};
+use anyhow::{Context, bail};
 use bothan_api::api::BothanServer;
 use bothan_api::config::AppConfig;
 use bothan_api::config::ipfs::IpfsAuthentication;
@@ -256,16 +256,11 @@ async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
 
 async fn init_telemetry_server(config: &AppConfig) -> anyhow::Result<()> {
     if config.telemetry.enabled {
-        let registry = match telemetry::init_telemetry_registry() {
-            Ok(registry) => registry,
-            Err(e) => {
-                return Err(anyhow!(e));
-            }
-        };
-    
+        let registry = telemetry::init_telemetry_registry()?;
+
         let addr = config.telemetry.addr;
         tokio::spawn(async move {
-           telemetry::spawn_server(addr, registry).await;
+            telemetry::spawn_server(addr, registry).await;
         });
     } else {
         info!("telemetry disabled");
