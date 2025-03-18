@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 use opentelemetry::global;
 use opentelemetry_sdk::{metrics::{MetricError, SdkMeterProvider}, Resource};
 use prometheus::Registry;

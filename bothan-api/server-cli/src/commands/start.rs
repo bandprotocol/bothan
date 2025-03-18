@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all, read_to_string, write};
 use std::io::BufReader;
-use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{Context, bail};
+use anyhow::{anyhow, Context, bail};
 use bothan_api::api::BothanServer;
 use bothan_api::config::AppConfig;
 use bothan_api::config::ipfs::IpfsAuthentication;
@@ -26,7 +25,6 @@ use bothan_lib::worker::error::AssetWorkerError;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
-use tokio::task;
 use tonic::transport::Server;
 use tracing::{debug, error, info};
 
@@ -257,35 +255,21 @@ async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
 }
 
 async fn init_telemetry_server(config: &AppConfig) -> anyhow::Result<()> {
-    let telemetry_config = config.telemetry.clone();
-
-    if !telemetry_config.enabled {
-        info!("telemetry disabled");
-        return Ok(());
-    }
-
-    let addr: SocketAddr = telemetry_config.addr;
-
-    let registry = match telemetry::init_telemetry_registry() {
-        Ok(registry) => registry,
-        Err(e) => {
-            return Err(anyhow::anyhow!(e));
-        }
-    };
-
-    task::spawn(async move {
-       let result = telemetry::spawn_server(addr, registry.clone());
-       match result {
-        Ok((addr, handle)) => {
-            info!("telemetry service running, exposing metrics at http://{addr}/metrics");
-
-            if let Err(e) = handle.await {
-                error!("telemetry crashed with error: {e}");
+    if config.telemetry.enabled {
+        let registry = match telemetry::init_telemetry_registry() {
+            Ok(registry) => registry,
+            Err(e) => {
+                return Err(anyhow!(e));
             }
-        }
-        Err(e) => error!("failed to start telemetry: {e}"),
+        };
+    
+        let addr = config.telemetry.addr;
+        tokio::spawn(async move {
+           telemetry::spawn_server(addr, registry).await;
+        });
+    } else {
+        info!("telemetry disabled");
     }
-    });
 
     Ok(())
 }
