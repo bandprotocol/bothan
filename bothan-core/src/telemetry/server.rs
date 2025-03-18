@@ -36,15 +36,16 @@ async fn get_metrics(Extension(registry): Extension<Registry>) -> Response {
             StatusCode::OK,
             [(header::CONTENT_TYPE, encoder.format_type())],
             Bytes::from(buffer),
-        ),
+        )
+            .into_response(),
         Err(e) => {
             error!("failed to encode metrics: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 [(header::CONTENT_TYPE, encoder.format_type())],
-                "failed to encode metrics".into(),
+                "failed to encode metrics",
             )
+                .into_response()
         }
     }
-    .into_response()
 }
