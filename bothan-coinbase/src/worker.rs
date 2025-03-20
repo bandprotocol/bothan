@@ -22,8 +22,7 @@ const MAX_SUBSCRIPTION_PER_CONNECTION: usize = 10;
 
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
-    // to ensure that all internal processes that the worker holds are dropped
-    // when the worker is dropped.
+    // that the worker holds are dropped when the worker is dropped.
     _drop_guard: DropGuard,
 }
 
