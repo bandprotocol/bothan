@@ -138,6 +138,7 @@ impl AssetInfoProvider for WebSocketConnection {
     async fn next(&mut self) -> Option<Result<Data, Self::PollingError>> {
         WebSocketConnection::next(self).await.map(|r| match r? {
             Response::TickersChannel(data) => parse_tickers(data.data),
+            Response::Ping => Ok(Data::Ping),
             _ => Ok(Data::Unused),
         })
     }

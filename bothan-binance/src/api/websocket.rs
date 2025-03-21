@@ -178,6 +178,7 @@ impl AssetInfoProvider for WebSocketConnection {
                 Event::Stream(se) => match se.data {
                     StreamEventData::MiniTicker(i) => parse_mini_ticker(i)?,
                 },
+                Event::Ping => Data::Ping,
                 _ => Data::Unused,
             })
         })

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
 use bothan_lib::store::Store;
+use bothan_lib::telemetry::Metrics;
 use semver::Version;
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, info};
@@ -149,6 +150,8 @@ impl<S: Store> BothanService for BothanServer<S> {
     ) -> Result<Response<GetPricesResponse>, Status> {
         info!("received get price request");
         debug!("request: {:?}", request);
+        let start_time = chrono::Utc::now().timestamp_millis();
+        Metrics::increment_get_prices_total_requests();
         let price_request = request.into_inner();
         let (uuid, price_states) = self
             .manager
@@ -156,6 +159,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             .await
             .map_err(|e| {
                 error!("failed to get prices: {}", e);
+                Metrics::update_get_prices_responses(start_time, false);
                 Status::internal("Failed to get prices")
             })?;
 
@@ -166,6 +170,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             .map(|(id, state)| parse_price_state(id, state))
             .collect::<Vec<Price>>();
         let response = Response::new(GetPricesResponse { uuid, prices });
+        Metrics::update_get_prices_responses(start_time, true);
         debug!("response: {:?}", response);
         Ok(response)
     }

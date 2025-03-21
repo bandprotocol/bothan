@@ -118,6 +118,7 @@ impl AssetInfoProvider for WebSocketConnection {
         WebSocketConnection::next(self).await.map(|r| {
             Ok(match r? {
                 Response::PublicTicker(t) => parse_public_ticker(t)?,
+                Response::Ping => Data::Ping,
                 _ => Data::Unused,
             })
         })

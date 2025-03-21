@@ -11,7 +11,7 @@ async-trait = { workspace = true }
 bincode = { workspace = true }
 derive_more = { workspace = true }
 num-traits = { workspace = true }
-opentelemetry = { workspace = true }
+opentelemetry.workspace = true
 serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -19,3 +19,4 @@ rust_decimal = { workspace = true, features = ["maths", "serde-str"] }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 tracing = { workspace = true }
+chrono.workspace = true

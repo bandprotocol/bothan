@@ -162,7 +162,7 @@ fn parse_data(data: super::types::Data) -> Result<Data, PollingError> {
 
 async fn reply_pong(connection: &mut WebSocketConnection, ping: u64) -> Result<Data, PollingError> {
     connection.send_pong(ping).await?;
-    Ok(Data::Unused)
+    Ok(Data::Ping)
 }
 
 #[cfg(test)]

@@ -2,17 +2,18 @@ use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
 
-use opentelemetry::{KeyValue, global};
 use tokio::select;
 use tokio::time::{sleep, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, warn};
 
 use crate::store::{Store, WorkerStore};
+use crate::telemetry::Metrics;
 use crate::types::AssetInfo;
 
 pub enum Data {
     AssetInfo(Vec<AssetInfo>),
+    Ping,
     Unused,
 }
 
@@ -66,6 +67,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
                         match poll_result {
                             // If timeout, we assume the connection has been dropped, and we attempt to reconnect
                             Err(_) | Ok(None) => {
+                                Metrics::increment_source_activity_message_count(opts.meter_name, "timeout");
                                 if let Some(new_conn) = connect(provider_connector.as_ref(), &ids, &opts).await {
                                     connection = new_conn
                                 } else {
@@ -74,10 +76,12 @@ pub async fn start_polling<S, E1, E2, P, C>(
                                 }
                             }
                             Ok(Some(Ok(Data::AssetInfo(ai)))) => {
-                                if let Err(e) = store.set_batch_asset_info(ai).await {
-                                    warn!("failed to store data: {}", e)
+                                match store.set_batch_asset_info(ai).await {
+                                    Ok(_) => Metrics::increment_source_activity_message_count(opts.meter_name, "asset_info"),
+                                    Err(e) => warn!("failed to store data: {}", e),
                                 }
                             }
+                            Ok(Some(Ok(Data::Ping))) => Metrics::increment_source_activity_message_count(opts.meter_name, "ping"),
                             Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
                             Ok(Some(Err(e))) => error!("{}", e),
                         }
@@ -98,29 +102,27 @@ where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
 {
+    let start_time = chrono::Utc::now().timestamp_millis();
     let mut retry_count: u64 = 1;
-
-    let histogram = global::meter(opts.meter_name)
-        .u64_histogram("connection-attempts")
-        .with_unit("attempt")
-        .build();
 
     while retry_count <= opts.max_retry {
         warn!("connect attempt {}", retry_count);
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-                histogram.record(retry_count, &[KeyValue::new("success", true)]);
+
+                Metrics::record_source_connection_time(opts.meter_name, start_time, "success");
+            
                 return Some(provider);
             }
         }
-
-        histogram.record(retry_count, &[KeyValue::new("success", true)]);
+        
         error!("failed to reconnect");
 
         retry_count += 1;
         sleep(opts.reconnect_buffer).await;
     }
 
+    Metrics::record_source_connection_time(opts.meter_name, start_time, "failed");
     None
 }

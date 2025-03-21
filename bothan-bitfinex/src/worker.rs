@@ -42,6 +42,7 @@ impl AssetWorker for Worker {
             api,
             worker_store,
             ids,
+            WORKER_NAME,
         ));
 
         Ok(Worker {

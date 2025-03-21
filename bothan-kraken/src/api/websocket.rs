@@ -146,6 +146,7 @@ impl AssetInfoProvider for WebSocketConnection {
         let ts = chrono::Utc::now().timestamp();
         WebSocketConnection::next(self).await.map(|r| match r? {
             Response::Channel(ChannelResponse::Ticker(tickers)) => parse_tickers(tickers, ts),
+            Response::Ping => Ok(Data::Ping),
             _ => Ok(Data::Unused),
         })
     }

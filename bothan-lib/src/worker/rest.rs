@@ -8,6 +8,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{debug, error};
 
 use crate::store::{Store, WorkerStore};
+use crate::telemetry::Metrics;
 use crate::types::AssetInfo;
 
 #[async_trait::async_trait]
@@ -26,6 +27,7 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
     provider: P,
     store: WorkerStore<S>,
     ids: Vec<String>,
+    meter_name: &'static str,
 ) {
     if ids.is_empty() {
         debug!("no ids to poll");
@@ -41,20 +43,41 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
         select! {
             _ = cancellation_token.cancelled() => break,
-            r = timeout(interval.period(), provider.get_asset_info(&ids)) => handle_polling_result(r, &store).await,
+            r = handle_get_asset_info(&provider, &ids, update_interval, meter_name) => handle_polling_result(r, &store, meter_name).await,
         }
     }
+}
+
+async fn handle_get_asset_info<P, E>(
+    provider: &P,
+    ids: &Vec<String>,
+    timeout_interval: Duration,
+    meter_name: &'static str,
+) -> Result<Result<Vec<AssetInfo>, E>, Elapsed>
+where
+    E: Display,
+    P: AssetInfoProvider<Error = E>,
+{
+    let start_time = chrono::Utc::now().timestamp_millis();
+    let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
+    match result {
+        Ok(_) => Metrics::record_rest_get_asset_info_latency(meter_name, start_time, "success"),
+        Err(_) => Metrics::record_rest_get_asset_info_latency(meter_name, start_time, "failed"),
+    }
+    result
 }
 
 async fn handle_polling_result<S, E>(
     poll_result: Result<Result<Vec<AssetInfo>, E>, Elapsed>,
     store: &WorkerStore<S>,
+    meter_name: &'static str,
 ) where
     S: Store,
     E: Display,
 {
     match poll_result {
         Ok(Ok(asset_info)) => {
+            Metrics::increment_rest_get_asset_info_total(meter_name, "success");
             if let Err(e) = store.set_batch_asset_info(asset_info).await {
                 error!("failed to update asset info with error: {e}");
             } else {
@@ -62,9 +85,11 @@ async fn handle_polling_result<S, E>(
             }
         }
         Ok(Err(e)) => {
+            Metrics::increment_rest_get_asset_info_total(meter_name, "failed");
             error!("failed to update asset info with error: {e}");
         }
         Err(_) => {
+            Metrics::increment_rest_get_asset_info_total(meter_name, "timeout");
             error!("updating interval exceeded timeout");
         }
     }

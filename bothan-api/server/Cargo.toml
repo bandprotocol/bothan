@@ -29,3 +29,5 @@ tonic = { workspace = true }
 tracing = { workspace = true }
 
 config = "0.15.8"
+opentelemetry.workspace = true
+chrono.workspace = true
