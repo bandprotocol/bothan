@@ -159,7 +159,8 @@ impl<S: Store> BothanService for BothanServer<S> {
             .await
             .map_err(|e| {
                 error!("failed to get prices: {}", e);
-                metrics.update_get_prices_responses(start_time, Code::Internal);
+                let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64; 
+                metrics.update_get_prices_responses(elapsed_time, Code::Internal);
                 Status::internal("Failed to get prices")
             })?;
 
@@ -170,7 +171,8 @@ impl<S: Store> BothanService for BothanServer<S> {
             .map(|(id, state)| parse_price_state(id, state))
             .collect::<Vec<Price>>();
         let response = Response::new(GetPricesResponse { uuid, prices });
-        metrics.update_get_prices_responses(start_time, Code::Ok);
+        let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64; 
+        metrics.update_get_prices_responses(elapsed_time, Code::Ok);
         debug!("response: {:?}", response);
         Ok(response)
     }

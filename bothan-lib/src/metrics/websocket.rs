@@ -57,9 +57,7 @@ impl WebSocketMetrics {
         ]);
     }
 
-    pub fn record_source_connection_time(&self, source: &'static str, start_time: i64, status: ConnectionStatus) {
-        let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64; 
-
+    pub fn record_source_connection_time(&self, source: &'static str, elapsed_time: u64, status: ConnectionStatus) {
         self.source_connection_time.record(elapsed_time, &[
             KeyValue::new("status", status.as_str_name()),
             KeyValue::new("source", source)

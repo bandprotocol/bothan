@@ -45,14 +45,14 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
         select! {
             _ = cancellation_token.cancelled() => break,
-            r = handle_get_asset_info(&provider, &ids, update_interval, worker_name, metrics.clone()) => handle_polling_result(r, &store, worker_name, metrics.clone()).await,
+            r = poll_with_timeout(&provider, &ids, update_interval, worker_name, metrics.clone()) => handle_polling_result(r, &store, worker_name, metrics.clone()).await,
         }
     }
 }
 
-async fn handle_get_asset_info<P, E>(
+async fn poll_with_timeout<P, E>(
     provider: &P,
-    ids: &Vec<String>,
+    ids: &[String],
     timeout_interval: Duration,
     worker_name: &'static str,
     metrics: Arc<RestMetrics>,
@@ -63,10 +63,11 @@ where
 {
     let start_time = chrono::Utc::now().timestamp_millis();
     let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
+    let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64;
     if result.is_ok() {
-        metrics.record_response_latency(worker_name, start_time, ResponseLatencyStatus::Success);
+        metrics.record_response_latency(worker_name, elapsed_time, ResponseLatencyStatus::Success);
     } else {
-        metrics.record_response_latency(worker_name, start_time, ResponseLatencyStatus::Failed);
+        metrics.record_response_latency(worker_name, elapsed_time, ResponseLatencyStatus::Failed);
     }
 
     result

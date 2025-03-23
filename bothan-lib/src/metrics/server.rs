@@ -30,7 +30,7 @@ pub struct ServerMetrics {
     get_prices_response_time: Histogram<u64>,
 }
 
-impl ServerMetrics { 
+impl ServerMetrics {
     pub fn new() -> Self {
         let meter = global::meter("server"); 
         
@@ -55,9 +55,7 @@ impl ServerMetrics {
         self.get_prices_total_requests.add(1, &[]);
     }
 
-    pub fn update_get_prices_responses(&self, start_time: i64, grpc_code: Code) {
-        let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64; 
-        
+    pub fn update_get_prices_responses(&self, elapsed_time: u64, grpc_code: Code) {
         self.get_prices_total_responses.add(1, &[KeyValue::new("success", code_to_str(grpc_code))]);
         self.get_prices_response_time.record(elapsed_time, &[KeyValue::new("status", code_to_str(grpc_code))]);
     }

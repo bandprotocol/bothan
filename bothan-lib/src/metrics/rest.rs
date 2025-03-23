@@ -59,9 +59,7 @@ impl RestMetrics {
         ]);
     }
 
-    pub fn record_response_latency(&self, source: &'static str, start_time: i64, status: ResponseLatencyStatus){
-        let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64; 
-
+    pub fn record_response_latency(&self, source: &'static str, elapsed_time: u64, status: ResponseLatencyStatus) {
         self.response_latency.record(elapsed_time, &[
             KeyValue::new("status", status.as_str_name()),
             KeyValue::new("source", source),

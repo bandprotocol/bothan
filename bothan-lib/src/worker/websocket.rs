@@ -117,9 +117,10 @@ where
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
+                let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64; 
                 metrics.record_source_connection_time(
                     opts.worker_name,
-                    start_time,
+                    elapsed_time,
                     ConnectionStatus::Success,
                 );
                 return Some(provider);
@@ -132,6 +133,7 @@ where
         sleep(opts.reconnect_buffer).await;
     }
 
-    metrics.record_source_connection_time(opts.worker_name, start_time, ConnectionStatus::Failed);
+    let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64; 
+    metrics.record_source_connection_time(opts.worker_name, elapsed_time, ConnectionStatus::Failed);
     None
 }
