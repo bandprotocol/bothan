@@ -150,8 +150,8 @@ impl<S: Store> BothanService for BothanServer<S> {
         info!("received get price request");
         debug!("request: {:?}", request);
         let metrics= self.manager.get_metrics();
-        let start_time = chrono::Utc::now().timestamp_millis();
         metrics.increment_get_prices_total_requests();
+        let start_time = chrono::Utc::now().timestamp_millis();
         let price_request = request.into_inner();
         let (uuid, price_states) = self
             .manager

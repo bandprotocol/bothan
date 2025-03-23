@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::metrics::Metrics;
+use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::websocket::{PollOptions, start_polling};

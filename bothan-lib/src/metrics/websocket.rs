@@ -36,7 +36,7 @@ pub struct WebSocketMetrics {
 
 impl WebSocketMetrics {
     pub fn new() -> Self {
-        let meter = global::meter("provider");
+        let meter = global::meter("websocket_source");
         Self {
             source_activity_count: meter
                 .u64_counter("source_activity_message_count")

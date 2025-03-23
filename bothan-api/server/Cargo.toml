@@ -20,6 +20,7 @@ bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
 
 async-trait = { workspace = true }
+chrono = { workspace = true }
 dirs = { workspace = true }
 prost = { workspace = true }
 rust_decimal = { workspace = true }
@@ -29,5 +30,3 @@ tonic = { workspace = true }
 tracing = { workspace = true }
 
 config = "0.15.8"
-opentelemetry.workspace = true
-chrono.workspace = true

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::metrics::Metrics;
+use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::websocket::{PollOptions, start_polling};
@@ -42,7 +42,7 @@ impl AssetWorker for Worker {
         ids: Vec<String>,
         metrics: &Metrics,
     ) -> Result<Self, AssetWorkerError> {
-        let url: String = opts.url;
+        let url = opts.url;
         let connector = Arc::new(WebSocketConnector::new(url));
 
         let worker_store = WorkerStore::new(store, WORKER_NAME);

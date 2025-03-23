@@ -4,8 +4,7 @@ use std::time::Duration;
 
 use bothan_lib::registry::{Invalid, Registry};
 use bothan_lib::store::Store;
-use bothan_lib::metrics::Metrics;
-use bothan_lib::metrics::server::ServerMetrics;
+use bothan_lib::metrics::{Metrics, server::ServerMetrics};
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;

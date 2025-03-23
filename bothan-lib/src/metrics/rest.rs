@@ -38,7 +38,7 @@ pub struct RestMetrics {
 
 impl RestMetrics {
     pub fn new() -> Self {
-        let meter = global::meter("worker");
+        let meter = global::meter("rest_source");
         Self {
             total_requests: meter
                 .u64_counter("total_requests")
