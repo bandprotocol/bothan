@@ -8,6 +8,12 @@ pub struct Metrics {
     pub websocket: websocket::WebSocketMetrics,
 }
 
+impl Default for Metrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Metrics {
     pub fn new() -> Self {
         let rest = rest::RestMetrics::new();

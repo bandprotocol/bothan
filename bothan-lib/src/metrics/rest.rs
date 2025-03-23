@@ -37,6 +37,12 @@ pub struct RestMetrics {
     response_latency: Histogram<u64>,
 }
 
+impl Default for RestMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RestMetrics {
     pub fn new() -> Self {
         let meter = global::meter("rest_source");

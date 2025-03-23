@@ -35,6 +35,12 @@ pub struct WebSocketMetrics {
     source_connection_time: Histogram<u64>,
 }
 
+impl Default for WebSocketMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WebSocketMetrics {
     pub fn new() -> Self {
         let meter = global::meter("websocket_source");

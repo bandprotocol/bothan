@@ -31,6 +31,12 @@ pub struct ServerMetrics {
     get_prices_response_time: Histogram<u64>,
 }
 
+impl Default for ServerMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ServerMetrics {
     pub fn new() -> Self {
         let meter = global::meter("server");
