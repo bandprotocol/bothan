@@ -2,8 +2,8 @@ pub mod opts;
 
 use std::collections::HashMap;
 
-use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::metrics::Metrics;
+use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -51,30 +51,30 @@ impl AssetWorker for CryptoAssetWorker {
         metrics: &Metrics,
     ) -> Result<Self, AssetWorkerError> {
         Ok(match opts {
-            CryptoAssetWorkerOpts::Binance(opts) => {
-                CryptoAssetWorker::from(bothan_binance::Worker::build(opts, store, ids, metrics).await?)
-            }
-            CryptoAssetWorkerOpts::Bitfinex(opts) => {
-                CryptoAssetWorker::from(bothan_bitfinex::Worker::build(opts, store, ids, metrics).await?)
-            }
-            CryptoAssetWorkerOpts::Bybit(opts) => {
-                CryptoAssetWorker::from(bothan_bybit::Worker::build(opts, store, ids, metrics).await?)
-            }
-            CryptoAssetWorkerOpts::Coinbase(opts) => {
-                CryptoAssetWorker::from(bothan_coinbase::Worker::build(opts, store, ids, metrics).await?)
-            }
-            CryptoAssetWorkerOpts::CoinGecko(opts) => {
-                CryptoAssetWorker::from(bothan_coingecko::Worker::build(opts, store, ids, metrics).await?)
-            }
+            CryptoAssetWorkerOpts::Binance(opts) => CryptoAssetWorker::from(
+                bothan_binance::Worker::build(opts, store, ids, metrics).await?,
+            ),
+            CryptoAssetWorkerOpts::Bitfinex(opts) => CryptoAssetWorker::from(
+                bothan_bitfinex::Worker::build(opts, store, ids, metrics).await?,
+            ),
+            CryptoAssetWorkerOpts::Bybit(opts) => CryptoAssetWorker::from(
+                bothan_bybit::Worker::build(opts, store, ids, metrics).await?,
+            ),
+            CryptoAssetWorkerOpts::Coinbase(opts) => CryptoAssetWorker::from(
+                bothan_coinbase::Worker::build(opts, store, ids, metrics).await?,
+            ),
+            CryptoAssetWorkerOpts::CoinGecko(opts) => CryptoAssetWorker::from(
+                bothan_coingecko::Worker::build(opts, store, ids, metrics).await?,
+            ),
             CryptoAssetWorkerOpts::CoinMarketCap(opts) => CryptoAssetWorker::from(
                 bothan_coinmarketcap::Worker::build(opts, store, ids, metrics).await?,
             ),
             CryptoAssetWorkerOpts::Htx(opts) => {
                 CryptoAssetWorker::from(bothan_htx::Worker::build(opts, store, ids, metrics).await?)
             }
-            CryptoAssetWorkerOpts::Kraken(opts) => {
-                CryptoAssetWorker::from(bothan_kraken::Worker::build(opts, store, ids, metrics).await?)
-            }
+            CryptoAssetWorkerOpts::Kraken(opts) => CryptoAssetWorker::from(
+                bothan_kraken::Worker::build(opts, store, ids, metrics).await?,
+            ),
             CryptoAssetWorkerOpts::Okx(opts) => {
                 CryptoAssetWorker::from(bothan_okx::Worker::build(opts, store, ids, metrics).await?)
             }

@@ -1,4 +1,5 @@
-use opentelemetry::{global, metrics::{Counter, Histogram}, KeyValue};
+use opentelemetry::metrics::{Counter, Histogram};
+use opentelemetry::{KeyValue, global};
 
 pub enum MessageType {
     AssetInfo,
@@ -50,17 +51,32 @@ impl WebSocketMetrics {
         }
     }
 
-    pub fn increment_source_activity_message_count(&self, source: &'static str, message: MessageType) {
-        self.source_activity_count.add(1, &[
-            KeyValue::new("messsage_type", message.as_str_name()),
-            KeyValue::new("source", source),
-        ]);
+    pub fn increment_source_activity_message_count(
+        &self,
+        source: &'static str,
+        message: MessageType,
+    ) {
+        self.source_activity_count.add(
+            1,
+            &[
+                KeyValue::new("messsage_type", message.as_str_name()),
+                KeyValue::new("source", source),
+            ],
+        );
     }
 
-    pub fn record_source_connection_time(&self, source: &'static str, elapsed_time: u64, status: ConnectionStatus) {
-        self.source_connection_time.record(elapsed_time, &[
-            KeyValue::new("status", status.as_str_name()),
-            KeyValue::new("source", source)
-        ]);
+    pub fn record_source_connection_time(
+        &self,
+        source: &'static str,
+        elapsed_time: u64,
+        status: ConnectionStatus,
+    ) {
+        self.source_connection_time.record(
+            elapsed_time,
+            &[
+                KeyValue::new("status", status.as_str_name()),
+                KeyValue::new("source", source),
+            ],
+        );
     }
 }

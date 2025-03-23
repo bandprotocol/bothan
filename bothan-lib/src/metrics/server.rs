@@ -1,4 +1,5 @@
-use opentelemetry::{global, metrics::{Counter, Histogram}, KeyValue};
+use opentelemetry::metrics::{Counter, Histogram};
+use opentelemetry::{KeyValue, global};
 use tonic::Code;
 
 fn code_to_str(code: Code) -> &'static str {
@@ -32,8 +33,8 @@ pub struct ServerMetrics {
 
 impl ServerMetrics {
     pub fn new() -> Self {
-        let meter = global::meter("server"); 
-        
+        let meter = global::meter("server");
+
         Self {
             get_prices_total_requests: meter
                 .u64_counter("get_prices_total_requests")
@@ -56,7 +57,11 @@ impl ServerMetrics {
     }
 
     pub fn update_get_prices_responses(&self, elapsed_time: u64, grpc_code: Code) {
-        self.get_prices_total_responses.add(1, &[KeyValue::new("success", code_to_str(grpc_code))]);
-        self.get_prices_response_time.record(elapsed_time, &[KeyValue::new("status", code_to_str(grpc_code))]);
+        self.get_prices_total_responses
+            .add(1, &[KeyValue::new("success", code_to_str(grpc_code))]);
+        self.get_prices_response_time.record(
+            elapsed_time,
+            &[KeyValue::new("status", code_to_str(grpc_code))],
+        );
     }
 }

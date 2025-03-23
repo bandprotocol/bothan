@@ -1,4 +1,5 @@
-use opentelemetry::{global, metrics::{Counter, Histogram}, KeyValue};
+use opentelemetry::metrics::{Counter, Histogram};
+use opentelemetry::{KeyValue, global};
 
 pub enum RequestStatus {
     Success,
@@ -53,16 +54,27 @@ impl RestMetrics {
     }
 
     pub fn increment_total_requests(&self, source: &'static str, status: RequestStatus) {
-        self.total_requests.add(1, &[
-            KeyValue::new("status", status.as_str_name()),
-            KeyValue::new("source", source),
-        ]);
+        self.total_requests.add(
+            1,
+            &[
+                KeyValue::new("status", status.as_str_name()),
+                KeyValue::new("source", source),
+            ],
+        );
     }
 
-    pub fn record_response_latency(&self, source: &'static str, elapsed_time: u64, status: ResponseLatencyStatus) {
-        self.response_latency.record(elapsed_time, &[
-            KeyValue::new("status", status.as_str_name()),
-            KeyValue::new("source", source),
-        ]);
+    pub fn record_response_latency(
+        &self,
+        source: &'static str,
+        elapsed_time: u64,
+        status: ResponseLatencyStatus,
+    ) {
+        self.response_latency.record(
+            elapsed_time,
+            &[
+                KeyValue::new("status", status.as_str_name()),
+                KeyValue::new("source", source),
+            ],
+        );
     }
 }

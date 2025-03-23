@@ -17,7 +17,7 @@ impl Metrics {
         Self {
             rest,
             server,
-            websocket
+            websocket,
         }
     }
 }
