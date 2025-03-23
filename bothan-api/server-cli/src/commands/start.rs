@@ -64,12 +64,12 @@ impl StartCli {
         let ipfs_client = init_ipfs_client(&app_config).await?;
         let monitoring_client = init_monitoring_client(&app_config).await?;
 
+        init_telemetry_server(&app_config).await?;
+
         let bothan_server =
             init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
         info!("server started");
-
-        init_telemetry_server(&app_config).await?;
 
         Server::builder()
             .add_service(BothanServiceServer::from_arc(bothan_server))

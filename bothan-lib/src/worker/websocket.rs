@@ -7,8 +7,8 @@ use tokio::time::{sleep, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, warn};
 
+use crate::metrics::websocket::{ConnectionStatus, MessageType, WebSocketMetrics};
 use crate::store::{Store, WorkerStore};
-use crate::telemetry::Metrics;
 use crate::types::AssetInfo;
 
 pub enum Data {
@@ -42,7 +42,7 @@ pub struct PollOptions {
     pub timeout: Duration,
     pub reconnect_buffer: Duration,
     pub max_retry: u64,
-    pub meter_name: &'static str,
+    pub worker_name: &'static str,
 }
 
 // TODO: improve logging here
@@ -52,6 +52,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
     store: WorkerStore<S>,
     ids: Vec<String>,
     opts: PollOptions,
+    metrics: Arc<WebSocketMetrics>,
 ) where
     E1: Display,
     E2: Display,
@@ -59,7 +60,9 @@ pub async fn start_polling<S, E1, E2, P, C>(
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
 {
-    if let Some(mut connection) = connect(provider_connector.as_ref(), &ids, &opts).await {
+    if let Some(mut connection) =
+        connect(provider_connector.as_ref(), &ids, &opts, metrics.clone()).await
+    {
         loop {
             select! {
                 _ = cancellation_token.cancelled() => break,
@@ -67,8 +70,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
                         match poll_result {
                             // If timeout, we assume the connection has been dropped, and we attempt to reconnect
                             Err(_) | Ok(None) => {
-                                Metrics::increment_source_activity_message_count(opts.meter_name, "timeout");
-                                if let Some(new_conn) = connect(provider_connector.as_ref(), &ids, &opts).await {
+                                if let Some(new_conn) = connect(provider_connector.as_ref(), &ids, &opts, metrics.clone()).await {
                                     connection = new_conn
                                 } else {
                                     error!("failed to reconnect");
@@ -76,12 +78,12 @@ pub async fn start_polling<S, E1, E2, P, C>(
                                 }
                             }
                             Ok(Some(Ok(Data::AssetInfo(ai)))) => {
-                                match store.set_batch_asset_info(ai).await {
-                                    Ok(_) => Metrics::increment_source_activity_message_count(opts.meter_name, "asset_info"),
-                                    Err(e) => warn!("failed to store data: {}", e),
+                                if let Err(e) = store.set_batch_asset_info(ai).await {
+                                    warn!("failed to store data: {}", e)
                                 }
+                                metrics.increment_source_activity_message_count(opts.worker_name, MessageType::AssetInfo)
                             }
-                            Ok(Some(Ok(Data::Ping))) => Metrics::increment_source_activity_message_count(opts.meter_name, "ping"),
+                            Ok(Some(Ok(Data::Ping))) => metrics.increment_source_activity_message_count(opts.worker_name, MessageType::Ping),
                             Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
                             Ok(Some(Err(e))) => error!("{}", e),
                         }
@@ -97,7 +99,12 @@ pub async fn start_polling<S, E1, E2, P, C>(
 }
 
 // If connect fails, the polling loop should be exited
-async fn connect<C, P, E1, E2>(connector: &C, ids: &[String], opts: &PollOptions) -> Option<P>
+async fn connect<C, P, E1, E2>(
+    connector: &C,
+    ids: &[String],
+    opts: &PollOptions,
+    metrics: Arc<WebSocketMetrics>,
+) -> Option<P>
 where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
@@ -110,19 +117,21 @@ where
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-
-                Metrics::record_source_connection_time(opts.meter_name, start_time, "success");
-            
+                metrics.record_source_connection_time(
+                    opts.worker_name,
+                    start_time,
+                    ConnectionStatus::Success,
+                );
                 return Some(provider);
             }
         }
-        
+
         error!("failed to reconnect");
 
         retry_count += 1;
         sleep(opts.reconnect_buffer).await;
     }
 
-    Metrics::record_source_connection_time(opts.meter_name, start_time, "failed");
+    metrics.record_source_connection_time(opts.worker_name, start_time, ConnectionStatus::Failed);
     None
 }

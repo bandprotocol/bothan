@@ -3,9 +3,8 @@ use std::sync::Arc;
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
 use bothan_lib::store::Store;
-use bothan_lib::telemetry::Metrics;
 use semver::Version;
-use tonic::{Request, Response, Status};
+use tonic::{Code, Request, Response, Status};
 use tracing::{debug, error, info};
 
 use crate::api::utils::parse_price_state;
@@ -150,8 +149,9 @@ impl<S: Store> BothanService for BothanServer<S> {
     ) -> Result<Response<GetPricesResponse>, Status> {
         info!("received get price request");
         debug!("request: {:?}", request);
+        let metrics= self.manager.get_metrics();
         let start_time = chrono::Utc::now().timestamp_millis();
-        Metrics::increment_get_prices_total_requests();
+        metrics.increment_get_prices_total_requests();
         let price_request = request.into_inner();
         let (uuid, price_states) = self
             .manager
@@ -159,7 +159,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             .await
             .map_err(|e| {
                 error!("failed to get prices: {}", e);
-                Metrics::update_get_prices_responses(start_time, false);
+                metrics.update_get_prices_responses(start_time, Code::Internal);
                 Status::internal("Failed to get prices")
             })?;
 
@@ -170,7 +170,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             .map(|(id, state)| parse_price_state(id, state))
             .collect::<Vec<Price>>();
         let response = Response::new(GetPricesResponse { uuid, prices });
-        Metrics::update_get_prices_responses(start_time, true);
+        metrics.update_get_prices_responses(start_time, Code::Ok);
         debug!("response: {:?}", response);
         Ok(response)
     }

@@ -4,6 +4,8 @@ use std::time::Duration;
 
 use bothan_lib::registry::{Invalid, Registry};
 use bothan_lib::store::Store;
+use bothan_lib::metrics::Metrics;
+use bothan_lib::metrics::server::ServerMetrics;
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
@@ -33,6 +35,7 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
     registry_version_requirement: VersionReq,
     monitoring_client: Option<Arc<MonitoringClient>>,
     monitoring_cache: Option<Cache<String, Arc<Vec<PriceSignalComputationRecord>>>>,
+    metrics: Metrics,
 }
 
 impl<S: Store + 'static> CryptoAssetInfoManager<S> {
@@ -52,7 +55,9 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let registry = store.get_registry().await;
 
-        let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
+        let metrics = Metrics::new();
+
+        let workers = Mutex::new(build_workers(&registry, &opts, store.clone(), &metrics).await);
 
         let manager = CryptoAssetInfoManager {
             store,
@@ -64,6 +69,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             registry_version_requirement,
             monitoring_client,
             monitoring_cache,
+            metrics,
         };
 
         Ok(manager)
@@ -209,9 +215,14 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         // wait a bit for connections to clear up
         sleep(Duration::from_secs(1)).await;
 
-        let workers = build_workers(&registry, &self.opts, self.store.clone()).await;
+        let workers = build_workers(&registry, &self.opts, self.store.clone(), &self.metrics).await;
         *locked_workers = workers;
 
         Ok(())
+    }
+
+    /// Gets metrics to be used for server instrumentation.
+    pub fn get_metrics(&self) -> &ServerMetrics {
+        &self.metrics.server
     }
 }

@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::select;
@@ -7,8 +8,8 @@ use tokio::time::{interval, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error};
 
+use crate::metrics::rest::{RequestStatus, ResponseLatencyStatus, RestMetrics};
 use crate::store::{Store, WorkerStore};
-use crate::telemetry::Metrics;
 use crate::types::AssetInfo;
 
 #[async_trait::async_trait]
@@ -27,7 +28,8 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
     provider: P,
     store: WorkerStore<S>,
     ids: Vec<String>,
-    meter_name: &'static str,
+    worker_name: &'static str,
+    metrics: Arc<RestMetrics>,
 ) {
     if ids.is_empty() {
         debug!("no ids to poll");
@@ -43,7 +45,7 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
         select! {
             _ = cancellation_token.cancelled() => break,
-            r = handle_get_asset_info(&provider, &ids, update_interval, meter_name) => handle_polling_result(r, &store, meter_name).await,
+            r = handle_get_asset_info(&provider, &ids, update_interval, worker_name, metrics.clone()) => handle_polling_result(r, &store, worker_name, metrics.clone()).await,
         }
     }
 }
@@ -52,7 +54,8 @@ async fn handle_get_asset_info<P, E>(
     provider: &P,
     ids: &Vec<String>,
     timeout_interval: Duration,
-    meter_name: &'static str,
+    worker_name: &'static str,
+    metrics: Arc<RestMetrics>,
 ) -> Result<Result<Vec<AssetInfo>, E>, Elapsed>
 where
     E: Display,
@@ -60,24 +63,27 @@ where
 {
     let start_time = chrono::Utc::now().timestamp_millis();
     let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
-    match result {
-        Ok(_) => Metrics::record_rest_get_asset_info_latency(meter_name, start_time, "success"),
-        Err(_) => Metrics::record_rest_get_asset_info_latency(meter_name, start_time, "failed"),
+    if result.is_ok() {
+        metrics.record_response_latency(worker_name, start_time, ResponseLatencyStatus::Success);
+    } else {
+        metrics.record_response_latency(worker_name, start_time, ResponseLatencyStatus::Failed);
     }
+
     result
 }
 
 async fn handle_polling_result<S, E>(
     poll_result: Result<Result<Vec<AssetInfo>, E>, Elapsed>,
     store: &WorkerStore<S>,
-    meter_name: &'static str,
+    worker_name: &'static str,
+    metrics: Arc<RestMetrics>,
 ) where
     S: Store,
     E: Display,
 {
     match poll_result {
         Ok(Ok(asset_info)) => {
-            Metrics::increment_rest_get_asset_info_total(meter_name, "success");
+            metrics.increment_total_requests(worker_name, RequestStatus::Success);
             if let Err(e) = store.set_batch_asset_info(asset_info).await {
                 error!("failed to update asset info with error: {e}");
             } else {
@@ -85,11 +91,11 @@ async fn handle_polling_result<S, E>(
             }
         }
         Ok(Err(e)) => {
-            Metrics::increment_rest_get_asset_info_total(meter_name, "failed");
+            metrics.increment_total_requests(worker_name, RequestStatus::Failed);
             error!("failed to update asset info with error: {e}");
         }
         Err(_) => {
-            Metrics::increment_rest_get_asset_info_total(meter_name, "timeout");
+            metrics.increment_total_requests(worker_name, RequestStatus::Timeout);
             error!("updating interval exceeded timeout");
         }
     }

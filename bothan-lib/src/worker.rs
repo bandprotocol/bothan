@@ -1,5 +1,6 @@
 use error::AssetWorkerError;
 
+use crate::metrics::Metrics;
 use crate::store::Store;
 
 pub mod error;
@@ -20,5 +21,6 @@ pub trait AssetWorker: Send + Sync + Sized {
         opts: Self::Opts,
         store: &S,
         ids: Vec<String>,
+        metrics: &Metrics,
     ) -> Result<Self, AssetWorkerError>;
 }
