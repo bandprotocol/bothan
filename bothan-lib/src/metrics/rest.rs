@@ -17,24 +17,10 @@ impl RequestStatus {
     }
 }
 
-pub enum ResponseLatencyStatus {
-    Success,
-    Failed,
-}
-
-impl ResponseLatencyStatus {
-    fn as_str_name(&self) -> &'static str {
-        match self {
-            ResponseLatencyStatus::Success => "success",
-            ResponseLatencyStatus::Failed => "failed",
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct RestMetrics {
-    total_requests: Counter<u64>,
-    response_latency: Histogram<u64>,
+    requests_total: Counter<u64>,
+    requests_duration: Histogram<u64>,
 }
 
 impl Default for RestMetrics {
@@ -47,20 +33,20 @@ impl RestMetrics {
     pub fn new() -> Self {
         let meter = global::meter("rest_source");
         Self {
-            total_requests: meter
-                .u64_counter("total_requests")
+            requests_total: meter
+                .u64_counter("rest_requests_total")
                 .with_description("total number of get_asset_info requests")
                 .build(),
-            response_latency: meter
-                .u64_histogram("response_latency")
+            requests_duration: meter
+                .u64_histogram("rest_requests_duration_milliseconds")
                 .with_description("time taken to fetch asset info for each worker")
                 .with_unit("milliseconds")
                 .build(),
         }
     }
 
-    pub fn increment_total_requests(&self, source: &'static str, status: RequestStatus) {
-        self.total_requests.add(
+    pub fn increment_requests_total(&self, source: &'static str, status: RequestStatus) {
+        self.requests_total.add(
             1,
             &[
                 KeyValue::new("status", status.as_str_name()),
@@ -69,13 +55,13 @@ impl RestMetrics {
         );
     }
 
-    pub fn record_response_latency(
+    pub fn record_requests_duration(
         &self,
         source: &'static str,
         elapsed_time: u64,
-        status: ResponseLatencyStatus,
+        status: RequestStatus,
     ) {
-        self.response_latency.record(
+        self.requests_duration.record(
             elapsed_time,
             &[
                 KeyValue::new("status", status.as_str_name()),

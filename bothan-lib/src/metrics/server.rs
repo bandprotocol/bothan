@@ -24,11 +24,28 @@ fn code_to_str(code: Code) -> &'static str {
     }
 }
 
+pub enum ServiceName {
+    GetInfo,
+    UpdateRegistry,
+    PushMonitoringRecords,
+    GetPrices,
+}
+
+impl ServiceName {
+    fn as_str_name(&self) -> &'static str {
+        match self {
+            ServiceName::GetInfo => "get_info",
+            ServiceName::UpdateRegistry => "update_registry",
+            ServiceName::PushMonitoringRecords => "push_monitoring_records",
+            ServiceName::GetPrices => "get_prices",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ServerMetrics {
-    get_prices_total_requests: Counter<u64>,
-    get_prices_total_responses: Counter<u64>,
-    get_prices_response_time: Histogram<u64>,
+    requests_total: Counter<u64>,
+    requests_duration: Histogram<u64>,
 }
 
 impl Default for ServerMetrics {
@@ -42,32 +59,37 @@ impl ServerMetrics {
         let meter = global::meter("server");
 
         Self {
-            get_prices_total_requests: meter
-                .u64_counter("get_prices_total_requests")
+            requests_total: meter
+                .u64_counter("grpc_requests_total")
                 .with_description("total number of requests sent to fetch asset prices")
                 .build(),
-            get_prices_total_responses: meter
-                .u64_counter("get_prices_total_responses")
-                .with_description("total number of responses received for asset price requests")
-                .build(),
-            get_prices_response_time: meter
-                .u64_histogram("get_prices_response_time")
+            requests_duration: meter
+                .u64_histogram("grpc_requests_duration_milliseconds")
                 .with_description("time taken to fetch asset prices")
                 .with_unit("milliseconds")
                 .build(),
         }
     }
 
-    pub fn increment_get_prices_total_requests(&self) {
-        self.get_prices_total_requests.add(1, &[]);
+    pub fn increment_requests_total(&self, service_name: ServiceName) {
+        self.requests_total.add(
+            1,
+            &[KeyValue::new("service_name", service_name.as_str_name())],
+        );
     }
 
-    pub fn update_get_prices_responses(&self, elapsed_time: u64, grpc_code: Code) {
-        self.get_prices_total_responses
-            .add(1, &[KeyValue::new("success", code_to_str(grpc_code))]);
-        self.get_prices_response_time.record(
+    pub fn record_requests_duration(
+        &self,
+        elapsed_time: u64,
+        service_name: ServiceName,
+        grpc_code: Code,
+    ) {
+        self.requests_duration.record(
             elapsed_time,
-            &[KeyValue::new("status", code_to_str(grpc_code))],
+            &[
+                KeyValue::new("service_name", service_name.as_str_name()),
+                KeyValue::new("status", code_to_str(grpc_code)),
+            ],
         );
     }
 }

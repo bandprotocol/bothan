@@ -31,8 +31,8 @@ impl ConnectionStatus {
 
 #[derive(Clone, Debug)]
 pub struct WebSocketMetrics {
-    source_activity_count: Counter<u64>,
-    source_connection_time: Histogram<u64>,
+    source_activity_messages_total: Counter<u64>,
+    source_connection_duration: Histogram<u64>,
 }
 
 impl Default for WebSocketMetrics {
@@ -45,12 +45,12 @@ impl WebSocketMetrics {
     pub fn new() -> Self {
         let meter = global::meter("websocket_source");
         Self {
-            source_activity_count: meter
-                .u64_counter("source_activity_message_count")
+            source_activity_messages_total: meter
+                .u64_counter("websocket_source_activity_messages_total")
                 .with_description("total number of messages sent by the source to indicate whether the source is active or not")
                 .build(),
-            source_connection_time: meter
-                .u64_histogram("source_connection_time")
+            source_connection_duration: meter
+                .u64_histogram("websocket_source_connection_duration_milliseconds")
                 .with_description("time taken for worker to establish a websocket connection to the source.")
                 .with_unit("milliseconds")
                 .build(),
@@ -62,7 +62,7 @@ impl WebSocketMetrics {
         source: &'static str,
         message: MessageType,
     ) {
-        self.source_activity_count.add(
+        self.source_activity_messages_total.add(
             1,
             &[
                 KeyValue::new("messsage_type", message.as_str_name()),
@@ -71,13 +71,13 @@ impl WebSocketMetrics {
         );
     }
 
-    pub fn record_source_connection_time(
+    pub fn record_source_connection_duration(
         &self,
         source: &'static str,
         elapsed_time: u64,
         status: ConnectionStatus,
     ) {
-        self.source_connection_time.record(
+        self.source_connection_duration.record(
             elapsed_time,
             &[
                 KeyValue::new("status", status.as_str_name()),

@@ -8,7 +8,7 @@ use tokio::time::{interval, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error};
 
-use crate::metrics::rest::{RequestStatus, ResponseLatencyStatus, RestMetrics};
+use crate::metrics::rest::{RequestStatus, RestMetrics};
 use crate::store::{Store, WorkerStore};
 use crate::types::AssetInfo;
 
@@ -65,9 +65,9 @@ where
     let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
     let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64;
     if result.is_ok() {
-        metrics.record_response_latency(worker_name, elapsed_time, ResponseLatencyStatus::Success);
+        metrics.record_requests_duration(worker_name, elapsed_time, RequestStatus::Success);
     } else {
-        metrics.record_response_latency(worker_name, elapsed_time, ResponseLatencyStatus::Failed);
+        metrics.record_requests_duration(worker_name, elapsed_time, RequestStatus::Failed);
     }
 
     result
@@ -84,7 +84,7 @@ async fn handle_polling_result<S, E>(
 {
     match poll_result {
         Ok(Ok(asset_info)) => {
-            metrics.increment_total_requests(worker_name, RequestStatus::Success);
+            metrics.increment_requests_total(worker_name, RequestStatus::Success);
             if let Err(e) = store.set_batch_asset_info(asset_info).await {
                 error!("failed to update asset info with error: {e}");
             } else {
@@ -92,11 +92,11 @@ async fn handle_polling_result<S, E>(
             }
         }
         Ok(Err(e)) => {
-            metrics.increment_total_requests(worker_name, RequestStatus::Failed);
+            metrics.increment_requests_total(worker_name, RequestStatus::Failed);
             error!("failed to update asset info with error: {e}");
         }
         Err(_) => {
-            metrics.increment_total_requests(worker_name, RequestStatus::Timeout);
+            metrics.increment_requests_total(worker_name, RequestStatus::Timeout);
             error!("updating interval exceeded timeout");
         }
     }
