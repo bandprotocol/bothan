@@ -7,7 +7,7 @@ use tokio::time::{sleep, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, warn};
 
-use crate::metrics::websocket::{ConnectionStatus, MessageType, WebSocketMetrics};
+use crate::metrics::websocket::{ConnectionResult, MessageType, WebSocketMetrics};
 use crate::store::{Store, WorkerStore};
 use crate::types::AssetInfo;
 
@@ -81,9 +81,9 @@ pub async fn start_polling<S, E1, E2, P, C>(
                                 if let Err(e) = store.set_batch_asset_info(ai).await {
                                     warn!("failed to store data: {}", e)
                                 }
-                                metrics.increment_source_activity_message_count(opts.worker_name, MessageType::AssetInfo)
+                                metrics.increment_activity_messages_total(opts.worker_name, MessageType::AssetInfo)
                             }
-                            Ok(Some(Ok(Data::Ping))) => metrics.increment_source_activity_message_count(opts.worker_name, MessageType::Ping),
+                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(opts.worker_name, MessageType::Ping),
                             Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
                             Ok(Some(Err(e))) => error!("{}", e),
                         }
@@ -118,10 +118,10 @@ where
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
                 let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64;
-                metrics.record_source_connection_duration(
+                metrics.record_connection_duration(
                     opts.worker_name,
                     elapsed_time,
-                    ConnectionStatus::Success,
+                    ConnectionResult::Success,
                 );
                 return Some(provider);
             }
@@ -134,10 +134,6 @@ where
     }
 
     let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64;
-    metrics.record_source_connection_duration(
-        opts.worker_name,
-        elapsed_time,
-        ConnectionStatus::Failed,
-    );
+    metrics.record_connection_duration(opts.worker_name, elapsed_time, ConnectionResult::Failed);
     None
 }

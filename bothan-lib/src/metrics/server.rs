@@ -60,11 +60,11 @@ impl ServerMetrics {
 
         Self {
             requests_total: meter
-                .u64_counter("grpc_requests_total")
+                .u64_counter("server_requests")
                 .with_description("total number of requests sent to fetch asset prices")
                 .build(),
             requests_duration: meter
-                .u64_histogram("grpc_requests_duration_milliseconds")
+                .u64_histogram("server_requests_duration_milliseconds")
                 .with_description("time taken to fetch asset prices")
                 .with_unit("milliseconds")
                 .build(),

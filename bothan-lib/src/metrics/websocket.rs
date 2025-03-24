@@ -15,24 +15,24 @@ impl MessageType {
     }
 }
 
-pub enum ConnectionStatus {
+pub enum ConnectionResult {
     Success,
     Failed,
 }
 
-impl ConnectionStatus {
+impl ConnectionResult {
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            ConnectionStatus::Success => "success",
-            ConnectionStatus::Failed => "failed",
+            ConnectionResult::Success => "success",
+            ConnectionResult::Failed => "failed",
         }
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct WebSocketMetrics {
-    source_activity_messages_total: Counter<u64>,
-    source_connection_duration: Histogram<u64>,
+    activity_messages_total: Counter<u64>,
+    connection_duration: Histogram<u64>,
 }
 
 impl Default for WebSocketMetrics {
@@ -45,24 +45,24 @@ impl WebSocketMetrics {
     pub fn new() -> Self {
         let meter = global::meter("websocket_source");
         Self {
-            source_activity_messages_total: meter
-                .u64_counter("websocket_source_activity_messages_total")
+            activity_messages_total: meter
+                .u64_counter("websocket_activity_messages")
                 .with_description("total number of messages sent by the source to indicate whether the source is active or not")
                 .build(),
-            source_connection_duration: meter
-                .u64_histogram("websocket_source_connection_duration_milliseconds")
+            connection_duration: meter
+                .u64_histogram("websocket_connection_duration_milliseconds")
                 .with_description("time taken for worker to establish a websocket connection to the source.")
                 .with_unit("milliseconds")
                 .build(),
         }
     }
 
-    pub fn increment_source_activity_message_count(
+    pub fn increment_activity_messages_total(
         &self,
         source: &'static str,
         message: MessageType,
     ) {
-        self.source_activity_messages_total.add(
+        self.activity_messages_total.add(
             1,
             &[
                 KeyValue::new("messsage_type", message.as_str_name()),
@@ -71,13 +71,13 @@ impl WebSocketMetrics {
         );
     }
 
-    pub fn record_source_connection_duration(
+    pub fn record_connection_duration(
         &self,
         source: &'static str,
         elapsed_time: u64,
-        status: ConnectionStatus,
+        status: ConnectionResult,
     ) {
-        self.source_connection_duration.record(
+        self.connection_duration.record(
             elapsed_time,
             &[
                 KeyValue::new("status", status.as_str_name()),
