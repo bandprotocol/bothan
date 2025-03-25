@@ -44,7 +44,7 @@ pub struct PollOptions {
     pub meter_name: &'static str,
 }
 
-// TODO: improve logging here
+#[tracing::instrument(skip(cancellation_token, provider_connector, store, ids, opts))]
 pub async fn start_polling<S, E1, E2, P, C>(
     cancellation_token: CancellationToken,
     provider_connector: Arc<C>,
@@ -106,8 +106,6 @@ where
         .build();
 
     while retry_count <= opts.max_retry {
-        warn!("connect attempt {}", retry_count);
-
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
                 histogram.record(retry_count, &[KeyValue::new("success", true)]);
@@ -116,7 +114,7 @@ where
         }
 
         histogram.record(retry_count, &[KeyValue::new("success", true)]);
-        error!("failed to reconnect");
+        error!("failed to reconnect. current attempt: {}", retry_count);
 
         retry_count += 1;
         sleep(opts.reconnect_buffer).await;

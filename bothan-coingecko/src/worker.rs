@@ -3,6 +3,7 @@ use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::rest::start_polling;
 use tokio_util::sync::{CancellationToken, DropGuard};
+use tracing::{Instrument, Level, span};
 
 use crate::WorkerOpts;
 use crate::api::RestApiBuilder;
@@ -34,13 +35,17 @@ impl AssetWorker for Worker {
         let worker_store = WorkerStore::new(store, WORKER_NAME);
         let token = CancellationToken::new();
 
-        tokio::spawn(start_polling(
-            token.child_token(),
-            opts.update_interval,
-            api,
-            worker_store,
-            ids,
-        ));
+        let span = span!(Level::INFO, "source", name = WORKER_NAME);
+        tokio::spawn(
+            start_polling(
+                token.child_token(),
+                opts.update_interval,
+                api,
+                worker_store,
+                ids,
+            )
+            .instrument(span),
+        );
 
         Ok(Worker {
             _drop_guard: token.drop_guard(),

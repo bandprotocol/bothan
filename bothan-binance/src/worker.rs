@@ -8,6 +8,7 @@ use bothan_lib::worker::websocket::{PollOptions, start_polling};
 use itertools;
 use itertools::Itertools;
 use tokio_util::sync::{CancellationToken, DropGuard};
+use tracing::{Instrument, Level, span};
 
 use crate::WorkerOpts;
 use crate::api::websocket::WebSocketConnector;
@@ -52,18 +53,24 @@ impl AssetWorker for Worker {
             meter_name: WORKER_NAME,
         };
 
-        for set in ids
+        for (i, set) in ids
             .into_iter()
             .chunks(opts.max_subscription_per_connection)
             .into_iter()
+            .enumerate()
         {
-            tokio::spawn(start_polling(
-                token.child_token(),
-                connector.clone(),
-                worker_store.clone(),
-                set.collect(),
-                poll_options.clone(),
-            ));
+            let span_name = format!("{}-{}", WORKER_NAME, i);
+            let span = span!(Level::INFO, "source", name = span_name);
+            tokio::spawn(
+                start_polling(
+                    token.child_token(),
+                    connector.clone(),
+                    worker_store.clone(),
+                    set.collect(),
+                    poll_options.clone(),
+                )
+                .instrument(span),
+            );
         }
 
         Ok(Worker {
