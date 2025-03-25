@@ -11,7 +11,7 @@ use bothan_api::api::BothanServer;
 use bothan_api::config::AppConfig;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
-use bothan_api::proto::bothan::v1::{BothanServiceServer, FILE_DESCRIPTOR_SET};
+use bothan_api::proto::bothan::v1::BothanServiceServer;
 use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
 use bothan_core::manager::CryptoAssetInfoManager;
@@ -22,6 +22,8 @@ use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::worker::error::AssetWorkerError;
 use clap::Parser;
+use prost;
+use prost_types::FileDescriptorSet;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
 use tonic::transport::Server;
@@ -67,8 +69,11 @@ impl StartCli {
         let bothan_server =
             init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
+        let descriptor_bytes = include_bytes!("../../../server/src/proto/descriptor.pb"); // Adjust path as needed
+        let file_descriptor_set: FileDescriptorSet = prost::Message::decode(&descriptor_bytes[..])?;
+
         let reflection_service = ReflectionBuilder::configure()
-            .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+            .register_file_descriptor_set(file_descriptor_set)
             .build_v1alpha()
             .with_context(|| "Failed to build reflection service")?;
 

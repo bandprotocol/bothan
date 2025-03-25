@@ -410,6 +410,8 @@ dependencies = [
  "clap",
  "dirs",
  "inquire",
+ "prost",
+ "prost-types",
  "reqwest",
  "semver",
  "serde_json",
