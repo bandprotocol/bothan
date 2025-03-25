@@ -190,7 +190,7 @@ impl AssetInfoProvider for WebSocketConnection {
 
 fn parse_mini_ticker(mini_ticker: MiniTickerInfo) -> Result<Data, rust_decimal::Error> {
     let asset_info = AssetInfo::new(
-        mini_ticker.symbol,
+        mini_ticker.symbol.to_ascii_lowercase(),
         Decimal::from_str(&mini_ticker.close_price)?,
         mini_ticker.event_time,
     );
