@@ -65,12 +65,10 @@ impl WebSocketMetrics {
             .add(1, &[KeyValue::new("message_type", message.to_string())]);
     }
 
-    pub fn record_connection_duration(&self, elapsed_time: u64, status: ConnectionResult) {
+    pub fn update_connection(&self, elapsed_time: u64, retry_count: u64, status: ConnectionResult) {
         self.connection_duration
             .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
-    }
 
-    pub fn increment_connections_total(&self, retry_count: u64, status: ConnectionResult) {
         self.connections_total.add(
             1,
             &[

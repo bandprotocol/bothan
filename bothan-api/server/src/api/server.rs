@@ -117,20 +117,10 @@ impl<S: Store> BothanService for BothanServer<S> {
                     ServiceName::UpdateRegistry,
                     Code::Ok,
                 );
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::Ok,
-                );
                 info!("successfully set registry");
                 Ok(Response::new(UpdateRegistryResponse {}))
             }
             Err(SetRegistryError::FailedToRetrieve(e)) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::NotFound,
-                );
                 metrics.record_requests_duration(
                     elapsed_time,
                     ServiceName::UpdateRegistry,
@@ -145,20 +135,10 @@ impl<S: Store> BothanService for BothanServer<S> {
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
                 );
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
                 error!("invalid registry: {}", e);
                 Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::UnsupportedVersion) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
                 metrics.record_requests_duration(
                     elapsed_time,
                     ServiceName::UpdateRegistry,
@@ -173,11 +153,6 @@ impl<S: Store> BothanService for BothanServer<S> {
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
                 );
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
                 error!("failed to parse registry");
                 Err(Status::invalid_argument("Unable to parse registry version"))
             }
@@ -187,20 +162,10 @@ impl<S: Store> BothanService for BothanServer<S> {
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
                 );
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
                 error!("invalid IPFS hash");
                 Err(Status::invalid_argument("Invalid IPFS hash"))
             }
             Err(SetRegistryError::FailedToSetRegistry) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::Internal,
-                );
                 metrics.record_requests_duration(
                     elapsed_time,
                     ServiceName::UpdateRegistry,

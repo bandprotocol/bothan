@@ -121,8 +121,7 @@ where
                     .saturating_sub(start_time)
                     .try_into()
                     .unwrap_or(0);
-                metrics.record_connection_duration(elapsed_time, ConnectionResult::Success);
-                metrics.increment_connections_total(retry_count, ConnectionResult::Success);
+                metrics.update_connection(elapsed_time, retry_count, ConnectionResult::Success);
                 return Some(provider);
             }
         }
@@ -138,7 +137,6 @@ where
         .saturating_sub(start_time)
         .try_into()
         .unwrap_or(0);
-    metrics.record_connection_duration(elapsed_time, ConnectionResult::Failed);
-    metrics.increment_connections_total(retry_count, ConnectionResult::Failed);
+    metrics.update_connection(elapsed_time, retry_count, ConnectionResult::Failed);
     None
 }
