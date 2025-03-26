@@ -1,26 +1,28 @@
+use std::fmt;
+
 use opentelemetry::metrics::{Counter, Histogram};
 use opentelemetry::{KeyValue, global};
 use tonic::Code;
 
-fn code_to_str(code: Code) -> &'static str {
+fn code_to_str(code: Code) -> String {
     match code {
-        Code::Ok => "Ok",
-        Code::Cancelled => "Cancelled",
-        Code::Unknown => "Unknown",
-        Code::InvalidArgument => "InvalidArgument",
-        Code::DeadlineExceeded => "DeadlineExceeded",
-        Code::NotFound => "NotFound",
-        Code::AlreadyExists => "AlreadyExists",
-        Code::PermissionDenied => "PermissionDenied",
-        Code::ResourceExhausted => "ResourceExhausted",
-        Code::FailedPrecondition => "FailedPrecondition",
-        Code::Aborted => "Aborted",
-        Code::OutOfRange => "OutOfRange",
-        Code::Unimplemented => "Unimplemented",
-        Code::Internal => "Internal",
-        Code::Unavailable => "Unavailable",
-        Code::DataLoss => "DataLoss",
-        Code::Unauthenticated => "Unauthenticated",
+        Code::Ok => "Ok".to_string(),
+        Code::Cancelled => "Cancelled".to_string(),
+        Code::Unknown => "Unknown".to_string(),
+        Code::InvalidArgument => "InvalidArgument".to_string(),
+        Code::DeadlineExceeded => "DeadlineExceeded".to_string(),
+        Code::NotFound => "NotFound".to_string(),
+        Code::AlreadyExists => "AlreadyExists".to_string(),
+        Code::PermissionDenied => "PermissionDenied".to_string(),
+        Code::ResourceExhausted => "ResourceExhausted".to_string(),
+        Code::FailedPrecondition => "FailedPrecondition".to_string(),
+        Code::Aborted => "Aborted".to_string(),
+        Code::OutOfRange => "OutOfRange".to_string(),
+        Code::Unimplemented => "Unimplemented".to_string(),
+        Code::Internal => "Internal".to_string(),
+        Code::Unavailable => "Unavailable".to_string(),
+        Code::DataLoss => "DataLoss".to_string(),
+        Code::Unauthenticated => "Unauthenticated".to_string(),
     }
 }
 
@@ -31,14 +33,15 @@ pub enum ServiceName {
     GetPrices,
 }
 
-impl ServiceName {
-    fn as_str_name(&self) -> &'static str {
-        match self {
+impl fmt::Display for ServiceName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
             ServiceName::GetInfo => "get_info",
             ServiceName::UpdateRegistry => "update_registry",
             ServiceName::PushMonitoringRecords => "push_monitoring_records",
             ServiceName::GetPrices => "get_prices",
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
@@ -48,16 +51,9 @@ pub struct ServerMetrics {
     requests_duration: Histogram<u64>,
 }
 
-impl Default for ServerMetrics {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl ServerMetrics {
     pub fn new() -> Self {
         let meter = global::meter("server");
-
         Self {
             requests_total: meter
                 .u64_counter("server_requests")
@@ -74,7 +70,7 @@ impl ServerMetrics {
     pub fn increment_requests_total(&self, service_name: ServiceName) {
         self.requests_total.add(
             1,
-            &[KeyValue::new("service_name", service_name.as_str_name())],
+            &[KeyValue::new("service_name", service_name.to_string())],
         );
     }
 
@@ -87,7 +83,7 @@ impl ServerMetrics {
         self.requests_duration.record(
             elapsed_time,
             &[
-                KeyValue::new("service_name", service_name.as_str_name()),
+                KeyValue::new("service_name", service_name.to_string()),
                 KeyValue::new("status", code_to_str(grpc_code)),
             ],
         );

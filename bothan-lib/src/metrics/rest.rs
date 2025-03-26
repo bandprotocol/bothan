@@ -1,3 +1,5 @@
+use std::fmt;
+
 use opentelemetry::metrics::{Counter, Histogram};
 use opentelemetry::{KeyValue, global};
 
@@ -7,13 +9,14 @@ pub enum PollingResult {
     Timeout,
 }
 
-impl PollingResult {
-    fn as_str_name(&self) -> &'static str {
-        match self {
+impl fmt::Display for PollingResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
             PollingResult::Success => "success",
             PollingResult::Failed => "failed",
             PollingResult::Timeout => "timeout",
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
@@ -23,15 +26,9 @@ pub struct RestMetrics {
     polling_duration: Histogram<u64>,
 }
 
-impl Default for RestMetrics {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RestMetrics {
-    pub fn new() -> Self {
-        let meter = global::meter("rest_source");
+    pub fn new(source: &'static str) -> Self {
+        let meter = global::meter(source);
         Self {
             polling_total: meter
                 .u64_counter("rest_polling")
@@ -45,28 +42,13 @@ impl RestMetrics {
         }
     }
 
-    pub fn increment_polling_total(&self, source: &'static str, status: PollingResult) {
-        self.polling_total.add(
-            1,
-            &[
-                KeyValue::new("status", status.as_str_name()),
-                KeyValue::new("source", source),
-            ],
-        );
+    pub fn increment_polling_total(&self, status: PollingResult) {
+        self.polling_total
+            .add(1, &[KeyValue::new("status", status.to_string())]);
     }
 
-    pub fn record_polling_duration(
-        &self,
-        source: &'static str,
-        elapsed_time: u64,
-        status: PollingResult,
-    ) {
-        self.polling_duration.record(
-            elapsed_time,
-            &[
-                KeyValue::new("status", status.as_str_name()),
-                KeyValue::new("source", source),
-            ],
-        );
+    pub fn record_polling_duration(&self, elapsed_time: u64, status: PollingResult) {
+        self.polling_duration
+            .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
     }
 }

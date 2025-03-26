@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use bothan_lib::metrics::Metrics;
+use bothan_lib::metrics::rest::RestMetrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -33,14 +31,13 @@ impl AssetWorker for Worker {
         opts: Self::Opts,
         store: &S,
         ids: Vec<String>,
-        metrics: &Metrics,
     ) -> Result<Self, AssetWorkerError> {
         let api = RestApiBuilder::new(&opts.url).build()?;
         let worker_store = WorkerStore::new(store, WORKER_NAME);
 
         let token = CancellationToken::new();
 
-        let metrics = Arc::new(metrics.rest.clone());
+        let metrics = RestMetrics::new(WORKER_NAME);
 
         tokio::spawn(start_polling(
             token.child_token(),
@@ -48,7 +45,6 @@ impl AssetWorker for Worker {
             api,
             worker_store,
             ids,
-            WORKER_NAME,
             metrics,
         ));
 

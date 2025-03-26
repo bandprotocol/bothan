@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bothan_lib::metrics::Metrics;
+use bothan_lib::metrics::websocket::WebSocketMetrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -40,7 +40,6 @@ impl AssetWorker for Worker {
         opts: Self::Opts,
         store: &S,
         ids: Vec<String>,
-        metrics: &Metrics,
     ) -> Result<Self, AssetWorkerError> {
         let url = opts.url;
         let connector = Arc::new(WebSocketConnector::new(url));
@@ -52,10 +51,9 @@ impl AssetWorker for Worker {
             timeout: TIMEOUT,
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
-            worker_name: WORKER_NAME,
         };
 
-        let metrics = Arc::new(metrics.websocket.clone());
+        let metrics = WebSocketMetrics::new(WORKER_NAME);
 
         for set in ids
             .into_iter()

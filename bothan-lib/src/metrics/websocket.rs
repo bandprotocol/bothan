@@ -1,3 +1,5 @@
+use std::fmt;
+
 use opentelemetry::metrics::{Counter, Histogram};
 use opentelemetry::{KeyValue, global};
 
@@ -6,12 +8,13 @@ pub enum MessageType {
     Ping,
 }
 
-impl MessageType {
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
+impl fmt::Display for MessageType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
             MessageType::AssetInfo => "asset_info",
             MessageType::Ping => "ping",
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
@@ -20,12 +23,13 @@ pub enum ConnectionResult {
     Failed,
 }
 
-impl ConnectionResult {
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
+impl fmt::Display for ConnectionResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
             ConnectionResult::Success => "success",
             ConnectionResult::Failed => "failed",
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
@@ -33,17 +37,12 @@ impl ConnectionResult {
 pub struct WebSocketMetrics {
     activity_messages_total: Counter<u64>,
     connection_duration: Histogram<u64>,
-}
-
-impl Default for WebSocketMetrics {
-    fn default() -> Self {
-        Self::new()
-    }
+    connection_attempts: Counter<u64>,
 }
 
 impl WebSocketMetrics {
-    pub fn new() -> Self {
-        let meter = global::meter("websocket_source");
+    pub fn new(source: &'static str) -> Self {
+        let meter = global::meter(source);
         Self {
             activity_messages_total: meter
                 .u64_counter("websocket_activity_messages")
@@ -54,34 +53,29 @@ impl WebSocketMetrics {
                 .with_description("time taken for worker to establish a websocket connection to the source.")
                 .with_unit("milliseconds")
                 .build(),
+            connection_attempts: meter
+                .u64_counter("websocket_connection_attempts")
+                .with_description("total attempts of workers to connect to source")
+                .build()
         }
     }
 
-    pub fn increment_activity_messages_total(
-        &self,
-        source: &'static str,
-        message: MessageType,
-    ) {
-        self.activity_messages_total.add(
-            1,
-            &[
-                KeyValue::new("messsage_type", message.as_str_name()),
-                KeyValue::new("source", source),
-            ],
-        );
+    pub fn increment_activity_messages_total(&self, message: MessageType) {
+        self.activity_messages_total
+            .add(1, &[KeyValue::new("message_type", message.to_string())]);
     }
 
-    pub fn record_connection_duration(
-        &self,
-        source: &'static str,
-        elapsed_time: u64,
-        status: ConnectionResult,
-    ) {
-        self.connection_duration.record(
-            elapsed_time,
+    pub fn record_connection_duration(&self, elapsed_time: u64, status: ConnectionResult) {
+        self.connection_duration
+            .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
+    }
+
+    pub fn increment_connection_attempts(&self, retry_count: u64, status: ConnectionResult) {
+        self.connection_attempts.add(
+            1,
             &[
-                KeyValue::new("status", status.as_str_name()),
-                KeyValue::new("source", source),
+                KeyValue::new("retry_count", retry_count.to_string()),
+                KeyValue::new("status", status.to_string()),
             ],
         );
     }

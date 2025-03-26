@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ops::Sub;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -42,7 +43,6 @@ pub struct PollOptions {
     pub timeout: Duration,
     pub reconnect_buffer: Duration,
     pub max_retry: u64,
-    pub worker_name: &'static str,
 }
 
 // TODO: improve logging here
@@ -52,7 +52,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
     store: WorkerStore<S>,
     ids: Vec<String>,
     opts: PollOptions,
-    metrics: Arc<WebSocketMetrics>,
+    metrics: WebSocketMetrics,
 ) where
     E1: Display,
     E2: Display,
@@ -81,9 +81,9 @@ pub async fn start_polling<S, E1, E2, P, C>(
                                 if let Err(e) = store.set_batch_asset_info(ai).await {
                                     warn!("failed to store data: {}", e)
                                 }
-                                metrics.increment_activity_messages_total(opts.worker_name, MessageType::AssetInfo)
+                                metrics.increment_activity_messages_total(MessageType::AssetInfo)
                             }
-                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(opts.worker_name, MessageType::Ping),
+                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(MessageType::Ping),
                             Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
                             Ok(Some(Err(e))) => error!("{}", e),
                         }
@@ -103,7 +103,7 @@ async fn connect<C, P, E1, E2>(
     connector: &C,
     ids: &[String],
     opts: &PollOptions,
-    metrics: Arc<WebSocketMetrics>,
+    metrics: WebSocketMetrics,
 ) -> Option<P>
 where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
@@ -117,12 +117,13 @@ where
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-                let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64;
-                metrics.record_connection_duration(
-                    opts.worker_name,
-                    elapsed_time,
-                    ConnectionResult::Success,
-                );
+                let elapsed_time = chrono::Utc::now()
+                    .timestamp_millis()
+                    .saturating_sub(start_time)
+                    .try_into()
+                    .unwrap_or(0);
+                metrics.record_connection_duration(elapsed_time, ConnectionResult::Success);
+                metrics.increment_connection_attempts(retry_count, ConnectionResult::Success);
                 return Some(provider);
             }
         }
@@ -133,7 +134,12 @@ where
         sleep(opts.reconnect_buffer).await;
     }
 
-    let elapsed_time = (chrono::Utc::now().timestamp_millis() - start_time) as u64;
-    metrics.record_connection_duration(opts.worker_name, elapsed_time, ConnectionResult::Failed);
+    let elapsed_time = chrono::Utc::now()
+        .timestamp_millis()
+        .saturating_sub(start_time)
+        .try_into()
+        .unwrap_or(0);
+    metrics.record_connection_duration(elapsed_time, ConnectionResult::Failed);
+    metrics.increment_connection_attempts(retry_count, ConnectionResult::Failed);
     None
 }
