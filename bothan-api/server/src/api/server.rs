@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::ops::Sub;
 use std::sync::Arc;
 
 use bothan_core::manager::CryptoAssetInfoManager;
@@ -44,12 +45,17 @@ impl<S: Store> BothanService for BothanServer<S> {
         metrics.increment_requests_total(ServiceName::GetInfo);
 
         let info = self.manager.get_info().await.map_err(|_| {
-            let elapsed_time = chrono::Utc::now()
+            if let Ok(elapsed_time) = chrono::Utc::now()
                 .timestamp_millis()
-                .saturating_sub(start_time)
+                .sub(start_time)
                 .try_into()
-                .unwrap_or(0);
-            metrics.record_requests_duration(elapsed_time, ServiceName::GetInfo, Code::Internal);
+            {
+                metrics.record_requests_duration(
+                    elapsed_time,
+                    ServiceName::GetInfo,
+                    Code::Internal,
+                );
+            }
             Status::internal("Failed to get info")
         })?;
 
@@ -61,12 +67,13 @@ impl<S: Store> BothanService for BothanServer<S> {
             monitoring_enabled: info.monitoring_enabled,
         });
 
-        let elapsed_time = chrono::Utc::now()
+        if let Ok(elapsed_time) = chrono::Utc::now()
             .timestamp_millis()
-            .saturating_sub(start_time)
+            .sub(start_time)
             .try_into()
-            .unwrap_or(0);
-        metrics.record_requests_duration(elapsed_time, ServiceName::GetInfo, Code::Ok);
+        {
+            metrics.record_requests_duration(elapsed_time, ServiceName::GetInfo, Code::Ok);
+        }
 
         debug!("response: {:?}", response);
         Ok(response)
@@ -86,16 +93,17 @@ impl<S: Store> BothanService for BothanServer<S> {
         let update_registry_request = request.into_inner();
 
         let version = Version::parse(&update_registry_request.version).map_err(|_| {
-            let elapsed_time = chrono::Utc::now()
+            if let Ok(elapsed_time) = chrono::Utc::now()
                 .timestamp_millis()
-                .saturating_sub(start_time)
+                .sub(start_time)
                 .try_into()
-                .unwrap_or(0);
-            metrics.record_requests_duration(
-                elapsed_time,
-                ServiceName::UpdateRegistry,
-                Code::InvalidArgument,
-            );
+            {
+                metrics.record_requests_duration(
+                    elapsed_time,
+                    ServiceName::UpdateRegistry,
+                    Code::InvalidArgument,
+                );
+            }
             Status::invalid_argument("Invalid version string")
         })?;
 
@@ -104,73 +112,86 @@ impl<S: Store> BothanService for BothanServer<S> {
             .set_registry_from_ipfs(update_registry_request.ipfs_hash, version)
             .await;
 
-        let elapsed_time = chrono::Utc::now()
+        let elapsed_time_result = chrono::Utc::now()
             .timestamp_millis()
-            .saturating_sub(start_time)
-            .try_into()
-            .unwrap_or(0);
+            .sub(start_time)
+            .try_into();
 
         match set_registry_result {
             Ok(_) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::Ok,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::UpdateRegistry,
+                        Code::Ok,
+                    );
+                }
                 info!("successfully set registry");
                 Ok(Response::new(UpdateRegistryResponse {}))
             }
             Err(SetRegistryError::FailedToRetrieve(e)) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::NotFound,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::UpdateRegistry,
+                        Code::NotFound,
+                    );
+                }
                 error!("failed to retrieve registry: {}", e);
                 Err(Status::not_found("Failed to retrieve registry"))
             }
             Err(SetRegistryError::InvalidRegistry(e)) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::UpdateRegistry,
+                        Code::InvalidArgument,
+                    );
+                }
                 error!("invalid registry: {}", e);
                 Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::UnsupportedVersion) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::UpdateRegistry,
+                        Code::InvalidArgument,
+                    );
+                }
                 error!("unsupported registry version");
                 Err(Status::invalid_argument("Registry version is unsupported"))
             }
             Err(SetRegistryError::FailedToParse) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::UpdateRegistry,
+                        Code::InvalidArgument,
+                    );
+                }
                 error!("failed to parse registry");
                 Err(Status::invalid_argument("Unable to parse registry version"))
             }
             Err(SetRegistryError::InvalidHash) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::InvalidArgument,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::UpdateRegistry,
+                        Code::InvalidArgument,
+                    );
+                }
                 error!("invalid IPFS hash");
                 Err(Status::invalid_argument("Invalid IPFS hash"))
             }
             Err(SetRegistryError::FailedToSetRegistry) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::UpdateRegistry,
-                    Code::Internal,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::UpdateRegistry,
+                        Code::Internal,
+                    );
+                }
                 error!("failed to set registry");
                 Err(Status::internal("Failed to set registry"))
             }
@@ -195,57 +216,66 @@ impl<S: Store> BothanService for BothanServer<S> {
             .push_monitoring_record(request.uuid, request.tx_hash)
             .await;
 
-        let elapsed_time = chrono::Utc::now()
+        let elapsed_time_result = chrono::Utc::now()
             .timestamp_millis()
-            .saturating_sub(start_time)
-            .try_into()
-            .unwrap_or(0);
+            .sub(start_time)
+            .try_into();
 
         match push_result {
             Ok(_) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::PushMonitoringRecords,
-                    Code::Ok,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::PushMonitoringRecords,
+                        Code::Ok,
+                    );
+                }
                 info!("successfully pushed monitoring records");
                 Ok(Response::new(PushMonitoringRecordsResponse {}))
             }
             Err(PushMonitoringRecordError::MonitoringNotEnabled) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::PushMonitoringRecords,
-                    Code::Unimplemented,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::PushMonitoringRecords,
+                        Code::Unimplemented,
+                    );
+                }
                 info!("monitoring not enabled");
                 Err(Status::unimplemented("Monitoring not enabled"))
             }
             Err(PushMonitoringRecordError::RecordNotFound) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::PushMonitoringRecords,
-                    Code::FailedPrecondition,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::PushMonitoringRecords,
+                        Code::FailedPrecondition,
+                    );
+                }
                 info!("record not found");
                 Err(Status::failed_precondition("Record not found"))
             }
             Err(PushMonitoringRecordError::FailedRequest(e)) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::PushMonitoringRecords,
-                    Code::Internal,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::PushMonitoringRecords,
+                        Code::Internal,
+                    );
+                }
                 error!("failed to send request to monitoring: {}", e);
                 Err(Status::internal(
                     "Failed to send request to monitoring record",
                 ))
             }
             Err(PushMonitoringRecordError::FailedToSendPayload(e)) => {
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::PushMonitoringRecords,
-                    Code::Internal,
-                );
+                if let Ok(elapsed_time) = elapsed_time_result {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::PushMonitoringRecords,
+                        Code::Internal,
+                    );
+                }
                 error!("failed to send payload to monitoring: {}", e);
                 Err(Status::internal(
                     "Failed to send payload to monitoring record",
@@ -272,16 +302,18 @@ impl<S: Store> BothanService for BothanServer<S> {
             .await
             .map_err(|e| {
                 error!("failed to get prices: {}", e);
-                let elapsed_time = chrono::Utc::now()
+                if let Ok(elapsed_time) = chrono::Utc::now()
                     .timestamp_millis()
-                    .saturating_sub(start_time)
+                    .sub(start_time)
                     .try_into()
-                    .unwrap_or(0);
-                metrics.record_requests_duration(
-                    elapsed_time,
-                    ServiceName::GetPrices,
-                    Code::Internal,
-                );
+                {
+                    metrics.record_requests_duration(
+                        elapsed_time,
+                        ServiceName::GetPrices,
+                        Code::Internal,
+                    );
+                }
+
                 Status::internal("Failed to get prices")
             })?;
 
@@ -293,12 +325,13 @@ impl<S: Store> BothanService for BothanServer<S> {
             .collect::<Vec<Price>>();
         let response = Response::new(GetPricesResponse { uuid, prices });
 
-        let elapsed_time = chrono::Utc::now()
+        if let Ok(elapsed_time) = chrono::Utc::now()
             .timestamp_millis()
-            .saturating_sub(start_time)
+            .sub(start_time)
             .try_into()
-            .unwrap_or(0);
-        metrics.record_requests_duration(elapsed_time, ServiceName::GetPrices, Code::Ok);
+        {
+            metrics.record_requests_duration(elapsed_time, ServiceName::GetPrices, Code::Ok);
+        }
 
         debug!("response: {:?}", response);
         Ok(response)

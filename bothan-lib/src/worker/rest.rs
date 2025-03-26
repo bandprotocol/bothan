@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ops::Sub;
 use std::time::Duration;
 
 use tokio::select;
@@ -62,9 +63,9 @@ where
     let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
     let elapsed_time = chrono::Utc::now()
         .timestamp_millis()
-        .saturating_sub(start_time)
+        .sub(start_time)
         .try_into()
-        .unwrap_or(0);
+        .unwrap_or_default();
     match result {
         Ok(Ok(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Success),
         Ok(Err(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Failed),

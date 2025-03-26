@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ops::Sub;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -118,9 +119,9 @@ where
             if provider.subscribe(ids).await.is_ok() {
                 let elapsed_time = chrono::Utc::now()
                     .timestamp_millis()
-                    .saturating_sub(start_time)
+                    .sub(start_time)
                     .try_into()
-                    .unwrap_or(0);
+                    .unwrap_or_default();
                 metrics.update_connection(elapsed_time, retry_count, ConnectionResult::Success);
                 return Some(provider);
             }
@@ -134,9 +135,9 @@ where
 
     let elapsed_time = chrono::Utc::now()
         .timestamp_millis()
-        .saturating_sub(start_time)
+        .sub(start_time)
         .try_into()
-        .unwrap_or(0);
+        .unwrap_or_default();
     metrics.update_connection(elapsed_time, retry_count, ConnectionResult::Failed);
     None
 }
