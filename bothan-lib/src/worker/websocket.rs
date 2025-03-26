@@ -117,12 +117,14 @@ where
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-                let elapsed_time = chrono::Utc::now()
+                if let Ok(elapsed_time) = chrono::Utc::now()
                     .timestamp_millis()
                     .sub(start_time)
                     .try_into()
-                    .unwrap_or_default();
-                metrics.update_connection(elapsed_time, retry_count, ConnectionResult::Success);
+                {
+                    metrics.record_connection_duration(elapsed_time, ConnectionResult::Success);
+                }
+                metrics.increment_connections_total(retry_count, ConnectionResult::Success);
                 return Some(provider);
             }
         }
@@ -133,11 +135,13 @@ where
         sleep(opts.reconnect_buffer).await;
     }
 
-    let elapsed_time = chrono::Utc::now()
+    if let Ok(elapsed_time) = chrono::Utc::now()
         .timestamp_millis()
         .sub(start_time)
         .try_into()
-        .unwrap_or_default();
-    metrics.update_connection(elapsed_time, retry_count, ConnectionResult::Failed);
+    {
+        metrics.record_connection_duration(elapsed_time, ConnectionResult::Failed);
+    }
+    metrics.increment_connections_total(retry_count, ConnectionResult::Failed);
     None
 }

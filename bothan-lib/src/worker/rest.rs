@@ -61,16 +61,18 @@ where
 {
     let start_time = chrono::Utc::now().timestamp_millis();
     let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
-    let elapsed_time = chrono::Utc::now()
+    if let Ok(elapsed_time) = chrono::Utc::now()
         .timestamp_millis()
         .sub(start_time)
         .try_into()
-        .unwrap_or_default();
-    match result {
-        Ok(Ok(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Success),
-        Ok(Err(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Failed),
-        Err(_) => metrics.record_polling_duration(elapsed_time, PollingResult::Timeout),
+    {
+        match result {
+            Ok(Ok(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Success),
+            Ok(Err(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Failed),
+            Err(_) => metrics.record_polling_duration(elapsed_time, PollingResult::Timeout),
+        }
     }
+
     result
 }
 
