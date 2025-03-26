@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::ops::Sub;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -123,7 +122,7 @@ where
                     .try_into()
                     .unwrap_or(0);
                 metrics.record_connection_duration(elapsed_time, ConnectionResult::Success);
-                metrics.increment_connection_attempts(retry_count, ConnectionResult::Success);
+                metrics.increment_connections_total(retry_count, ConnectionResult::Success);
                 return Some(provider);
             }
         }
@@ -140,6 +139,6 @@ where
         .try_into()
         .unwrap_or(0);
     metrics.record_connection_duration(elapsed_time, ConnectionResult::Failed);
-    metrics.increment_connection_attempts(retry_count, ConnectionResult::Failed);
+    metrics.increment_connections_total(retry_count, ConnectionResult::Failed);
     None
 }

@@ -37,7 +37,7 @@ impl fmt::Display for ConnectionResult {
 pub struct WebSocketMetrics {
     activity_messages_total: Counter<u64>,
     connection_duration: Histogram<u64>,
-    connection_attempts: Counter<u64>,
+    connections_total: Counter<u64>,
 }
 
 impl WebSocketMetrics {
@@ -53,9 +53,9 @@ impl WebSocketMetrics {
                 .with_description("time taken for worker to establish a websocket connection to the source.")
                 .with_unit("milliseconds")
                 .build(),
-            connection_attempts: meter
-                .u64_counter("websocket_connection_attempts")
-                .with_description("total attempts of workers to connect to source")
+            connections_total: meter
+                .u64_counter("websocket_connection")
+                .with_description("Total number of connections established by a worker to the data source")
                 .build()
         }
     }
@@ -70,8 +70,8 @@ impl WebSocketMetrics {
             .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
     }
 
-    pub fn increment_connection_attempts(&self, retry_count: u64, status: ConnectionResult) {
-        self.connection_attempts.add(
+    pub fn increment_connections_total(&self, retry_count: u64, status: ConnectionResult) {
+        self.connections_total.add(
             1,
             &[
                 KeyValue::new("retry_count", retry_count.to_string()),
