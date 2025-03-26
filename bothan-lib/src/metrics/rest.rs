@@ -32,11 +32,11 @@ impl RestMetrics {
         Self {
             polling_total: meter
                 .u64_counter("rest_polling")
-                .with_description("total number of polling")
+                .with_description("total number of polling requests sent by the worker to the source")
                 .build(),
             polling_duration: meter
                 .u64_histogram("rest_polling_duration_milliseconds")
-                .with_description("time taken to fetch asset info for each worker")
+                .with_description("duration of each polling request made by the worker to fetch asset info")
                 .with_unit("milliseconds")
                 .build(),
         }

@@ -50,12 +50,12 @@ impl WebSocketMetrics {
                 .build(),
             connection_duration: meter
                 .u64_histogram("websocket_connection_duration_milliseconds")
-                .with_description("time taken for worker to establish a websocket connection to the source.")
+                .with_description("time taken for worker to establish a websocket connection to the source")
                 .with_unit("milliseconds")
                 .build(),
             connections_total: meter
                 .u64_counter("websocket_connection")
-                .with_description("Total number of connections established by a worker to the data source")
+                .with_description("total number of connections established by a worker to the data source")
                 .build()
         }
     }
