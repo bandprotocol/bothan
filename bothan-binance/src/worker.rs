@@ -59,8 +59,12 @@ impl AssetWorker for Worker {
             .into_iter()
             .enumerate()
         {
-            let span_name = format!("{}-{}", WORKER_NAME, i);
-            let span = span!(Level::INFO, "source", name = span_name);
+            let span = span!(
+                Level::INFO,
+                "source",
+                name = WORKER_NAME,
+                connection_idx = i
+            );
             tokio::spawn(
                 start_polling(
                     token.child_token(),
