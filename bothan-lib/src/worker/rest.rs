@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::ops::Sub;
 use std::time::Duration;
 
 use tokio::select;
@@ -64,17 +63,14 @@ where
     P: AssetInfoProvider<Error = E>,
 {
     let start_time = chrono::Utc::now().timestamp_millis();
-    let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
-    if let Ok(elapsed_time) = chrono::Utc::now()
-        .timestamp_millis()
-        .sub(start_time)
-        .try_into()
-    {
-        match result {
-            Ok(Ok(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Success),
-            Ok(Err(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Failed),
-            Err(_) => metrics.record_polling_duration(elapsed_time, PollingResult::Timeout),
-        }
+    let result: Result<Result<Vec<AssetInfo>, E>, Elapsed> =
+        timeout(timeout_interval, provider.get_asset_info(ids)).await;
+    let elapsed_time = chrono::Utc::now().timestamp_millis() - start_time;
+
+    match result {
+        Ok(Ok(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Success),
+        Ok(Err(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Failed),
+        Err(_) => metrics.record_polling_duration(elapsed_time, PollingResult::Timeout),
     }
 
     result

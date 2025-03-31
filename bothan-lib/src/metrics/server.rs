@@ -85,15 +85,15 @@ impl ServerMetrics {
         elapsed_time: T,
         service_name: ServiceName,
         grpc_code: Code,
-    ) -> Result<(), T::Error> {
-        let duration = elapsed_time.try_into()?;
-        self.requests_duration.record(
-            duration,
-            &[
-                KeyValue::new("service_name", service_name.to_string()),
-                KeyValue::new("status", code_to_str(grpc_code)),
-            ],
-        );
-        Ok(())
+    ) {
+        if let Ok(elapsed_time) = elapsed_time.try_into() {
+            self.requests_duration.record(
+                elapsed_time,
+                &[
+                    KeyValue::new("service_name", service_name.to_string()),
+                    KeyValue::new("status", code_to_str(grpc_code)),
+                ],
+            );
+        }
     }
 }

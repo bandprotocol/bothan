@@ -70,19 +70,21 @@ impl WebSocketMetrics {
         );
     }
 
-    pub fn record_connection_duration(
+    pub fn record_connection_duration<T: TryInto<u64>>(
         &self,
-        elapsed_time: u64,
+        elapsed_time: T,
         worker: String,
         status: ConnectionResult,
     ) {
-        self.connection_duration.record(
-            elapsed_time,
-            &[
-                KeyValue::new("worker", worker),
-                KeyValue::new("status", status.to_string()),
-            ],
-        );
+        if let Ok(elapsed_time) = elapsed_time.try_into() {
+            self.connection_duration.record(
+                elapsed_time,
+                &[
+                    KeyValue::new("worker", worker),
+                    KeyValue::new("status", status.to_string()),
+                ],
+            );
+        }
     }
 
     pub fn increment_connections_total(&self, worker: String, status: ConnectionResult) {

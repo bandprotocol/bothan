@@ -51,8 +51,10 @@ impl RestMetrics {
             .add(1, &[KeyValue::new("status", status.to_string())]);
     }
 
-    pub fn record_polling_duration(&self, elapsed_time: u64, status: PollingResult) {
-        self.polling_duration
-            .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
+    pub fn record_polling_duration<T: TryInto<u64>>(&self, elapsed_time: T, status: PollingResult) {
+        if let Ok(elapsed_time) = elapsed_time.try_into() {
+            self.polling_duration
+                .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
+        }
     }
 }

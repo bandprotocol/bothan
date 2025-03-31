@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::ops::Sub;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -116,21 +115,16 @@ where
     while retry_count <= opts.max_retry {
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-                if let Ok(elapsed_time) = chrono::Utc::now()
-                    .timestamp_millis()
-                    .sub(start_time)
-                    .try_into()
-                {
-                    metrics.record_connection_duration(
-                        elapsed_time,
-                        opts.worker_name.clone(),
-                        ConnectionResult::Success,
-                    );
-                    metrics.increment_connections_total(
-                        opts.worker_name.clone(),
-                        ConnectionResult::Success,
-                    );
-                }
+                metrics.record_connection_duration(
+                    chrono::Utc::now().timestamp_millis() - start_time,
+                    opts.worker_name.clone(),
+                    ConnectionResult::Success,
+                );
+                metrics.increment_connections_total(
+                    opts.worker_name.clone(),
+                    ConnectionResult::Success,
+                );
+
                 return Some(provider);
             }
         }
@@ -141,17 +135,12 @@ where
         sleep(opts.reconnect_buffer).await;
     }
 
-    if let Ok(elapsed_time) = chrono::Utc::now()
-        .timestamp_millis()
-        .sub(start_time)
-        .try_into()
-    {
-        metrics.record_connection_duration(
-            elapsed_time,
-            opts.worker_name.clone(),
-            ConnectionResult::Failed,
-        );
-        metrics.increment_connections_total(opts.worker_name.clone(), ConnectionResult::Failed);
-    }
+    metrics.record_connection_duration(
+        chrono::Utc::now().timestamp_millis() - start_time,
+        opts.worker_name.clone(),
+        ConnectionResult::Failed,
+    );
+    metrics.increment_connections_total(opts.worker_name.clone(), ConnectionResult::Failed);
+
     None
 }
