@@ -8,6 +8,7 @@ use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::websocket::{PollOptions, start_polling};
 use itertools::Itertools;
 use tokio_util::sync::{CancellationToken, DropGuard};
+use tracing::{Instrument, Level, span};
 
 use crate::WorkerOpts;
 use crate::api::websocket::WebSocketConnector;
@@ -22,8 +23,7 @@ const MAX_SUBSCRIPTION_PER_CONNECTION: usize = 10;
 
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
-    // to ensure that all internal processes that the worker holds are dropped
-    // when the worker is dropped.
+    // that the worker holds are dropped when the worker is dropped.
     _drop_guard: DropGuard,
 }
 
@@ -54,18 +54,28 @@ impl AssetWorker for Worker {
 
         let token = CancellationToken::new();
 
-        for chunk in ids
+        for (i, chunk) in ids
             .into_iter()
             .chunks(opts.max_subscription_per_connection)
             .into_iter()
+            .enumerate()
         {
-            tokio::spawn(start_polling(
-                token.child_token(),
-                connector.clone(),
-                worker_store.clone(),
-                chunk.collect(),
-                poll_options.clone(),
-            ));
+            let span = span!(
+                Level::INFO,
+                "source",
+                name = WORKER_NAME,
+                connection_idx = i
+            );
+            tokio::spawn(
+                start_polling(
+                    token.child_token(),
+                    connector.clone(),
+                    worker_store.clone(),
+                    chunk.collect(),
+                    poll_options.clone(),
+                )
+                .instrument(span),
+            );
         }
 
         Ok(Worker {

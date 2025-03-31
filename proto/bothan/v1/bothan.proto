@@ -2,32 +2,23 @@ syntax = "proto3";
 
 package bothan.v1;
 
-import "google/api/annotations.proto";
 
 option go_package = "github.com/bothan/bothan-api/client/proto";
 
 // BothanService defines the gRPC services for Bothan's API
 service BothanService {
   // GetInfo gets information regarding Bothan's services
-  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
-    option (google.api.http).get = "/info";
-  }
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {}
 
   // UpdateRegistry updates the registry that Bothan uses with the given IPFS hash and version.
-  rpc UpdateRegistry(UpdateRegistryRequest) returns (UpdateRegistryResponse) {
-    option (google.api.http).post = "/registry";
-  }
+  rpc UpdateRegistry(UpdateRegistryRequest) returns (UpdateRegistryResponse) {}
 
   // PushMonitoringRecords pushes the record associated with the given UUID to the monitoring service.
   // If monitoring is disabled in Bothan, this will always return an error.
-  rpc PushMonitoringRecords(PushMonitoringRecordsRequest) returns (PushMonitoringRecordsResponse) {
-    option (google.api.http).post = "/monitoring_records";
-  }
+  rpc PushMonitoringRecords(PushMonitoringRecordsRequest) returns (PushMonitoringRecordsResponse) {}
 
   // GetPrices gets prices for the specified signal IDs.
-  rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {
-    option (google.api.http).get = "/prices/{signal_ids}";
-  }
+  rpc GetPrices(GetPricesRequest) returns (GetPricesResponse) {}
 }
 
 // GetInfoRequest defines the request message for the GetInfo RPC method.

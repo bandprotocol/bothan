@@ -452,6 +452,7 @@ dependencies = [
  "tokio",
  "toml",
  "tonic",
+ "tonic-reflection",
  "tracing",
  "tracing-subscriber",
 ]
@@ -472,6 +473,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "tracing",
  "ws-mock",
 ]
 
@@ -490,6 +492,7 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "tokio-util",
+ "tracing",
  "url",
 ]
 
@@ -507,6 +510,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "tracing",
  "ws-mock",
 ]
 
@@ -540,6 +544,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "tracing",
  "ws-mock",
 ]
 
@@ -558,6 +563,7 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "tokio-util",
+ "tracing",
  "url",
 ]
 
@@ -578,6 +584,7 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "tokio-util",
+ "tracing",
  "url",
 ]
 
@@ -637,6 +644,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "tracing",
  "ws-mock",
 ]
 
@@ -655,6 +663,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "tracing",
  "ws-mock",
 ]
 
@@ -690,6 +699,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "tracing",
  "ws-mock",
 ]
 
@@ -2445,10 +2455,20 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
+=======
+name = "prost-types"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4759aa0d3a6232fb8dbdb97b61de2c20047c68aca932c7ed76da9d788508d670"
+dependencies = [
+ "prost",
+]
+>>>>>>> fed78542b8297f58237063a3ea7822671e4d4c98
 
 [[package]]
 name = "ptr_meta"
@@ -3491,6 +3511,19 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tonic-reflection"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "878d81f52e7fcfd80026b7fdb6a9b578b3c3653ba987f87f0dce4b64043cba27"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tokio",
+ "tokio-stream",
+ "tonic",
 ]
 
 [[package]]

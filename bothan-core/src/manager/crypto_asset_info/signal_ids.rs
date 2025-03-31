@@ -2,6 +2,57 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use bothan_lib::registry::{Registry, Valid};
 
+// Returns a mapping of source_id to a set of query_ids that are batched together
+// This is used to determine which queries should be batched together
+// e.g. if we have a registry with the following entries:
+// {
+//     "CS:USDT-USD": {
+//         "sources": [
+//             {
+//                 "source_id": "coingecko",
+//                 "id": "tether",
+//                 "routes": []
+//             }
+//         ],
+//         "processor": {
+//             "function": "median",
+//             "params": {
+//                 "min_source_count": 1
+//             }
+//         },
+//         "post_processors": []
+//     "CS:BTC-USD": {
+//         "sources": [
+//             {
+//                 "source_id": "binance",
+//                 "id": "btcusdt",
+//                 "routes": [
+//                     {
+//                         "signal_id": "CS:USDT-USD",
+//                         "operation": "*"
+//                     }
+//                 ]
+//             },
+//             {
+//                 "source_id": "coingecko",
+//                 "id": "bitcoin",
+//                 "routes": []
+//             }
+//         ],
+//         "processor": {
+//             "function": "median",
+//             "params": {
+//                 "min_source_count": 1
+//             }
+//         },
+//         "post_processors": []
+//     },
+// }
+// The function will return a HashMap with the following entries:
+// {
+//     "binance": ["btcusdt"],
+//     "coingecko": ["bitcoin", "tether"]
+// }
 pub fn get_source_batched_query_ids(
     registry: &Registry<Valid>,
 ) -> HashMap<String, HashSet<String>> {

@@ -6,6 +6,7 @@ use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
 
+use crate::api::error::ParseError;
 use crate::api::types::{Quote, Response as CmcResponse};
 use crate::worker::error::ProviderError;
 
@@ -21,11 +22,17 @@ impl RestApi {
         Self { url, client }
     }
 
-    /// Fetches the latest quotes for the given cryptocurrency IDs.
-    /// Equivalent to the `/v2/cryptocurrency/quotes/latest` endpoint.
+    /// Fetches the latest quotes for the given cryptocurrency IDs, corresponding to the
+    /// `/v2/cryptocurrency/quotes/latest` endpoint.
+    ///
+    /// Returns a vector of `Option<Quote>`, where each element corresponds to the ID at the same
+    /// position in the input slice. If a quote is not found for a given ID, or if an ID appears
+    /// more than once, `None` will be returned in that position.
+    ///
+    /// Note: Duplicate IDs will return `None` on their second and subsequent occurrences.
     pub async fn get_latest_quotes(
         &self,
-        ids: &[usize],
+        ids: &[u64],
     ) -> Result<Vec<Option<Quote>>, reqwest::Error> {
         let url = format!("{}v2/cryptocurrency/quotes/latest", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
@@ -33,15 +40,14 @@ impl RestApi {
 
         let request_builder = self.client.get(&url).query(&params);
         let response = request_builder.send().await?.error_for_status()?;
-
         let cmc_response = response
             .json::<CmcResponse<HashMap<String, Quote>>>()
             .await?;
-        let quote_map = cmc_response.data;
+        let mut quote_map = cmc_response.data;
 
         let quotes = ids
             .iter()
-            .map(|id| quote_map.get(&id.to_string()).cloned())
+            .map(|id| quote_map.remove(&id.to_string()))
             .collect();
         Ok(quotes)
     }
@@ -55,37 +61,37 @@ impl AssetInfoProvider for RestApi {
         let int_ids = ids
             .iter()
             .map(|id| {
-                id.parse::<usize>()
+                id.parse::<u64>()
                     .map_err(|_| ProviderError::InvalidId(id.clone()))
             })
-            .collect::<Result<Vec<usize>, _>>()?;
+            .collect::<Result<Vec<u64>, _>>()?;
 
-        self.get_latest_quotes(&int_ids)
+        let asset_info = self
+            .get_latest_quotes(&int_ids)
             .await?
             .into_iter()
-            .map(|q| match q {
-                None => Err(ProviderError::MissingValue),
-                Some(quote) => {
-                    let price_float = quote
-                        .price_quotes
-                        .usd
-                        .price
-                        .ok_or_else(|| ProviderError::MissingValue)?;
-                    let price_dec = Decimal::from_f64_retain(price_float)
-                        .ok_or_else(|| ProviderError::InvalidValue)?;
-                    let ts = quote
-                        .price_quotes
-                        .usd
-                        .last_updated
-                        .parse::<chrono::DateTime<chrono::Utc>>()
-                        .map_err(|_| ProviderError::InvalidValue)?
-                        .timestamp();
-                    let ai = AssetInfo::new(quote.symbol, price_dec, ts);
-                    Ok(ai)
-                }
-            })
-            .collect()
+            .filter_map(|quote| quote.and_then(|q| parse_quote(q).ok()))
+            .collect();
+
+        Ok(asset_info)
     }
+}
+
+fn parse_quote(quote: Quote) -> Result<AssetInfo, ParseError> {
+    let price_float = quote
+        .price_quotes
+        .usd
+        .price
+        .ok_or(ParseError::MissingPrice)?;
+    let price = Decimal::from_f64_retain(price_float).ok_or(ParseError::InvalidPrice)?;
+    let ts = quote
+        .price_quotes
+        .usd
+        .last_updated
+        .parse::<chrono::DateTime<chrono::Utc>>()?
+        .timestamp();
+
+    Ok(AssetInfo::new(quote.id.to_string(), price, ts))
 }
 
 #[cfg(test)]
@@ -118,7 +124,7 @@ pub(crate) mod test {
                     price: Some(80000.0),
                     volume_24h: 123.0,
                     volume_change_24h: 456.0,
-                    market_cap: 10000000.0,
+                    market_cap: Some(10000000.0),
                     market_cap_dominance: 99.0,
                     fully_diluted_market_cap: 2100000.0,
                     percent_change_1h: 12.9,
