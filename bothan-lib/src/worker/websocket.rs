@@ -151,10 +151,7 @@ where
             opts.worker_name.clone(),
             ConnectionResult::Failed,
         );
-        metrics.increment_connections_total(
-            opts.worker_name.clone(),
-            ConnectionResult::Failed,
-        );
+        metrics.increment_connections_total(opts.worker_name.clone(), ConnectionResult::Failed);
     }
     None
 }

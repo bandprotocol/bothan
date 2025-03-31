@@ -17,7 +17,6 @@ use crate::api::websocket::WebSocketConnector;
 pub mod opts;
 
 const WORKER_NAME: &str = "coinbase";
-const WORKER_IDX: u64 = 0;
 const TIMEOUT: Duration = Duration::from_secs(60);
 const RECONNECT_BUFFER: Duration = Duration::from_secs(5);
 const MAX_RETRY: u64 = 3;
@@ -47,11 +46,11 @@ impl AssetWorker for Worker {
 
         let worker_store = WorkerStore::new(store, WORKER_NAME);
 
-        let poll_options = PollOptions {
+        let poll_options = |worker_name| PollOptions {
             timeout: TIMEOUT,
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
-            worker_name: format!("{WORKER_NAME}_{WORKER_IDX}"),
+            worker_name,
         };
 
         let token = CancellationToken::new();
@@ -64,7 +63,7 @@ impl AssetWorker for Worker {
             .into_iter()
             .enumerate()
         {
-            let worker_name_with_idx = format!("{}_{}", WORKER_NAME, i);
+            let span_name = format!("{}-{}", WORKER_NAME, i);
             let span = span!(
                 Level::INFO,
                 "source",
@@ -77,10 +76,7 @@ impl AssetWorker for Worker {
                     connector.clone(),
                     worker_store.clone(),
                     chunk.collect(),
-                    PollOptions {
-                        worker_name: worker_name_with_idx,
-                        ..poll_options.clone()
-                    },
+                    poll_options(span_name),
                     metrics.clone(),
                 )
                 .instrument(span),
