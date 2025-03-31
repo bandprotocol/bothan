@@ -126,6 +126,10 @@ where
                         opts.worker_name.clone(),
                         ConnectionResult::Success,
                     );
+                    metrics.increment_connections_total(
+                        opts.worker_name.clone(),
+                        ConnectionResult::Success,
+                    );
                 }
                 return Some(provider);
             }
@@ -144,6 +148,10 @@ where
     {
         metrics.record_connection_duration(
             elapsed_time,
+            opts.worker_name.clone(),
+            ConnectionResult::Failed,
+        );
+        metrics.increment_connections_total(
             opts.worker_name.clone(),
             ConnectionResult::Failed,
         );
