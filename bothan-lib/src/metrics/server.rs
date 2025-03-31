@@ -80,18 +80,20 @@ impl ServerMetrics {
         );
     }
 
-    pub fn record_requests_duration(
+    pub fn record_requests_duration<T: TryInto<u64>>(
         &self,
-        elapsed_time: u64,
+        elapsed_time: T,
         service_name: ServiceName,
         grpc_code: Code,
-    ) {
+    ) -> Result<(), T::Error> {
+        let duration = elapsed_time.try_into()?;
         self.requests_duration.record(
-            elapsed_time,
+            duration,
             &[
                 KeyValue::new("service_name", service_name.to_string()),
                 KeyValue::new("status", code_to_str(grpc_code)),
             ],
         );
+        Ok(())
     }
 }
