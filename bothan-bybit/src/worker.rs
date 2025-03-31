@@ -48,7 +48,7 @@ impl AssetWorker for Worker {
             timeout: TIMEOUT,
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
-            worker_name: WORKER_NAME.to_string(),
+            worker_name: format!("{}_0", WORKER_NAME),
         };
 
         let token = CancellationToken::new();

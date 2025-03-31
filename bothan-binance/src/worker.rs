@@ -62,7 +62,7 @@ impl AssetWorker for Worker {
             .into_iter()
             .enumerate()
         {
-            let span_name = format!("{}-{}", WORKER_NAME, i);
+            let worker_name = format!("{}_{}", WORKER_NAME, i);
             let span = span!(
                 Level::INFO,
                 "source",
@@ -75,7 +75,7 @@ impl AssetWorker for Worker {
                     connector.clone(),
                     worker_store.clone(),
                     set.collect(),
-                    poll_options(span_name),
+                    poll_options(worker_name),
                     metrics.clone(),
                 )
                 .instrument(span),
