@@ -51,21 +51,27 @@ impl AssetWorker for Worker {
             timeout: TIMEOUT,
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
+            worker_name: WORKER_NAME.to_string(),
         };
 
         let metrics = WebSocketMetrics::new(WORKER_NAME);
 
-        for set in ids
+        for (idx, set) in ids
             .into_iter()
             .chunks(opts.max_subscription_per_connection)
             .into_iter()
+            .enumerate()
         {
+            let worker_name_with_idx = format!("{}_{}", WORKER_NAME, idx);
             tokio::spawn(start_polling(
                 token.child_token(),
                 connector.clone(),
                 worker_store.clone(),
                 set.collect(),
-                poll_options.clone(),
+                PollOptions {
+                    worker_name: worker_name_with_idx,
+                    ..poll_options.clone()
+                },
                 metrics.clone(),
             ));
         }

@@ -43,6 +43,7 @@ pub struct PollOptions {
     pub timeout: Duration,
     pub reconnect_buffer: Duration,
     pub max_retry: u64,
+    pub worker_name: String,
 }
 
 // TODO: improve logging here
@@ -81,9 +82,9 @@ pub async fn start_polling<S, E1, E2, P, C>(
                                 if let Err(e) = store.set_batch_asset_info(ai).await {
                                     warn!("failed to store data: {}", e)
                                 }
-                                metrics.increment_activity_messages_total(MessageType::AssetInfo)
+                                metrics.increment_activity_messages_total(opts.worker_name.clone(), MessageType::AssetInfo)
                             }
-                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(MessageType::Ping),
+                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(opts.worker_name.clone(), MessageType::Ping),
                             Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
                             Ok(Some(Err(e))) => error!("{}", e),
                         }
@@ -122,9 +123,12 @@ where
                     .sub(start_time)
                     .try_into()
                 {
-                    metrics.record_connection_duration(elapsed_time, ConnectionResult::Success);
+                    metrics.record_connection_duration(
+                        elapsed_time,
+                        opts.worker_name.clone(),
+                        ConnectionResult::Success,
+                    );
                 }
-                metrics.increment_connections_total(retry_count, ConnectionResult::Success);
                 return Some(provider);
             }
         }
@@ -140,8 +144,11 @@ where
         .sub(start_time)
         .try_into()
     {
-        metrics.record_connection_duration(elapsed_time, ConnectionResult::Failed);
+        metrics.record_connection_duration(
+            elapsed_time,
+            opts.worker_name.clone(),
+            ConnectionResult::Failed,
+        );
     }
-    metrics.increment_connections_total(retry_count, ConnectionResult::Failed);
     None
 }

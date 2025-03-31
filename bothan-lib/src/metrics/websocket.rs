@@ -37,7 +37,6 @@ impl fmt::Display for ConnectionResult {
 pub struct WebSocketMetrics {
     activity_messages_total: Counter<u64>,
     connection_duration: Histogram<u64>,
-    connections_total: Counter<u64>,
 }
 
 impl WebSocketMetrics {
@@ -53,28 +52,29 @@ impl WebSocketMetrics {
                 .with_description("time taken for worker to establish a websocket connection to the source")
                 .with_unit("milliseconds")
                 .build(),
-            connections_total: meter
-                .u64_counter("websocket_connection")
-                .with_description("total number of connections established by a worker to the data source")
-                .build()
         }
     }
 
-    pub fn increment_activity_messages_total(&self, message: MessageType) {
-        self.activity_messages_total
-            .add(1, &[KeyValue::new("message_type", message.to_string())]);
-    }
-
-    pub fn record_connection_duration(&self, elapsed_time: u64, status: ConnectionResult) {
-        self.connection_duration
-            .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
-    }
-
-    pub fn increment_connections_total(&self, retry_count: u64, status: ConnectionResult) {
-        self.connections_total.add(
+    pub fn increment_activity_messages_total(&self, worker: String, message: MessageType) {
+        self.activity_messages_total.add(
             1,
             &[
-                KeyValue::new("retry_count", retry_count.to_string()),
+                KeyValue::new("worker", worker),
+                KeyValue::new("message_type", message.to_string()),
+            ],
+        );
+    }
+
+    pub fn record_connection_duration(
+        &self,
+        elapsed_time: u64,
+        worker: String,
+        status: ConnectionResult,
+    ) {
+        self.connection_duration.record(
+            elapsed_time,
+            &[
+                KeyValue::new("worker", worker),
                 KeyValue::new("status", status.to_string()),
             ],
         );

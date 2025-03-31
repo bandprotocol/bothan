@@ -16,6 +16,7 @@ use crate::api::websocket::WebSocketConnector;
 pub mod opts;
 
 const WORKER_NAME: &str = "coinbase";
+const WORKER_IDX: u64 = 0;
 const TIMEOUT: Duration = Duration::from_secs(60);
 const RECONNECT_BUFFER: Duration = Duration::from_secs(5);
 const MAX_RETRY: u64 = 3;
@@ -50,23 +51,29 @@ impl AssetWorker for Worker {
             timeout: TIMEOUT,
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
+            worker_name: format!("{WORKER_NAME}_{WORKER_IDX}"),
         };
 
         let token = CancellationToken::new();
 
         let metrics: WebSocketMetrics = WebSocketMetrics::new(WORKER_NAME);
 
-        for chunk in ids
+        for (idx, chunk) in ids
             .into_iter()
             .chunks(opts.max_subscription_per_connection)
             .into_iter()
+            .enumerate()
         {
+            let worker_name_with_idx = format!("{}_{}", WORKER_NAME, idx);
             tokio::spawn(start_polling(
                 token.child_token(),
                 connector.clone(),
                 worker_store.clone(),
                 chunk.collect(),
-                poll_options.clone(),
+                PollOptions {
+                    worker_name: worker_name_with_idx,
+                    ..poll_options.clone()
+                },
                 metrics.clone(),
             ));
         }

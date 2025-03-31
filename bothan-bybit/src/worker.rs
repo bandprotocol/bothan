@@ -15,6 +15,7 @@ use crate::api::websocket::WebSocketConnector;
 pub mod opts;
 
 const WORKER_NAME: &str = "bybit";
+const WORKER_IDX: u64 = 0;
 const TIMEOUT: Duration = Duration::from_secs(600);
 const RECONNECT_BUFFER: Duration = Duration::from_secs(5);
 const MAX_RETRY: u64 = 3;
@@ -48,6 +49,7 @@ impl AssetWorker for Worker {
             timeout: TIMEOUT,
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
+            worker_name: format!("{WORKER_NAME}_{WORKER_IDX}"),
         };
 
         let token = CancellationToken::new();
