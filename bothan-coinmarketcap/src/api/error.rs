@@ -31,4 +31,17 @@ pub enum ProviderError {
 
     #[error("failed to fetch tickers: {0}")]
     RequestError(#[from] reqwest::Error),
+
+    #[error("parse error: {0}")]
+    ParseError(#[from] ParseError),
+}
+
+#[derive(Debug, Error)]
+pub enum ParseError {
+    #[error("no price value was found")]
+    MissingPrice,
+    #[error("price is NaN")]
+    InvalidPrice,
+    #[error("not a valid datetime: {0}")]
+    InvalidDatetime(#[from] chrono::ParseError),
 }

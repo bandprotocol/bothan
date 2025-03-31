@@ -3,7 +3,7 @@ use std::io;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("failed to read message")]
-    Io(#[from] io::Error),
+    IO(#[from] io::Error),
 
     #[error("failed to parse message")]
     ParsedFailed(#[from] serde_json::Error),

@@ -9,6 +9,7 @@ use bothan_lib::worker::websocket::{PollOptions, start_polling};
 use itertools;
 use itertools::Itertools;
 use tokio_util::sync::{CancellationToken, DropGuard};
+use tracing::{Instrument, Level, span};
 
 use crate::WorkerOpts;
 use crate::api::websocket::WebSocketConnector;
@@ -23,8 +24,7 @@ const MAX_RETRY: u64 = 3;
 
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
-    // to ensure that all internal processes that the worker holds are dropped
-    // when the worker is dropped.
+    // that the worker holds are dropped when the worker is dropped.
     _drop_guard: DropGuard,
 }
 
@@ -56,24 +56,33 @@ impl AssetWorker for Worker {
 
         let metrics = WebSocketMetrics::new(WORKER_NAME);
 
-        for (idx, set) in ids
+        for (i, set) in ids
             .into_iter()
             .chunks(opts.max_subscription_per_connection)
             .into_iter()
             .enumerate()
         {
-            let worker_name_with_idx = format!("{}_{}", WORKER_NAME, idx);
-            tokio::spawn(start_polling(
-                token.child_token(),
-                connector.clone(),
-                worker_store.clone(),
-                set.collect(),
-                PollOptions {
-                    worker_name: worker_name_with_idx,
-                    ..poll_options.clone()
-                },
-                metrics.clone(),
-            ));
+            let span = span!(
+                Level::INFO,
+                "source",
+                name = WORKER_NAME,
+                connection_idx = i
+            );
+            let worker_name_with_idx = format!("{}_{}", WORKER_NAME, i);
+            tokio::spawn(
+                start_polling(
+                    token.child_token(),
+                    connector.clone(),
+                    worker_store.clone(),
+                    set.collect(),
+                    PollOptions {
+                        worker_name: worker_name_with_idx,
+                        ..poll_options.clone()
+                    },
+                    metrics.clone(),
+                )
+                .instrument(span),
+            );
         }
 
         Ok(Worker {

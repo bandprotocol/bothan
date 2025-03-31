@@ -185,7 +185,7 @@ async fn process_source_query<S: Store>(
             }
         }
         Ok(None) => {
-            warn!("asset state for {query_id} from {source_id} is pending");
+            warn!("asset state for {query_id} from {source_id} is not found");
             Ok(None)
         }
         Err(_) => {

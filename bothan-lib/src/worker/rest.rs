@@ -6,7 +6,7 @@ use tokio::select;
 use tokio::time::error::Elapsed;
 use tokio::time::{interval, timeout};
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use crate::metrics::rest::{PollingResult, RestMetrics};
 use crate::store::{Store, WorkerStore};
@@ -22,6 +22,7 @@ pub trait AssetInfoProvider: Send + Sync {
 /// Starts polling asset information from a provider at the specified update interval. This function
 /// will not return until the asset_info_provider is dropped.
 /// Any errors that occur during the polling process will be logged.
+#[tracing::instrument(skip(cancellation_token, provider, store, ids))]
 pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>>(
     cancellation_token: CancellationToken,
     update_interval: Duration,
@@ -38,8 +39,11 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
     loop {
         select! {
-            _ = cancellation_token.cancelled() => break,
-            _ = interval.tick() => {},
+            _ = cancellation_token.cancelled() => {
+                info!("polling: cancelled");
+                break
+            },
+            _ = interval.tick() => info!("polling"),
         }
 
         select! {
@@ -90,7 +94,7 @@ async fn handle_polling_result<S, E>(
             if let Err(e) = store.set_batch_asset_info(asset_info).await {
                 error!("failed to update asset info with error: {e}");
             } else {
-                debug!("asset info updated successfully");
+                info!("asset info updated successfully");
             }
         }
         Ok(Err(e)) => {

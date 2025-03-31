@@ -28,3 +28,4 @@ anyhow = "1.0.95"
 clap = { version = "4.5.29", features = ["derive"] }
 inquire = "0.7.5"
 toml = "0.8.20"
+tonic-reflection = "0.12.3"
