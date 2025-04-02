@@ -47,7 +47,7 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
         select! {
             _ = cancellation_token.cancelled() => break,
-            r = poll_with_timeout(&provider, &ids, update_interval, metrics.clone()) => handle_polling_result(r, &store, metrics.clone()).await,
+            r = poll_with_timeout(&provider, &ids, update_interval, &metrics) => handle_polling_result(r, &store, &metrics).await,
         }
     }
 }
@@ -56,7 +56,7 @@ async fn poll_with_timeout<P, E>(
     provider: &P,
     ids: &[String],
     timeout_interval: Duration,
-    metrics: RestMetrics,
+    metrics: &RestMetrics,
 ) -> Result<Result<Vec<AssetInfo>, E>, Elapsed>
 where
     E: Display,
@@ -80,7 +80,7 @@ where
 async fn handle_polling_result<S, E>(
     poll_result: Result<Result<Vec<AssetInfo>, E>, Elapsed>,
     store: &WorkerStore<S>,
-    metrics: RestMetrics,
+    metrics: &RestMetrics,
 ) where
     S: Store,
     E: Display,

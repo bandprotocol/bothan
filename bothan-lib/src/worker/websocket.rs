@@ -60,7 +60,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
     C: AssetInfoProviderConnector<Provider = P>,
 {
     if let Some(mut connection) =
-        connect(provider_connector.as_ref(), &ids, &opts, metrics.clone()).await
+        connect(provider_connector.as_ref(), &ids, &opts, &metrics).await
     {
         loop {
             select! {
@@ -69,7 +69,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
                         match poll_result {
                             // If timeout, we assume the connection has been dropped, and we attempt to reconnect
                             Err(_) | Ok(None) => {
-                                if let Some(new_conn) = connect(provider_connector.as_ref(), &ids, &opts, metrics.clone()).await {
+                                if let Some(new_conn) = connect(provider_connector.as_ref(), &ids, &opts, &metrics).await {
                                     connection = new_conn
                                 } else {
                                     error!("failed to reconnect");
@@ -102,7 +102,7 @@ async fn connect<C, P, E1, E2>(
     connector: &C,
     ids: &[String],
     opts: &PollOptions,
-    metrics: WebSocketMetrics,
+    metrics: &WebSocketMetrics,
 ) -> Option<P>
 where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,

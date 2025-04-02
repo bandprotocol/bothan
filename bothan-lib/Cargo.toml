@@ -17,9 +17,10 @@ serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 rust_decimal = { workspace = true, features = ["maths", "serde-str"] }
+strum = "0.27.1"
+strum_macros = "0.27.1"
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
-strum = "0.27.1"
-strum_macros = "0.27.1"
+

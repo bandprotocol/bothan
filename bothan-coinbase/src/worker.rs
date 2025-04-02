@@ -75,7 +75,7 @@ impl AssetWorker for Worker {
                     worker_store.clone(),
                     chunk.collect(),
                     poll_options.clone(),
-                    metrics.clone(),
+                    metrics,
                 )
                 .instrument(span),
             );
