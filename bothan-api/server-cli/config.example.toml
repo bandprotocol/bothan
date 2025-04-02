@@ -113,3 +113,10 @@ internal_ch_size = 1000
 url = "wss://ws.okx.com:8443/ws/v5/public"
 # Internal channel size for OKX data streams.
 internal_ch_size = 1000
+
+# Telemetry configuration
+[telemetry]
+# Enable or disable telemetry.
+enabled = false
+# The address and port of Bothan's telemetry endpoint.
+addr = "127.0.0.1:4318"
