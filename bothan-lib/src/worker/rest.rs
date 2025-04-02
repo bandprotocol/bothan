@@ -63,15 +63,16 @@ where
     P: AssetInfoProvider<Error = E>,
 {
     let start_time = chrono::Utc::now().timestamp_millis();
-    let result: Result<Result<Vec<AssetInfo>, E>, Elapsed> =
-        timeout(timeout_interval, provider.get_asset_info(ids)).await;
+    let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
     let elapsed_time = chrono::Utc::now().timestamp_millis() - start_time;
 
-    match result {
-        Ok(Ok(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Success),
-        Ok(Err(_)) => metrics.record_polling_duration(elapsed_time, PollingResult::Failed),
-        Err(_) => metrics.record_polling_duration(elapsed_time, PollingResult::Timeout),
-    }
+    let polling_result = match result {
+        Ok(Ok(_)) => PollingResult::Success,
+        Ok(Err(_)) => PollingResult::Failed,
+        Err(_) => PollingResult::Timeout,
+    };
+
+    metrics.record_polling_duration(elapsed_time, polling_result);
 
     result
 }
@@ -84,22 +85,24 @@ async fn handle_polling_result<S, E>(
     S: Store,
     E: Display,
 {
-    match poll_result {
+    let polling_result = match poll_result {
         Ok(Ok(asset_info)) => {
-            metrics.increment_polling_total(PollingResult::Success);
             if let Err(e) = store.set_batch_asset_info(asset_info).await {
                 error!("failed to update asset info with error: {e}");
             } else {
                 info!("asset info updated successfully");
             }
+            PollingResult::Success
         }
         Ok(Err(e)) => {
-            metrics.increment_polling_total(PollingResult::Failed);
             error!("failed to update asset info with error: {e}");
+            PollingResult::Failed
         }
         Err(_) => {
-            metrics.increment_polling_total(PollingResult::Timeout);
             error!("updating interval exceeded timeout");
+            PollingResult::Timeout
         }
-    }
+    };
+
+    metrics.increment_polling_total(polling_result);
 }

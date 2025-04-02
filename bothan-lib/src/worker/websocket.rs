@@ -42,7 +42,6 @@ pub struct PollOptions {
     pub timeout: Duration,
     pub reconnect_buffer: Duration,
     pub max_retry: u64,
-    pub worker_name: String,
 }
 
 #[tracing::instrument(skip(cancellation_token, provider_connector, store, ids, opts))]
@@ -81,9 +80,9 @@ pub async fn start_polling<S, E1, E2, P, C>(
                                 if let Err(e) = store.set_batch_asset_info(ai).await {
                                     warn!("failed to store data: {}", e)
                                 }
-                                metrics.increment_activity_messages_total(opts.worker_name.clone(), MessageType::AssetInfo)
+                                metrics.increment_activity_messages_total(MessageType::AssetInfo)
                             }
-                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(opts.worker_name.clone(), MessageType::Ping),
+                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(MessageType::Ping),
                             Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
                             Ok(Some(Err(e))) => error!("{}", e),
                         }
@@ -117,14 +116,9 @@ where
             if provider.subscribe(ids).await.is_ok() {
                 metrics.record_connection_duration(
                     chrono::Utc::now().timestamp_millis() - start_time,
-                    opts.worker_name.clone(),
                     ConnectionResult::Success,
                 );
-                metrics.increment_connections_total(
-                    opts.worker_name.clone(),
-                    ConnectionResult::Success,
-                );
-
+                metrics.increment_connections_total(ConnectionResult::Success);
                 return Some(provider);
             }
         }
@@ -137,10 +131,9 @@ where
 
     metrics.record_connection_duration(
         chrono::Utc::now().timestamp_millis() - start_time,
-        opts.worker_name.clone(),
         ConnectionResult::Failed,
     );
-    metrics.increment_connections_total(opts.worker_name.clone(), ConnectionResult::Failed);
+    metrics.increment_connections_total(ConnectionResult::Failed);
 
     None
 }

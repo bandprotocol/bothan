@@ -46,16 +46,13 @@ impl AssetWorker for Worker {
 
         let worker_store = WorkerStore::new(store, WORKER_NAME);
 
-        let poll_options = |worker_name| PollOptions {
+        let poll_options = PollOptions {
             timeout: TIMEOUT,
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
-            worker_name,
         };
 
         let token = CancellationToken::new();
-
-        let metrics: WebSocketMetrics = WebSocketMetrics::new(WORKER_NAME);
 
         for (i, chunk) in ids
             .into_iter()
@@ -63,20 +60,21 @@ impl AssetWorker for Worker {
             .into_iter()
             .enumerate()
         {
-            let span_name = format!("{}_{}", WORKER_NAME, i);
             let span = span!(
                 Level::INFO,
                 "source",
                 name = WORKER_NAME,
                 connection_idx = i
             );
+            let worker = format!("{WORKER_NAME}_{i}");
+            let metrics: WebSocketMetrics = WebSocketMetrics::new_with_worker(WORKER_NAME, worker);
             tokio::spawn(
                 start_polling(
                     token.child_token(),
                     connector.clone(),
                     worker_store.clone(),
                     chunk.collect(),
-                    poll_options(span_name),
+                    poll_options.clone(),
                     metrics.clone(),
                 )
                 .instrument(span),

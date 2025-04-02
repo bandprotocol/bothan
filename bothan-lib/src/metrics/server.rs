@@ -1,8 +1,8 @@
-use std::fmt;
-
 use opentelemetry::metrics::{Counter, Histogram};
 use opentelemetry::{KeyValue, global};
+use strum_macros::Display;
 use tonic::Code;
+use tracing::warn;
 
 fn code_to_str(code: Code) -> String {
     match code {
@@ -26,6 +26,8 @@ fn code_to_str(code: Code) -> String {
     }
 }
 
+#[derive(Display)]
+#[strum(serialize_all = "snake_case")]
 pub enum ServiceName {
     GetInfo,
     UpdateRegistry,
@@ -33,22 +35,10 @@ pub enum ServiceName {
     GetPrices,
 }
 
-impl fmt::Display for ServiceName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let str = match self {
-            ServiceName::GetInfo => "get_info",
-            ServiceName::UpdateRegistry => "update_registry",
-            ServiceName::PushMonitoringRecords => "push_monitoring_records",
-            ServiceName::GetPrices => "get_prices",
-        };
-        write!(f, "{}", str)
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct ServerMetrics {
     requests_total: Counter<u64>,
-    requests_duration: Histogram<u64>,
+    request_duration: Histogram<u64>,
 }
 
 impl Default for ServerMetrics {
@@ -65,8 +55,8 @@ impl ServerMetrics {
                 .u64_counter("server_requests")
                 .with_description("total number of requests sent to fetch asset prices")
                 .build(),
-            requests_duration: meter
-                .u64_histogram("server_requests_duration_milliseconds")
+            request_duration: meter
+                .u64_histogram("server_request_duration_milliseconds")
                 .with_description("time taken to fetch asset prices")
                 .with_unit("milliseconds")
                 .build(),
@@ -80,20 +70,24 @@ impl ServerMetrics {
         );
     }
 
-    pub fn record_requests_duration<T: TryInto<u64>>(
+    pub fn record_requests_duration<T>(
         &self,
         elapsed_time: T,
         service_name: ServiceName,
         grpc_code: Code,
-    ) {
-        if let Ok(elapsed_time) = elapsed_time.try_into() {
-            self.requests_duration.record(
+    ) where
+        T: TryInto<u64>,
+        T::Error: std::fmt::Display,
+    {
+        match elapsed_time.try_into() {
+            Ok(elapsed_time) => self.request_duration.record(
                 elapsed_time,
                 &[
                     KeyValue::new("service_name", service_name.to_string()),
                     KeyValue::new("status", code_to_str(grpc_code)),
                 ],
-            );
+            ),
+            Err(e) => warn!("failed to record request duration: {}", e),
         }
     }
 }

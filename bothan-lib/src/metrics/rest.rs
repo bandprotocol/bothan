@@ -1,23 +1,14 @@
-use std::fmt;
-
 use opentelemetry::metrics::{Counter, Histogram};
 use opentelemetry::{KeyValue, global};
+use strum_macros::Display;
+use tracing::warn;
 
+#[derive(Display)]
+#[strum(serialize_all = "snake_case")]
 pub enum PollingResult {
     Success,
     Failed,
     Timeout,
-}
-
-impl fmt::Display for PollingResult {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let str = match self {
-            PollingResult::Success => "success",
-            PollingResult::Failed => "failed",
-            PollingResult::Timeout => "timeout",
-        };
-        write!(f, "{}", str)
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -51,10 +42,16 @@ impl RestMetrics {
             .add(1, &[KeyValue::new("status", status.to_string())]);
     }
 
-    pub fn record_polling_duration<T: TryInto<u64>>(&self, elapsed_time: T, status: PollingResult) {
-        if let Ok(elapsed_time) = elapsed_time.try_into() {
-            self.polling_duration
-                .record(elapsed_time, &[KeyValue::new("status", status.to_string())]);
+    pub fn record_polling_duration<T>(&self, elapsed_time: T, status: PollingResult)
+    where
+        T: TryInto<u64>,
+        T::Error: std::fmt::Display,
+    {
+        match elapsed_time.try_into() {
+            Ok(elapsed_time) => self
+                .polling_duration
+                .record(elapsed_time, &[KeyValue::new("status", status.to_string())]),
+            Err(e) => warn!("failed to record polling duration: {}", e),
         }
     }
 }
