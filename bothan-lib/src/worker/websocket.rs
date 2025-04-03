@@ -7,7 +7,7 @@ use tokio::time::{sleep, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, warn};
 
-use crate::metrics::websocket::{ConnectionResult, MessageType, WebSocketMetrics};
+use crate::metrics::websocket::{ConnectionResult, MessageType, Metrics};
 use crate::store::{Store, WorkerStore};
 use crate::types::AssetInfo;
 
@@ -51,7 +51,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
     store: WorkerStore<S>,
     ids: Vec<String>,
     opts: PollOptions,
-    metrics: WebSocketMetrics,
+    metrics: Metrics,
 ) where
     E1: Display,
     E2: Display,
@@ -59,8 +59,7 @@ pub async fn start_polling<S, E1, E2, P, C>(
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
 {
-    if let Some(mut connection) =
-        connect(provider_connector.as_ref(), &ids, &opts, &metrics).await
+    if let Some(mut connection) = connect(provider_connector.as_ref(), &ids, &opts, &metrics).await
     {
         loop {
             select! {
@@ -102,7 +101,7 @@ async fn connect<C, P, E1, E2>(
     connector: &C,
     ids: &[String],
     opts: &PollOptions,
-    metrics: &WebSocketMetrics,
+    metrics: &Metrics,
 ) -> Option<P>
 where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
@@ -114,7 +113,7 @@ where
     while retry_count <= opts.max_retry {
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-                metrics.record_connection_duration(
+                let _ = metrics.record_connection_duration(
                     chrono::Utc::now().timestamp_millis() - start_time,
                     ConnectionResult::Success,
                 );
@@ -129,7 +128,7 @@ where
         sleep(opts.reconnect_buffer).await;
     }
 
-    metrics.record_connection_duration(
+    let _ = metrics.record_connection_duration(
         chrono::Utc::now().timestamp_millis() - start_time,
         ConnectionResult::Failed,
     );

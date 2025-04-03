@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use bothan_lib::metrics::server::ServerMetrics;
+use bothan_lib::metrics::server::Metrics;
 use bothan_lib::registry::{Invalid, Registry};
 use bothan_lib::store::Store;
 use mini_moka::sync::Cache;
@@ -34,7 +34,7 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
     registry_version_requirement: VersionReq,
     monitoring_client: Option<Arc<MonitoringClient>>,
     monitoring_cache: Option<Cache<String, Arc<Vec<PriceSignalComputationRecord>>>>,
-    server_metrics: ServerMetrics,
+    server_metrics: Metrics,
 }
 
 impl<S: Store + 'static> CryptoAssetInfoManager<S> {
@@ -54,7 +54,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let registry = store.get_registry().await;
 
-        let server_metrics = ServerMetrics::new();
+        let server_metrics = Metrics::new();
 
         let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
 
@@ -221,7 +221,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
     }
 
     /// Gets metrics to be used for server instrumentation.
-    pub fn get_metrics(&self) -> &ServerMetrics {
+    pub fn get_metrics(&self) -> &Metrics {
         &self.server_metrics
     }
 }

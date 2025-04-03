@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bothan_lib::metrics::websocket::WebSocketMetrics;
+use bothan_lib::metrics::websocket::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -47,7 +47,7 @@ impl AssetWorker for Worker {
             reconnect_buffer: RECONNECT_BUFFER,
             max_retry: MAX_RETRY,
         };
-        let metrics = WebSocketMetrics::new(WORKER_NAME);
+        let metrics = Metrics::new(WORKER_NAME, WORKER_NAME.to_string());
 
         let span = span!(Level::INFO, "source", name = WORKER_NAME);
 

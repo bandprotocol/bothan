@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bothan_lib::metrics::websocket::WebSocketMetrics;
+use bothan_lib::metrics::websocket::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -66,7 +66,7 @@ impl AssetWorker for Worker {
                 connection_idx = i
             );
             let worker = format!("{WORKER_NAME}_{i}");
-            let metrics = WebSocketMetrics::with_worker(WORKER_NAME, worker);
+            let metrics = Metrics::new(WORKER_NAME, worker);
             tokio::spawn(
                 start_polling(
                     token.child_token(),

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use bothan_lib::metrics::websocket::WebSocketMetrics;
+use bothan_lib::metrics::websocket::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -52,7 +52,7 @@ impl AssetWorker for Worker {
 
         let token = CancellationToken::new();
 
-        let metrics = WebSocketMetrics::new(WORKER_NAME);
+        let metrics = Metrics::new(WORKER_NAME, WORKER_NAME.to_string());
 
         let span = span!(Level::INFO, "source", name = WORKER_NAME);
         tokio::spawn(

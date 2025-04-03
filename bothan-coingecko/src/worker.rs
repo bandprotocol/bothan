@@ -1,4 +1,4 @@
-use bothan_lib::metrics::rest::RestMetrics;
+use bothan_lib::metrics::rest::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -35,7 +35,7 @@ impl AssetWorker for Worker {
         let api = RestApiBuilder::new(opts.url, opts.user_agent, opts.api_key).build()?;
         let worker_store = WorkerStore::new(store, WORKER_NAME);
         let token = CancellationToken::new();
-        let metrics = RestMetrics::new(WORKER_NAME);
+        let metrics = Metrics::new(WORKER_NAME);
 
         let span = span!(Level::INFO, "source", name = WORKER_NAME);
         tokio::spawn(

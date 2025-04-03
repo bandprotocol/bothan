@@ -7,7 +7,7 @@ use tokio::time::{interval, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info};
 
-use crate::metrics::rest::{PollingResult, RestMetrics};
+use crate::metrics::rest::{Metrics, PollingResult};
 use crate::store::{Store, WorkerStore};
 use crate::types::AssetInfo;
 
@@ -28,7 +28,7 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
     provider: P,
     store: WorkerStore<S>,
     ids: Vec<String>,
-    metrics: RestMetrics,
+    metrics: Metrics,
 ) {
     if ids.is_empty() {
         debug!("no ids to poll");
@@ -56,7 +56,7 @@ async fn poll_with_timeout<P, E>(
     provider: &P,
     ids: &[String],
     timeout_interval: Duration,
-    metrics: &RestMetrics,
+    metrics: &Metrics,
 ) -> Result<Result<Vec<AssetInfo>, E>, Elapsed>
 where
     E: Display,
@@ -72,7 +72,7 @@ where
         Err(_) => PollingResult::Timeout,
     };
 
-    metrics.record_polling_duration(elapsed_time, polling_result);
+    let _ = metrics.record_polling_duration(elapsed_time, polling_result);
 
     result
 }
@@ -80,7 +80,7 @@ where
 async fn handle_polling_result<S, E>(
     poll_result: Result<Result<Vec<AssetInfo>, E>, Elapsed>,
     store: &WorkerStore<S>,
-    metrics: &RestMetrics,
+    metrics: &Metrics,
 ) where
     S: Store,
     E: Display,
