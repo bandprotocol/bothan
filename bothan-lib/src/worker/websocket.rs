@@ -110,8 +110,6 @@ where
             }
         }
 
-        metrics.record_failed_connection_retry_count(retry_count);
-
         retry_count += 1;
         if backoff < max_backoff {
             // Set max backoff to 516 seconds
@@ -123,6 +121,7 @@ where
             ConnectionResult::Failed,
         );
         metrics.increment_connections_total(ConnectionResult::Failed);
+        metrics.record_failed_connection_retry_count(retry_count);
         error!("failed to reconnect. current attempt: {}", retry_count);
         sleep(backoff).await;
     }
