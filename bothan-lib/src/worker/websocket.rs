@@ -106,7 +106,6 @@ where
                     ConnectionResult::Success,
                 );
                 metrics.increment_connections_total(ConnectionResult::Success);
-                metrics.record_connection_retry_count(retry_count);
                 return provider;
             }
         }
@@ -122,7 +121,6 @@ where
             ConnectionResult::Failed,
         );
         metrics.increment_connections_total(ConnectionResult::Failed);
-        metrics.record_connection_retry_count(retry_count);
         error!("failed to reconnect. current attempt: {}", retry_count);
         sleep(backoff).await;
     }
