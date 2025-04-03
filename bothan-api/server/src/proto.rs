@@ -6,6 +6,9 @@ pub mod bothan {
         use serde::ser::SerializeStruct;
 
         include!("proto/bothan.v1.rs");
+
+        pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("proto/descriptor.pb");
+
         impl Price {
             pub fn new<T: Into<String>, U: Into<u64>>(
                 signal_id: T,
