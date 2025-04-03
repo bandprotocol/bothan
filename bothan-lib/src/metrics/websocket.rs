@@ -1,4 +1,4 @@
-use opentelemetry::metrics::{Counter, Histogram};
+use opentelemetry::metrics::{Counter, Gauge, Histogram};
 use opentelemetry::{KeyValue, global};
 use strum_macros::Display;
 
@@ -8,6 +8,7 @@ pub struct Metrics {
     activity_messages_total: Counter<u64>,
     connection_duration: Histogram<u64>,
     connections_total: Counter<u64>,
+    failed_connection_retry_count: Gauge<u64>,
 }
 
 impl Metrics {
@@ -31,12 +32,17 @@ impl Metrics {
                 "total number of connections established by a worker to the data source",
             )
             .build();
+        let failed_connection_retry_count = meter
+            .u64_gauge("connection_retry_count")
+            .with_description("number of retry counts for a failed connection attempt")
+            .build();
 
         Self {
             worker,
             activity_messages_total,
             connection_duration,
             connections_total,
+            failed_connection_retry_count,
         }
     }
 
@@ -73,6 +79,11 @@ impl Metrics {
                 KeyValue::new("status", status.to_string()),
             ],
         );
+    }
+
+    pub fn record_failed_connection_retry_count(&self, retry_count: u64) {
+        self.failed_connection_retry_count
+            .record(retry_count, &[KeyValue::new("worker", self.worker.clone())]);
     }
 }
 

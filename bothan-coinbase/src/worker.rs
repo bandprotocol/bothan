@@ -6,7 +6,7 @@ use bothan_lib::metrics::websocket::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::websocket::{PollOptions, start_polling};
+use bothan_lib::worker::websocket::start_polling;
 use itertools::Itertools;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::{Instrument, Level, span};
@@ -18,8 +18,6 @@ pub mod opts;
 
 const WORKER_NAME: &str = "coinbase";
 const TIMEOUT: Duration = Duration::from_secs(60);
-const RECONNECT_BUFFER: Duration = Duration::from_secs(5);
-const MAX_RETRY: u64 = 3;
 const MAX_SUBSCRIPTION_PER_CONNECTION: usize = 10;
 
 pub struct Worker {
@@ -46,12 +44,6 @@ impl AssetWorker for Worker {
 
         let worker_store = WorkerStore::new(store, WORKER_NAME);
 
-        let poll_options = PollOptions {
-            timeout: TIMEOUT,
-            reconnect_buffer: RECONNECT_BUFFER,
-            max_retry: MAX_RETRY,
-        };
-
         let token = CancellationToken::new();
 
         for (i, chunk) in ids
@@ -74,7 +66,7 @@ impl AssetWorker for Worker {
                     connector.clone(),
                     worker_store.clone(),
                     chunk.collect(),
-                    poll_options.clone(),
+                    TIMEOUT,
                     metrics,
                 )
                 .instrument(span),

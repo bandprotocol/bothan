@@ -37,20 +37,19 @@ pub trait AssetInfoProvider: Send + Sync {
     async fn try_close(mut self);
 }
 
-#[derive(Clone)]
-pub struct PollOptions {
-    pub timeout: Duration,
-    pub reconnect_buffer: Duration,
-    pub max_retry: u64,
-}
-
-#[tracing::instrument(skip(cancellation_token, provider_connector, store, ids, opts))]
+#[tracing::instrument(skip(
+    cancellation_token,
+    provider_connector,
+    store,
+    ids,
+    connection_timeout
+))]
 pub async fn start_polling<S, E1, E2, P, C>(
     cancellation_token: CancellationToken,
     provider_connector: Arc<C>,
     store: WorkerStore<S>,
     ids: Vec<String>,
-    opts: PollOptions,
+    connection_timeout: Duration,
     metrics: Metrics,
 ) where
     E1: Display,
@@ -59,58 +58,47 @@ pub async fn start_polling<S, E1, E2, P, C>(
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
 {
-    if let Some(mut connection) = connect(provider_connector.as_ref(), &ids, &opts, &metrics).await
-    {
-        loop {
-            select! {
-                _ = cancellation_token.cancelled() => break,
-                poll_result = timeout(opts.timeout, connection.next()) => {
-                        match poll_result {
-                            // If timeout, we assume the connection has been dropped, and we attempt to reconnect
-                            Err(_) | Ok(None) => {
-                                if let Some(new_conn) = connect(provider_connector.as_ref(), &ids, &opts, &metrics).await {
-                                    connection = new_conn
-                                } else {
-                                    error!("failed to reconnect");
-                                    break;
-                                }
-                            }
-                            Ok(Some(Ok(Data::AssetInfo(ai)))) => {
-                                if let Err(e) = store.set_batch_asset_info(ai).await {
-                                    warn!("failed to store data: {}", e)
-                                }
-                                metrics.increment_activity_messages_total(MessageType::AssetInfo)
-                            }
-                            Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(MessageType::Ping),
-                            Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
-                            Ok(Some(Err(e))) => error!("{}", e),
+    let mut connection = connect(provider_connector.as_ref(), &ids, &metrics).await;
+    loop {
+        select! {
+            _ = cancellation_token.cancelled() => break,
+            poll_result = timeout(connection_timeout, connection.next()) => {
+                    match poll_result {
+                        // If timeout, we assume the connection has been dropped, and we attempt to reconnect
+                        Err(_) | Ok(None) => {
+                            let new_conn = connect(provider_connector.as_ref(), &ids, &metrics).await;
+                            connection = new_conn
                         }
-                }
+                        Ok(Some(Ok(Data::AssetInfo(ai)))) => {
+                            if let Err(e) = store.set_batch_asset_info(ai).await {
+                                warn!("failed to store data: {}", e)
+                            }
+                            metrics.increment_activity_messages_total(MessageType::AssetInfo)
+                        }
+                        Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(MessageType::Ping),
+                        Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
+                        Ok(Some(Err(e))) => error!("{}", e),
+                    }
             }
         }
-        connection.try_close().await;
-    } else {
-        warn!("failed to connect to provider");
     }
 
     debug!("asset worker has been dropped, stopping asset worker");
 }
 
 // If connect fails, the polling loop should be exited
-async fn connect<C, P, E1, E2>(
-    connector: &C,
-    ids: &[String],
-    opts: &PollOptions,
-    metrics: &Metrics,
-) -> Option<P>
+async fn connect<C, P, E1, E2>(connector: &C, ids: &[String], metrics: &Metrics) -> P
 where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
 {
-    let start_time = chrono::Utc::now().timestamp_millis();
-    let mut retry_count: u64 = 1;
+    let mut retry_count = 0;
+    let mut backoff = Duration::from_secs(1);
+    let max_backoff = Duration::from_secs(516);
 
-    while retry_count <= opts.max_retry {
+    loop {
+        let start_time = chrono::Utc::now().timestamp_millis();
+
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
                 let _ = metrics.record_connection_duration(
@@ -118,21 +106,24 @@ where
                     ConnectionResult::Success,
                 );
                 metrics.increment_connections_total(ConnectionResult::Success);
-                return Some(provider);
+                return provider;
             }
         }
 
-        error!("failed to reconnect. current attempt: {}", retry_count);
+        metrics.record_failed_connection_retry_count(retry_count);
 
         retry_count += 1;
-        sleep(opts.reconnect_buffer).await;
+        if backoff < max_backoff {
+            // Set max backoff to 516 seconds
+            backoff *= 2;
+        }
+
+        let _ = metrics.record_connection_duration(
+            chrono::Utc::now().timestamp_millis() - start_time,
+            ConnectionResult::Failed,
+        );
+        metrics.increment_connections_total(ConnectionResult::Failed);
+        error!("failed to reconnect. current attempt: {}", retry_count);
+        sleep(backoff).await;
     }
-
-    let _ = metrics.record_connection_duration(
-        chrono::Utc::now().timestamp_millis() - start_time,
-        ConnectionResult::Failed,
-    );
-    metrics.increment_connections_total(ConnectionResult::Failed);
-
-    None
 }
