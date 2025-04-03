@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::websocket::{PollOptions, start_polling};
+use bothan_lib::worker::websocket::start_polling;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::{Instrument, Level, span};
 
@@ -16,8 +16,6 @@ pub mod opts;
 
 const WORKER_NAME: &str = "bybit";
 const TIMEOUT: Duration = Duration::from_secs(600);
-const RECONNECT_BUFFER: Duration = Duration::from_secs(5);
-const MAX_RETRY: u64 = 3;
 
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
@@ -43,13 +41,6 @@ impl AssetWorker for Worker {
 
         let worker_store = WorkerStore::new(store, WORKER_NAME);
 
-        let poll_options = PollOptions {
-            timeout: TIMEOUT,
-            reconnect_buffer: RECONNECT_BUFFER,
-            max_retry: MAX_RETRY,
-            meter_name: WORKER_NAME,
-        };
-
         let token = CancellationToken::new();
 
         let span = span!(Level::INFO, "source", name = WORKER_NAME);
@@ -59,7 +50,7 @@ impl AssetWorker for Worker {
                 connector.clone(),
                 worker_store.clone(),
                 ids,
-                poll_options.clone(),
+                TIMEOUT,
             )
             .instrument(span),
         );
