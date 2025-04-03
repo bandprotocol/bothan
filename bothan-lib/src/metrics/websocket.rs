@@ -8,7 +8,7 @@ pub struct Metrics {
     activity_messages_total: Counter<u64>,
     connection_duration: Histogram<u64>,
     connections_total: Counter<u64>,
-    failed_connection_retry_count: Gauge<u64>,
+    connection_retry_count: Gauge<u64>,
 }
 
 impl Metrics {
@@ -32,7 +32,7 @@ impl Metrics {
                 "total number of connections established by a worker to the data source",
             )
             .build();
-        let failed_connection_retry_count = meter
+        let connection_retry_count = meter
             .u64_gauge("connection_retry_count")
             .with_description("number of retry counts for a failed connection attempt")
             .build();
@@ -42,7 +42,7 @@ impl Metrics {
             activity_messages_total,
             connection_duration,
             connections_total,
-            failed_connection_retry_count,
+            connection_retry_count,
         }
     }
 
@@ -81,8 +81,8 @@ impl Metrics {
         );
     }
 
-    pub fn record_failed_connection_retry_count(&self, retry_count: u64) {
-        self.failed_connection_retry_count
+    pub fn record_connection_retry_count(&self, retry_count: u64) {
+        self.connection_retry_count
             .record(retry_count, &[KeyValue::new("worker", self.worker.clone())]);
     }
 }
