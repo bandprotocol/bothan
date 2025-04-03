@@ -34,7 +34,7 @@ impl Metrics {
             .build();
         let connection_retry_count = meter
             .u64_gauge("connection_retry_count")
-            .with_description("number of retry counts for a failed connection attempt")
+            .with_description("number of retry counts for a connection attempt")
             .build();
 
         Self {
