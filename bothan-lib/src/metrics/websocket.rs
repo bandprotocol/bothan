@@ -27,10 +27,10 @@ pub struct WebSocketMetrics {
 
 impl WebSocketMetrics {
     pub fn new(source: &'static str) -> Self {
-        Self::new_with_worker(source, source.to_string())
+        Self::with_worker(source, source.to_string())
     }
 
-    pub fn new_with_worker(source: &'static str, worker: String) -> Self {
+    pub fn with_worker(source: &'static str, worker: String) -> Self {
         let meter = global::meter(source);
 
         Self {

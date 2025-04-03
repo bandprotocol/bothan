@@ -67,7 +67,7 @@ impl AssetWorker for Worker {
                 connection_idx = i
             );
             let worker = format!("{WORKER_NAME}_{i}");
-            let metrics: WebSocketMetrics = WebSocketMetrics::new_with_worker(WORKER_NAME, worker);
+            let metrics: WebSocketMetrics = WebSocketMetrics::with_worker(WORKER_NAME, worker);
             tokio::spawn(
                 start_polling(
                     token.child_token(),
