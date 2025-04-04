@@ -26,6 +26,7 @@ bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
 
 dirs = { workspace = true }
+itertools = { workspace = true }
 reqwest = { workspace = true }
 semver = { workspace = true }
 serde_json = { workspace = true }
@@ -36,9 +37,7 @@ tracing-subscriber = { workspace = true }
 
 anyhow = "1.0.95"
 clap = { version = "4.5.29", features = ["derive"] }
+humantime = "2.2.0"
 inquire = "0.7.5"
 toml = "0.8.20"
 tonic-reflection = "0.12.3"
-tungstenite = "0.26.2"
-humantime = "2.2.0"
-itertools.workspace = true
