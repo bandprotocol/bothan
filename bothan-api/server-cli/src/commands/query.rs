@@ -1,5 +1,6 @@
 use bothan_api::config::AppConfig;
 use bothan_lib::worker::{rest, websocket};
+
 use clap::{Parser, Subcommand};
 use humantime::Duration as HumanDuration;
 use itertools::Itertools;
