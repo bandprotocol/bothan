@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+use std::error::Error as StdError;
 use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::anyhow;
 use tokio::select;
 use tokio::time::{sleep, timeout};
 use tokio_util::sync::CancellationToken;
@@ -124,4 +127,40 @@ where
         error!("failed to reconnect. current attempt: {}", retry_count);
         sleep(backoff).await;
     }
+}
+
+pub async fn query<E1, E2, P, C>(
+    connector: &C,
+    ids: Vec<String>,
+    timeout_duration: Duration,
+) -> anyhow::Result<Vec<AssetInfo>>
+where
+    E1: StdError + Send + Sync + 'static,
+    E2: StdError + Send + Sync + 'static,
+    C::Error: StdError + Send + Sync + 'static,
+    P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
+    C: AssetInfoProviderConnector<Provider = P>,
+{
+    let mut provider = connector.connect().await?;
+    provider.subscribe(&ids).await?;
+
+    let mut asset_infos: HashMap<String, AssetInfo> = HashMap::with_capacity(ids.len());
+
+    timeout(timeout_duration, async {
+        while asset_infos.len() < ids.len() {
+            match provider.next().await {
+                Some(Ok(Data::AssetInfo(infos))) => {
+                    for info in infos {
+                        asset_infos.insert(info.id.clone(), info);
+                    }
+                }
+                Some(Ok(Data::Ping | Data::Unused)) => continue,
+                Some(Err(e)) => return Err(anyhow!(e)),
+                None => return Err(anyhow!("stream closed unexpectedly")),
+            }
+        }
+
+        Ok(asset_infos.into_values().collect())
+    })
+    .await?
 }
