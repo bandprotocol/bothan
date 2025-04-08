@@ -269,8 +269,8 @@ mod tests {
             Ok(())
         }
 
-        async fn get_registry(&self) -> Registry<Valid> {
-            Registry::default()
+        async fn get_registry(&self) -> Result<Registry<Valid>, Self::Error> {
+            Ok(Registry::default())
         }
 
         async fn get_registry_ipfs_hash(&self) -> Result<Option<String>, Self::Error> {

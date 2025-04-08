@@ -14,8 +14,6 @@ fn default_url() -> String {
 
 impl Default for WorkerOpts {
     fn default() -> Self {
-        Self {
-            url: default_url(),
-        }
+        Self { url: default_url() }
     }
 }

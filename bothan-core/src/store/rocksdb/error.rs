@@ -23,4 +23,7 @@ pub enum RocksDbError {
 
     #[error("{0}")]
     RocksDBError(#[from] rust_rocksdb::Error),
+
+    #[error("Poisoned lock")]
+    PoisonedError,
 }

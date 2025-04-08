@@ -20,7 +20,7 @@ pub trait Store: Send + Sync + Clone {
         ipfs_hash: String,
     ) -> Result<(), Self::Error>;
     /// Get the registry in the store.
-    async fn get_registry(&self) -> Registry<Valid>;
+    async fn get_registry(&self) -> Result<Registry<Valid>, Self::Error>;
     /// Get the IPFS hash of the registry in the store.
     async fn get_registry_ipfs_hash(&self) -> Result<Option<String>, Self::Error>;
     /// Sets the query ids in the store under the given prefix.

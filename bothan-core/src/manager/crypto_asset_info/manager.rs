@@ -50,7 +50,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .as_ref()
             .map(|_| Cache::builder().time_to_idle(MONITORING_TTL).build());
 
-        let registry = store.get_registry().await;
+        let registry = store.get_registry().await?;
 
         let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
 
@@ -120,7 +120,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         &self,
         ids: Vec<String>,
     ) -> Result<(String, Vec<PriceState>), S::Error> {
-        let registry = self.store.get_registry().await;
+        let registry = self.store.get_registry().await?;
 
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
