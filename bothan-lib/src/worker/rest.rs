@@ -66,7 +66,7 @@ where
     let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
     let elapsed_time = chrono::Utc::now().timestamp_millis() - start_time;
 
-    let polling_result = match result {
+    let polling_result = match &result {
         Ok(Ok(_)) => PollingResult::Success,
         Ok(Err(_)) => PollingResult::Failed,
         Err(_) => PollingResult::Timeout,
