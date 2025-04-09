@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error as StdError;
 use std::time::Duration;
 
@@ -10,6 +10,7 @@ use bothan_lib::worker::websocket::{AssetInfoProvider as WebSocketAssetInfoProvi
 use clap::{Parser, Subcommand};
 use futures::stream::{FuturesOrdered, StreamExt};
 use humantime::Duration as HumanDuration;
+use itertools::Itertools;
 use tokio::time::timeout;
 
 #[derive(Parser)]
@@ -210,12 +211,19 @@ async fn query_binance<T: Into<Duration> + Clone>(
 
     let mut tasks = FuturesOrdered::new();
 
-    for chunk in query_ids.chunks(opts.max_subscription_per_connection) {
-        let timeout = timeout.clone().into();
-        let mut provider = connector.connect().await?;
-        WebSocketAssetInfoProvider::subscribe(&mut provider, chunk).await?;
+    let distinct_ids = get_distinct_ids(query_ids);
 
-        tasks.push_back(async move { query(&mut provider, chunk, timeout).await });
+    for chunk in distinct_ids
+        .into_iter()
+        .chunks(opts.max_subscription_per_connection)
+        .into_iter()
+    {
+        let cloned_timeout = timeout.clone().into();
+        let chunk_ids = chunk.collect::<Vec<String>>();
+        let mut provider = connector.connect().await?;
+        WebSocketAssetInfoProvider::subscribe(&mut provider, &chunk_ids).await?;
+
+        tasks.push_back(async move { query(&mut provider, chunk_ids, cloned_timeout).await });
     }
 
     let results = tasks
@@ -240,11 +248,14 @@ async fn query_bitfinex<T: Into<Duration>>(
     timeout_interval: T,
 ) -> anyhow::Result<()> {
     let api = bothan_bitfinex::api::builder::RestApiBuilder::new(opts.url).build()?;
+
+    let distinct_ids = get_distinct_ids(query_ids);
     let asset_infos = timeout(
         timeout_interval.into(),
-        RestAssetInfoProvider::get_asset_info(&api, query_ids),
+        RestAssetInfoProvider::get_asset_info(&api, &distinct_ids),
     )
     .await??;
+
     print_asset_infos(asset_infos);
     Ok(())
 }
@@ -256,8 +267,11 @@ async fn query_bybit<T: Into<Duration>>(
 ) -> anyhow::Result<()> {
     let connector = bothan_bybit::WebSocketConnector::new(opts.url);
     let mut provider = connector.connect().await?;
-    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
-    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+
+    let distinct_ids = get_distinct_ids(query_ids);
+    WebSocketAssetInfoProvider::subscribe(&mut provider, &distinct_ids).await?;
+    let asset_infos = query(&mut provider, distinct_ids, timeout.into()).await?;
+
     print_asset_infos(asset_infos);
     Ok(())
 }
@@ -271,12 +285,19 @@ async fn query_coinbase<T: Into<Duration> + Clone>(
 
     let mut tasks = FuturesOrdered::new();
 
-    for chunk in query_ids.chunks(opts.max_subscription_per_connection) {
-        let timeout = timeout.clone().into();
-        let mut provider = connector.connect().await?;
-        WebSocketAssetInfoProvider::subscribe(&mut provider, chunk).await?;
+    let distinct_ids = get_distinct_ids(query_ids);
 
-        tasks.push_back(async move { query(&mut provider, chunk, timeout).await });
+    for chunk in distinct_ids
+        .into_iter()
+        .chunks(opts.max_subscription_per_connection)
+        .into_iter()
+    {
+        let cloned_timeout = timeout.clone().into();
+        let chunk_ids = chunk.collect::<Vec<String>>();
+        let mut provider = connector.connect().await?;
+        WebSocketAssetInfoProvider::subscribe(&mut provider, &chunk_ids).await?;
+
+        tasks.push_back(async move { query(&mut provider, chunk_ids, cloned_timeout).await });
     }
 
     let results = tasks
@@ -302,11 +323,14 @@ async fn query_coingecko<T: Into<Duration>>(
 ) -> anyhow::Result<()> {
     let api = bothan_coingecko::api::RestApiBuilder::new(opts.url, opts.user_agent, opts.api_key)
         .build()?;
+
+    let distinct_ids = get_distinct_ids(query_ids);
     let asset_infos = timeout(
         timeout_interval.into(),
-        RestAssetInfoProvider::get_asset_info(&api, query_ids),
+        RestAssetInfoProvider::get_asset_info(&api, &distinct_ids),
     )
     .await??;
+
     print_asset_infos(asset_infos);
     Ok(())
 }
@@ -317,11 +341,14 @@ async fn query_coinmarketcap<T: Into<Duration>>(
     timeout_interval: T,
 ) -> anyhow::Result<()> {
     let api = bothan_coinmarketcap::api::RestApiBuilder::new(opts.url, opts.api_key).build()?;
+
+    let distinct_ids = get_distinct_ids(query_ids);
     let asset_infos = timeout(
         timeout_interval.into(),
-        RestAssetInfoProvider::get_asset_info(&api, query_ids),
+        RestAssetInfoProvider::get_asset_info(&api, &distinct_ids),
     )
     .await??;
+
     print_asset_infos(asset_infos);
     Ok(())
 }
@@ -333,8 +360,11 @@ async fn query_htx<T: Into<Duration>>(
 ) -> anyhow::Result<()> {
     let connector = bothan_htx::api::WebSocketConnector::new(opts.url);
     let mut provider = connector.connect().await?;
-    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
-    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+
+    let distinct_ids = get_distinct_ids(query_ids);
+    WebSocketAssetInfoProvider::subscribe(&mut provider, &distinct_ids).await?;
+    let asset_infos = query(&mut provider, distinct_ids, timeout.into()).await?;
+
     print_asset_infos(asset_infos);
     Ok(())
 }
@@ -346,8 +376,11 @@ async fn query_kraken<T: Into<Duration>>(
 ) -> anyhow::Result<()> {
     let connector = bothan_kraken::api::WebSocketConnector::new(opts.url);
     let mut provider = connector.connect().await?;
-    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
-    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+
+    let distinct_ids = get_distinct_ids(query_ids);
+    WebSocketAssetInfoProvider::subscribe(&mut provider, &distinct_ids).await?;
+    let asset_infos = query(&mut provider, distinct_ids, timeout.into()).await?;
+
     print_asset_infos(asset_infos);
     Ok(())
 }
@@ -359,23 +392,31 @@ async fn query_okx<T: Into<Duration>>(
 ) -> anyhow::Result<()> {
     let connector = bothan_okx::api::WebSocketConnector::new(opts.url);
     let mut provider = connector.connect().await?;
-    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
-    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+
+    let distinct_ids = get_distinct_ids(query_ids);
+    WebSocketAssetInfoProvider::subscribe(&mut provider, &distinct_ids).await?;
+    let asset_infos = query(&mut provider, distinct_ids, timeout.into()).await?;
+
     print_asset_infos(asset_infos);
     Ok(())
 }
 
-fn print_asset_infos(asset_infos: Vec<AssetInfo>) {
-    for asset in asset_infos {
-        println!("- id: {}", asset.id);
-        println!("  price: {}", asset.price);
-        println!("  timestamp: {}", asset.timestamp);
+fn get_distinct_ids(ids: &[String]) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut result = Vec::with_capacity(ids.len());
+
+    for id in ids {
+        if seen.insert(id) {
+            result.push(id.clone());
+        }
     }
+
+    result
 }
 
 async fn query<E1, E2, P>(
     provider: &mut P,
-    ids: &[String],
+    ids: Vec<String>,
     timeout_interval: Duration,
 ) -> anyhow::Result<Vec<AssetInfo>>
 where
@@ -386,14 +427,19 @@ where
     let mut asset_infos: HashMap<String, AssetInfo> = HashMap::with_capacity(ids.len());
 
     timeout(timeout_interval, async {
+        println!("ids.len(): {}", ids.len());
+        println!("asset_infos.len(): {}", asset_infos.len());
         while asset_infos.len() < ids.len() {
             match provider.next().await {
                 Some(Ok(Data::AssetInfo(infos))) => {
+                    println!("hello");
                     for info in infos {
                         asset_infos.insert(info.id.clone(), info);
                     }
                 }
-                Some(Ok(Data::Ping | Data::Unused)) => continue,
+                Some(Ok(Data::Ping | Data::Unused)) => {
+                    println!("ping");
+                }
                 Some(Err(e)) => return Err(anyhow!(e)),
                 None => return Err(anyhow!("stream closed unexpectedly")),
             }
@@ -409,4 +455,12 @@ where
             .collect::<Result<Vec<AssetInfo>, anyhow::Error>>()
     })
     .await?
+}
+
+fn print_asset_infos(asset_infos: Vec<AssetInfo>) {
+    for asset in asset_infos {
+        println!("- id: {}", asset.id);
+        println!("  price: {}", asset.price);
+        println!("  timestamp: {}", asset.timestamp);
+    }
 }
