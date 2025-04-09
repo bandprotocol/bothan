@@ -1,8 +1,16 @@
+use std::collections::HashMap;
+use std::error::Error as StdError;
+use std::time::Duration;
+
+use anyhow::anyhow;
 use bothan_api::config::AppConfig;
-use bothan_lib::worker::{rest, websocket};
+use bothan_lib::types::AssetInfo;
+use bothan_lib::worker::rest::AssetInfoProvider as RestAssetInfoProvider;
+use bothan_lib::worker::websocket::{AssetInfoProvider as WebSocketAssetInfoProvider, Data};
 use clap::{Parser, Subcommand};
+use futures::stream::{FuturesOrdered, StreamExt};
 use humantime::Duration as HumanDuration;
-use itertools::Itertools;
+use tokio::time::timeout;
 
 #[derive(Parser)]
 pub struct QueryCli {
@@ -21,7 +29,6 @@ enum QuerySubCommand {
         #[arg(short, long, default_value = "60s")]
         timeout: HumanDuration,
     },
-
     /// Query Bitfinex prices
     Bitfinex {
         /// The list of query ids to query prices for
@@ -107,31 +114,86 @@ impl QueryCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         match &self.subcommand {
             QuerySubCommand::Binance { query_ids, timeout } => {
-                query_binance(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .binance
+                    .ok_or_else(|| anyhow!("Binance config not found"))?;
+
+                query_binance(opts, query_ids, *timeout).await?;
             }
             QuerySubCommand::Bitfinex { query_ids, timeout } => {
-                query_bitfinex(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .bitfinex
+                    .ok_or_else(|| anyhow!("Bitfinex config not found"))?;
+                query_bitfinex(opts, query_ids, *timeout).await?
             }
             QuerySubCommand::Bybit { query_ids, timeout } => {
-                query_bybit(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .bybit
+                    .ok_or_else(|| anyhow!("Bybit config not found"))?;
+                query_bybit(opts, query_ids, *timeout).await?
             }
             QuerySubCommand::Coinbase { query_ids, timeout } => {
-                query_coinbase(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .coinbase
+                    .ok_or_else(|| anyhow!("Coinbase config not found"))?;
+                query_coinbase(opts, query_ids, *timeout).await?
             }
             QuerySubCommand::Coingecko { query_ids, timeout } => {
-                query_coingecko(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .coingecko
+                    .ok_or_else(|| anyhow!("Coingecko config not found"))?;
+                query_coingecko(opts, query_ids, *timeout).await?
             }
             QuerySubCommand::Coinmarketcap { query_ids, timeout } => {
-                query_coinmarketcap(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .coinmarketcap
+                    .ok_or_else(|| anyhow!("Coinmarketcap config not found"))?;
+                query_coinmarketcap(opts, query_ids, *timeout).await?
             }
             QuerySubCommand::Htx { query_ids, timeout } => {
-                query_htx(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .htx
+                    .ok_or_else(|| anyhow!("Htx config not found"))?;
+                query_htx(opts, query_ids, *timeout).await?
             }
             QuerySubCommand::Kraken { query_ids, timeout } => {
-                query_kraken(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .kraken
+                    .ok_or_else(|| anyhow!("Kraken config not found"))?;
+                query_kraken(opts, query_ids, *timeout).await?
             }
             QuerySubCommand::Okx { query_ids, timeout } => {
-                query_okx(&app_config, query_ids, timeout).await?
+                let opts = app_config
+                    .manager
+                    .crypto
+                    .source
+                    .okx
+                    .ok_or_else(|| anyhow!("Okx config not found"))?;
+                query_okx(opts, query_ids, *timeout).await?
             }
         }
 
@@ -139,129 +201,212 @@ impl QueryCli {
     }
 }
 
-async fn query_binance(
-    config: &AppConfig,
+async fn query_binance<T: Into<Duration> + Clone>(
+    opts: bothan_binance::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.binance.clone().unwrap();
     let connector = bothan_binance::WebSocketConnector::new(opts.url);
-    let mut all_infos = vec![];
 
-    for chunk in &query_ids
-        .iter()
-        .cloned()
-        .chunks(opts.max_subscription_per_connection)
-    {
-        let infos = websocket::query(&connector, chunk.collect(), (*timeout).into()).await?;
-        all_infos.extend(infos);
+    let mut tasks = FuturesOrdered::new();
+
+    for chunk in query_ids.chunks(opts.max_subscription_per_connection) {
+        let timeout = timeout.clone().into();
+        let mut provider = connector.connect().await?;
+        WebSocketAssetInfoProvider::subscribe(&mut provider, chunk).await?;
+
+        tasks.push_back(async move { query(&mut provider, chunk, timeout).await });
     }
 
-    println!("{:#?}", all_infos);
+    let results = tasks
+        .collect::<Vec<Result<Vec<AssetInfo>, anyhow::Error>>>()
+        .await;
+
+    let asset_infos = results
+        .into_iter()
+        .collect::<Result<Vec<Vec<AssetInfo>>, anyhow::Error>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<AssetInfo>>();
+
+    print_asset_infos(asset_infos);
+
     Ok(())
 }
 
-async fn query_bitfinex(
-    config: &AppConfig,
+async fn query_bitfinex<T: Into<Duration>>(
+    opts: bothan_bitfinex::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout_interval: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.bitfinex.clone().unwrap();
     let api = bothan_bitfinex::api::builder::RestApiBuilder::new(opts.url).build()?;
-    let asset_info = rest::query(&api, query_ids, (*timeout).into()).await?;
-    println!("{:#?}", asset_info);
+    let asset_infos = timeout(
+        timeout_interval.into(),
+        RestAssetInfoProvider::get_asset_info(&api, query_ids),
+    )
+    .await??;
+    print_asset_infos(asset_infos);
     Ok(())
 }
 
-async fn query_bybit(
-    config: &AppConfig,
+async fn query_bybit<T: Into<Duration>>(
+    opts: bothan_bybit::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.bybit.clone().unwrap();
     let connector = bothan_bybit::WebSocketConnector::new(opts.url);
-    let asset_info = websocket::query(&connector, query_ids.to_vec(), (*timeout).into()).await?;
-    println!("{:#?}", asset_info);
+    let mut provider = connector.connect().await?;
+    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
+    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+    print_asset_infos(asset_infos);
     Ok(())
 }
 
-async fn query_coinbase(
-    config: &AppConfig,
+async fn query_coinbase<T: Into<Duration> + Clone>(
+    opts: bothan_coinbase::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.coinbase.clone().unwrap();
     let connector = bothan_coinbase::WebSocketConnector::new(opts.url);
-    let mut all_infos = vec![];
-    for chunk in &query_ids
-        .iter()
-        .cloned()
-        .chunks(opts.max_subscription_per_connection)
-    {
-        let infos = websocket::query(&connector, chunk.collect(), (*timeout).into()).await?;
-        all_infos.extend(infos);
+
+    let mut tasks = FuturesOrdered::new();
+
+    for chunk in query_ids.chunks(opts.max_subscription_per_connection) {
+        let timeout = timeout.clone().into();
+        let mut provider = connector.connect().await?;
+        WebSocketAssetInfoProvider::subscribe(&mut provider, chunk).await?;
+
+        tasks.push_back(async move { query(&mut provider, chunk, timeout).await });
     }
-    println!("{:#?}", all_infos);
+
+    let results = tasks
+        .collect::<Vec<Result<Vec<AssetInfo>, anyhow::Error>>>()
+        .await;
+
+    let asset_infos = results
+        .into_iter()
+        .collect::<Result<Vec<Vec<AssetInfo>>, anyhow::Error>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<AssetInfo>>();
+
+    print_asset_infos(asset_infos);
+
     Ok(())
 }
 
-async fn query_coingecko(
-    config: &AppConfig,
+async fn query_coingecko<T: Into<Duration>>(
+    opts: bothan_coingecko::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout_interval: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.coingecko.clone().unwrap();
     let api = bothan_coingecko::api::RestApiBuilder::new(opts.url, opts.user_agent, opts.api_key)
         .build()?;
-    let asset_info = rest::query(&api, query_ids, (*timeout).into()).await?;
-    println!("{:#?}", asset_info);
+    let asset_infos = timeout(
+        timeout_interval.into(),
+        RestAssetInfoProvider::get_asset_info(&api, query_ids),
+    )
+    .await??;
+    print_asset_infos(asset_infos);
     Ok(())
 }
 
-async fn query_coinmarketcap(
-    config: &AppConfig,
+async fn query_coinmarketcap<T: Into<Duration>>(
+    opts: bothan_coinmarketcap::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout_interval: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.coinmarketcap.clone().unwrap();
     let api = bothan_coinmarketcap::api::RestApiBuilder::new(opts.url, opts.api_key).build()?;
-    let asset_info = rest::query(&api, query_ids, (*timeout).into()).await?;
-    println!("{:#?}", asset_info);
+    let asset_infos = timeout(
+        timeout_interval.into(),
+        RestAssetInfoProvider::get_asset_info(&api, query_ids),
+    )
+    .await??;
+    print_asset_infos(asset_infos);
     Ok(())
 }
 
-async fn query_htx(
-    config: &AppConfig,
+async fn query_htx<T: Into<Duration>>(
+    opts: bothan_htx::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.htx.clone().unwrap();
     let connector = bothan_htx::api::WebSocketConnector::new(opts.url);
-    let asset_info = websocket::query(&connector, query_ids.to_vec(), (*timeout).into()).await?;
-    println!("{:#?}", asset_info);
+    let mut provider = connector.connect().await?;
+    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
+    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+    print_asset_infos(asset_infos);
     Ok(())
 }
 
-async fn query_kraken(
-    config: &AppConfig,
+async fn query_kraken<T: Into<Duration>>(
+    opts: bothan_kraken::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.kraken.clone().unwrap();
-    let connector = bothan_kraken::WebSocketConnector::new(opts.url);
-    let asset_info = websocket::query(&connector, query_ids.to_vec(), (*timeout).into()).await?;
-    println!("{:#?}", asset_info);
+    let connector = bothan_kraken::api::WebSocketConnector::new(opts.url);
+    let mut provider = connector.connect().await?;
+    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
+    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+    print_asset_infos(asset_infos);
     Ok(())
 }
 
-async fn query_okx(
-    config: &AppConfig,
+async fn query_okx<T: Into<Duration>>(
+    opts: bothan_okx::WorkerOpts,
     query_ids: &[String],
-    timeout: &humantime::Duration,
+    timeout: T,
 ) -> anyhow::Result<()> {
-    let opts = config.manager.crypto.source.okx.clone().unwrap();
-    let connector = bothan_okx::WebSocketConnector::new(opts.url);
-    let asset_info = websocket::query(&connector, query_ids.to_vec(), (*timeout).into()).await?;
-    println!("{:#?}", asset_info);
+    let connector = bothan_okx::api::WebSocketConnector::new(opts.url);
+    let mut provider = connector.connect().await?;
+    WebSocketAssetInfoProvider::subscribe(&mut provider, query_ids).await?;
+    let asset_infos = query(&mut provider, query_ids, timeout.into()).await?;
+    print_asset_infos(asset_infos);
     Ok(())
+}
+
+fn print_asset_infos(asset_infos: Vec<AssetInfo>) {
+    for asset in asset_infos {
+        println!("- id: {}", asset.id);
+        println!("  price: {}", asset.price);
+        println!("  timestamp: {}", asset.timestamp);
+    }
+}
+
+async fn query<E1, E2, P>(
+    provider: &mut P,
+    ids: &[String],
+    timeout_interval: Duration,
+) -> anyhow::Result<Vec<AssetInfo>>
+where
+    E1: StdError + Send + Sync + 'static,
+    E2: StdError + Send + Sync + 'static,
+    P: WebSocketAssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
+{
+    let mut asset_infos: HashMap<String, AssetInfo> = HashMap::with_capacity(ids.len());
+
+    timeout(timeout_interval, async {
+        while asset_infos.len() < ids.len() {
+            match provider.next().await {
+                Some(Ok(Data::AssetInfo(infos))) => {
+                    for info in infos {
+                        asset_infos.insert(info.id.clone(), info);
+                    }
+                }
+                Some(Ok(Data::Ping | Data::Unused)) => continue,
+                Some(Err(e)) => return Err(anyhow!(e)),
+                None => return Err(anyhow!("stream closed unexpectedly")),
+            }
+        }
+
+        ids.iter()
+            .map(|id| {
+                asset_infos
+                    .get(id)
+                    .cloned()
+                    .ok_or_else(|| anyhow!("missing asset info for id: {}", id))
+            })
+            .collect::<Result<Vec<AssetInfo>, anyhow::Error>>()
+    })
+    .await?
 }

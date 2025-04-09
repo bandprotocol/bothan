@@ -26,6 +26,7 @@ bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
 
 dirs = { workspace = true }
+futures = { workspace = true }
 itertools = { workspace = true }
 reqwest = { workspace = true }
 semver = { workspace = true }

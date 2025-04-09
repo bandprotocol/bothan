@@ -1,4 +1,3 @@
-use std::error::Error as StdError;
 use std::fmt::Display;
 use std::time::Duration;
 
@@ -106,16 +105,4 @@ async fn handle_polling_result<S, E>(
     };
 
     metrics.increment_polling_total(polling_result);
-}
-
-pub async fn query<E, P>(
-    provider: &P,
-    ids: &[String],
-    timeout_duration: Duration,
-) -> anyhow::Result<Vec<AssetInfo>>
-where
-    E: StdError + Send + Sync + 'static,
-    P: AssetInfoProvider<Error = E>,
-{
-    Ok(timeout(timeout_duration, provider.get_asset_info(ids)).await??)
 }
