@@ -52,7 +52,7 @@ impl AssetWorker for Worker {
             .enumerate()
         {
             let span = span!(
-                Level::INFO,
+                Level::ERROR,
                 "source",
                 name = WORKER_NAME,
                 connection_idx = i
