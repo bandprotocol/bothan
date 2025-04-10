@@ -18,6 +18,6 @@ pub enum Response {
     PublicMessage(PublicMessageResponse),
     /// A response from a channel subscription.
     Channel(ChannelResponse),
-    /// A response from a ping.
+    /// A ping.
     Ping,
 }
