@@ -66,9 +66,9 @@ pub async fn start_listening<S, E1, E2, P, C>(
                             let new_conn = connect(provider_connector.as_ref(), &ids).await;
                             connection = new_conn
                         }
-                        Ok(Some(Ok(Data::AssetInfo(ai)))) => {
-                            if let Err(e) = store.set_batch_asset_info(ai).await {
-                                warn!("failed to store data: {}", e)
+                        Ok(Some(Ok(Data::AssetInfo(assets)))) => {
+                            if let Err(e) = store.set_batch_asset_info(assets).await {
+                                error!("failed to asset info with error: {e}")
                             } else {
                                 info!("asset info updated successfully");
                             }

@@ -204,9 +204,9 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         // drop old workers to kill connection
         let mut locked_workers = self.workers.lock().await;
-        *locked_workers = Vec::with_capacity(0);
+        locked_workers.clear();
 
-        // wait a bit for connections to clear up
+        // TODO: find method to wait for connections to clear up thats better than sleeping for 1 second
         sleep(Duration::from_secs(1)).await;
 
         let workers = build_workers(&registry, &self.opts, self.store.clone()).await;
