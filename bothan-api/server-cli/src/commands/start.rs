@@ -229,22 +229,22 @@ async fn init_bothan_server<S: Store + 'static>(
 async fn init_crypto_opts(
     source: &CryptoSourceConfigs,
 ) -> Result<HashMap<String, CryptoAssetWorkerOpts>, AssetWorkerError> {
-    let mut opts = HashMap::new();
+    let mut worker_opts = HashMap::new();
 
-    add_opts(&mut opts, &source.binance).await?;
-    add_opts(&mut opts, &source.bitfinex).await?;
-    add_opts(&mut opts, &source.bybit).await?;
-    add_opts(&mut opts, &source.coinbase).await?;
-    add_opts(&mut opts, &source.coingecko).await?;
-    add_opts(&mut opts, &source.coinmarketcap).await?;
-    add_opts(&mut opts, &source.htx).await?;
-    add_opts(&mut opts, &source.kraken).await?;
-    add_opts(&mut opts, &source.okx).await?;
+    add_worker_opts(&mut worker_opts, &source.binance).await?;
+    add_worker_opts(&mut worker_opts, &source.bitfinex).await?;
+    add_worker_opts(&mut worker_opts, &source.bybit).await?;
+    add_worker_opts(&mut worker_opts, &source.coinbase).await?;
+    add_worker_opts(&mut worker_opts, &source.coingecko).await?;
+    add_worker_opts(&mut worker_opts, &source.coinmarketcap).await?;
+    add_worker_opts(&mut worker_opts, &source.htx).await?;
+    add_worker_opts(&mut worker_opts, &source.kraken).await?;
+    add_worker_opts(&mut worker_opts, &source.okx).await?;
 
-    Ok(opts)
+    Ok(worker_opts)
 }
 
-async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
+async fn add_worker_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
     workers_opts: &mut HashMap<String, CryptoAssetWorkerOpts>,
     opts: &Option<O>,
 ) -> Result<(), AssetWorkerError> {
