@@ -89,7 +89,7 @@ where
 {
     let mut retry_count = 0;
     let mut backoff = Duration::from_secs(1);
-    let max_backoff = Duration::from_secs(516);
+    let max_backoff = Duration::from_secs(64);
 
     loop {
         if let Ok(mut provider) = connector.connect().await {
@@ -100,7 +100,6 @@ where
 
         retry_count += 1;
         if backoff < max_backoff {
-            // Set max backoff to 516 seconds
             backoff *= 2;
         }
 
