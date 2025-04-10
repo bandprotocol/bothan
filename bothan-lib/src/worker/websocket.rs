@@ -83,7 +83,6 @@ pub async fn start_polling<S, E1, E2, P, C>(
     debug!("asset worker has been dropped, stopping asset worker");
 }
 
-// If connect fails, the polling loop should be exited
 async fn connect<C, P, E1, E2>(connector: &C, ids: &[String]) -> P
 where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
