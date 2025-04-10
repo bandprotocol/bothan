@@ -6,9 +6,9 @@ addr = "0.0.0.0:50051"
 # Logging configuration
 [log]
 # The logging level, which can be "trace", "debug", "info", "warn", or "error".
-log_level = "Info"
-core_log_level = "Error"
-source_log_level = "Error"
+log_level = "info"
+core_log_level = "error"
+source_log_level = "error"
 
 # IPFS configuration
 [ipfs]
