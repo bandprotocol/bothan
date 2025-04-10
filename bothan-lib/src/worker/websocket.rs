@@ -5,7 +5,7 @@ use std::time::Duration;
 use tokio::select;
 use tokio::time::{sleep, timeout};
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::store::{Store, WorkerStore};
 use crate::types::AssetInfo;
