@@ -16,7 +16,7 @@ pub enum LoadError {
 #[derive(Debug, thiserror::Error)]
 pub enum RocksDbError {
     #[error("Failed to encode data: {0}")]
-    FailedToeEncode(#[from] EncodeError),
+    FailedToEncode(#[from] EncodeError),
 
     #[error("Failed to decode data: {0}")]
     FailedToDecode(#[from] DecodeError),
