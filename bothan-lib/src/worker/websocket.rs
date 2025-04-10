@@ -42,7 +42,7 @@ pub trait AssetInfoProvider: Send + Sync {
     ids,
     connection_timeout
 ))]
-pub async fn start_polling<S, E1, E2, P, C>(
+pub async fn start_listening<S, E1, E2, P, C>(
     cancellation_token: CancellationToken,
     provider_connector: Arc<C>,
     store: WorkerStore<S>,
