@@ -69,6 +69,8 @@ pub async fn start_polling<S, E1, E2, P, C>(
                         Ok(Some(Ok(Data::AssetInfo(ai)))) => {
                             if let Err(e) = store.set_batch_asset_info(ai).await {
                                 warn!("failed to store data: {}", e)
+                            } else {
+                                debug!("asset info updated successfully");
                             }
                         }
                         Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
