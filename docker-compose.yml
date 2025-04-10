@@ -16,3 +16,4 @@ bothan-api-proxy:
     environment:
     - GRPC_ENDPOINT=bothan-api:50051
     - PROXY_ENDPOINT=0.0.0.0:8080
+    
