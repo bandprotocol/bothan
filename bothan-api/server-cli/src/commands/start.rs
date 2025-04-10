@@ -245,14 +245,14 @@ async fn init_crypto_opts(
 }
 
 async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
-    workers: &mut HashMap<String, CryptoAssetWorkerOpts>,
+    workers_opts: &mut HashMap<String, CryptoAssetWorkerOpts>,
     opts: &Option<O>,
 ) -> Result<(), AssetWorkerError> {
     if let Some(opts) = opts {
         let worker_opts = opts.clone().into();
         let worker_name = worker_opts.name();
-        info!("loaded {} worker", worker_name);
-        workers.insert(worker_name.to_string(), worker_opts);
+        info!("{} worker is enabled", worker_name);
+        workers_opts.insert(worker_name.to_string(), worker_opts);
     }
 
     Ok(())
