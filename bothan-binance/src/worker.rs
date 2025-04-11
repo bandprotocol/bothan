@@ -5,7 +5,7 @@ use bothan_lib::metrics::websocket::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::websocket::start_polling;
+use bothan_lib::worker::websocket::start_listening;
 use itertools;
 use itertools::Itertools;
 use tokio_util::sync::{CancellationToken, DropGuard};
@@ -52,7 +52,7 @@ impl AssetWorker for Worker {
             .enumerate()
         {
             let span = span!(
-                Level::INFO,
+                Level::ERROR,
                 "source",
                 name = WORKER_NAME,
                 connection_idx = i
@@ -60,7 +60,7 @@ impl AssetWorker for Worker {
             let worker = format!("{WORKER_NAME}_{i}");
             let metrics = Metrics::new(WORKER_NAME, worker);
             tokio::spawn(
-                start_polling(
+                start_listening(
                     token.child_token(),
                     connector.clone(),
                     worker_store.clone(),

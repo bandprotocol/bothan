@@ -5,7 +5,7 @@ use bothan_lib::metrics::websocket::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
-use bothan_lib::worker::websocket::start_polling;
+use bothan_lib::worker::websocket::start_listening;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::{Instrument, Level, span};
 
@@ -42,10 +42,10 @@ impl AssetWorker for Worker {
         let token = CancellationToken::new();
         let metrics = Metrics::new(WORKER_NAME, WORKER_NAME.to_string());
 
-        let span = span!(Level::INFO, "source", name = WORKER_NAME);
+        let span = span!(Level::ERROR, "source", name = WORKER_NAME);
 
         tokio::spawn(
-            start_polling(
+            start_listening(
                 token.child_token(),
                 connector,
                 worker_store,

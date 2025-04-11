@@ -97,7 +97,7 @@ async fn init_rocks_db_store(
     let store = match (reset, flush_path.is_dir()) {
         // If reset is true and the path is a directory, remove the directory and create a new store
         (true, true) => {
-            let db = RocksDbStore::new(flush_path).await?;
+            let db = RocksDbStore::new(flush_path)?;
             debug!("store reset successfully at {:?}", &flush_path);
             db
         }
@@ -110,7 +110,7 @@ async fn init_rocks_db_store(
         // If the path does not exist, create the directory and create a new store
         (_, false) => {
             create_dir_all(flush_path).with_context(|| "Failed to create home directory")?;
-            let db = RocksDbStore::new(flush_path).await?;
+            let db = RocksDbStore::new(flush_path)?;
             debug!("store created successfully at {:?}", &flush_path);
             db
         }
@@ -232,30 +232,30 @@ async fn init_bothan_server<S: Store + 'static>(
 async fn init_crypto_opts(
     source: &CryptoSourceConfigs,
 ) -> Result<HashMap<String, CryptoAssetWorkerOpts>, AssetWorkerError> {
-    let mut opts = HashMap::new();
+    let mut worker_opts = HashMap::new();
 
-    add_opts(&mut opts, &source.binance).await?;
-    add_opts(&mut opts, &source.bitfinex).await?;
-    add_opts(&mut opts, &source.bybit).await?;
-    add_opts(&mut opts, &source.coinbase).await?;
-    add_opts(&mut opts, &source.coingecko).await?;
-    add_opts(&mut opts, &source.coinmarketcap).await?;
-    add_opts(&mut opts, &source.htx).await?;
-    add_opts(&mut opts, &source.kraken).await?;
-    add_opts(&mut opts, &source.okx).await?;
+    add_worker_opts(&mut worker_opts, &source.binance).await?;
+    add_worker_opts(&mut worker_opts, &source.bitfinex).await?;
+    add_worker_opts(&mut worker_opts, &source.bybit).await?;
+    add_worker_opts(&mut worker_opts, &source.coinbase).await?;
+    add_worker_opts(&mut worker_opts, &source.coingecko).await?;
+    add_worker_opts(&mut worker_opts, &source.coinmarketcap).await?;
+    add_worker_opts(&mut worker_opts, &source.htx).await?;
+    add_worker_opts(&mut worker_opts, &source.kraken).await?;
+    add_worker_opts(&mut worker_opts, &source.okx).await?;
 
-    Ok(opts)
+    Ok(worker_opts)
 }
 
-async fn add_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
-    workers: &mut HashMap<String, CryptoAssetWorkerOpts>,
+async fn add_worker_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
+    workers_opts: &mut HashMap<String, CryptoAssetWorkerOpts>,
     opts: &Option<O>,
 ) -> Result<(), AssetWorkerError> {
     if let Some(opts) = opts {
         let worker_opts = opts.clone().into();
         let worker_name = worker_opts.name();
-        info!("loaded {} worker", worker_name);
-        workers.insert(worker_name.to_string(), worker_opts);
+        info!("{} worker is enabled", worker_name);
+        workers_opts.insert(worker_name.to_string(), worker_opts);
     }
 
     Ok(())

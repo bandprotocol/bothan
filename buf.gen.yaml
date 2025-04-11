@@ -2,8 +2,6 @@ version: v2
 plugins:
 - remote: buf.build/community/neoeinstein-prost:v0.4.0
   out: bothan-api/server/src/proto
-  opt:
-  - file_descriptor_set=true
 - remote: buf.build/community/neoeinstein-tonic:v0.4.1
   out: bothan-api/server/src/proto
   opt:

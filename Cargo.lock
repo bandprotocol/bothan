@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-lib"
-version = "0.0.1-alpha.4"
+version = "0.0.1-beta.2"
 dependencies = [
  "async-trait",
  "bincode",

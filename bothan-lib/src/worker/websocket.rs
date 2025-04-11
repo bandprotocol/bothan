@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use tokio::select;
 use tokio::time::{sleep, timeout};
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info};
 
 use crate::metrics::websocket::{ConnectionResult, MessageType, Metrics};
 use crate::store::{Store, WorkerStore};
@@ -44,7 +44,7 @@ pub trait AssetInfoProvider: Send + Sync {
     ids,
     connection_timeout
 ))]
-pub async fn start_polling<S, E1, E2, P, C>(
+pub async fn start_listening<S, E1, E2, P, C>(
     cancellation_token: CancellationToken,
     provider_connector: Arc<C>,
     store: WorkerStore<S>,
@@ -69,9 +69,11 @@ pub async fn start_polling<S, E1, E2, P, C>(
                             let new_conn = connect(provider_connector.as_ref(), &ids, &metrics).await;
                             connection = new_conn
                         }
-                        Ok(Some(Ok(Data::AssetInfo(ai)))) => {
-                            if let Err(e) = store.set_batch_asset_info(ai).await {
-                                warn!("failed to store data: {}", e)
+                        Ok(Some(Ok(Data::AssetInfo(assets)))) => {
+                            if let Err(e) = store.set_batch_asset_info(assets).await {
+                                error!("failed to asset info with error: {e}")
+                            } else {
+                                info!("asset info updated successfully");
                             }
                             metrics.increment_activity_messages_total(MessageType::AssetInfo)
                         }
@@ -86,7 +88,6 @@ pub async fn start_polling<S, E1, E2, P, C>(
     debug!("asset worker has been dropped, stopping asset worker");
 }
 
-// If connect fails, the polling loop should be exited
 async fn connect<C, P, E1, E2>(connector: &C, ids: &[String], metrics: &Metrics) -> P
 where
     P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
@@ -94,7 +95,7 @@ where
 {
     let mut retry_count = 0;
     let mut backoff = Duration::from_secs(1);
-    let max_backoff = Duration::from_secs(516);
+    let max_backoff = Duration::from_secs(64);
 
     loop {
         let start_time = Instant::now();
@@ -112,7 +113,6 @@ where
 
         retry_count += 1;
         if backoff < max_backoff {
-            // Set max backoff to 516 seconds
             backoff *= 2;
         }
 

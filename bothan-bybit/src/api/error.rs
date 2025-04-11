@@ -1,7 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("failed to parse message")]
-    ParseFailed(#[from] serde_json::Error),
+    ParseError(#[from] serde_json::Error),
 
     #[error("unsupported message")]
     UnsupportedWebsocketMessageType,

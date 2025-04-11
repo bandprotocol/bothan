@@ -7,3 +7,12 @@ services:
     - "$HOME/.bothan:/root/.bothan"
     ports:
     - "50051:50051"
+  bothan-api-proxy:
+    build:
+      context: .
+      dockerfile: ./bothan-api-proxy/Dockerfile
+    ports:
+    - "8080:8080"
+    environment:
+    - GRPC_ENDPOINT=bothan-api:50051
+    - PROXY_ENDPOINT=0.0.0.0:8080

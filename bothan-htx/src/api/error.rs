@@ -8,7 +8,7 @@ pub enum Error {
     Io(#[from] io::Error),
 
     #[error("failed to parse message")]
-    ParsedFailed(#[from] serde_json::Error),
+    ParseError(#[from] serde_json::Error),
 
     #[error("unsupported message")]
     UnsupportedWebsocketMessageType,
