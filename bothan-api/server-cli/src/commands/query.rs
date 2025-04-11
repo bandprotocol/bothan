@@ -174,7 +174,7 @@ impl QueryCli {
     }
 }
 
-async fn query_binance<T: Into<Duration> + Clone>(
+async fn query_binance<T: Into<Duration>>(
     opts: bothan_binance::WorkerOpts,
     query_ids: &[String],
     timeout: T,
@@ -216,7 +216,7 @@ async fn query_bybit<T: Into<Duration>>(
     Ok(())
 }
 
-async fn query_coinbase<T: Into<Duration> + Clone>(
+async fn query_coinbase<T: Into<Duration>>(
     opts: bothan_coinbase::WorkerOpts,
     query_ids: &[String],
     timeout: T,
@@ -408,10 +408,10 @@ fn dedup_ids(ids: &[String]) -> Vec<String> {
     let mut result = Vec::with_capacity(ids.len());
 
     for id in ids {
-         if seen.insert(id) {
-             result.push(id.clone());
-         }
-    } 
+        if seen.insert(id) {
+            result.push(id.clone());
+        }
+    }
 
     result
 }
