@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tokio::select;
 use tokio::time::error::Elapsed;
@@ -47,7 +47,7 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
         select! {
             _ = cancellation_token.cancelled() => break,
-            r = poll_with_timeout(&provider, &ids, update_interval, &metrics) => handle_polling_result(r, &store, &metrics).await,
+            r = poll_with_timeout(&provider, &ids, update_interval, &metrics) => handle_polling_result(r, &store).await,
         }
     }
 }
@@ -62,9 +62,9 @@ where
     E: Display,
     P: AssetInfoProvider<Error = E>,
 {
-    let start_time = chrono::Utc::now().timestamp_millis();
+    let start_time = Instant::now();
+
     let result = timeout(timeout_interval, provider.get_asset_info(ids)).await;
-    let elapsed_time = chrono::Utc::now().timestamp_millis() - start_time;
 
     let polling_result = match &result {
         Ok(Ok(_)) => PollingResult::Success,
@@ -72,7 +72,7 @@ where
         Err(_) => PollingResult::Timeout,
     };
 
-    let _ = metrics.record_polling_duration(elapsed_time, polling_result);
+    let _ = metrics.update_rest_polling(start_time.elapsed().as_millis(), polling_result);
 
     result
 }
@@ -80,29 +80,23 @@ where
 async fn handle_polling_result<S, E>(
     poll_result: Result<Result<Vec<AssetInfo>, E>, Elapsed>,
     store: &WorkerStore<S>,
-    metrics: &Metrics,
 ) where
     S: Store,
     E: Display,
 {
-    let polling_result = match poll_result {
+    match poll_result {
         Ok(Ok(asset_info)) => {
             if let Err(e) = store.set_batch_asset_info(asset_info).await {
                 error!("failed to update asset info with error: {e}");
             } else {
                 info!("asset info updated successfully");
             }
-            PollingResult::Success
         }
         Ok(Err(e)) => {
             error!("failed to update asset info with error: {e}");
-            PollingResult::Failed
         }
         Err(_) => {
             error!("updating interval exceeded timeout");
-            PollingResult::Timeout
         }
     };
-
-    metrics.increment_polling_total(polling_result);
 }

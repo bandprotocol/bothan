@@ -3,8 +3,10 @@ mod key;
 
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Instant;
 
 use bincode::{Decode, Encode, config, decode_from_slice, encode_to_vec};
+use bothan_lib::metrics::store::{Metrics, Operation, OperationStatus};
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::types::AssetInfo;
@@ -18,6 +20,7 @@ use crate::store::rocksdb::key::Key;
 pub struct RocksDbStore {
     db: Arc<DB>,
     registry: Arc<RwLock<Registry<Valid>>>,
+    metrics: Metrics,
 }
 
 impl RocksDbStore {
@@ -31,6 +34,7 @@ impl RocksDbStore {
         let store = RocksDbStore {
             db,
             registry: Arc::new(RwLock::new(registry)),
+            metrics: Metrics::new(),
         };
 
         store.flush_registry().await?;
@@ -54,6 +58,7 @@ impl RocksDbStore {
         Ok(RocksDbStore {
             db,
             registry: Arc::new(RwLock::new(registry)),
+            metrics: Metrics::new(),
         })
     }
 
@@ -121,10 +126,25 @@ impl Store for RocksDbStore {
         prefix: &str,
         id: &str,
     ) -> Result<Option<AssetInfo>, Self::Error> {
-        self.get(&Key::AssetStore {
+        let start_time = Instant::now();
+        let result = self.get(&Key::AssetStore {
             source_id: prefix,
             asset_id: id,
-        })
+        });
+        let status = match &result {
+            Ok(Some(_)) => OperationStatus::Success,
+            Ok(None) => OperationStatus::NotFound,
+            Err(_) => OperationStatus::Failed,
+        };
+
+        let _ = self.metrics.update_store_operation(
+            prefix.to_string(),
+            start_time.elapsed().as_micros(),
+            Operation::GetAssetInfo,
+            status,
+        );
+
+        result
     }
 
     async fn insert_asset_info(
@@ -144,17 +164,40 @@ impl Store for RocksDbStore {
         prefix: &str,
         asset_infos: Vec<AssetInfo>,
     ) -> Result<(), Self::Error> {
+        let start_time = Instant::now();
         let mut write_batch = WriteBatch::default();
         for asset_info in asset_infos {
             let key = Key::AssetStore {
                 source_id: prefix,
                 asset_id: &asset_info.id,
             };
-            let encoded = encode_to_vec(&asset_info, config::standard())?;
+            let encoded = encode_to_vec(&asset_info, config::standard()).inspect_err(|_e| {
+                let _ = self.metrics.update_store_operation(
+                    prefix.to_string(),
+                    start_time.elapsed().as_micros(),
+                    Operation::InsertBatchAssetInfo,
+                    OperationStatus::Failed,
+                );
+            })?;
             write_batch.put(key.to_prefixed_bytes(), encoded);
         }
 
-        self.db.write(write_batch)?;
+        if let Err(e) = self.db.write(write_batch) {
+            let _ = self.metrics.update_store_operation(
+                prefix.to_string(),
+                start_time.elapsed().as_micros(),
+                Operation::InsertBatchAssetInfo,
+                OperationStatus::Failed,
+            );
+            return Err(e.into());
+        }
+
+        let _ = self.metrics.update_store_operation(
+            prefix.to_string(),
+            start_time.elapsed().as_micros(),
+            Operation::InsertBatchAssetInfo,
+            OperationStatus::Success,
+        );
         Ok(())
     }
 }

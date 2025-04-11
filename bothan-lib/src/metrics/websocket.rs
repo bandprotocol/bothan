@@ -16,20 +16,18 @@ impl Metrics {
 
         let activity_messages_total = meter
             .u64_counter("websocket_activity_messages")
-            .with_description("total number of messages sent by the source to indicate whether the source is active or not")
+            .with_description("Total number of messages sent by the source to indicate whether the source is active or not")
             .build();
         let connection_duration = meter
             .u64_histogram("websocket_connection_duration_milliseconds")
             .with_description(
-                "time taken for worker to establish a websocket connection to the source",
+                "Time taken for worker to establish a websocket connection to the source",
             )
             .with_unit("milliseconds")
             .build();
         let connections_total = meter
             .u64_counter("websocket_connection")
-            .with_description(
-                "total number of connections established by a worker to the data source",
-            )
+            .with_description("Total number of connections established by a worker to the source")
             .build();
 
         Self {

@@ -14,12 +14,12 @@ impl Metrics {
 
         let polling_total = meter
             .u64_counter("rest_polling")
-            .with_description("total number of polling requests sent by the worker to the source")
+            .with_description("Total number of polling requests sent by the worker to the source")
             .build();
         let polling_duration = meter
             .u64_histogram("rest_polling_duration_milliseconds")
             .with_description(
-                "duration of each polling request made by the worker to fetch asset info",
+                "Time taken by the worker to complete each polling request to fetch asset info",
             )
             .with_unit("milliseconds")
             .build();
@@ -30,20 +30,15 @@ impl Metrics {
         }
     }
 
-    pub fn increment_polling_total(&self, status: PollingResult) {
-        self.polling_total
-            .add(1, &[KeyValue::new("status", status.to_string())]);
-    }
-
-    pub fn record_polling_duration<T: TryInto<u64>>(
+    pub fn update_rest_polling<T: TryInto<u64>>(
         &self,
         elapsed_time: T,
         status: PollingResult,
     ) -> Result<(), T::Error> {
-        self.polling_duration.record(
-            elapsed_time.try_into()?,
-            &[KeyValue::new("status", status.to_string())],
-        );
+        let labels = &[KeyValue::new("status", status.to_string())];
+        self.polling_total.add(1, labels);
+        self.polling_duration
+            .record(elapsed_time.try_into()?, labels);
         Ok(())
     }
 }

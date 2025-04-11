@@ -1,6 +1,6 @@
 use std::fmt::Display;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tokio::select;
 use tokio::time::{sleep, timeout};
@@ -97,12 +97,12 @@ where
     let max_backoff = Duration::from_secs(516);
 
     loop {
-        let start_time = chrono::Utc::now().timestamp_millis();
+        let start_time = Instant::now();
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
                 let _ = metrics.record_connection_duration(
-                    chrono::Utc::now().timestamp_millis() - start_time,
+                    start_time.elapsed().as_millis(),
                     ConnectionResult::Success,
                 );
                 metrics.increment_connections_total(ConnectionResult::Success);
@@ -116,10 +116,8 @@ where
             backoff *= 2;
         }
 
-        let _ = metrics.record_connection_duration(
-            chrono::Utc::now().timestamp_millis() - start_time,
-            ConnectionResult::Failed,
-        );
+        let _ = metrics
+            .record_connection_duration(start_time.elapsed().as_millis(), ConnectionResult::Failed);
         metrics.increment_connections_total(ConnectionResult::Failed);
         error!("failed to reconnect. current attempt: {}", retry_count);
         sleep(backoff).await;

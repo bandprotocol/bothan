@@ -23,11 +23,11 @@ impl Metrics {
 
         let requests_total = meter
             .u64_counter("server_requests")
-            .with_description("total number of requests sent to fetch asset prices")
+            .with_description("Total number of requests sent to the server")
             .build();
         let request_duration = meter
             .u64_histogram("server_request_duration_milliseconds")
-            .with_description("time taken to fetch asset prices")
+            .with_description("Time taken to process each request sent to the server")
             .with_unit("milliseconds")
             .build();
 
@@ -37,26 +37,19 @@ impl Metrics {
         }
     }
 
-    pub fn increment_requests_total(&self, service_name: ServiceName) {
-        self.requests_total.add(
-            1,
-            &[KeyValue::new("service_name", service_name.to_string())],
-        );
-    }
-
-    pub fn record_requests_duration<T: TryInto<u64>>(
+    pub fn update_server_request<T: TryInto<u64>>(
         &self,
         elapsed_time: T,
         service_name: ServiceName,
         grpc_code: Code,
     ) -> Result<(), T::Error> {
-        self.request_duration.record(
-            elapsed_time.try_into()?,
-            &[
-                KeyValue::new("service_name", service_name.to_string()),
-                KeyValue::new("status", code_to_str(grpc_code)),
-            ],
-        );
+        let labels = &[
+            KeyValue::new("service_name", service_name.to_string()),
+            KeyValue::new("status", code_to_str(grpc_code)),
+        ];
+        self.requests_total.add(1, labels);
+        self.request_duration
+            .record(elapsed_time.try_into()?, labels);
         Ok(())
     }
 }
