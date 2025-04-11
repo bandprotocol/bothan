@@ -50,7 +50,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .as_ref()
             .map(|_| Cache::builder().time_to_idle(MONITORING_TTL).build());
 
-        let registry = store.get_registry().await;
+        let registry = store.get_registry().await?;
 
         let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
 
@@ -120,7 +120,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         &self,
         ids: Vec<String>,
     ) -> Result<(String, Vec<PriceState>), S::Error> {
-        let registry = self.store.get_registry().await;
+        let registry = self.store.get_registry().await?;
 
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
@@ -204,9 +204,9 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         // drop old workers to kill connection
         let mut locked_workers = self.workers.lock().await;
-        *locked_workers = Vec::with_capacity(0);
+        locked_workers.clear();
 
-        // wait a bit for connections to clear up
+        // TODO: find method to wait for connections to clear up thats better than sleeping for 1 second
         sleep(Duration::from_secs(1)).await;
 
         let workers = build_workers(&registry, &self.opts, self.store.clone()).await;

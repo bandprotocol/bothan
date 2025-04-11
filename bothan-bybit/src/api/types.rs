@@ -12,6 +12,7 @@ pub enum Response {
     PublicMessage(PublicMessageResponse),
     /// Represents a public ticker response with market data.
     PublicTicker(PublicTickerResponse),
+    /// A ping.
     Ping,
 }
 

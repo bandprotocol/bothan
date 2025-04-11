@@ -60,13 +60,13 @@ async fn handle_polling_result<S, E>(
     match poll_result {
         Ok(Ok(asset_info)) => {
             if let Err(e) = store.set_batch_asset_info(asset_info).await {
-                error!("failed to update asset info with error: {e}");
+                error!("failed to store asset info with error: {e}");
             } else {
                 info!("asset info updated successfully");
             }
         }
         Ok(Err(e)) => {
-            error!("failed to update asset info with error: {e}");
+            error!("failed to poll asset info with error: {e}");
         }
         Err(_) => {
             error!("updating interval exceeded timeout");

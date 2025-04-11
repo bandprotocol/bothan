@@ -2,14 +2,13 @@ pub mod error;
 mod key;
 
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use bincode::{Decode, Encode, config, decode_from_slice, encode_to_vec};
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::types::AssetInfo;
 use rust_rocksdb::{DB, Options, WriteBatch};
-use tokio::sync::RwLock;
 
 use crate::store::rocksdb::error::{LoadError, RocksDbError};
 use crate::store::rocksdb::key::Key;
@@ -21,19 +20,28 @@ pub struct RocksDbStore {
 }
 
 impl RocksDbStore {
-    pub async fn new<P: AsRef<Path>>(flush_path: P) -> Result<Self, RocksDbError> {
+    pub fn new<P: AsRef<Path>>(flush_path: P) -> Result<Self, RocksDbError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         DB::destroy(&opts, &flush_path)?;
         let registry = Registry::default();
 
+        let encoded_registry = encode_to_vec(&registry, config::standard())?;
+        let encoded_hash = encode_to_vec("", config::standard())?;
+
         let db = Arc::new(DB::open(&opts, &flush_path)?);
+
+        let mut write_batch = WriteBatch::default();
+        write_batch.put(Key::Registry.to_prefixed_bytes(), encoded_registry);
+        write_batch.put(Key::RegistryIpfsHash.to_prefixed_bytes(), encoded_hash);
+
+        db.write(write_batch)?;
+
         let store = RocksDbStore {
             db,
             registry: Arc::new(RwLock::new(registry)),
         };
 
-        store.flush_registry().await?;
         Ok(store)
     }
 
@@ -72,12 +80,6 @@ impl RocksDbStore {
             .map(|(v, _)| v);
         Ok(value)
     }
-
-    async fn flush_registry(&self) -> Result<(), RocksDbError> {
-        let registry = self.registry.read().await.clone();
-        let hash = self.get_registry_ipfs_hash().await?.unwrap_or_default();
-        self.set_registry(registry, hash).await
-    }
 }
 
 #[async_trait::async_trait]
@@ -90,26 +92,28 @@ impl Store for RocksDbStore {
         ipfs_hash: String,
     ) -> Result<(), Self::Error> {
         let encoded_registry = encode_to_vec(&registry, config::standard())?;
-        let encoded_hash = encode_to_vec(&ipfs_hash, config::standard())?;
+        let encoded_hash = encode_to_vec(ipfs_hash, config::standard())?;
 
-        // if the registry can be encoded, lock first to prevent race conditions
-        let mut curr_reg = self.registry.write().await;
+        let mut writer = self
+            .registry
+            .write()
+            .map_err(|_| RocksDbError::PoisonedError)?;
 
-        // save to db
         let mut write_batch = WriteBatch::default();
         write_batch.put(Key::Registry.to_prefixed_bytes(), encoded_registry);
         write_batch.put(Key::RegistryIpfsHash.to_prefixed_bytes(), encoded_hash);
 
         self.db.write(write_batch)?;
-
-        // save to local
-        *curr_reg = registry;
-
+        *writer = registry;
         Ok(())
     }
 
-    async fn get_registry(&self) -> Registry<Valid> {
-        self.registry.read().await.clone()
+    async fn get_registry(&self) -> Result<Registry<Valid>, Self::Error> {
+        Ok(self
+            .registry
+            .read()
+            .map_err(|_| RocksDbError::PoisonedError)?
+            .clone())
     }
 
     async fn get_registry_ipfs_hash(&self) -> Result<Option<String>, Self::Error> {

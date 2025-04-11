@@ -38,7 +38,7 @@ impl AssetWorker for Worker {
         let worker_store = WorkerStore::new(store, WORKER_NAME);
         let token = CancellationToken::new();
 
-        let span = span!(Level::INFO, "source", name = WORKER_NAME);
+        let span = span!(Level::ERROR, "source", name = WORKER_NAME);
         tokio::spawn(
             start_polling(
                 token.child_token(),

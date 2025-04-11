@@ -146,7 +146,7 @@ impl WebSocketConnection {
         match self.ws_stream.next().await {
             Some(Ok(Message::Text(msg))) => match serde_json::from_str::<Event>(&msg) {
                 Ok(msg) => Some(Ok(msg)),
-                Err(e) => Some(Err(Error::ParseFailed(e))),
+                Err(e) => Some(Err(Error::ParseError(e))),
             },
             Some(Ok(Message::Ping(_))) => Some(Ok(Event::Ping)),
             Some(Ok(Message::Close(_))) => None,

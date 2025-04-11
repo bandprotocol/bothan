@@ -66,6 +66,7 @@ async fn main() {
     let filter = EnvFilter::new(format!("bothan={log_lvl}"))
         .add_directive(create_directive("bothan_api", log_lvl))
         .add_directive(create_directive("bothan_core", core_log_lvl))
+        .add_directive(create_directive("bothan_lib", core_log_lvl))
         .add_directive(create_directive("bothan_binance", src_log_lvl))
         .add_directive(create_directive("bothan_bybit", src_log_lvl))
         .add_directive(create_directive("bothan_coinbase", src_log_lvl))
