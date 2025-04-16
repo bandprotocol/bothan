@@ -15,50 +15,67 @@ addr = "127.0.0.1:4318"
 
 ## Metrics Overview
 
-### 1. gRPC Server Request Metrics
+### 1. Server Request Metrics
 
-Used to track incoming requests that call each function.
+Tracks each incoming Bothan gRPC server request and measures the processing time for each function call.
 
 #### Metrics
 | Name                                 | Type      | Description                                      |
 |--------------------------------------|-----------|--------------------------------------------------|
-| `server_requests`                    | `u64` Counter   | Total number of requests sent to the server           |
+| `server_requests_total`                    | `u64` Counter   | Total number of requests sent to the server           |
 | `server_request_duration_milliseconds` | `u64` Histogram | Time taken to process each request (ms)     |
 
 #### Tags
 - `service_name`: `get_info`, `update_registry`, `push_monitoring_records`, `get_prices`
-- `status`: gRPC response code, e.g., `ok`, `unavailable`, etc.
+- `status`: gRPC response code, e.g., `ok`, `unavailable`, `internal`, `not_found`, and others.
+
+
 
 ---
 
-### 2. REST Polling Metrics
+### 2. Store Metrics
 
-Used in workers that poll REST APIs to retrieve asset info.
+Tracks each operation that reads and writes asset information to RocksDB.
 
 #### Metrics
 | Name                              | Type      | Description                                                           |
 |-----------------------------------|-----------|-----------------------------------------------------------------------|
-| `rest_polling`                    | `u64` Counter   | Total number of polling requests sent by the worker to the source
-| `rest_polling_duration_milliseconds` | `u64` Histogram | Time taken by the worker to complete each polling request to fetch asset info (in milliseconds)                    |
+| `store_operations_total`                    | `u64` Counter   | Total number of operations executed by the store
+| `store_operation_duration_microseconds` | `u64` Histogram | Time taken to execute each store operation (μs)                    |
+
+#### Tags
+- `operation`: `get_asset_info`, `insert_batch_asset_info`
+- `operation_status`: `success`, `not_found`, `failed`
+---
+
+### 3. REST Worker Metrics
+Tracks workers that poll REST APIs from sources such as Coingecko and CoinMarketCap to retrieve asset information.
+
+#### Metrics
+| Name                              | Type      | Description                                                           |
+|-----------------------------------|-----------|-----------------------------------------------------------------------|
+| `rest_polling_total`                    | `u64` Counter   | Total number of polling requests sent by the worker to the source
+| `rest_polling_duration_milliseconds` | `u64` Histogram | Time taken by the worker to complete each polling request to fetch asset info (ms)                    |
 
 #### Tags
 - `status`: `success`, `failed`, `timeout`
-
 ---
 
-### 3. WebSocket Polling Metrics
+### 4. WebSocket Worker Metrics
 
 Used by workers that establish WebSocket connections to each source: Binance, Bybit, Coinbase, HTX, Kraken, and OKX.
 
 #### Metrics
 | Name                                     | Type      | Description                                                                |
 |------------------------------------------|-----------|----------------------------------------------------------------------------|
-| `websocket_activity_messages`            | `u64` Counter   | Total number of messages sent by the source to indicate whether the source is active or not  |
+| `websocket_activity_messages_total`            | `u64` Counter   | Total number of messages sent by the source to indicate whether the source is active or not  |
 | `websocket_connection_duration_milliseconds` | `u64` Histogram | Time taken for worker to establish a websocket connection to the source (ms)                              |
-| `websocket_connection`                  | `u64` Counter   | Total number of connections established by a worker to the source                              |
+| `websocket_connection_total`                  | `u64` Counter   | Total number of connections established by a worker to the source                              |
 
 #### Tags
-- `worker`: identifier for the worker instance
+- `worker`: 
+   - For sources that require multiple connections: `{source_name}_{connection_idx}` (e.g., `binance_0`, `binance_1`, ...)
+   - For single-connection sources: `source_name` (e.g., `binance`)
 - `message_type`: `asset_info` or `ping`
 - `status`: `"success"` or `failed`
 
@@ -72,8 +89,4 @@ After starting Bothan with `bothan start`, and once the worker has been built an
 ## Grafana Dashboard
 Grafana provides a Bothan Dashboard template to visualize metrics efficiently. You can download and import the dashboard from Grafana's official repository.
 
-- Dashboard Link: [Bothan Grafana Dashboard](https://grafana.com/grafana/dashboards/23038-falcon/)
-
-### Example Screenshot:
-
-
+[Download the Bothan Template Dashboard](https://grafana.com/grafana/dashboards/23176-bothan/)
