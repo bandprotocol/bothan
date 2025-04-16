@@ -11,7 +11,7 @@ use bothan_lib::worker::websocket::{
     AssetInfoProvider as WebSocketAssetInfoProvider, AssetInfoProviderConnector, Data,
 };
 use clap::{Args, Parser, Subcommand};
-use futures::stream::{FuturesOrdered, TryStreamExt};
+use futures::stream::{FuturesUnordered, TryStreamExt};
 use humantime::Duration as HumanDuration;
 use itertools::Itertools;
 use prettytable::{Table, row};
@@ -137,10 +137,9 @@ async fn query_binance<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_binance::WebSocketConnector::new(opts.url));
-    let deduped_ids = dedup(query_ids);
-    let asset_infos = query_chunked_websocket(
+    let asset_infos = query_websocket_with_splitting(
         connector,
-        deduped_ids,
+        dedup(query_ids),
         opts.max_subscription_per_connection,
         timeout.into(),
     )
@@ -153,10 +152,14 @@ async fn query_binance<T: Into<Duration>>(
 async fn query_bitfinex<T: Into<Duration>>(
     opts: bothan_bitfinex::WorkerOpts,
     query_ids: &[String],
-    timeout: T,
+    timeout_interval: T,
 ) -> anyhow::Result<()> {
     let api = bothan_bitfinex::api::builder::RestApiBuilder::new(opts.url).build()?;
-    let asset_infos = query_rest_api(&api, query_ids, timeout.into()).await?;
+    let asset_infos = timeout(
+        timeout_interval.into(),
+        api.get_asset_info(&dedup(query_ids)),
+    )
+    .await??;
 
     display_asset_infos(asset_infos);
     Ok(())
@@ -168,8 +171,7 @@ async fn query_bybit<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_bybit::api::WebSocketConnector::new(opts.url));
-    let deduped_ids = dedup(query_ids);
-    let asset_infos = query_websocket(connector, deduped_ids, timeout.into()).await?;
+    let asset_infos = query_websocket(connector, dedup(query_ids), timeout.into()).await?;
 
     display_asset_infos(asset_infos);
     Ok(())
@@ -181,10 +183,9 @@ async fn query_coinbase<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_coinbase::WebSocketConnector::new(opts.url));
-    let deduped_ids = dedup(query_ids);
-    let asset_infos = query_chunked_websocket(
+    let asset_infos = query_websocket_with_splitting(
         connector,
-        deduped_ids,
+        dedup(query_ids),
         opts.max_subscription_per_connection,
         timeout.into(),
     )
@@ -197,11 +198,15 @@ async fn query_coinbase<T: Into<Duration>>(
 async fn query_coingecko<T: Into<Duration>>(
     opts: bothan_coingecko::WorkerOpts,
     query_ids: &[String],
-    timeout: T,
+    timeout_interval: T,
 ) -> anyhow::Result<()> {
     let api = bothan_coingecko::api::RestApiBuilder::new(opts.url, opts.user_agent, opts.api_key)
         .build()?;
-    let asset_infos = query_rest_api(&api, query_ids, timeout.into()).await?;
+    let asset_infos = timeout(
+        timeout_interval.into(),
+        api.get_asset_info(&dedup(query_ids)),
+    )
+    .await??;
 
     display_asset_infos(asset_infos);
     Ok(())
@@ -210,10 +215,14 @@ async fn query_coingecko<T: Into<Duration>>(
 async fn query_coinmarketcap<T: Into<Duration>>(
     opts: bothan_coinmarketcap::WorkerOpts,
     query_ids: &[String],
-    timeout: T,
+    timeout_interval: T,
 ) -> anyhow::Result<()> {
     let api = bothan_coinmarketcap::api::RestApiBuilder::new(opts.url, opts.api_key).build()?;
-    let asset_infos = query_rest_api(&api, query_ids, timeout.into()).await?;
+    let asset_infos = timeout(
+        timeout_interval.into(),
+        api.get_asset_info(&dedup(query_ids)),
+    )
+    .await??;
 
     display_asset_infos(asset_infos);
     Ok(())
@@ -225,8 +234,7 @@ async fn query_htx<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_htx::api::WebSocketConnector::new(opts.url));
-    let deduped_ids = dedup(query_ids);
-    let asset_infos = query_websocket(connector, deduped_ids, timeout.into()).await?;
+    let asset_infos = query_websocket(connector, dedup(query_ids), timeout.into()).await?;
 
     display_asset_infos(asset_infos);
     Ok(())
@@ -238,8 +246,7 @@ async fn query_kraken<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_kraken::api::WebSocketConnector::new(opts.url));
-    let deduped_ids = dedup(query_ids);
-    let asset_infos = query_websocket(connector, deduped_ids, timeout.into()).await?;
+    let asset_infos = query_websocket(connector, dedup(query_ids), timeout.into()).await?;
 
     display_asset_infos(asset_infos);
     Ok(())
@@ -251,27 +258,13 @@ async fn query_okx<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_okx::api::WebSocketConnector::new(opts.url));
-    let deduped_ids = dedup(query_ids);
-    let asset_infos = query_websocket(connector, deduped_ids, timeout.into()).await?;
+    let asset_infos = query_websocket(connector, dedup(query_ids), timeout.into()).await?;
 
     display_asset_infos(asset_infos);
     Ok(())
 }
 
-async fn query_rest_api<P>(
-    provider: &P,
-    query_ids: &[String],
-    timeout_interval: Duration,
-) -> anyhow::Result<Vec<AssetInfo>>
-where
-    P: RestAssetInfoProvider,
-    P::Error: StdError + Send + Sync + 'static,
-{
-    let deduped_ids = dedup(query_ids);
-    Ok(timeout(timeout_interval, provider.get_asset_info(&deduped_ids)).await??)
-}
-
-async fn query_chunked_websocket<C, P, E1, E2>(
+async fn query_websocket_with_splitting<C, P, E1, E2>(
     connector: Arc<C>,
     ids: Vec<String>,
     max_subscription_per_connection: usize,
@@ -283,13 +276,13 @@ where
     P: WebSocketAssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P, Error = E1>,
 {
-    let mut tasks = FuturesOrdered::new();
+    let tasks = FuturesUnordered::new();
 
     for chunk in &ids.into_iter().chunks(max_subscription_per_connection) {
         let chunk_ids = chunk.collect();
         let cloned_connector = connector.clone();
 
-        tasks.push_back(async move { query_websocket(cloned_connector, chunk_ids, timeout).await });
+        tasks.push(async move { query_websocket(cloned_connector, chunk_ids, timeout).await });
     }
 
     let asset_infos = tasks
