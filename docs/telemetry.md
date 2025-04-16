@@ -77,7 +77,7 @@ Used by workers that establish WebSocket connections to each source: Binance, By
    - For sources that require multiple connections: `{source_name}_{connection_idx}` (e.g., `binance_0`, `binance_1`, ...)
    - For single-connection sources: `source_name` (e.g., `binance`)
 - `message_type`: `asset_info` or `ping`
-- `status`: `"success"` or `failed`
+- `status`: `success` or `failed`
 
 ---
 ## Integration with Prometheus
