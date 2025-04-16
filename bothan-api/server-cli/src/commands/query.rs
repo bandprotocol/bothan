@@ -345,7 +345,7 @@ where
             let data = provider
                 .next()
                 .await
-                .ok_or_else(|| anyhow!("stream closed unexpectedly"))??;
+                .ok_or(anyhow!("stream closed unexpectedly"))??;
 
             if let Data::AssetInfo(infos) = data {
                 for info in infos {
