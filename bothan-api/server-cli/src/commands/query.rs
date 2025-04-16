@@ -86,62 +86,43 @@ pub enum QuerySubCommand {
 
 impl QueryCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
+        let source_config = app_config.manager.crypto.source;
         let config_err = anyhow!("Config is missing. Please check your config.toml.");
         match &self.subcommand {
             QuerySubCommand::Binance { args } => {
-                let opts = app_config.manager.crypto.source.binance.ok_or(config_err)?;
+                let opts = source_config.binance.ok_or(config_err)?;
                 query_binance(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Bitfinex { args } => {
-                let opts = app_config
-                    .manager
-                    .crypto
-                    .source
-                    .bitfinex
-                    .ok_or(config_err)?;
+                let opts = source_config.bitfinex.ok_or(config_err)?;
                 query_bitfinex(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Bybit { args } => {
-                let opts = app_config.manager.crypto.source.bybit.ok_or(config_err)?;
+                let opts = source_config.bybit.ok_or(config_err)?;
                 query_bybit(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Coinbase { args } => {
-                let opts = app_config
-                    .manager
-                    .crypto
-                    .source
-                    .coinbase
-                    .ok_or(config_err)?;
+                let opts = source_config.coinbase.ok_or(config_err)?;
                 query_coinbase(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::CoinGecko { args } => {
-                let opts = app_config
-                    .manager
-                    .crypto
-                    .source
-                    .coingecko
-                    .ok_or(config_err)?;
+                let opts = source_config.coingecko.ok_or(config_err)?;
                 query_coingecko(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::CoinMarketCap { args } => {
-                let opts = app_config
-                    .manager
-                    .crypto
-                    .source
-                    .coinmarketcap
-                    .ok_or(config_err)?;
+                let opts = source_config.coinmarketcap.ok_or(config_err)?;
                 query_coinmarketcap(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Htx { args } => {
-                let opts = app_config.manager.crypto.source.htx.ok_or(config_err)?;
+                let opts = source_config.htx.ok_or(config_err)?;
                 query_htx(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Kraken { args } => {
-                let opts = app_config.manager.crypto.source.kraken.ok_or(config_err)?;
+                let opts = source_config.kraken.ok_or(config_err)?;
                 query_kraken(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Okx { args } => {
-                let opts = app_config.manager.crypto.source.okx.ok_or(config_err)?;
+                let opts = source_config.okx.ok_or(config_err)?;
                 query_okx(opts, &args.query_ids, args.timeout).await?;
             }
         }
@@ -156,9 +137,10 @@ async fn query_binance<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_binance::WebSocketConnector::new(opts.url));
+    let deduped_ids = dedup(query_ids);
     let asset_infos = query_chunked_websocket(
         connector,
-        query_ids,
+        deduped_ids,
         opts.max_subscription_per_connection,
         timeout.into(),
     )
@@ -199,9 +181,10 @@ async fn query_coinbase<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_coinbase::WebSocketConnector::new(opts.url));
+    let deduped_ids = dedup(query_ids);
     let asset_infos = query_chunked_websocket(
         connector,
-        query_ids,
+        deduped_ids,
         opts.max_subscription_per_connection,
         timeout.into(),
     )
@@ -290,7 +273,7 @@ where
 
 async fn query_chunked_websocket<C, P, E1, E2>(
     connector: Arc<C>,
-    ids: &[String],
+    ids: Vec<String>,
     max_subscription_per_connection: usize,
     timeout: Duration,
 ) -> anyhow::Result<Vec<AssetInfo>>
@@ -301,12 +284,8 @@ where
     C: AssetInfoProviderConnector<Provider = P, Error = E1>,
 {
     let mut tasks = FuturesOrdered::new();
-    let deduped_ids = dedup(ids);
 
-    for chunk in &deduped_ids
-        .into_iter()
-        .chunks(max_subscription_per_connection)
-    {
+    for chunk in &ids.into_iter().chunks(max_subscription_per_connection) {
         let chunk_ids = chunk.collect();
         let cloned_connector = connector.clone();
 
@@ -335,27 +314,24 @@ where
     C: AssetInfoProviderConnector<Provider = P, Error = E1>,
 {
     let mut provider = connector.connect().await?;
-
     provider.subscribe(&ids).await?;
 
     let mut asset_infos: HashMap<String, AssetInfo> = HashMap::with_capacity(ids.len());
 
     timeout(timeout_interval, async {
         while asset_infos.len() < ids.len() {
-            let data = provider
-                .next()
-                .await
-                .ok_or(anyhow!("stream closed unexpectedly"))??;
+            let data = provider.next().await?;
 
-            if let Data::AssetInfo(infos) = data {
+            if let Ok(Data::AssetInfo(infos)) = data {
                 for info in infos {
                     asset_infos.insert(info.id.clone(), info);
                 }
             }
         }
-        Ok::<(), anyhow::Error>(())
+        Some(())
     })
-    .await??;
+    .await?
+    .ok_or(anyhow!("stream closed unexpectedly"))?;
 
     Ok(asset_infos.into_values().collect())
 }
