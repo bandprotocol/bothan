@@ -2,7 +2,6 @@ use std::fmt::Display;
 use std::time::Duration;
 
 use tokio::select;
-use tokio::time::error::Elapsed;
 use tokio::time::{interval, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info};
@@ -40,36 +39,24 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
                 info!("polling: cancelled");
                 break
             },
-            _ = interval.tick() => info!("polling"),
-        }
-
-        select! {
-            _ = cancellation_token.cancelled() => break,
-            r = timeout(interval.period(), provider.get_asset_info(&ids)) => handle_polling_result(r, &store).await,
-        }
-    }
-}
-
-async fn handle_polling_result<S, E>(
-    poll_result: Result<Result<Vec<AssetInfo>, E>, Elapsed>,
-    store: &WorkerStore<S>,
-) where
-    S: Store,
-    E: Display,
-{
-    match poll_result {
-        Ok(Ok(asset_info)) => {
-            if let Err(e) = store.set_batch_asset_info(asset_info).await {
-                error!("failed to store asset info with error: {e}");
-            } else {
-                info!("asset info updated successfully");
+            _ = interval.tick() => {
+                info!("polling");
+                match timeout(interval.period(), provider.get_asset_info(&ids)).await {
+                    Ok(Ok(asset_info)) => {
+                        if let Err(e) = store.set_batch_asset_info(asset_info).await {
+                            error!("failed to store asset info with error: {e}");
+                        } else {
+                            info!("asset info updated successfully");
+                        }
+                    }
+                    Ok(Err(e)) => {
+                        error!("failed to poll asset info with error: {e}");
+                    }
+                    Err(_) => {
+                        error!("updating interval exceeded timeout");
+                    }
+                }
             }
-        }
-        Ok(Err(e)) => {
-            error!("failed to poll asset info with error: {e}");
-        }
-        Err(_) => {
-            error!("updating interval exceeded timeout");
         }
     }
 }

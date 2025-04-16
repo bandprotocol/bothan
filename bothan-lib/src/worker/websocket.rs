@@ -26,11 +26,11 @@ pub trait AssetInfoProviderConnector: Send + Sync {
 #[async_trait::async_trait]
 pub trait AssetInfoProvider: Send + Sync {
     type SubscriptionError: Display;
-    type PollingError: Display;
+    type ListeningError: Display;
 
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError>;
 
-    async fn next(&mut self) -> Option<Result<Data, Self::PollingError>>;
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>>;
 
     async fn try_close(mut self);
 }
@@ -52,15 +52,15 @@ pub async fn start_listening<S, E1, E2, P, C>(
     E1: Display,
     E2: Display,
     S: Store,
-    P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
+    P: AssetInfoProvider<SubscriptionError = E1, ListeningError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
 {
     let mut connection = connect(provider_connector.as_ref(), &ids).await;
     loop {
         select! {
             _ = cancellation_token.cancelled() => break,
-            poll_result = timeout(connection_timeout, connection.next()) => {
-                    match poll_result {
+            result = timeout(connection_timeout, connection.next()) => {
+                    match result {
                         // If timeout, we assume the connection has been dropped, and we attempt to reconnect
                         Err(_) | Ok(None) => {
                             let new_conn = connect(provider_connector.as_ref(), &ids).await;
@@ -68,7 +68,7 @@ pub async fn start_listening<S, E1, E2, P, C>(
                         }
                         Ok(Some(Ok(Data::AssetInfo(assets)))) => {
                             if let Err(e) = store.set_batch_asset_info(assets).await {
-                                error!("failed to asset info with error: {e}")
+                                error!("failed to set asset info with error: {e}")
                             } else {
                                 info!("asset info updated successfully");
                             }
@@ -79,13 +79,11 @@ pub async fn start_listening<S, E1, E2, P, C>(
             }
         }
     }
-
-    debug!("asset worker has been dropped, stopping asset worker");
 }
 
 async fn connect<C, P, E1, E2>(connector: &C, ids: &[String]) -> P
 where
-    P: AssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
+    P: AssetInfoProvider<SubscriptionError = E1, ListeningError = E2>,
     C: AssetInfoProviderConnector<Provider = P>,
 {
     let mut retry_count = 0;

@@ -7,7 +7,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
 
-use crate::api::error::{Error, PollingError};
+use crate::api::error::{Error, ListeningError};
 use crate::api::types::channel::ticker::{EventTrigger, TickerRequestParameters};
 use crate::api::types::message::{Method, PublicMessage};
 use crate::api::types::{ChannelResponse, Response, TickerResponse};
@@ -134,7 +134,7 @@ fn parse_msg(msg: String) -> Result<Response, Error> {
 #[async_trait::async_trait]
 impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
-    type PollingError = PollingError;
+    type ListeningError = ListeningError;
 
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         self.subscribe_ticker(ids, Some(EventTrigger::Trades), Some(true))
@@ -142,7 +142,7 @@ impl AssetInfoProvider for WebSocketConnection {
         Ok(())
     }
 
-    async fn next(&mut self) -> Option<Result<Data, Self::PollingError>> {
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         let ts = chrono::Utc::now().timestamp();
         WebSocketConnection::next(self).await.map(|r| match r? {
             Response::Channel(ChannelResponse::Ticker(tickers)) => parse_tickers(tickers, ts),
@@ -155,19 +155,19 @@ impl AssetInfoProvider for WebSocketConnection {
     }
 }
 
-fn parse_tickers(tickers: Vec<TickerResponse>, timestamp: i64) -> Result<Data, PollingError> {
+fn parse_tickers(tickers: Vec<TickerResponse>, timestamp: i64) -> Result<Data, ListeningError> {
     Ok(Data::AssetInfo(
         tickers
             .into_iter()
             .map(|t| parse_ticker(t, timestamp))
-            .collect::<Result<Vec<AssetInfo>, PollingError>>()?,
+            .collect::<Result<Vec<AssetInfo>, ListeningError>>()?,
     ))
 }
 
-fn parse_ticker(ticker: TickerResponse, timestamp: i64) -> Result<AssetInfo, PollingError> {
+fn parse_ticker(ticker: TickerResponse, timestamp: i64) -> Result<AssetInfo, ListeningError> {
     Ok(AssetInfo::new(
         ticker.symbol,
-        Decimal::from_f64_retain(ticker.last).ok_or(PollingError::InvalidPrice)?,
+        Decimal::from_f64_retain(ticker.last).ok_or(ListeningError::InvalidPrice)?,
         timestamp,
     ))
 }

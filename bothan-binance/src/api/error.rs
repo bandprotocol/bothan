@@ -8,7 +8,7 @@ pub enum Error {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum PollingError {
+pub enum ListeningError {
     #[error(transparent)]
     Error(#[from] Error),
 
