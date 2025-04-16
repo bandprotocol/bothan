@@ -98,5 +98,5 @@ async fn handle_polling_result<S, E>(
         Err(_) => {
             error!("updating interval exceeded timeout");
         }
-    };
+    }
 }

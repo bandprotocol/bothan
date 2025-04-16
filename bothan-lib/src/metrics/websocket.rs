@@ -48,29 +48,19 @@ impl Metrics {
         );
     }
 
-    pub fn record_connection_duration<T: TryInto<u64>>(
+    pub fn update_websocket_connection<T: TryInto<u64>>(
         &self,
         elapsed_time: T,
         status: ConnectionResult,
     ) -> Result<(), T::Error> {
-        self.connection_duration.record(
-            elapsed_time.try_into()?,
-            &[
-                KeyValue::new("worker", self.worker.clone()),
-                KeyValue::new("status", status.to_string()),
-            ],
-        );
+        let labels = &[
+            KeyValue::new("worker", self.worker.clone()),
+            KeyValue::new("status", status.to_string()),
+        ];
+        self.connections_total.add(1, labels);
+        self.connection_duration
+            .record(elapsed_time.try_into()?, labels);
         Ok(())
-    }
-
-    pub fn increment_connections_total(&self, status: ConnectionResult) {
-        self.connections_total.add(
-            1,
-            &[
-                KeyValue::new("worker", self.worker.clone()),
-                KeyValue::new("status", status.to_string()),
-            ],
-        );
     }
 }
 

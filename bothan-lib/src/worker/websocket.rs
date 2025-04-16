@@ -102,11 +102,10 @@ where
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-                let _ = metrics.record_connection_duration(
+                let _ = metrics.update_websocket_connection(
                     start_time.elapsed().as_millis(),
                     ConnectionResult::Success,
                 );
-                metrics.increment_connections_total(ConnectionResult::Success);
                 return provider;
             }
         }
@@ -116,9 +115,10 @@ where
             backoff *= 2;
         }
 
-        let _ = metrics
-            .record_connection_duration(start_time.elapsed().as_millis(), ConnectionResult::Failed);
-        metrics.increment_connections_total(ConnectionResult::Failed);
+        let _ = metrics.update_websocket_connection(
+            start_time.elapsed().as_millis(),
+            ConnectionResult::Failed,
+        );
         error!("failed to reconnect. current attempt: {}", retry_count);
         sleep(backoff).await;
     }
