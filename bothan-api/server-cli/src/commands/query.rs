@@ -10,7 +10,7 @@ use bothan_lib::worker::websocket::{
     AssetInfoProvider as WebSocketAssetInfoProvider, AssetInfoProviderConnector, Data,
 };
 use clap::{Args, Parser, Subcommand};
-use futures::stream::{FuturesOrdered, StreamExt};
+use futures::stream::{FuturesOrdered, TryStreamExt};
 use humantime::Duration as HumanDuration;
 use itertools::Itertools;
 use prettytable::{Table, row};
@@ -352,15 +352,12 @@ where
         tasks.push_back(async move { query_websocket(&mut provider, chunk_ids, timeout).await });
     }
 
-    let results = tasks
-        .collect::<Vec<Result<Vec<AssetInfo>, anyhow::Error>>>()
-        .await;
-    let asset_infos = results
-        .into_iter()
-        .collect::<Result<Vec<Vec<AssetInfo>>, _>>()?
+    let asset_infos = tasks
+        .try_collect::<Vec<Vec<AssetInfo>>>()
+        .await?
         .into_iter()
         .flatten()
-        .collect::<Vec<AssetInfo>>();
+        .collect();
 
     Ok(asset_infos)
 }
@@ -394,13 +391,7 @@ where
     })
     .await??;
 
-    ids.iter()
-        .map(|id| {
-            asset_infos
-                .remove(id)
-                .ok_or_else(|| anyhow!("missing asset info for id: {}", id))
-        })
-        .collect()
+    Ok(asset_infos.values().cloned().collect())
 }
 
 fn dedup_ids(ids: &[String]) -> Vec<String> {
