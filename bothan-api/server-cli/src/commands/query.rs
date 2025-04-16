@@ -345,9 +345,9 @@ where
             let data = provider
                 .next()
                 .await
-                .ok_or_else(|| anyhow!("stream closed unexpectedly"))?;
+                .ok_or_else(|| anyhow!("stream closed unexpectedly"))??;
 
-            if let Ok(Data::AssetInfo(infos)) = data {
+            if let Data::AssetInfo(infos) = data {
                 for info in infos {
                     asset_infos.insert(info.id.clone(), info);
                 }
