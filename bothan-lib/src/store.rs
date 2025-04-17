@@ -165,7 +165,7 @@ mod worker;
 pub trait Store: Send + Sync + Clone {
     /// The type returned in the event of an operation failure.
     ///
-    /// This should be a custom error type that implements the standard Error trait 
+    /// This should be a custom error type that implements the standard Error trait
     /// and captures all possible error conditions specific to the storage backend.
     type Error: StdError + Send + Sync + 'static;
 
@@ -185,7 +185,7 @@ pub trait Store: Send + Sync + Clone {
     ) -> Result<(), Self::Error>;
 
     /// Retrieves the current validated registry from the storage backend.
-    /// 
+    ///
     /// # Errors
     ///
     /// Returns a storage-specific error if the operation fails, such as when
@@ -193,7 +193,7 @@ pub trait Store: Send + Sync + Clone {
     async fn get_registry(&self) -> Result<Registry<Valid>, Self::Error>;
 
     /// Retrieves the IPFS hash of the current registry from the storage backend.
-    /// 
+    ///
     /// # Errors
     ///
     /// Returns a storage-specific error if the operation fails, such as when

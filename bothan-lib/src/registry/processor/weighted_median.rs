@@ -90,7 +90,7 @@ pub struct WeightedMedianProcessor {
     /// resulting median calculation. Sources with higher weights have more impact
     /// on the final result.
     pub source_weights: HashMap<String, u32>,
-    
+
     /// The minimum sum of weights required for a valid calculation.
     ///
     /// Processing will fail if the sum of weights from all provided sources

@@ -35,7 +35,7 @@
 //! # Extensibility
 //!
 //! While this module provides general-purpose implementations that cover common use cases,
-//! the [`AssetWorker`] trait is designed for extensibility. Users can create custom worker 
+//! the [`AssetWorker`] trait is designed for extensibility. Users can create custom worker
 //! implementations by implementing this trait to support specialized data sources, protocols,
 //! or business logic beyond what's provided in the standard implementations.
 //!
@@ -82,8 +82,8 @@ pub mod websocket;
 ///
 /// # Worker Store Usage
 ///
-/// Workers should use the [`WorkerStore`](crate::store::WorkerStore) to interact with 
-/// the main store. This provides namespace isolation and ensures that different workers 
+/// Workers should use the [`WorkerStore`](crate::store::WorkerStore) to interact with
+/// the main store. This provides namespace isolation and ensures that different workers
 /// can operate without conflicts. Typically, a worker implementation will:
 ///
 /// 1. Receive a reference to the main store in its `build` method
@@ -131,14 +131,14 @@ pub mod websocket;
 ///     ) -> Result<Self, AssetWorkerError> {
 ///         // Create a worker-specific store with the worker's name as prefix
 ///         let worker_store = WorkerStore::new(store, "http_poller");
-/// 
+///
 ///         // In a real implementation, you would also have methods for:
 ///         // - Starting the worker (data collection loop)
 ///         // - Handling errors and retries
 ///         // - Shutting down gracefully
 ///         
-///         Ok(HttpPoller { 
-///             opts, 
+///         Ok(HttpPoller {
+///             opts,
 ///             ids,
 ///             store: worker_store,
 ///         })
@@ -189,7 +189,7 @@ pub trait AssetWorker: Send + Sync + Sized {
     /// Returns the name of the worker.
     ///
     /// The name serves as a unique identifier for the worker. When used in conjunction
-    /// with Bothan's registry, the worker's name should match the source name specified 
+    /// with Bothan's registry, the worker's name should match the source name specified
     /// in the registry.
     fn name(&self) -> &'static str;
 

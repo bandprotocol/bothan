@@ -2,7 +2,6 @@
 ///
 /// This module provides the [`AssetInfo`] struct which is the core data structure
 /// for representing asset price information throughout the system.
-
 use bincode::de::Decoder;
 use bincode::enc::Encoder;
 use bincode::error::{DecodeError, EncodeError};
@@ -19,7 +18,7 @@ use serde::{Deserialize, Serialize};
 /// transmitting, and displaying asset information.
 ///
 /// The structure implements various traits for serialization, deserialization,
-/// and display, making it compatible with different storage backends and 
+/// and display, making it compatible with different storage backends and
 /// presentation formats.
 ///
 /// # Examples
@@ -44,10 +43,10 @@ use serde::{Deserialize, Serialize};
 pub struct AssetInfo {
     /// Unique identifier for the asset, typically in the format of a trading pair (e.g., "BTC-USD").
     pub id: String,
-    
+
     /// Current price of the asset represented as a high-precision decimal.
     pub price: Decimal,
-    
+
     /// Unix timestamp (in milliseconds) when the asset information was last updated.
     pub timestamp: i64,
 }

@@ -128,7 +128,7 @@ pub struct OperationRoute {
     /// When this route is applied, the system will look up the current value
     /// of the signal with this ID and use it as the second operand in the operation.
     pub signal_id: String,
-    
+
     /// The arithmetic operation to apply.
     ///
     /// This defines how the current value will be combined with the value
@@ -190,14 +190,14 @@ pub struct SourceQuery {
     /// This corresponds to a registered worker that can provide data for this query.
     /// Examples might include exchange names like "binance" or "coinbase".
     pub source_id: String,
-    
+
     /// The query identifier to use within the data source.
     ///
     /// This specifies what data to retrieve from the source, such as a trading pair
     /// like "btcusdt" or an asset identifier like "bitcoin".
     #[serde(rename = "id")]
     pub query_id: String,
-    
+
     /// Routing operations to apply to the retrieved value.
     ///
     /// These operations are applied sequentially to transform the source value

@@ -84,13 +84,13 @@ pub struct Signal {
     /// and optionally a series of routes to apply to the data before processing.
     #[serde(rename = "sources")]
     pub source_queries: Vec<SourceQuery>,
-    
+
     /// The processing strategy to apply to the source data.
     ///
     /// This defines how data from different sources will be combined into a
     /// single output value, such as by taking the median or weighted median.
     pub processor: Processor,
-    
+
     /// Optional post-processing transformations to apply to the processed value.
     ///
     /// These transformations are applied in sequence after the main processing

@@ -120,7 +120,7 @@ impl ProcessError {
 pub enum Processor {
     /// Median processor that computes the median of input values.
     Median(median::MedianProcessor),
-    
+
     /// Weighted median processor that applies weights to input values.
     WeightedMedian(weighted_median::WeightedMedianProcessor),
 }

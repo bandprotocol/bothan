@@ -1,7 +1,7 @@
 // ! Tick value conversion post-processor.
 //!
-//! This module provides a post-processor that converts decimal values into 
-//! tick values based on a logarithmic scale. Tick values represent price points 
+//! This module provides a post-processor that converts decimal values into
+//! tick values based on a logarithmic scale. Tick values represent price points
 //! on a non-linear scale, which can be useful for certain financial applications.
 //!
 //! The module provides:
@@ -73,7 +73,7 @@ const MIN_TICK: f64 = 1.0;
 /// // Convert a decimal value to a tick value
 /// let value = Decimal::new(20, 0);  // The value 20.0
 /// let result = post_processor.post_process(value).unwrap();
-/// 
+///
 /// // The result will be approximately 292102.8
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Encode, Decode)]

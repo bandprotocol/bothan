@@ -51,7 +51,7 @@ pub enum Data {
     /// This variant contains a vector of [`AssetInfo`] structures that should be
     /// saved to the store.
     AssetInfo(Vec<AssetInfo>),
-    
+
     /// Data that is not relevant to asset information updates.
     ///
     /// This variant is used for messages that should be acknowledged but don't
@@ -65,7 +65,7 @@ pub enum Data {
 /// allowing for cleaner error handling and reconnection strategies. Implementors
 /// should handle the initial connection setup and return a provider that's ready
 /// to subscribe to asset information.
-/// 
+///
 /// # Examples
 ///
 /// Implementing a connector for a cryptocurrency exchange WebSocket:
@@ -128,7 +128,7 @@ pub trait AssetInfoProviderConnector: Send + Sync {
     ///
     /// This should be a type that implements the [`AssetInfoProvider`] trait.
     type Provider: AssetInfoProvider;
-    
+
     /// The type returned in the event of a connection failure.
     ///
     /// This should be a custom error type that implements the Display trait
@@ -279,7 +279,7 @@ pub trait AssetInfoProvider: Send + Sync {
     /// This should be a custom error type that implements the Display trait
     /// and captures all possible error conditions during subscription.
     type SubscriptionError: Display;
-    
+
     /// The type returned in the event of a message reception failure.
     ///
     /// This should be a custom error type that implements the Display trait

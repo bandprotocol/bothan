@@ -67,7 +67,7 @@ use std::fmt;
 pub struct AssetWorkerError {
     /// A human-readable error message.
     pub msg: String,
-    
+
     /// The optional source error that caused this error.
     pub source: Option<Box<dyn Error + Send + Sync>>,
 }

@@ -6,7 +6,7 @@ use crate::types::AssetInfo;
 /// `WorkerStore` provides a simplified interface for workers to interact with the main store,
 /// automatically applying a consistent namespace prefix to all operations. This ensures that
 /// different workers can operate on isolated sections of the store without conflicts.
-/// 
+///
 /// # Examples
 ///
 /// ```rust
@@ -31,7 +31,7 @@ use crate::types::AssetInfo;
 /// #     }
 /// #     // ... remaining methods not relevant to this example
 /// # }
-/// 
+///
 /// async fn worker_example() -> Result<(), std::io::Error> {
 ///     // Create a store instance
 ///     let store = MockStore::new();
