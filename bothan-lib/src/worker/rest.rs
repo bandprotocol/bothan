@@ -72,7 +72,7 @@ where
         Err(_) => PollingResult::Timeout,
     };
 
-    let _ = metrics.update_rest_polling(start_time.elapsed().as_millis(), polling_result);
+    metrics.update_rest_polling(start_time.elapsed().as_millis(), polling_result);
 
     result
 }

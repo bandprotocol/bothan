@@ -102,7 +102,7 @@ where
 
         if let Ok(mut provider) = connector.connect().await {
             if provider.subscribe(ids).await.is_ok() {
-                let _ = metrics.update_websocket_connection(
+                metrics.update_websocket_connection(
                     start_time.elapsed().as_millis(),
                     ConnectionResult::Success,
                 );
@@ -115,7 +115,7 @@ where
             backoff *= 2;
         }
 
-        let _ = metrics.update_websocket_connection(
+        metrics.update_websocket_connection(
             start_time.elapsed().as_millis(),
             ConnectionResult::Failed,
         );

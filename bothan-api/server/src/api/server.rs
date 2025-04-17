@@ -3,7 +3,7 @@ use std::time::Instant;
 
 use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
-use bothan_lib::metrics::server::ServiceName;
+use bothan_lib::metrics::server::{Metrics, ServiceName};
 use bothan_lib::store::Store;
 use semver::Version;
 use tonic::{Code, Request, Response, Status};
@@ -21,12 +21,13 @@ pub const PRECISION: u32 = 9;
 /// The `BothanServer` struct represents a server that implements the `BothanService` trait.
 pub struct BothanServer<S: Store + 'static> {
     manager: Arc<CryptoAssetInfoManager<S>>,
+    metrics: Metrics,
 }
 
 impl<S: Store> BothanServer<S> {
     /// Creates a new `CryptoQueryServer` instance.
-    pub fn new(manager: Arc<CryptoAssetInfoManager<S>>) -> Self {
-        BothanServer { manager }
+    pub fn new(manager: Arc<CryptoAssetInfoManager<S>>, metrics: Metrics) -> Self {
+        BothanServer { manager, metrics }
     }
 }
 
@@ -40,10 +41,9 @@ impl<S: Store> BothanService for BothanServer<S> {
         info!("received get info request");
 
         let start_time = Instant::now();
-        let metrics = self.manager.get_metrics();
 
         let info = self.manager.get_info().await.map_err(|_| {
-            let _ = metrics.update_server_request(
+            self.metrics.update_server_request(
                 start_time.elapsed().as_millis(),
                 ServiceName::GetInfo,
                 Code::Internal,
@@ -59,7 +59,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             monitoring_enabled: info.monitoring_enabled,
         });
 
-        let _ = metrics.update_server_request(
+        self.metrics.update_server_request(
             start_time.elapsed().as_millis(),
             ServiceName::GetInfo,
             Code::Ok,
@@ -77,12 +77,11 @@ impl<S: Store> BothanService for BothanServer<S> {
         debug!("request: {:?}", request);
 
         let start_time = Instant::now();
-        let metrics = self.manager.get_metrics();
 
         let update_registry_request = request.into_inner();
 
         let version = Version::parse(&update_registry_request.version).map_err(|_| {
-            let _ = metrics.update_server_request(
+            self.metrics.update_server_request(
                 start_time.elapsed().as_millis(),
                 ServiceName::UpdateRegistry,
                 Code::InvalidArgument,
@@ -97,7 +96,7 @@ impl<S: Store> BothanService for BothanServer<S> {
 
         match set_registry_result {
             Ok(_) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::UpdateRegistry,
                     Code::Ok,
@@ -106,7 +105,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Ok(Response::new(UpdateRegistryResponse {}))
             }
             Err(SetRegistryError::FailedToRetrieve(e)) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::UpdateRegistry,
                     Code::NotFound,
@@ -115,7 +114,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::not_found("Failed to retrieve registry"))
             }
             Err(SetRegistryError::InvalidRegistry(e)) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
@@ -124,7 +123,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::invalid_argument("Registry is invalid"))
             }
             Err(SetRegistryError::UnsupportedVersion) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
@@ -133,7 +132,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::invalid_argument("Registry version is unsupported"))
             }
             Err(SetRegistryError::FailedToParse) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
@@ -142,7 +141,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::invalid_argument("Unable to parse registry version"))
             }
             Err(SetRegistryError::InvalidHash) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
@@ -151,7 +150,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::invalid_argument("Invalid IPFS hash"))
             }
             Err(SetRegistryError::FailedToSetRegistry) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::UpdateRegistry,
                     Code::Internal,
@@ -170,7 +169,6 @@ impl<S: Store> BothanService for BothanServer<S> {
         debug!("request: {:?}", request);
 
         let start_time = Instant::now();
-        let metrics = self.manager.get_metrics();
 
         let request = request.into_inner();
 
@@ -181,7 +179,7 @@ impl<S: Store> BothanService for BothanServer<S> {
 
         match push_result {
             Ok(_) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::PushMonitoringRecords,
                     Code::Ok,
@@ -190,7 +188,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Ok(Response::new(PushMonitoringRecordsResponse {}))
             }
             Err(PushMonitoringRecordError::MonitoringNotEnabled) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::PushMonitoringRecords,
                     Code::Unimplemented,
@@ -199,7 +197,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::unimplemented("Monitoring not enabled"))
             }
             Err(PushMonitoringRecordError::RecordNotFound) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::PushMonitoringRecords,
                     Code::FailedPrecondition,
@@ -208,7 +206,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 Err(Status::failed_precondition("Record not found"))
             }
             Err(PushMonitoringRecordError::FailedRequest(e)) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::PushMonitoringRecords,
                     Code::Internal,
@@ -219,7 +217,7 @@ impl<S: Store> BothanService for BothanServer<S> {
                 ))
             }
             Err(PushMonitoringRecordError::FailedToSendPayload(e)) => {
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::PushMonitoringRecords,
                     Code::Internal,
@@ -240,7 +238,6 @@ impl<S: Store> BothanService for BothanServer<S> {
         debug!("request: {:?}", request);
 
         let start_time = Instant::now();
-        let metrics = self.manager.get_metrics();
 
         let price_request = request.into_inner();
         let (uuid, price_states) = self
@@ -249,7 +246,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             .await
             .map_err(|e| {
                 error!("failed to get prices: {}", e);
-                let _ = metrics.update_server_request(
+                self.metrics.update_server_request(
                     start_time.elapsed().as_millis(),
                     ServiceName::GetPrices,
                     Code::Internal,
@@ -265,7 +262,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             .collect::<Vec<Price>>();
         let response = Response::new(GetPricesResponse { uuid, prices });
 
-        let _ = metrics.update_server_request(
+        self.metrics.update_server_request(
             start_time.elapsed().as_millis(),
             ServiceName::GetPrices,
             Code::Ok,

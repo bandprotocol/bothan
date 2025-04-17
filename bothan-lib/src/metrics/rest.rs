@@ -30,16 +30,16 @@ impl Metrics {
         }
     }
 
-    pub fn update_rest_polling<T: TryInto<u64>>(
+    pub fn update_rest_polling(
         &self,
-        elapsed_time: T,
+        elapsed_time: u128,
         status: PollingResult,
-    ) -> Result<(), T::Error> {
+    ){
         let labels = &[KeyValue::new("status", status.to_string())];
         self.polling_total.add(1, labels);
+        // `elapsed_time` is u128, but it will never exceed u64::MAX in practice
         self.polling_duration
-            .record(elapsed_time.try_into()?, labels);
-        Ok(())
+            .record(elapsed_time as u64, labels);
     }
 }
 

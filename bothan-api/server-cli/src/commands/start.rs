@@ -19,6 +19,7 @@ use bothan_core::manager::crypto_asset_info::CryptoAssetWorkerOpts;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
 use bothan_core::telemetry;
+use bothan_lib::metrics::server::Metrics;
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -226,7 +227,8 @@ async fn init_bothan_server<S: Store + 'static>(
         });
     }
 
-    Ok(Arc::new(BothanServer::new(manager)))
+    let metrics = Metrics::new();
+    Ok(Arc::new(BothanServer::new(manager, metrics)))
 }
 
 async fn init_crypto_opts(

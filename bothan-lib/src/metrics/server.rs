@@ -37,20 +37,20 @@ impl Metrics {
         }
     }
 
-    pub fn update_server_request<T: TryInto<u64>>(
+    pub fn update_server_request(
         &self,
-        elapsed_time: T,
+        elapsed_time: u128,
         service_name: ServiceName,
         grpc_code: Code,
-    ) -> Result<(), T::Error> {
+    ){
         let labels = &[
             KeyValue::new("service_name", service_name.to_string()),
             KeyValue::new("status", code_to_str(grpc_code)),
         ];
         self.requests_total.add(1, labels);
+        // `elapsed_time` is u128, but it will never exceed u64::MAX in practice
         self.request_duration
-            .record(elapsed_time.try_into()?, labels);
-        Ok(())
+            .record(elapsed_time as u64, labels);
     }
 }
 

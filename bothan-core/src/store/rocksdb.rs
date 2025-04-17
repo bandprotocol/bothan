@@ -141,7 +141,7 @@ impl Store for RocksDbStore {
             Err(_) => OperationStatus::Failed,
         };
 
-        let _ = self.metrics.update_store_operation(
+        self.metrics.update_store_operation(
             prefix.to_string(),
             start_time.elapsed().as_micros(),
             Operation::GetAssetInfo,
@@ -175,8 +175,8 @@ impl Store for RocksDbStore {
                 source_id: prefix,
                 asset_id: &asset_info.id,
             };
-            let encoded = encode_to_vec(&asset_info, config::standard()).inspect_err(|_e| {
-                let _ = self.metrics.update_store_operation(
+            let encoded = encode_to_vec(&asset_info, config::standard()).inspect_err(|_| {
+                self.metrics.update_store_operation(
                     prefix.to_string(),
                     start_time.elapsed().as_micros(),
                     Operation::InsertBatchAssetInfo,
@@ -186,17 +186,16 @@ impl Store for RocksDbStore {
             write_batch.put(key.to_prefixed_bytes(), encoded);
         }
 
-        if let Err(e) = self.db.write(write_batch) {
-            let _ = self.metrics.update_store_operation(
+        self.db.write(write_batch).inspect_err(|_| {
+            self.metrics.update_store_operation(
                 prefix.to_string(),
                 start_time.elapsed().as_micros(),
                 Operation::InsertBatchAssetInfo,
                 OperationStatus::Failed,
             );
-            return Err(e.into());
-        }
+        })?;
 
-        let _ = self.metrics.update_store_operation(
+        self.metrics.update_store_operation(
             prefix.to_string(),
             start_time.elapsed().as_micros(),
             Operation::InsertBatchAssetInfo,
