@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::error::Error as StdError;
+use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -137,7 +137,7 @@ async fn query_binance<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_binance::WebSocketConnector::new(opts.url));
-    let asset_infos = query_websocket_with_splitting(
+    let asset_infos = query_websocket_with_max_sub(
         connector,
         dedup(query_ids),
         opts.max_subscription_per_connection,
@@ -183,7 +183,7 @@ async fn query_coinbase<T: Into<Duration>>(
     timeout: T,
 ) -> anyhow::Result<()> {
     let connector = Arc::new(bothan_coinbase::WebSocketConnector::new(opts.url));
-    let asset_infos = query_websocket_with_splitting(
+    let asset_infos = query_websocket_with_max_sub(
         connector,
         dedup(query_ids),
         opts.max_subscription_per_connection,
@@ -264,15 +264,15 @@ async fn query_okx<T: Into<Duration>>(
     Ok(())
 }
 
-async fn query_websocket_with_splitting<C, P, E1, E2>(
+async fn query_websocket_with_max_sub<C, P, E1, E2>(
     connector: Arc<C>,
     ids: Vec<String>,
     max_subscription_per_connection: usize,
     timeout: Duration,
 ) -> anyhow::Result<Vec<AssetInfo>>
 where
-    E1: StdError + Send + Sync + 'static,
-    E2: StdError + Send + Sync + 'static,
+    E1: Error + Send + Sync + 'static,
+    E2: Error + Send + Sync + 'static,
     P: WebSocketAssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P, Error = E1>,
 {
@@ -301,8 +301,8 @@ async fn query_websocket<E1, E2, P, C>(
     timeout_interval: Duration,
 ) -> anyhow::Result<Vec<AssetInfo>>
 where
-    E1: StdError + Send + Sync + 'static,
-    E2: StdError + Send + Sync + 'static,
+    E1: Error + Send + Sync + 'static,
+    E2: Error + Send + Sync + 'static,
     P: WebSocketAssetInfoProvider<SubscriptionError = E1, PollingError = E2>,
     C: AssetInfoProviderConnector<Provider = P, Error = E1>,
 {
