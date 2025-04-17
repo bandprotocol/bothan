@@ -38,10 +38,6 @@ use crate::types::AssetInfo;
 /// must implement. Providers are responsible for making HTTP requests to fetch
 /// asset data and converting the responses into [`AssetInfo`] structures.
 ///
-/// # Type Parameters
-///
-/// * `Error` - A custom error type that captures API-specific failure conditions
-///
 /// # Examples
 ///
 /// Implementing a provider for a cryptocurrency price API:
@@ -146,14 +142,6 @@ pub trait AssetInfoProvider: Send + Sync {
 /// * Times out requests that take too long (based on the update interval)
 /// * Handles errors gracefully by logging them and continuing
 /// * Cancels polling gracefully when requested via the cancellation token
-///
-/// # Parameters
-///
-/// * `cancellation_token` - Token for signaling cancellation of the polling loop
-/// * `update_interval` - Time between update attempts
-/// * `provider` - The asset information provider that implements the [`AssetInfoProvider`] trait
-/// * `store` - Worker-specific store for saving asset information
-/// * `ids` - List of asset IDs to poll for
 ///
 /// # Examples
 ///

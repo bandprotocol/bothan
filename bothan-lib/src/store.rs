@@ -55,10 +55,6 @@ mod worker;
 /// All implementations must be thread-safe (Send + Sync) and provide atomic operations
 /// to ensure data consistency when used concurrently.
 ///
-/// # Type Parameters
-///
-/// * `Error` - A custom error type that captures all storage-specific failure conditions
-///
 /// # Required Methods
 ///
 /// Implementors must define:

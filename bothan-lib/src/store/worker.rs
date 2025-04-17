@@ -6,11 +6,7 @@ use crate::types::AssetInfo;
 /// `WorkerStore` provides a simplified interface for workers to interact with the main store,
 /// automatically applying a consistent namespace prefix to all operations. This ensures that
 /// different workers can operate on isolated sections of the store without conflicts.
-///
-/// # Type Parameters
-///
-/// * `S` - The underlying store implementation that must implement the [`Store`] trait
-///
+/// 
 /// # Examples
 ///
 /// ```rust

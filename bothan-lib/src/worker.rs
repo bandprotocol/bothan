@@ -74,10 +74,6 @@ pub mod websocket;
 /// - Handle errors and implement retry mechanisms
 /// - Support graceful shutdown
 ///
-/// # Type Parameters
-///
-/// * `Opts` - Configuration options for the worker
-///
 /// # Required Methods
 ///
 /// Implementors must define:

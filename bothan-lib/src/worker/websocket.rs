@@ -65,12 +65,7 @@ pub enum Data {
 /// allowing for cleaner error handling and reconnection strategies. Implementors
 /// should handle the initial connection setup and return a provider that's ready
 /// to subscribe to asset information.
-///
-/// # Type Parameters
-///
-/// * `Provider` - The type of provider that will be created
-/// * `Error` - A custom error type that captures connection failure conditions
-///
+/// 
 /// # Examples
 ///
 /// Implementing a connector for a cryptocurrency exchange WebSocket:
@@ -158,11 +153,6 @@ pub trait AssetInfoProviderConnector: Send + Sync {
 /// This trait defines the interface that WebSocket-based asset information providers
 /// must implement. Providers are responsible for subscribing to asset updates,
 /// receiving and parsing WebSocket messages, and converting them into [`Data`] structures.
-///
-/// # Type Parameters
-///
-/// * `SubscriptionError` - A custom error type for subscription failures
-/// * `ListeningError` - A custom error type for errors during message reception
 ///
 /// # Examples
 ///
@@ -343,14 +333,6 @@ pub trait AssetInfoProvider: Send + Sync {
 /// * Handles errors gracefully by logging them and continuing
 /// * Cancels listening gracefully when requested via the cancellation token
 ///
-/// # Parameters
-///
-/// * `cancellation_token` - Token for signaling cancellation of the listener loop
-/// * `provider_connector` - Factory for creating WebSocket provider connections
-/// * `store` - Worker-specific store for saving asset information
-/// * `ids` - List of asset IDs to subscribe to
-/// * `connection_timeout` - Maximum time to wait for messages before attempting reconnection
-///
 /// # Examples
 ///
 /// Starting a WebSocket listener for cryptocurrency prices:
@@ -443,11 +425,6 @@ pub async fn start_listening<S, E1, E2, P, C>(
 /// This function attempts to connect to the WebSocket provider and subscribe
 /// to the specified asset IDs. If the connection or subscription fails, it will
 /// retry with an exponential backoff strategy.
-///
-/// # Parameters
-///
-/// * `connector` - The connector used to establish WebSocket connections
-/// * `ids` - List of asset IDs to subscribe to
 ///
 /// # Returns
 ///
