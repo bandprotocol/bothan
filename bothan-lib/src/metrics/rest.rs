@@ -30,16 +30,11 @@ impl Metrics {
         }
     }
 
-    pub fn update_rest_polling(
-        &self,
-        elapsed_time: u128,
-        status: PollingResult,
-    ){
+    pub fn update_rest_polling(&self, elapsed_time: u128, status: PollingResult) {
         let labels = &[KeyValue::new("status", status.to_string())];
         self.polling_total.add(1, labels);
         // `elapsed_time` is u128, but it will never exceed u64::MAX in practice
-        self.polling_duration
-            .record(elapsed_time as u64, labels);
+        self.polling_duration.record(elapsed_time as u64, labels);
     }
 }
 

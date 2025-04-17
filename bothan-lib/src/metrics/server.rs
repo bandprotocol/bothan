@@ -42,15 +42,14 @@ impl Metrics {
         elapsed_time: u128,
         service_name: ServiceName,
         grpc_code: Code,
-    ){
+    ) {
         let labels = &[
             KeyValue::new("service_name", service_name.to_string()),
             KeyValue::new("status", code_to_str(grpc_code)),
         ];
         self.requests_total.add(1, labels);
         // `elapsed_time` is u128, but it will never exceed u64::MAX in practice
-        self.request_duration
-            .record(elapsed_time as u64, labels);
+        self.request_duration.record(elapsed_time as u64, labels);
     }
 }
 

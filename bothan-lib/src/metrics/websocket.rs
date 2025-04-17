@@ -48,19 +48,14 @@ impl Metrics {
         );
     }
 
-    pub fn update_websocket_connection(
-        &self,
-        elapsed_time: u128,
-        status: ConnectionResult,
-    ){
+    pub fn update_websocket_connection(&self, elapsed_time: u128, status: ConnectionResult) {
         let labels = &[
             KeyValue::new("worker", self.worker.clone()),
             KeyValue::new("status", status.to_string()),
         ];
         self.connections_total.add(1, labels);
         // `elapsed_time` is u128, but it will never exceed u64::MAX in practice
-        self.connection_duration
-            .record(elapsed_time as u64, labels);
+        self.connection_duration.record(elapsed_time as u64, labels);
     }
 }
 

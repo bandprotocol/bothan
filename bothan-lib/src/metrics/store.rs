@@ -44,7 +44,7 @@ impl Metrics {
         elapsed_time: u128,
         operation: Operation,
         status: OperationStatus,
-    ){
+    ) {
         let labels = &[
             KeyValue::new("source", source),
             KeyValue::new("operation", operation.to_string()),
@@ -53,8 +53,7 @@ impl Metrics {
 
         self.operations_total.add(1, labels);
         // `elapsed_time` is u128, but it will never exceed u64::MAX in practice
-        self.operation_duration
-            .record(elapsed_time  as u64, labels);
+        self.operation_duration.record(elapsed_time as u64, labels);
     }
 }
 
