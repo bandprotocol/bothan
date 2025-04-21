@@ -113,7 +113,7 @@ mod worker;
 ///
 ///     async fn get_registry(&self) -> Result<Registry<Valid>, Self::Error> {
 ///         let reg = self.registry.read().map_err(|e| MemoryStoreError(e.to_string()))?;
-///         match &*reg {
+///         match reg.as_ref() {
 ///             Some((registry, _)) => Ok(registry.clone()),
 ///             None => Err(MemoryStoreError("Registry not found".to_string())),
 ///         }

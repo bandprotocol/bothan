@@ -113,7 +113,6 @@ pub mod websocket;
 /// struct HttpPoller {
 ///     opts: HttpPollerOpts,
 ///     ids: Vec<String>,
-///     store: WorkerStore<Box<dyn Store>>,
 /// }
 ///
 /// #[async_trait]
@@ -140,42 +139,8 @@ pub mod websocket;
 ///         Ok(HttpPoller {
 ///             opts,
 ///             ids,
-///             store: worker_store,
 ///         })
 ///     }
-///     
-/// }
-///
-/// // Example of how the worker might update asset information
-/// async fn update_asset_example(worker: &HttpPoller) -> Result<(), Box<dyn std::error::Error>> {
-///     // Fetch data from the endpoint (simplified)
-///     let asset_data = fetch_from_api(&worker.opts.endpoint, &worker.ids[0]).await?;
-///     
-///     // Create AssetInfo from the data
-///     let asset_info = AssetInfo::new(
-///         worker.ids[0].clone(),
-///         Decimal::new(asset_data.price * 100, 2), // Convert to Decimal
-///         asset_data.timestamp,
-///     );
-///     
-///     // Store the updated asset info
-///     worker.store.set_asset_info(asset_info).await?;
-///     
-///     Ok(())
-/// }
-///
-/// // Simplified API fetching function
-/// async fn fetch_from_api(endpoint: &str, id: &str) -> Result<ApiResponse, reqwest::Error> {
-///     // In a real implementation, this would make an HTTP request
-///     Ok(ApiResponse {
-///         price: 395.0,
-///         timestamp: 1634567890000,
-///     })
-/// }
-///
-/// struct ApiResponse {
-///     price: f64,
-///     timestamp: i64,
 /// }
 /// ```
 #[async_trait::async_trait]

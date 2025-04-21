@@ -37,78 +37,6 @@ use crate::types::AssetInfo;
 /// This trait defines the interface that REST-based asset information providers
 /// must implement. Providers are responsible for making HTTP requests to fetch
 /// asset data and converting the responses into [`AssetInfo`] structures.
-///
-/// # Examples
-///
-/// Implementing a provider for a cryptocurrency price API:
-///
-/// ```
-/// use std::fmt;
-/// use async_trait::async_trait;
-/// use reqwest::Client;
-/// use serde::Deserialize;
-/// use rust_decimal::Decimal;
-/// use bothan_lib::worker::rest::AssetInfoProvider;
-/// use bothan_lib::types::AssetInfo;
-/// use thiserror::Error;
-///
-/// #[derive(Debug, Error)]
-/// #[error("API Error: {0}")]
-/// struct ApiError(String);
-///
-/// struct CryptoApiProvider {
-///     client: Client,
-///     base_url: String,
-/// }
-///
-/// impl CryptoApiProvider {
-///     fn new(base_url: String) -> Self {
-///         Self {
-///             client: Client::new(),
-///             base_url,
-///         }
-///     }
-/// }
-///
-/// #[derive(Deserialize)]
-/// struct PriceResponse {
-///     price: String,
-///     timestamp: i64,
-/// }
-///
-/// #[async_trait]
-/// impl AssetInfoProvider for CryptoApiProvider {
-///     type Error = ApiError;
-///
-///     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
-///         let mut results = Vec::new();
-///
-///         for id in ids {
-///             let url = format!("{}/price/{}", self.base_url, id);
-///             let response = self.client.get(&url)
-///                 .send()
-///                 .await
-///                 .map_err(|e| ApiError(e.to_string()))?;
-///
-///             let data: PriceResponse = response.json()
-///                 .await
-///                 .map_err(|e| ApiError(e.to_string()))?;
-///
-///             // Parse the price string into a Decimal
-///             let price = data.price.parse::<Decimal>()
-///                 .map_err(|e| ApiError(e.to_string()))?;
-///
-///             results.push(AssetInfo::new(
-///                 id.clone(),
-///                 price,
-///                 data.timestamp,
-///             ));
-///         }
-///
-///         Ok(results)
-///     }
-/// }
-/// ```
 #[async_trait::async_trait]
 pub trait AssetInfoProvider: Send + Sync {
     /// The type returned in the event of an operation failure.
@@ -142,44 +70,6 @@ pub trait AssetInfoProvider: Send + Sync {
 /// * Times out requests that take too long (based on the update interval)
 /// * Handles errors gracefully by logging them and continuing
 /// * Cancels polling gracefully when requested via the cancellation token
-///
-/// # Examples
-///
-/// Starting a polling loop for cryptocurrency prices:
-///
-/// ```
-/// use std::time::Duration;
-/// use tokio_util::sync::CancellationToken;
-/// use bothan_lib::store::{Store, WorkerStore};
-/// use bothan_lib::worker::rest::{start_polling, AssetInfoProvider};
-///
-/// async fn start_crypto_polling<S: Store, P: AssetInfoProvider>(
-///     store: S,
-///     provider: P,
-///     asset_ids: Vec<String>,
-/// ) {
-///     let cancellation_token = CancellationToken::new();
-///     let worker_store = WorkerStore::new(&store, "crypto_prices");
-///     let update_interval = Duration::from_secs(60); // Poll every minute
-///
-///     // Clone the token for later cancellation
-///     let cancel_handle = cancellation_token.clone();
-///
-///     // Start polling in a separate task
-///     tokio::spawn(async move {
-///         start_polling(
-///             cancellation_token,
-///             update_interval,
-///             provider,
-///             worker_store,
-///             asset_ids,
-///         ).await;
-///     });
-///
-///     // Later, when we want to stop polling:
-///     // cancel_handle.cancel();
-/// }
-/// ```
 #[tracing::instrument(skip(cancellation_token, provider, store, ids))]
 pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>>(
     cancellation_token: CancellationToken,

@@ -48,7 +48,7 @@ use crate::registry::source::SourceQuery;
 ///
 /// ```
 /// use bothan_lib::registry::signal::Signal;
-/// use bothan_lib::registry::source::{SourceQuery, Route, RouteOperation};
+/// use bothan_lib::registry::source::{SourceQuery, OperationRoute, Operation};
 /// use bothan_lib::registry::processor::{Processor, median::MedianProcessor};
 /// use bothan_lib::registry::post_processor::{PostProcessor, tick::TickPostProcessor};
 ///
@@ -61,7 +61,7 @@ use crate::registry::source::SourceQuery;
 ///             "btcusdt".to_string(),
 ///             vec![
 ///                 // Apply USDT-USD conversion route
-///                 Route::new("USDT-USD".to_string(), RouteOperation::Multiply),
+///                 OperationRoute::new("USDT-USD".to_string(), Operation::Multiply),
 ///             ],
 ///         ),
 ///         SourceQuery::new(
