@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 
 use bothan_lib::registry::signal::Signal;
 use bothan_lib::registry::source::{OperationRoute, SourceQuery};
@@ -27,8 +27,8 @@ pub async fn get_signal_price_states<S: Store>(
 ) -> Vec<PriceState> {
     let mut cache = PriceCache::new();
 
-    let mut queue = VecDeque::from(ids.clone());
-    while let Some(id) = queue.pop_front() {
+    let mut queue = ids.clone();
+    while let Some(id) = queue.pop() {
         if cache.contains(&id) {
             continue;
         }
@@ -45,9 +45,9 @@ pub async fn get_signal_price_states<S: Store>(
                     "prerequisites required for signal {}: {:?}",
                     id, prerequisite_ids
                 );
-                queue.push_front(id);
+                queue.push(id);
                 for prerequisite_id in prerequisite_ids {
-                    queue.push_front(prerequisite_id)
+                    queue.push(prerequisite_id)
                 }
             }
             Err(Error::InvalidSignal) => {
@@ -65,8 +65,8 @@ pub async fn get_signal_price_states<S: Store>(
         }
     }
 
-    ids.iter()
-        .map(|id| cache.get(id).cloned().unwrap()) // This should never fail as all values of ids should be inserted into the cache
+    ids.into_iter()
+        .map(|id| cache.get(&id).cloned().unwrap()) // This should never fail as all values of ids should be inserted into the cache
         .collect()
 }
 
@@ -136,25 +136,34 @@ async fn compute_source_result<S: Store>(
     let mut records_cache = Vec::new();
 
     let mut source_values = Vec::with_capacity(signal.source_queries.len());
-    let missing_prerequisites = HashSet::new();
+    let mut missing_prerequisites = HashSet::new();
     for source_query in &signal.source_queries {
-        let source_value_opt =
+        let source_query_result =
             process_source_query(store, source_query, stale_cutoff, cache, &mut records_cache)
-                .await?;
+                .await;
 
-        if let Some(source_val) = source_value_opt {
-            source_values.push(source_val)
+        match source_query_result {
+            Ok(Some(source_val)) => source_values.push(source_val),
+            Ok(None) => {
+                // If the source value is None, we don't need to do anything
+            }
+            Err(MissingPrerequisiteError { ids }) => {
+                // If we have a missing prerequisite, we need to add it to the list
+                for id in ids {
+                    missing_prerequisites.insert(id);
+                }
+            }
         }
     }
 
-    if !missing_prerequisites.len().is_zero() {
-        return Err(MissingPrerequisiteError::from(missing_prerequisites));
+    if missing_prerequisites.is_empty() {
+        // If we don't need to go back and find any prerequisites, we can write to the records
+        record.sources = records_cache;
+
+        Ok(source_values)
+    } else {
+        Err(MissingPrerequisiteError::from(missing_prerequisites))
     }
-
-    // If we don't need to go back and find any prerequisites, we can write to the records
-    record.sources = records_cache;
-
-    Ok(source_values)
 }
 
 async fn process_source_query<S: Store>(
@@ -238,8 +247,8 @@ mod tests {
     use std::collections::HashMap;
     use std::fmt;
 
-    use bothan_lib::registry::processor::Processor;
     use bothan_lib::registry::processor::median::MedianProcessor;
+    use bothan_lib::registry::processor::{ProcessError, Processor};
     use bothan_lib::registry::source::Operation;
     use bothan_lib::types::AssetInfo;
     use derive_more::Error;
@@ -347,7 +356,65 @@ mod tests {
             PriceState::Available(Decimal::new(69500, 0)),
             PriceState::Available(Decimal::one()),
         ];
+        let expected_records = [
+            SignalComputationRecord {
+                signal_id: "CS:USDT-USD".to_string(),
+                sources: vec![SourceRecord {
+                    source_id: "coingecko".to_string(),
+                    query_id: "tether".to_string(),
+                    raw_source_value: Some(AssetInfo {
+                        id: "tether".to_string(),
+                        price: Decimal::from(1),
+                        timestamp: 11002,
+                    }),
+                    operations: vec![],
+                    final_value: Some(Decimal::from(1)),
+                }],
+                process_result: Some(ProcessRecord {
+                    function: "median".to_string(),
+                    result: Ok(Decimal::from(1)),
+                }),
+                post_process_result: Some(vec![]),
+            },
+            SignalComputationRecord {
+                signal_id: "CS:BTC-USD".to_string(),
+                sources: vec![
+                    SourceRecord {
+                        source_id: "binance".to_string(),
+                        query_id: "btcusdt".to_string(),
+                        raw_source_value: Some(AssetInfo {
+                            id: "btcusdt".to_string(),
+                            price: Decimal::from(69000),
+                            timestamp: 11000,
+                        }),
+                        operations: vec![OperationRecord {
+                            signal_id: "CS:USDT-USD".to_string(),
+                            operation: Operation::Multiply,
+                            value: Decimal::from(1),
+                        }],
+                        final_value: Some(Decimal::from(69000)),
+                    },
+                    SourceRecord {
+                        source_id: "coingecko".to_string(),
+                        query_id: "bitcoin".to_string(),
+                        raw_source_value: Some(AssetInfo {
+                            id: "bitcoin".to_string(),
+                            price: Decimal::from(70000),
+                            timestamp: 11001,
+                        }),
+                        operations: vec![],
+                        final_value: Some(Decimal::from(70000)),
+                    },
+                ],
+                process_result: Some(ProcessRecord {
+                    function: "median".to_string(),
+                    result: Ok(Decimal::from(69500)),
+                }),
+                post_process_result: Some(vec![]),
+            },
+        ];
         assert_eq!(res, expected_res);
+        assert_eq!(records, expected_records);
     }
 
     #[tokio::test]
@@ -357,12 +424,53 @@ mod tests {
         let registry = mock_registry();
         let stale_cutoff = 0;
         let mut records = Vec::new();
-
         let res =
             get_signal_price_states(ids, &mock_store, &registry, stale_cutoff, &mut records).await;
 
         let expected_res = vec![PriceState::Unavailable, PriceState::Unavailable];
+        let expected_records = vec![
+            SignalComputationRecord {
+                signal_id: "CS:USDT-USD".to_string(),
+                sources: vec![SourceRecord {
+                    source_id: "coingecko".to_string(),
+                    query_id: "tether".to_string(),
+                    raw_source_value: None,
+                    operations: vec![],
+                    final_value: None,
+                }],
+                process_result: Some(ProcessRecord {
+                    function: "median".to_string(),
+                    result: Err(ProcessError::new("Not enough sources to calculate median")),
+                }),
+                post_process_result: None,
+            },
+            SignalComputationRecord {
+                signal_id: "CS:BTC-USD".to_string(),
+                sources: vec![
+                    SourceRecord {
+                        source_id: "binance".to_string(),
+                        query_id: "btcusdt".to_string(),
+                        raw_source_value: None,
+                        operations: vec![],
+                        final_value: None,
+                    },
+                    SourceRecord {
+                        source_id: "coingecko".to_string(),
+                        query_id: "bitcoin".to_string(),
+                        raw_source_value: None,
+                        operations: vec![],
+                        final_value: None,
+                    },
+                ],
+                process_result: Some(ProcessRecord {
+                    function: "median".to_string(),
+                    result: Err(ProcessError::new("Not enough sources to calculate median")),
+                }),
+                post_process_result: None,
+            },
+        ];
         assert_eq!(res, expected_res);
+        assert_eq!(records, expected_records);
     }
 
     #[tokio::test]
@@ -402,7 +510,65 @@ mod tests {
             PriceState::Available(Decimal::one()),
             PriceState::Unsupported,
         ];
+        let expected_records = vec![
+            SignalComputationRecord {
+                signal_id: "CS:USDT-USD".to_string(),
+                sources: vec![SourceRecord {
+                    source_id: "coingecko".to_string(),
+                    query_id: "tether".to_string(),
+                    raw_source_value: Some(AssetInfo {
+                        id: "tether".to_string(),
+                        price: Decimal::from(1),
+                        timestamp: 11002,
+                    }),
+                    operations: vec![],
+                    final_value: Some(Decimal::from(1)),
+                }],
+                process_result: Some(ProcessRecord {
+                    function: "median".to_string(),
+                    result: Ok(Decimal::from(1)),
+                }),
+                post_process_result: Some(vec![]),
+            },
+            SignalComputationRecord {
+                signal_id: "CS:BTC-USD".to_string(),
+                sources: vec![
+                    SourceRecord {
+                        source_id: "binance".to_string(),
+                        query_id: "btcusdt".to_string(),
+                        raw_source_value: Some(AssetInfo {
+                            id: "btcusdt".to_string(),
+                            price: Decimal::from(69000),
+                            timestamp: 11000,
+                        }),
+                        operations: vec![OperationRecord {
+                            signal_id: "CS:USDT-USD".to_string(),
+                            operation: Operation::Multiply,
+                            value: Decimal::from(1),
+                        }],
+                        final_value: Some(Decimal::from(69000)),
+                    },
+                    SourceRecord {
+                        source_id: "coingecko".to_string(),
+                        query_id: "bitcoin".to_string(),
+                        raw_source_value: Some(AssetInfo {
+                            id: "bitcoin".to_string(),
+                            price: Decimal::from(70000),
+                            timestamp: 11001,
+                        }),
+                        operations: vec![],
+                        final_value: Some(Decimal::from(70000)),
+                    },
+                ],
+                process_result: Some(ProcessRecord {
+                    function: "median".to_string(),
+                    result: Ok(Decimal::from(69500)),
+                }),
+                post_process_result: Some(vec![]),
+            },
+        ];
         assert_eq!(res, expected_res);
+        assert_eq!(records, expected_records);
     }
 
     #[tokio::test]
@@ -473,6 +639,61 @@ mod tests {
 
         let expected_res = Err(MissingPrerequisiteError::new(vec!["test2usd".to_string()]));
         assert_eq!(res, expected_res);
+        // We expect no mutation to the record here on missing prerequisite error here
+        assert_eq!(record, expected_record);
+    }
+
+    #[tokio::test]
+    async fn test_compute_source_result_with_multiple_missing_prerequisite() {
+        let source_queries = vec![
+            SourceQuery::new(
+                "test-source-a".to_string(),
+                "test1usd".to_string(),
+                vec![OperationRoute::new(
+                    "CS:ONE-USD".to_string(),
+                    Operation::Multiply,
+                )],
+            ),
+            SourceQuery::new(
+                "test-source-b".to_string(),
+                "test3usd".to_string(),
+                vec![OperationRoute::new(
+                    "CS:TWO-USD".to_string(),
+                    Operation::Multiply,
+                )],
+            ),
+        ];
+        let processor = Processor::Median(MedianProcessor::new(1));
+        let signal = Signal::new(source_queries, processor, vec![]);
+
+        let mut mock_store = MockStore::default();
+        mock_store.add_expected_query(
+            "test-source-a",
+            "test1usd",
+            AssetInfo::new("test1usd".to_string(), Decimal::default(), 0),
+        );
+        mock_store.add_expected_query(
+            "test-source-b",
+            "test3usd",
+            AssetInfo::new("test3usd".to_string(), Decimal::default(), 0),
+        );
+
+        let cache = PriceCache::new();
+        let stale_cutoff = 0;
+        let mut record = PriceSignalComputationRecord::new("CS:TEST-USD".to_string());
+        let expected_record = record.clone();
+
+        let res =
+            compute_source_result(&signal, &mock_store, &cache, stale_cutoff, &mut record).await;
+
+        assert!(
+            res.as_ref()
+                .err()
+                .unwrap()
+                .ids
+                .contains(&"CS:TWO-USD".to_string())
+        );
+        assert!(res.err().unwrap().ids.contains(&"CS:ONE-USD".to_string()));
         // We expect no mutation to the record here on missing prerequisite error here
         assert_eq!(record, expected_record);
     }
