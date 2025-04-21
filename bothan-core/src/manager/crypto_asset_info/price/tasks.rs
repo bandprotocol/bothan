@@ -12,9 +12,7 @@ use tracing::{debug, info, warn};
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
 use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisiteError};
 use crate::manager::crypto_asset_info::types::{PriceSignalComputationRecord, PriceState};
-use crate::monitoring::types::{
-    OperationRecord, ProcessRecord, SignalComputationRecord, SourceRecord,
-};
+use crate::monitoring::types::{OperationRecord, ProcessRecord, SourceRecord};
 
 // TODO: Allow records to be Option<T>
 /// Computes the price states for a list of signal ids.
@@ -33,7 +31,8 @@ pub async fn get_signal_price_states<S: Store>(
             continue;
         }
 
-        match compute_signal_result(&id, store, registry, stale_cutoff, &cache, records).await {
+        let mut record = PriceSignalComputationRecord::new(id.clone());
+        match compute_signal_result(&id, store, registry, stale_cutoff, &cache, &mut record).await {
             Ok(price) => {
                 info!("signal {}: {} ", id, price);
                 cache.set_available(id, price);
@@ -49,6 +48,7 @@ pub async fn get_signal_price_states<S: Store>(
                 for prerequisite_id in prerequisite_ids {
                     queue.push(prerequisite_id)
                 }
+                continue;
             }
             Err(Error::InvalidSignal) => {
                 warn!("signal with id {} is not supported", id);
@@ -63,6 +63,7 @@ pub async fn get_signal_price_states<S: Store>(
                 cache.set_unavailable(id);
             }
         }
+        records.push(record);
     }
 
     ids.into_iter()
@@ -76,21 +77,15 @@ async fn compute_signal_result<S: Store>(
     registry: &Registry<Valid>,
     stale_cutoff: i64,
     cache: &PriceCache<String>,
-    records: &mut Vec<PriceSignalComputationRecord>,
+    record: &mut PriceSignalComputationRecord,
 ) -> Result<Decimal, Error> {
     match registry.get(id) {
         Some(signal) => {
-            let mut record = SignalComputationRecord::new(id.to_string());
-
             let source_results =
-                compute_source_result(signal, store, cache, stale_cutoff, &mut record).await?;
-
-            records.push(record);
-            // We can unwrap here because we just pushed the record, so it's guaranteed to be there
-            let record_ref = records.last_mut().unwrap();
+                compute_source_result(signal, store, cache, stale_cutoff, record).await?;
 
             let process_signal_result = signal.processor.process(source_results);
-            record_ref.process_result = Some(ProcessRecord::new(
+            record.process_result = Some(ProcessRecord::new(
                 signal.processor.name().to_string(),
                 process_signal_result.clone(),
             ));
@@ -110,13 +105,13 @@ async fn compute_signal_result<S: Store>(
                         processed_signal = post_processed;
                     }
                     Err(e) => {
-                        record_ref.post_process_result = Some(post_process_records);
+                        record.post_process_result = Some(post_process_records);
                         return Err(Error::FailedToPostProcessSignal(e));
                     }
                 }
             }
 
-            record_ref.post_process_result = Some(post_process_records);
+            record.post_process_result = Some(post_process_records);
 
             Ok(processed_signal)
         }
@@ -255,6 +250,7 @@ mod tests {
     use num_traits::One;
 
     use super::*;
+    use crate::monitoring::types::SignalComputationRecord;
 
     #[derive(Debug, Error)]
     struct MockError {}
@@ -511,6 +507,12 @@ mod tests {
             PriceState::Unsupported,
         ];
         let expected_records = vec![
+            SignalComputationRecord {
+                signal_id: "CS:DNE-USD".to_string(),
+                sources: vec![],
+                process_result: None,
+                post_process_result: None,
+            },
             SignalComputationRecord {
                 signal_id: "CS:USDT-USD".to_string(),
                 sources: vec![SourceRecord {
