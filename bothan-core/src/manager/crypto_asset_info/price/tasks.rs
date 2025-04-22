@@ -214,8 +214,9 @@ fn compute_source_routes(
             None => missing.push(route.signal_id.clone()),
             Some(_) => {
                 warn!("signal {} is not available", route.signal_id);
+                // If the value is not available, return None
                 return Ok(None);
-            } // If the value is not available, return None
+            }
         }
     }
 
