@@ -201,7 +201,7 @@ async fn process_source_query<S: Store>(
 
 fn compute_source_routes(
     routes: &Vec<OperationRoute>,
-    start: Decimal,
+    init: Decimal,
     cache: &PriceCache<String>,
     record: &mut SourceRecord<AssetInfo, Decimal>,
 ) -> Result<Option<Decimal>, MissingPrerequisiteError> {
@@ -212,7 +212,10 @@ fn compute_source_routes(
         match cache.get(&route.signal_id) {
             Some(PriceState::Available(p)) => values.push(*p),
             None => missing.push(route.signal_id.clone()),
-            Some(_) => return Ok(None), // If the value is not available, return None
+            Some(_) => {
+                warn!("signal {} is not available", route.signal_id);
+                return Ok(None);
+            } // If the value is not available, return None
         }
     }
 
@@ -222,7 +225,7 @@ fn compute_source_routes(
     }
 
     // Calculate the routed price
-    let price = (0..routes.len()).try_fold(start, |acc, idx| {
+    let price = (0..routes.len()).try_fold(init, |acc, idx| {
         routes[idx].operation.execute(acc, values[idx])
     });
 
@@ -805,7 +808,7 @@ mod tests {
             OperationRoute::new("D", Operation::Add),
         ];
 
-        let start = Decimal::one();
+        let init = Decimal::one();
 
         let mut cache = PriceCache::new();
         cache.set_available("A".to_string(), Decimal::from(2));
@@ -821,7 +824,7 @@ mod tests {
             vec![],
             None,
         );
-        let res = compute_source_routes(&routes, start, &cache, &mut record);
+        let res = compute_source_routes(&routes, init, &cache, &mut record);
 
         let expected_value = Some(Decimal::new(764, 1));
         let expected_record = SourceRecord::new(
@@ -847,7 +850,7 @@ mod tests {
             OperationRoute::new("A", Operation::Multiply),
             OperationRoute::new("B", Operation::Multiply),
         ];
-        let start = Decimal::one();
+        let init = Decimal::one();
         let mut cache = PriceCache::new();
         cache.set_available("A".to_string(), Decimal::from(2));
 
@@ -860,7 +863,7 @@ mod tests {
             None,
         );
         let expected_record = record.clone();
-        let res = compute_source_routes(&routes, start, &cache, &mut record);
+        let res = compute_source_routes(&routes, init, &cache, &mut record);
 
         let expected_err = Err(MissingPrerequisiteError::new(vec!["B".to_string()]));
 
@@ -875,7 +878,7 @@ mod tests {
             OperationRoute::new("A", Operation::Multiply),
             OperationRoute::new("B", Operation::Multiply),
         ];
-        let start = Decimal::one();
+        let init = Decimal::one();
         let mut cache = PriceCache::new();
         cache.set_available("A".to_string(), Decimal::from(1337));
         cache.set_unavailable("B".to_string());
@@ -889,7 +892,7 @@ mod tests {
             None,
         );
         let expected_record = record.clone();
-        let res = compute_source_routes(&routes, start, &cache, &mut record);
+        let res = compute_source_routes(&routes, init, &cache, &mut record);
 
         assert_eq!(res, Ok(None));
         // we expect no mutation to the record on failure here
@@ -903,7 +906,7 @@ mod tests {
             OperationRoute::new("B", Operation::Multiply),
             OperationRoute::new("C", Operation::Divide),
         ];
-        let start = Decimal::one();
+        let init = Decimal::one();
         let mut cache = PriceCache::new();
         cache.set_available("A".to_string(), Decimal::from(10710110));
         cache.set_unsupported("B".to_string());
@@ -918,7 +921,7 @@ mod tests {
             None,
         );
         let expected_record = record.clone();
-        let res = compute_source_routes(&routes, start, &cache, &mut record);
+        let res = compute_source_routes(&routes, init, &cache, &mut record);
 
         assert_eq!(res, Ok(None));
         // we expect no mutation to the record on failure here
