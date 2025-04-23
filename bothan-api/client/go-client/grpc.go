@@ -18,7 +18,7 @@ type GrpcClient struct {
 }
 
 func NewGrpcClient(url string, timeout time.Duration) (*GrpcClient, error) {
-	connection, err := grpc.Dial(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	connection, err := grpc.NewClient(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

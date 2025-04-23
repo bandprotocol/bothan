@@ -7,7 +7,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
 
-use crate::api::error::{Error, PollingError};
+use crate::api::error::{Error, ListeningError};
 use crate::api::types::{MAX_ARGS, PublicTickerResponse, Response};
 
 /// A connector for establishing a WebSocket connection to the Bybit API.
@@ -105,7 +105,7 @@ fn parse_msg(msg: String) -> Result<Response, Error> {
 #[async_trait::async_trait]
 impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
-    type PollingError = PollingError;
+    type ListeningError = ListeningError;
 
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         for chunk in ids.chunks(MAX_ARGS) {
@@ -114,7 +114,7 @@ impl AssetInfoProvider for WebSocketConnection {
         Ok(())
     }
 
-    async fn next(&mut self) -> Option<Result<Data, Self::PollingError>> {
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         WebSocketConnection::next(self).await.map(|r| {
             Ok(match r? {
                 Response::PublicTicker(t) => parse_public_ticker(t)?,

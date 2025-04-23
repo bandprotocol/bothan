@@ -10,7 +10,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
 
-use crate::api::error::{Error, PollingError};
+use crate::api::error::{Error, ListeningError};
 use crate::api::msgs::{Event, MiniTickerInfo, StreamEventData};
 
 pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
@@ -165,14 +165,14 @@ impl WebSocketConnection {
 #[async_trait::async_trait]
 impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
-    type PollingError = PollingError;
+    type ListeningError = ListeningError;
 
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         self.subscribe_mini_ticker_stream(random(), ids).await?;
         Ok(())
     }
 
-    async fn next(&mut self) -> Option<Result<Data, Self::PollingError>> {
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         WebSocketConnection::next(self).await.map(|r| {
             Ok(match r? {
                 Event::Stream(se) => match se.data {
