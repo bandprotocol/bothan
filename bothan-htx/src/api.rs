@@ -1,5 +1,4 @@
-pub use error::{ConnectionError, MessageError, SendError};
-pub use websocket::{HtxWebSocketConnection, HtxWebSocketConnector};
+pub use websocket::{WebSocketConnection, WebSocketConnector};
 
 pub mod error;
 pub mod types;

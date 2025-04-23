@@ -1,30 +1,61 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use bothan_lib::registry::{Registry, Valid};
-use bothan_lib::store::Store;
-use bothan_lib::worker::AssetWorker;
-use tracing::{error, info};
 
-use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
-
-/// Sets the query ids for each worker based on the registry. If the registry contains a worker that
-/// is not in the worker map, it will be ignored and logged.
-pub async fn set_workers_query_ids<S: Store + 'static>(
-    workers: &HashMap<String, CryptoAssetWorker<S>>,
+// Returns a mapping of source_id to a set of query_ids that are batched together
+// This is used to determine which queries should be batched together
+// e.g. if we have a registry with the following entries:
+// {
+//     "CS:USDT-USD": {
+//         "sources": [
+//             {
+//                 "source_id": "coingecko",
+//                 "id": "tether",
+//                 "routes": []
+//             }
+//         ],
+//         "processor": {
+//             "function": "median",
+//             "params": {
+//                 "min_source_count": 1
+//             }
+//         },
+//         "post_processors": []
+//     "CS:BTC-USD": {
+//         "sources": [
+//             {
+//                 "source_id": "binance",
+//                 "id": "btcusdt",
+//                 "routes": [
+//                     {
+//                         "signal_id": "CS:USDT-USD",
+//                         "operation": "*"
+//                     }
+//                 ]
+//             },
+//             {
+//                 "source_id": "coingecko",
+//                 "id": "bitcoin",
+//                 "routes": []
+//             }
+//         ],
+//         "processor": {
+//             "function": "median",
+//             "params": {
+//                 "min_source_count": 1
+//             }
+//         },
+//         "post_processors": []
+//     },
+// }
+// The function will return a HashMap with the following entries:
+// {
+//     "binance": ["btcusdt"],
+//     "coingecko": ["bitcoin", "tether"]
+// }
+pub fn get_source_batched_query_ids(
     registry: &Registry<Valid>,
-) {
-    for (source, query_ids) in get_source_batched_query_ids(registry).drain() {
-        match workers.get(&source) {
-            Some(worker) => match worker.set_query_ids(query_ids).await {
-                Ok(_) => info!("set query ids for {} worker", source),
-                Err(e) => error!("failed to set query ids for {} worker: {}", source, e),
-            },
-            None => info!("worker {} not found", source),
-        }
-    }
-}
-
-fn get_source_batched_query_ids(registry: &Registry<Valid>) -> HashMap<String, HashSet<String>> {
+) -> HashMap<String, HashSet<String>> {
     let mut source_query_ids: HashMap<String, HashSet<String>> = HashMap::new();
     // Seen signal_ids
     let mut seen = HashSet::<String>::new();

@@ -12,3 +12,12 @@ pub enum Channel {
     /// A channel for batch ticker updates.
     TickerBatch,
 }
+
+impl AsRef<str> for Channel {
+    fn as_ref(&self) -> &str {
+        match self {
+            Channel::Ticker => "ticker",
+            Channel::TickerBatch => "ticker_batch",
+        }
+    }
+}

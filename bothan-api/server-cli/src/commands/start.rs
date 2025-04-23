@@ -11,22 +11,21 @@ use bothan_api::api::BothanServer;
 use bothan_api::config::AppConfig;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
-use bothan_api::proto::bothan::v1::BothanServiceServer;
+use bothan_api::proto::bothan::v1::{BothanServiceServer, FILE_DESCRIPTOR_SET};
 use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
 use bothan_core::manager::CryptoAssetInfoManager;
-use bothan_core::manager::crypto_asset_info::worker::CryptoAssetWorker;
-use bothan_core::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
+use bothan_core::manager::crypto_asset_info::CryptoAssetWorkerOpts;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
 use bothan_lib::registry::{Registry, Valid};
-use bothan_lib::store::{RegistryStore, Store};
-use bothan_lib::worker::AssetWorker;
+use bothan_lib::store::Store;
 use bothan_lib::worker::error::AssetWorkerError;
 use clap::Parser;
 use reqwest::header::{HeaderName, HeaderValue};
 use semver::{Version, VersionReq};
 use tonic::transport::Server;
+use tonic_reflection::server::Builder as ReflectionBuilder;
 use tracing::{debug, error, info};
 
 #[derive(Parser)]
@@ -68,8 +67,15 @@ impl StartCli {
         let bothan_server =
             init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
 
-        info!("server started");
+        let reflection_service = ReflectionBuilder::configure()
+            .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+            .build_v1alpha()
+            .with_context(|| "Failed to build reflection service")?;
+
+        info!("server started at {:?}", app_config.grpc.addr);
+
         Server::builder()
+            .add_service(reflection_service)
             .add_service(BothanServiceServer::from_arc(bothan_server))
             .serve(app_config.grpc.addr)
             .await?;
@@ -171,29 +177,34 @@ async fn init_bothan_server<S: Store + 'static>(
     ipfs_client: IpfsClient,
     monitoring_client: Option<Arc<MonitoringClient>>,
 ) -> anyhow::Result<Arc<BothanServer<S>>> {
-    let manager_store = RegistryStore::new(store.clone());
-
     let stale_threshold = config.manager.crypto.stale_threshold;
     let bothan_version =
         Version::from_str(VERSION).with_context(|| "Failed to parse bothan version")?;
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
 
-    let workers = match init_crypto_workers(&store, &config.manager.crypto.source).await {
+    let opts = match init_crypto_opts(&config.manager.crypto.source).await {
         Ok(workers) => workers,
         Err(e) => {
             bail!("failed to initialize workers: {:?}", e);
         }
     };
-    let manager = CryptoAssetInfoManager::new(
-        workers,
-        manager_store,
+    let manager = match CryptoAssetInfoManager::build(
+        store,
+        opts,
         ipfs_client,
         stale_threshold,
         bothan_version,
         registry_version_requirement,
         monitoring_client,
-    );
+    )
+    .await
+    {
+        Ok(manager) => manager,
+        Err(e) => {
+            bail!("failed to build manager: {:?}", e);
+        }
+    };
 
     let manager = Arc::new(manager);
     let cloned_manager = manager.clone();
@@ -215,39 +226,33 @@ async fn init_bothan_server<S: Store + 'static>(
     Ok(Arc::new(BothanServer::new(manager)))
 }
 
-async fn init_crypto_workers<S: Store + 'static>(
-    store: &S,
+async fn init_crypto_opts(
     source: &CryptoSourceConfigs,
-) -> Result<HashMap<String, CryptoAssetWorker<S>>, AssetWorkerError> {
-    let mut workers = HashMap::new();
+) -> Result<HashMap<String, CryptoAssetWorkerOpts>, AssetWorkerError> {
+    let mut worker_opts = HashMap::new();
 
-    add_worker(&mut workers, store, &source.binance).await?;
-    add_worker(&mut workers, store, &source.bitfinex).await?;
-    add_worker(&mut workers, store, &source.bybit).await?;
-    add_worker(&mut workers, store, &source.coinbase).await?;
-    add_worker(&mut workers, store, &source.coingecko).await?;
-    add_worker(&mut workers, store, &source.coinmarketcap).await?;
-    add_worker(&mut workers, store, &source.htx).await?;
-    add_worker(&mut workers, store, &source.kraken).await?;
-    add_worker(&mut workers, store, &source.okx).await?;
+    add_worker_opts(&mut worker_opts, &source.binance).await?;
+    add_worker_opts(&mut worker_opts, &source.bitfinex).await?;
+    add_worker_opts(&mut worker_opts, &source.bybit).await?;
+    add_worker_opts(&mut worker_opts, &source.coinbase).await?;
+    add_worker_opts(&mut worker_opts, &source.coingecko).await?;
+    add_worker_opts(&mut worker_opts, &source.coinmarketcap).await?;
+    add_worker_opts(&mut worker_opts, &source.htx).await?;
+    add_worker_opts(&mut worker_opts, &source.kraken).await?;
+    add_worker_opts(&mut worker_opts, &source.okx).await?;
 
-    Ok(workers)
+    Ok(worker_opts)
 }
 
-async fn add_worker<S, O>(
-    workers: &mut HashMap<String, CryptoAssetWorker<S>>,
-    store: &S,
+async fn add_worker_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
+    workers_opts: &mut HashMap<String, CryptoAssetWorkerOpts>,
     opts: &Option<O>,
-) -> Result<(), AssetWorkerError>
-where
-    S: Store + 'static,
-    O: Clone + Into<CryptoAssetWorkerOpts>,
-{
+) -> Result<(), AssetWorkerError> {
     if let Some(opts) = opts {
-        let worker = CryptoAssetWorker::build(opts.clone().into(), store).await?;
-        let worker_name = worker.name();
-        workers.insert(worker_name.to_string(), worker);
-        info!("loaded {} worker", worker_name);
+        let worker_opts = opts.clone().into();
+        let worker_name = worker_opts.name();
+        info!("{} worker is enabled", worker_name);
+        workers_opts.insert(worker_name.to_string(), worker_opts);
     }
 
     Ok(())

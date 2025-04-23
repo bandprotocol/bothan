@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use bothan_lib::registry::{Invalid, Registry};
-use bothan_lib::store::{RegistryStore, Store};
+use bothan_lib::store::Store;
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
+use tokio::sync::Mutex;
+use tokio::time::sleep;
 
 use crate::ipfs::IpfsClient;
 use crate::ipfs::error::Error as IpfsError;
@@ -13,16 +16,17 @@ use crate::manager::crypto_asset_info::error::{
     PostHeartbeatError, PushMonitoringRecordError, SetRegistryError,
 };
 use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
-use crate::manager::crypto_asset_info::signal_ids::set_workers_query_ids;
 use crate::manager::crypto_asset_info::types::{
     CryptoAssetManagerInfo, MONITORING_TTL, PriceSignalComputationRecord, PriceState,
 };
-use crate::manager::crypto_asset_info::worker::CryptoAssetWorker;
+use crate::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
+use crate::manager::crypto_asset_info::worker::{CryptoAssetWorker, build_workers};
 use crate::monitoring::{Client as MonitoringClient, create_uuid};
 
 pub struct CryptoAssetInfoManager<S: Store + 'static> {
-    workers: HashMap<String, CryptoAssetWorker<S>>,
-    store: RegistryStore<S>,
+    store: S,
+    opts: HashMap<String, CryptoAssetWorkerOpts>,
+    workers: Mutex<Vec<CryptoAssetWorker>>,
     stale_threshold: i64,
     ipfs_client: IpfsClient,
     bothan_version: Version,
@@ -32,30 +36,37 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
 }
 
 impl<S: Store + 'static> CryptoAssetInfoManager<S> {
-    /// Creates a new `CryptoAssetInfoManager`.
-    pub fn new(
-        workers: HashMap<String, CryptoAssetWorker<S>>,
-        store: RegistryStore<S>,
+    /// builds a new `CryptoAssetInfoManager`.
+    pub async fn build(
+        store: S,
+        opts: HashMap<String, CryptoAssetWorkerOpts>,
         ipfs_client: IpfsClient,
         stale_threshold: i64,
         bothan_version: Version,
         registry_version_requirement: VersionReq,
         monitoring_client: Option<Arc<MonitoringClient>>,
-    ) -> Self {
+    ) -> Result<Self, S::Error> {
         let monitoring_cache = monitoring_client
             .as_ref()
             .map(|_| Cache::builder().time_to_idle(MONITORING_TTL).build());
 
-        CryptoAssetInfoManager {
-            workers,
+        let registry = store.get_registry().await?;
+
+        let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
+
+        let manager = CryptoAssetInfoManager {
             store,
+            opts,
+            workers,
             stale_threshold,
             ipfs_client,
             bothan_version,
             registry_version_requirement,
             monitoring_client,
             monitoring_cache,
-        }
+        };
+
+        Ok(manager)
     }
 
     /// Gets the `CryptoAssetManagerInfo`.
@@ -67,7 +78,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .await?
             .unwrap_or(String::new()); // If value doesn't exist, return an empty string
         let registry_version_requirement = self.registry_version_requirement.to_string();
-        let active_sources = self.workers.keys().cloned().collect();
+        let active_sources = self.opts.keys().cloned().collect();
 
         Ok(CryptoAssetManagerInfo::new(
             bothan_version,
@@ -87,14 +98,14 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let uuid = create_uuid();
 
-        let active_sources = self.workers.keys().cloned().collect();
+        let active_sources = self.opts.keys().cloned().collect();
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
             .store
             .get_registry_ipfs_hash()
             .await
             .map_err(|_| PostHeartbeatError::FailedToGetRegistryHash)?
-            .unwrap_or_else(|| "".to_string());
+            .unwrap_or_default();
 
         client
             .post_heartbeat(uuid.clone(), active_sources, bothan_version, registry_hash)
@@ -109,7 +120,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         &self,
         ids: Vec<String>,
     ) -> Result<(String, Vec<PriceState>), S::Error> {
-        let registry = self.store.get_registry().await;
+        let registry = self.store.get_registry().await?;
 
         let current_time = chrono::Utc::now().timestamp();
         let stale_cutoff = current_time - self.stale_threshold;
@@ -117,8 +128,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         let mut records = Vec::new();
 
         let price_states =
-            get_signal_price_states(ids, &self.workers, &registry, stale_cutoff, &mut records)
-                .await;
+            get_signal_price_states(ids, &self.store, &registry, stale_cutoff, &mut records).await;
 
         let uuid = create_uuid();
         if let Some(cache) = &self.monitoring_cache {
@@ -160,7 +170,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
     /// Sets the registry from an IPFS hash.
     pub async fn set_registry_from_ipfs(
         &self,
-        hash: &str,
+        hash: String,
         version: Version,
     ) -> Result<(), SetRegistryError> {
         if !self.registry_version_requirement.matches(&version) {
@@ -188,11 +198,19 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .map_err(|e| SetRegistryError::InvalidRegistry(e.to_string()))?;
 
         self.store
-            .set_registry(registry, hash.to_string())
+            .set_registry(registry.clone(), hash)
             .await
             .map_err(|_| SetRegistryError::FailedToSetRegistry)?;
 
-        set_workers_query_ids(&self.workers, &self.store.get_registry().await).await;
+        // drop old workers to kill connection
+        let mut locked_workers = self.workers.lock().await;
+        locked_workers.clear();
+
+        // TODO: find method to wait for connections to clear up thats better than sleeping for 1 second
+        sleep(Duration::from_secs(1)).await;
+
+        let workers = build_workers(&registry, &self.opts, self.store.clone()).await;
+        *locked_workers = workers;
 
         Ok(())
     }

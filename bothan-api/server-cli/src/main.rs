@@ -25,9 +25,6 @@ struct Cli {
     // global args
     #[arg(long, global = true)]
     config: Option<PathBuf>,
-
-    #[arg(long, short)]
-    version: bool,
 }
 
 #[derive(Subcommand)]
@@ -52,11 +49,6 @@ async fn main() {
         }
     };
 
-    if cli.version {
-        println!("bothan-api {}", env!("CARGO_PKG_VERSION"));
-        std::process::exit(0);
-    }
-
     let config_path = &cli.config.unwrap_or(bothan_home_dir().join("config.toml"));
 
     let app_config = if config_path.is_file() {
@@ -74,6 +66,7 @@ async fn main() {
     let filter = EnvFilter::new(format!("bothan={log_lvl}"))
         .add_directive(create_directive("bothan_api", log_lvl))
         .add_directive(create_directive("bothan_core", core_log_lvl))
+        .add_directive(create_directive("bothan_lib", core_log_lvl))
         .add_directive(create_directive("bothan_binance", src_log_lvl))
         .add_directive(create_directive("bothan_bybit", src_log_lvl))
         .add_directive(create_directive("bothan_coinbase", src_log_lvl))

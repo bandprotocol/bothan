@@ -1,26 +1,17 @@
-use tokio_tungstenite::tungstenite;
-
 #[derive(Debug, thiserror::Error)]
-pub enum ConnectionError {
-    #[error("failed to connect to endpoint {0}")]
-    ConnectionFailure(#[from] tungstenite::Error),
-
-    #[error("received unsuccessful WebSocket response: {0}")]
-    UnsuccessfulWebSocketResponse(tungstenite::http::StatusCode),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum MessageError {
+pub enum Error {
     #[error("failed to parse message")]
-    Parse(#[from] serde_json::Error),
-
-    #[error("channel closed")]
-    ChannelClosed,
+    ParseError(#[from] serde_json::Error),
 
     #[error("unsupported message")]
-    UnsupportedMessage,
+    UnsupportedWebsocketMessageType,
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error(transparent)]
-pub struct SendError(#[from] tungstenite::Error);
+pub enum ListeningError {
+    #[error(transparent)]
+    Error(#[from] Error),
+
+    #[error(transparent)]
+    InvalidPrice(#[from] rust_decimal::Error),
+}

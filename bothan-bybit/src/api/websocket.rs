@@ -1,15 +1,14 @@
-use futures_util::stream::{SplitSink, SplitStream};
+use bothan_lib::types::AssetInfo;
+use bothan_lib::worker::websocket::{AssetInfoProvider, AssetInfoProviderConnector, Data};
 use futures_util::{SinkExt, StreamExt};
+use rust_decimal::Decimal;
 use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
-use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
-use tracing::warn;
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
 
-use crate::api::error::{ConnectionError, MessageError, SendError};
-use crate::api::types::BybitResponse;
+use crate::api::error::{Error, ListeningError};
+use crate::api::types::{MAX_ARGS, PublicTickerResponse, Response};
 
 /// A connector for establishing a WebSocket connection to the Bybit API.
 pub struct WebSocketConnector {
@@ -23,80 +22,119 @@ impl WebSocketConnector {
     }
 
     /// Connects to the Bybit WebSocket API.
-    pub async fn connect(&self) -> Result<WebSocketConnection, ConnectionError> {
-        let (wss, resp) = connect_async(self.url.clone()).await?;
-
-        let status = resp.status();
-        if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
-            warn!("failed to connect with response code {}", resp.status());
-            return Err(ConnectionError::UnsuccessfulWebSocketResponse(
-                resp.status(),
-            ));
-        }
+    pub async fn connect(&self) -> Result<WebSocketConnection, tungstenite::Error> {
+        let (wss, _) = connect_async(self.url.clone()).await?;
 
         Ok(WebSocketConnection::new(wss))
     }
 }
 
+#[async_trait::async_trait]
+impl AssetInfoProviderConnector for WebSocketConnector {
+    type Provider = WebSocketConnection;
+    type Error = tungstenite::Error;
+
+    async fn connect(&self) -> Result<WebSocketConnection, Self::Error> {
+        WebSocketConnector::connect(self).await
+    }
+}
+
 /// Represents an active WebSocket connection to the Bybit API.
 pub struct WebSocketConnection {
-    sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
-    receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
 impl WebSocketConnection {
     /// Creates a new `BybitWebSocketConnection` instance.
-    pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
-        let (sender, receiver) = web_socket_stream.split();
-        Self { sender, receiver }
+    pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
+        Self { ws_stream }
     }
 
     /// Subscribes to ticker updates for the given symbols.
-    pub async fn subscribe_ticker(&mut self, symbols: &[&str]) -> Result<(), SendError> {
+    pub async fn subscribe_ticker<T: AsRef<str>>(
+        &mut self,
+        symbols: &[T],
+    ) -> Result<(), tungstenite::Error> {
         let payload = json!({
             "op": "subscribe",
-            "args": symbols.iter().map(|s| format!("tickers.{}", s)).collect::<Vec<String>>(),
+            "args": symbols.iter().map(|s| format!("tickers.{}", s.as_ref())).collect::<Vec<String>>(),
         });
 
         // Send the subscription message.
         let message = Message::Text(payload.to_string());
-        Ok(self.sender.send(message).await?)
+        self.ws_stream.send(message).await
     }
 
     /// Unsubscribes to ticker updates for the given symbols.
-    pub async fn unsubscribe_ticker(&mut self, symbols: &[&str]) -> Result<(), SendError> {
+    pub async fn unsubscribe_ticker<T: AsRef<str>>(
+        &mut self,
+        symbols: &[T],
+    ) -> Result<(), tungstenite::Error> {
         let payload = json!({
             "op": "unsubscribe",
-            "args": symbols.iter().map(|s| format!("tickers.{}", s)).collect::<Vec<String>>(),
+            "args": symbols.iter().map(|s| format!("tickers.{}", s.as_ref())).collect::<Vec<String>>(),
         });
 
         // Send the unsubscription message.
         let message = Message::Text(payload.to_string());
-        Ok(self.sender.send(message).await?)
+        self.ws_stream.send(message).await
     }
 
     /// Receives the next message from the WebSocket connection.
-    pub async fn next(&mut self) -> Result<BybitResponse, MessageError> {
-        if let Some(result_msg) = self.receiver.next().await {
-            return match result_msg {
-                Ok(Message::Text(msg)) => serde_json::from_str::<BybitResponse>(&msg)
-                    .map_err(|_| MessageError::UnsupportedMessage),
-                Err(err) => match err {
-                    TungsteniteError::Protocol(..) => Err(MessageError::ChannelClosed),
-                    TungsteniteError::ConnectionClosed => Err(MessageError::ChannelClosed),
-                    _ => Err(MessageError::UnsupportedMessage),
-                },
-                _ => Err(MessageError::UnsupportedMessage),
-            };
+    pub async fn next(&mut self) -> Option<Result<Response, Error>> {
+        match self.ws_stream.next().await {
+            Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
+            Some(Ok(Message::Ping(_))) => Some(Ok(Response::Ping)),
+            Some(Ok(Message::Close(_))) => None,
+            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Err(_)) => None, // Consider the connection closed if error detected
+            None => None,
         }
-
-        Err(MessageError::ChannelClosed)
     }
 
-    pub async fn close(&mut self) -> Result<(), SendError> {
-        self.sender.close().await?;
+    pub async fn close(&mut self) -> Result<(), tungstenite::Error> {
+        self.ws_stream.close(None).await?;
         Ok(())
     }
+}
+
+fn parse_msg(msg: String) -> Result<Response, Error> {
+    Ok(serde_json::from_str::<Response>(&msg)?)
+}
+
+#[async_trait::async_trait]
+impl AssetInfoProvider for WebSocketConnection {
+    type SubscriptionError = tungstenite::Error;
+    type ListeningError = ListeningError;
+
+    async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
+        for chunk in ids.chunks(MAX_ARGS) {
+            self.subscribe_ticker(chunk).await?;
+        }
+        Ok(())
+    }
+
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
+        WebSocketConnection::next(self).await.map(|r| {
+            Ok(match r? {
+                Response::PublicTicker(t) => parse_public_ticker(t)?,
+                _ => Data::Unused,
+            })
+        })
+    }
+
+    async fn try_close(mut self) {
+        tokio::spawn(async move { self.close().await });
+    }
+}
+
+fn parse_public_ticker(ticker: PublicTickerResponse) -> Result<Data, rust_decimal::Error> {
+    let asset_info = AssetInfo::new(
+        ticker.data.symbol,
+        Decimal::from_str_exact(&ticker.data.last_price)?,
+        ticker.ts,
+    );
+    Ok(Data::AssetInfo(vec![asset_info]))
 }
 
 #[cfg(test)]
@@ -105,7 +143,7 @@ pub(crate) mod test {
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
     use super::*;
-    use crate::api::types::{BybitResponse, PublicMessageResponse, PublicTickerResponse, Ticker};
+    use crate::api::types::{PublicMessageResponse, PublicTickerResponse, Response, Ticker};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -132,7 +170,7 @@ pub(crate) mod test {
         };
 
         // Create the mock PublicTickerResponse.
-        let mock_resp = BybitResponse::PublicTicker(PublicTickerResponse {
+        let mock_resp = Response::PublicTicker(PublicTickerResponse {
             topic: "tickers.BTCUSDT".to_string(),
             ts: 1673853746003,
             ticker_type: "snapshot".to_string(),
@@ -152,7 +190,7 @@ pub(crate) mod test {
 
         // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
-        let resp = connection.next().await.unwrap();
+        let resp = connection.next().await.unwrap().unwrap();
 
         // Assert that the received response matches the mock response.
         assert_eq!(resp, mock_resp);
@@ -176,7 +214,7 @@ pub(crate) mod test {
         };
 
         // Create the mock BybitResponse with the PublicMessageResponse.
-        let mock_resp = BybitResponse::PublicMessage(mock_message);
+        let mock_resp = Response::PublicMessage(mock_message);
 
         // Mount the mock WebSocket server and send the mock response.
         WsMock::new()
@@ -190,7 +228,7 @@ pub(crate) mod test {
 
         // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
-        let resp = connection.next().await.unwrap();
+        let resp = connection.next().await.unwrap().unwrap();
 
         // Assert that the received response matches the mock response.
         assert_eq!(resp, mock_resp);
@@ -213,6 +251,6 @@ pub(crate) mod test {
         // Connect to the mock WebSocket server and verify the connection closure.
         let mut connection = connector.connect().await.unwrap();
         let resp = connection.next().await;
-        assert!(resp.is_err());
+        assert!(resp.is_none());
     }
 }
