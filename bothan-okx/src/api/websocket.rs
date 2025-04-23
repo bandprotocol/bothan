@@ -7,7 +7,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
 
-use crate::api::error::{Error, PollingError};
+use crate::api::error::{Error, ListeningError};
 use crate::api::types::ticker::{InstrumentType, Ticker};
 use crate::api::types::{Response, subscription, ticker};
 
@@ -128,14 +128,14 @@ fn parse_msg(msg: String) -> Result<Response, Error> {
 #[async_trait::async_trait]
 impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
-    type PollingError = PollingError;
+    type ListeningError = ListeningError;
 
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         self.subscribe_ticker(ids).await?;
         Ok(())
     }
 
-    async fn next(&mut self) -> Option<Result<Data, Self::PollingError>> {
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         WebSocketConnection::next(self).await.map(|r| match r? {
             Response::TickersChannel(data) => parse_tickers(data.data),
             _ => Ok(Data::Unused),
@@ -147,16 +147,16 @@ impl AssetInfoProvider for WebSocketConnection {
     }
 }
 
-fn parse_tickers(tickers: Vec<Ticker>) -> Result<Data, PollingError> {
+fn parse_tickers(tickers: Vec<Ticker>) -> Result<Data, ListeningError> {
     Ok(Data::AssetInfo(
         tickers
             .into_iter()
             .map(parse_ticker)
-            .collect::<Result<Vec<AssetInfo>, PollingError>>()?,
+            .collect::<Result<Vec<AssetInfo>, ListeningError>>()?,
     ))
 }
 
-fn parse_ticker(ticker: Ticker) -> Result<AssetInfo, PollingError> {
+fn parse_ticker(ticker: Ticker) -> Result<AssetInfo, ListeningError> {
     Ok(AssetInfo::new(
         ticker.inst_id,
         Decimal::from_str_exact(&ticker.last)?,

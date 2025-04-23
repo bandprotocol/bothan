@@ -10,7 +10,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
 
-use crate::api::error::{Error, PollingError};
+use crate::api::error::{Error, ListeningError};
 use crate::api::types::Response;
 
 /// A connector for establishing a WebSocket connection to the Htx API.
@@ -120,7 +120,7 @@ fn decode_response(msg: &[u8]) -> Result<Response, Error> {
 #[async_trait::async_trait]
 impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
-    type PollingError = PollingError;
+    type ListeningError = ListeningError;
 
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         for id in ids {
@@ -130,12 +130,12 @@ impl AssetInfoProvider for WebSocketConnection {
         Ok(())
     }
 
-    async fn next(&mut self) -> Option<Result<Data, Self::PollingError>> {
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         let msg = WebSocketConnection::next(self).await?;
         Some(match msg {
             Ok(Response::DataUpdate(d)) => parse_data(d),
             Ok(Response::Ping(p)) => reply_pong(self, p.ping).await,
-            Err(e) => Err(PollingError::Error(e)),
+            Err(e) => Err(ListeningError::Error(e)),
             _ => Ok(Data::Unused),
         })
     }
@@ -145,22 +145,25 @@ impl AssetInfoProvider for WebSocketConnection {
     }
 }
 
-fn parse_data(data: super::types::Data) -> Result<Data, PollingError> {
+fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     let id = data
         .ch
         .split('.')
         .nth(1)
-        .ok_or(PollingError::InvalidChannelId)?
+        .ok_or(ListeningError::InvalidChannelId)?
         .to_string();
     let asset_info = AssetInfo::new(
         id,
-        Decimal::from_f64_retain(data.tick.last_price).ok_or(PollingError::InvalidPrice)?,
+        Decimal::from_f64_retain(data.tick.last_price).ok_or(ListeningError::InvalidPrice)?,
         data.timestamp,
     );
     Ok(Data::AssetInfo(vec![asset_info]))
 }
 
-async fn reply_pong(connection: &mut WebSocketConnection, ping: u64) -> Result<Data, PollingError> {
+async fn reply_pong(
+    connection: &mut WebSocketConnection,
+    ping: u64,
+) -> Result<Data, ListeningError> {
     connection.send_pong(ping).await?;
     Ok(Data::Unused)
 }
