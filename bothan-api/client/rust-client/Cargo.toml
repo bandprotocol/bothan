@@ -1,6 +1,7 @@
 [package]
 name = "bothan-client"
 version = "0.0.1-beta.2"
+description = "Rust client for the Bothan API"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
