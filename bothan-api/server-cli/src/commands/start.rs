@@ -18,6 +18,7 @@ use bothan_core::manager::CryptoAssetInfoManager;
 use bothan_core::manager::crypto_asset_info::CryptoAssetWorkerOpts;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
+use bothan_core::telemetry;
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -63,6 +64,8 @@ impl StartCli {
         let store = init_rocks_db_store(&app_config, registry, self.unsafe_reset).await?;
         let ipfs_client = init_ipfs_client(&app_config).await?;
         let monitoring_client = init_monitoring_client(&app_config).await?;
+
+        init_telemetry_server(&app_config).await?;
 
         let bothan_server =
             init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
@@ -253,6 +256,21 @@ async fn add_worker_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
         let worker_name = worker_opts.name();
         info!("{} worker is enabled", worker_name);
         workers_opts.insert(worker_name.to_string(), worker_opts);
+    }
+
+    Ok(())
+}
+
+async fn init_telemetry_server(config: &AppConfig) -> anyhow::Result<()> {
+    if config.telemetry.enabled {
+        let registry = telemetry::init_telemetry_registry()?;
+
+        let addr = config.telemetry.addr;
+        tokio::spawn(async move {
+            telemetry::spawn_server(addr, registry).await;
+        });
+    } else {
+        info!("telemetry disabled");
     }
 
     Ok(())
