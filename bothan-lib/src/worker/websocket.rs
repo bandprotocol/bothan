@@ -78,8 +78,14 @@ pub async fn start_listening<S, E1, E2, P, C>(
                             metrics.increment_activity_messages_total(MessageType::AssetInfo)
                         }
                         Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(MessageType::Ping),
-                        Ok(Some(Ok(Data::Unused))) => debug!("received irrelevant data"),
-                        Ok(Some(Err(e))) => error!("{}", e),
+                        Ok(Some(Ok(Data::Unused))) => {
+                            debug!("received irrelevant data");
+                            metrics.increment_activity_messages_total(MessageType::Unused)
+                        },
+                        Ok(Some(Err(e))) => {
+                            error!("{}", e);
+                            metrics.increment_activity_messages_total(MessageType::Error)
+                        },
                     }
             }
         }

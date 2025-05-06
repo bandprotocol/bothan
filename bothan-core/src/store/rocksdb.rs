@@ -130,25 +130,10 @@ impl Store for RocksDbStore {
         prefix: &str,
         id: &str,
     ) -> Result<Option<AssetInfo>, Self::Error> {
-        let start_time = Instant::now();
-        let result = self.get(&Key::AssetStore {
+        self.get(&Key::AssetStore {
             source_id: prefix,
             asset_id: id,
-        });
-        let status = match &result {
-            Ok(Some(_)) => OperationStatus::Success,
-            Ok(None) => OperationStatus::NotFound,
-            Err(_) => OperationStatus::Failed,
-        };
-
-        self.metrics.update_store_operation(
-            prefix.to_string(),
-            start_time.elapsed().as_micros(),
-            Operation::GetAssetInfo,
-            status,
-        );
-
-        result
+        })
     }
 
     async fn insert_asset_info(

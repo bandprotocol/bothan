@@ -64,6 +64,8 @@ impl Metrics {
 pub enum MessageType {
     AssetInfo,
     Ping,
+    Unused,
+    Error,
 }
 
 #[derive(Display)]

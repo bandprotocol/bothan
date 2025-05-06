@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use bothan_lib::metrics::server::Metrics;
+use bothan_lib::metrics::store::Metrics;
 use bothan_lib::registry::{Invalid, Registry};
 use bothan_lib::store::Store;
 use mini_moka::sync::Cache;
@@ -34,7 +34,7 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
     registry_version_requirement: VersionReq,
     monitoring_client: Option<Arc<MonitoringClient>>,
     monitoring_cache: Option<Cache<String, Arc<Vec<PriceSignalComputationRecord>>>>,
-    server_metrics: Metrics,
+    metrics: Metrics,
 }
 
 impl<S: Store + 'static> CryptoAssetInfoManager<S> {
@@ -54,9 +54,9 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let registry = store.get_registry().await?;
 
-        let server_metrics = Metrics::new();
-
         let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
+
+        let metrics = Metrics::new();
 
         let manager = CryptoAssetInfoManager {
             store,
@@ -68,7 +68,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             registry_version_requirement,
             monitoring_client,
             monitoring_cache,
-            server_metrics,
+            metrics,
         };
 
         Ok(manager)
@@ -132,8 +132,15 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let mut records = Vec::new();
 
-        let price_states =
-            get_signal_price_states(ids, &self.store, &registry, stale_cutoff, &mut records).await;
+        let price_states = get_signal_price_states(
+            ids,
+            &self.store,
+            &registry,
+            stale_cutoff,
+            &mut records,
+            &self.metrics,
+        )
+        .await;
 
         let uuid = create_uuid();
         if let Some(cache) = &self.monitoring_cache {
@@ -218,10 +225,5 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         *locked_workers = workers;
 
         Ok(())
-    }
-
-    /// Gets metrics to be used for server instrumentation.
-    pub fn get_metrics(&self) -> &Metrics {
-        &self.server_metrics
     }
 }

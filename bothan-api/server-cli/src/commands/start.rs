@@ -51,6 +51,8 @@ pub struct StartCli {
 
 impl StartCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
+        init_telemetry_server(&app_config).await?;
+
         let registry = match &self.registry {
             Some(p) => {
                 let file = File::open(p).with_context(|| "Failed to open registry file")?;
@@ -61,8 +63,6 @@ impl StartCli {
             }
             None => None,
         };
-
-        init_telemetry_server(&app_config).await?;
 
         let store = init_rocks_db_store(&app_config, registry, self.unsafe_reset).await?;
         let ipfs_client = init_ipfs_client(&app_config).await?;

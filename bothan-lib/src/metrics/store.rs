@@ -50,7 +50,6 @@ impl Metrics {
             KeyValue::new("operation", operation.to_string()),
             KeyValue::new("status", status.to_string()),
         ];
-
         self.operations_total.add(1, labels);
         // `elapsed_time` is u128, but it will never exceed u64::MAX in practice
         self.operation_duration.record(elapsed_time as u64, labels);
@@ -68,6 +67,7 @@ pub enum Operation {
 #[strum(serialize_all = "snake_case")]
 pub enum OperationStatus {
     Success,
+    Stale,
     NotFound,
     Failed,
 }
