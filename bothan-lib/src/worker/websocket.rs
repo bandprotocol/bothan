@@ -70,21 +70,21 @@ pub async fn start_listening<S, E1, E2, P, C>(
                             connection = new_conn
                         }
                         Ok(Some(Ok(Data::AssetInfo(assets)))) => {
+                            metrics.increment_activity_messages_total(MessageType::AssetInfo);
                             if let Err(e) = store.set_batch_asset_info(assets).await {
                                 error!("failed to set asset info with error: {e}")
                             } else {
                                 info!("asset info updated successfully");
                             }
-                            metrics.increment_activity_messages_total(MessageType::AssetInfo)
                         }
                         Ok(Some(Ok(Data::Ping))) => metrics.increment_activity_messages_total(MessageType::Ping),
                         Ok(Some(Ok(Data::Unused))) => {
+                            metrics.increment_activity_messages_total(MessageType::Unused);
                             debug!("received irrelevant data");
-                            metrics.increment_activity_messages_total(MessageType::Unused)
                         },
                         Ok(Some(Err(e))) => {
+                            metrics.increment_activity_messages_total(MessageType::Error);
                             error!("{}", e);
-                            metrics.increment_activity_messages_total(MessageType::Error)
                         },
                     }
             }

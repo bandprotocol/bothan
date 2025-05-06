@@ -47,9 +47,10 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
         let polling_result = match timeout(interval.period(), provider.get_asset_info(&ids)).await {
             Ok(Ok(asset_info)) => {
-                match store.set_batch_asset_info(asset_info).await {
-                    Ok(_) => info!("asset info updated successfully"),
-                    Err(e) => error!("failed to store asset info with error: {e}"),
+                if let Err(e) = store.set_batch_asset_info(asset_info).await {
+                    error!("failed to store asset info with error: {e}");
+                } else {
+                    info!("asset info updated successfully");
                 }
                 PollingResult::Success
             }

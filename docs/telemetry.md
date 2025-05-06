@@ -45,7 +45,7 @@ Tracks each operation that reads and writes asset information to RocksDB.
 
 #### Tags
 - `operation`: `get_asset_info`, `insert_batch_asset_info`
-- `operation_status`: `success`, `not_found`, `failed`
+- `operation_status`: `success`, `stale`, `not_found`, `failed`
 ---
 
 ### 3. REST Worker Metrics
