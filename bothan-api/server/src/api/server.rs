@@ -44,7 +44,7 @@ impl<S: Store> BothanService for BothanServer<S> {
 
         let info = self.manager.get_info().await.map_err(|_| {
             self.metrics.update_server_request(
-                start_time.elapsed().as_millis(),
+                start_time.elapsed().as_secs_f64() * 1_000.0,
                 ServiceName::GetInfo,
                 Code::Internal,
             );
@@ -60,7 +60,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         });
 
         self.metrics.update_server_request(
-            start_time.elapsed().as_millis(),
+            start_time.elapsed().as_secs_f64() * 1_000.0,
             ServiceName::GetInfo,
             Code::Ok,
         );
@@ -82,7 +82,7 @@ impl<S: Store> BothanService for BothanServer<S> {
 
         let version = Version::parse(&update_registry_request.version).map_err(|_| {
             self.metrics.update_server_request(
-                start_time.elapsed().as_millis(),
+                start_time.elapsed().as_secs_f64() * 1_000.0,
                 ServiceName::UpdateRegistry,
                 Code::InvalidArgument,
             );
@@ -97,7 +97,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         match set_registry_result {
             Ok(_) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::UpdateRegistry,
                     Code::Ok,
                 );
@@ -106,7 +106,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(SetRegistryError::FailedToRetrieve(e)) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::UpdateRegistry,
                     Code::NotFound,
                 );
@@ -115,7 +115,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(SetRegistryError::InvalidRegistry(e)) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
                 );
@@ -124,7 +124,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(SetRegistryError::UnsupportedVersion) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
                 );
@@ -133,7 +133,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(SetRegistryError::FailedToParse) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
                 );
@@ -142,7 +142,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(SetRegistryError::InvalidHash) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::UpdateRegistry,
                     Code::InvalidArgument,
                 );
@@ -151,7 +151,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(SetRegistryError::FailedToSetRegistry) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::UpdateRegistry,
                     Code::Internal,
                 );
@@ -180,7 +180,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         match push_result {
             Ok(_) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::PushMonitoringRecords,
                     Code::Ok,
                 );
@@ -189,7 +189,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(PushMonitoringRecordError::MonitoringNotEnabled) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::PushMonitoringRecords,
                     Code::Unimplemented,
                 );
@@ -198,7 +198,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(PushMonitoringRecordError::RecordNotFound) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::PushMonitoringRecords,
                     Code::FailedPrecondition,
                 );
@@ -207,7 +207,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(PushMonitoringRecordError::FailedRequest(e)) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::PushMonitoringRecords,
                     Code::Internal,
                 );
@@ -218,7 +218,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             }
             Err(PushMonitoringRecordError::FailedToSendPayload(e)) => {
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::PushMonitoringRecords,
                     Code::Internal,
                 );
@@ -247,7 +247,7 @@ impl<S: Store> BothanService for BothanServer<S> {
             .map_err(|e| {
                 error!("failed to get prices: {}", e);
                 self.metrics.update_server_request(
-                    start_time.elapsed().as_millis(),
+                    start_time.elapsed().as_secs_f64() * 1_000.0,
                     ServiceName::GetPrices,
                     Code::Internal,
                 );
@@ -263,7 +263,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         let response = Response::new(GetPricesResponse { uuid, prices });
 
         self.metrics.update_server_request(
-            start_time.elapsed().as_millis(),
+            start_time.elapsed().as_secs_f64() * 1_000.0,
             ServiceName::GetPrices,
             Code::Ok,
         );
