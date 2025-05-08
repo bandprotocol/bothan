@@ -23,7 +23,7 @@ Tracks each incoming Bothan gRPC server request and measures the processing time
 | Name                                 | Type      | Description                                      |
 |--------------------------------------|-----------|--------------------------------------------------|
 | `server_requests_total`                    | `u64` Counter   | Total number of requests sent to the server           |
-| `server_request_duration_milliseconds` | `u64` Histogram | Time taken to process each request (ms)     |
+| `server_request_duration_milliseconds` | `f64` Histogram | Time taken to process each request (ms)     |
 
 #### Tags
 - `service_name`: `get_info`, `update_registry`, `push_monitoring_records`, `get_prices`
