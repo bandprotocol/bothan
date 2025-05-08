@@ -165,7 +165,7 @@ async fn reply_pong(
     ping: u64,
 ) -> Result<Data, ListeningError> {
     connection.send_pong(ping).await?;
-    Ok(Data::Unused)
+    Ok(Data::Ping)
 }
 
 #[cfg(test)]

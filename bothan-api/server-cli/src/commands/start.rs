@@ -19,6 +19,7 @@ use bothan_core::manager::crypto_asset_info::CryptoAssetWorkerOpts;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
 use bothan_core::telemetry;
+use bothan_lib::metrics::server::Metrics;
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -50,6 +51,8 @@ pub struct StartCli {
 
 impl StartCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
+        init_telemetry_server(&app_config).await?;
+
         let registry = match &self.registry {
             Some(p) => {
                 let file = File::open(p).with_context(|| "Failed to open registry file")?;
@@ -64,8 +67,6 @@ impl StartCli {
         let store = init_rocks_db_store(&app_config, registry, self.unsafe_reset).await?;
         let ipfs_client = init_ipfs_client(&app_config).await?;
         let monitoring_client = init_monitoring_client(&app_config).await?;
-
-        init_telemetry_server(&app_config).await?;
 
         let bothan_server =
             init_bothan_server(&app_config, store, ipfs_client, monitoring_client).await?;
@@ -226,7 +227,8 @@ async fn init_bothan_server<S: Store + 'static>(
         });
     }
 
-    Ok(Arc::new(BothanServer::new(manager)))
+    let metrics = Metrics::new();
+    Ok(Arc::new(BothanServer::new(manager, metrics)))
 }
 
 async fn init_crypto_opts(

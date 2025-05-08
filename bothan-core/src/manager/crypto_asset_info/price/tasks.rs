@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+use std::time::Instant;
 
+use bothan_lib::metrics::store::{Metrics, Operation, OperationStatus};
 use bothan_lib::registry::signal::Signal;
 use bothan_lib::registry::source::{OperationRoute, SourceQuery};
 use bothan_lib::registry::{Registry, Valid};
@@ -22,6 +24,7 @@ pub async fn get_signal_price_states<S: Store>(
     registry: &Registry<Valid>,
     stale_cutoff: i64,
     records: &mut Vec<PriceSignalComputationRecord>,
+    metrics: &Metrics,
 ) -> Vec<PriceState> {
     let mut cache = PriceCache::new();
 
@@ -32,7 +35,17 @@ pub async fn get_signal_price_states<S: Store>(
         }
 
         let mut record = PriceSignalComputationRecord::new(id.clone());
-        match compute_signal_result(&id, store, registry, stale_cutoff, &cache, &mut record).await {
+        match compute_signal_result(
+            &id,
+            store,
+            registry,
+            stale_cutoff,
+            &cache,
+            &mut record,
+            metrics,
+        )
+        .await
+        {
             Ok(price) => {
                 info!("signal {}: {} ", id, price);
                 cache.set_available(id, price);
@@ -78,11 +91,12 @@ async fn compute_signal_result<S: Store>(
     stale_cutoff: i64,
     cache: &PriceCache<String>,
     record: &mut PriceSignalComputationRecord,
+    metrics: &Metrics,
 ) -> Result<Decimal, Error> {
     match registry.get(id) {
         Some(signal) => {
             let source_results =
-                compute_source_result(signal, store, cache, stale_cutoff, record).await?;
+                compute_source_result(signal, store, cache, stale_cutoff, record, metrics).await?;
 
             let process_signal_result = signal.processor.process(source_results);
             record.process_result = Some(ProcessRecord::new(
@@ -125,6 +139,7 @@ async fn compute_source_result<S: Store>(
     cache: &PriceCache<String>,
     stale_cutoff: i64,
     record: &mut PriceSignalComputationRecord,
+    metrics: &Metrics,
 ) -> Result<Vec<(String, Decimal)>, MissingPrerequisiteError> {
     // Create a temporary cache here as we don't want to write to the main record until we can
     // confirm that all prerequisites are settled
@@ -133,9 +148,15 @@ async fn compute_source_result<S: Store>(
     let mut source_values = Vec::with_capacity(signal.source_queries.len());
     let mut missing_prerequisites = HashSet::new();
     for source_query in &signal.source_queries {
-        let source_query_result =
-            process_source_query(store, source_query, stale_cutoff, cache, &mut records_cache)
-                .await;
+        let source_query_result = process_source_query(
+            store,
+            source_query,
+            stale_cutoff,
+            cache,
+            &mut records_cache,
+            metrics,
+        )
+        .await;
 
         match source_query_result {
             Ok(Some(source_val)) => source_values.push(source_val),
@@ -167,6 +188,7 @@ async fn process_source_query<S: Store>(
     stale_cutoff: i64,
     cache: &PriceCache<String>,
     source_records: &mut Vec<SourceRecord<AssetInfo, Decimal>>,
+    metrics: &Metrics,
 ) -> Result<Option<(String, Decimal)>, MissingPrerequisiteError> {
     let source_id = &source_query.source_id;
     let query_id = &source_query.query_id;
@@ -177,23 +199,48 @@ async fn process_source_query<S: Store>(
     // We can unwrap here because we just pushed the value, so it's guaranteed to be there
     let record = source_records.last_mut().unwrap();
 
+    let start_time = Instant::now();
     match store.get_asset_info(source_id, query_id).await {
         Ok(Some(asset_info)) => {
             record.raw_source_value = Some(asset_info.clone());
             if asset_info.timestamp >= stale_cutoff {
+                metrics.update_store_operation(
+                    source_id.clone(),
+                    start_time.elapsed().as_micros(),
+                    Operation::GetAssetInfo,
+                    OperationStatus::Success,
+                );
                 compute_source_routes(&source_query.routes, asset_info.price, cache, record)
                     .map(|opt| opt.map(|price| (source_id.clone(), price)))
             } else {
                 warn!("asset state for {query_id} from {source_id} is stale");
+                metrics.update_store_operation(
+                    source_id.clone(),
+                    start_time.elapsed().as_micros(),
+                    Operation::GetAssetInfo,
+                    OperationStatus::Stale,
+                );
                 Ok(None)
             }
         }
         Ok(None) => {
             warn!("asset state for {query_id} from {source_id} is not found");
+            metrics.update_store_operation(
+                source_id.clone(),
+                start_time.elapsed().as_micros(),
+                Operation::GetAssetInfo,
+                OperationStatus::NotFound,
+            );
             Ok(None)
         }
         Err(_) => {
             warn!("error while querying source {source_id} for {query_id}");
+            metrics.update_store_operation(
+                source_id.clone(),
+                start_time.elapsed().as_micros(),
+                Operation::GetAssetInfo,
+                OperationStatus::Failed,
+            );
             Ok(None)
         }
     }
@@ -348,9 +395,17 @@ mod tests {
         let registry = mock_registry();
         let stale_cutoff = 0;
         let mut records = Vec::new();
+        let metrics = Metrics::new();
 
-        let res =
-            get_signal_price_states(ids, &mock_store, &registry, stale_cutoff, &mut records).await;
+        let res = get_signal_price_states(
+            ids,
+            &mock_store,
+            &registry,
+            stale_cutoff,
+            &mut records,
+            &metrics,
+        )
+        .await;
 
         let expected_res = vec![
             PriceState::Available(Decimal::new(69500, 0)),
@@ -424,8 +479,16 @@ mod tests {
         let registry = mock_registry();
         let stale_cutoff = 0;
         let mut records = Vec::new();
-        let res =
-            get_signal_price_states(ids, &mock_store, &registry, stale_cutoff, &mut records).await;
+        let metrics = Metrics::new();
+        let res = get_signal_price_states(
+            ids,
+            &mock_store,
+            &registry,
+            stale_cutoff,
+            &mut records,
+            &metrics,
+        )
+        .await;
 
         let expected_res = vec![PriceState::Unavailable, PriceState::Unavailable];
         let expected_records = vec![
@@ -501,9 +564,17 @@ mod tests {
         let registry = mock_registry();
         let stale_cutoff = 10000;
         let mut records = Vec::new();
+        let metrics = Metrics::new();
 
-        let res =
-            get_signal_price_states(ids, &mock_store, &registry, stale_cutoff, &mut records).await;
+        let res = get_signal_price_states(
+            ids,
+            &mock_store,
+            &registry,
+            stale_cutoff,
+            &mut records,
+            &metrics,
+        )
+        .await;
 
         let expected_res = vec![
             PriceState::Available(Decimal::new(69500, 0)),
@@ -594,9 +665,17 @@ mod tests {
         let cache = PriceCache::new();
         let stale_cutoff = 0;
         let mut record = PriceSignalComputationRecord::new("test".to_string());
+        let metrics = Metrics::new();
 
-        let res =
-            compute_source_result(&signal, &mock_store, &cache, stale_cutoff, &mut record).await;
+        let res = compute_source_result(
+            &signal,
+            &mock_store,
+            &cache,
+            stale_cutoff,
+            &mut record,
+            &metrics,
+        )
+        .await;
 
         let expected_res = Ok(vec![("test-source".to_string(), Decimal::default())]);
         let expected_record = SignalComputationRecord {
@@ -639,9 +718,17 @@ mod tests {
         let stale_cutoff = 0;
         let mut record = PriceSignalComputationRecord::new("test".to_string());
         let expected_record = record.clone();
+        let metrics = Metrics::new();
 
-        let res =
-            compute_source_result(&signal, &mock_store, &cache, stale_cutoff, &mut record).await;
+        let res = compute_source_result(
+            &signal,
+            &mock_store,
+            &cache,
+            stale_cutoff,
+            &mut record,
+            &metrics,
+        )
+        .await;
 
         let expected_res = Err(MissingPrerequisiteError::new(vec!["test2usd".to_string()]));
         assert_eq!(res, expected_res);
@@ -688,9 +775,17 @@ mod tests {
         let stale_cutoff = 0;
         let mut record = PriceSignalComputationRecord::new("CS:TEST-USD".to_string());
         let expected_record = record.clone();
+        let metrics = Metrics::new();
 
-        let res =
-            compute_source_result(&signal, &mock_store, &cache, stale_cutoff, &mut record).await;
+        let res = compute_source_result(
+            &signal,
+            &mock_store,
+            &cache,
+            stale_cutoff,
+            &mut record,
+            &metrics,
+        )
+        .await;
 
         assert!(
             res.as_ref()
@@ -715,6 +810,7 @@ mod tests {
         let stale_cutoff = 5;
         let cache = PriceCache::new();
         let source_records = &mut vec![];
+        let metrics = Metrics::new();
 
         let res = process_source_query(
             &mock_store,
@@ -722,6 +818,7 @@ mod tests {
             stale_cutoff,
             &cache,
             source_records,
+            &metrics,
         )
         .await;
 
@@ -749,6 +846,7 @@ mod tests {
         let stale_cutoff = 1000;
         let cache = PriceCache::new();
         let source_records = &mut vec![];
+        let metrics = Metrics::new();
 
         let res = process_source_query(
             &mock_store,
@@ -756,6 +854,7 @@ mod tests {
             stale_cutoff,
             &cache,
             source_records,
+            &metrics,
         )
         .await;
 
@@ -778,6 +877,7 @@ mod tests {
         let stale_cutoff = 1000;
         let cache = PriceCache::new();
         let source_records = &mut vec![];
+        let metrics = Metrics::new();
 
         let res = process_source_query(
             &MockStore::default(),
@@ -785,6 +885,7 @@ mod tests {
             stale_cutoff,
             &cache,
             source_records,
+            &metrics,
         )
         .await;
 

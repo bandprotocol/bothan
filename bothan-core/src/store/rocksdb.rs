@@ -3,8 +3,10 @@ mod key;
 
 use std::path::Path;
 use std::sync::{Arc, RwLock};
+use std::time::Instant;
 
 use bincode::{Decode, Encode, config, decode_from_slice, encode_to_vec};
+use bothan_lib::metrics::store::{Metrics, Operation, OperationStatus};
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::types::AssetInfo;
@@ -17,6 +19,7 @@ use crate::store::rocksdb::key::Key;
 pub struct RocksDbStore {
     db: Arc<DB>,
     registry: Arc<RwLock<Registry<Valid>>>,
+    metrics: Metrics,
 }
 
 impl RocksDbStore {
@@ -40,6 +43,7 @@ impl RocksDbStore {
         let store = RocksDbStore {
             db,
             registry: Arc::new(RwLock::new(registry)),
+            metrics: Metrics::new(),
         };
 
         Ok(store)
@@ -62,6 +66,7 @@ impl RocksDbStore {
         Ok(RocksDbStore {
             db,
             registry: Arc::new(RwLock::new(registry)),
+            metrics: Metrics::new(),
         })
     }
 
@@ -148,17 +153,39 @@ impl Store for RocksDbStore {
         prefix: &str,
         asset_infos: Vec<AssetInfo>,
     ) -> Result<(), Self::Error> {
+        let start_time = Instant::now();
         let mut write_batch = WriteBatch::default();
         for asset_info in asset_infos {
             let key = Key::AssetStore {
                 source_id: prefix,
                 asset_id: &asset_info.id,
             };
-            let encoded = encode_to_vec(&asset_info, config::standard())?;
+            let encoded = encode_to_vec(&asset_info, config::standard()).inspect_err(|_| {
+                self.metrics.update_store_operation(
+                    prefix.to_string(),
+                    start_time.elapsed().as_micros(),
+                    Operation::InsertBatchAssetInfo,
+                    OperationStatus::Failed,
+                );
+            })?;
             write_batch.put(key.to_prefixed_bytes(), encoded);
         }
 
-        self.db.write(write_batch)?;
+        self.db.write(write_batch).inspect_err(|_| {
+            self.metrics.update_store_operation(
+                prefix.to_string(),
+                start_time.elapsed().as_micros(),
+                Operation::InsertBatchAssetInfo,
+                OperationStatus::Failed,
+            );
+        })?;
+
+        self.metrics.update_store_operation(
+            prefix.to_string(),
+            start_time.elapsed().as_micros(),
+            Operation::InsertBatchAssetInfo,
+            OperationStatus::Success,
+        );
         Ok(())
     }
 }
