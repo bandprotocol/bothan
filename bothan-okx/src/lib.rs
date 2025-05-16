@@ -1,4 +1,4 @@
-pub use api::websocket::{WebSocketConnection, WebsocketConnector};
+pub use api::websocket::{WebSocketConnection, WebSocketConnector};
 pub use worker::Worker;
 pub use worker::opts::WorkerOpts;
 

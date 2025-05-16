@@ -12,10 +12,10 @@ pub const DEFAULT_URL: &str = "wss://ws-feed.exchange.coinbase.com";
 /// Represents the possible responses from the Coinbase feed.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
-pub enum CoinbaseResponse {
+pub enum Response {
     /// A ticker update.
-    Ticker(Box<Ticker>),
+    Ticker(Box<Ticker>), // Boxed due to large size
     /// A subscription update.
-    Subscriptions(Box<Subscriptions>),
+    Subscriptions(Subscriptions),
     Ping,
 }

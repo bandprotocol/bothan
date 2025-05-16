@@ -46,6 +46,7 @@ To generate the protobuf files, run the following command:
 
 ```bash
 buf generate
+buf build -o bothan-api/server/src/proto/descriptor.pb
 ```
 
 ## Contributing

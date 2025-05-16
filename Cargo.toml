@@ -17,23 +17,23 @@ resolver = "2"
 
 [workspace.dependencies]
 bothan-api = { path = "bothan-api/server" }
-bothan-core = { path = "bothan-core" }
-bothan-client = { path = "bothan-api/client/rust-client" }
-bothan-lib = { path = "bothan-lib" }
+bothan-core = { path = "bothan-core", version = "0.0.1-beta.2" }
+bothan-client = { path = "bothan-api/client/rust-client", version = "0.0.1-beta.2" }
+bothan-lib = { path = "bothan-lib", version = "0.0.1-beta.2" }
 
-bothan-binance = { path = "bothan-binance" }
-bothan-bitfinex = { path = "bothan-bitfinex" }
-bothan-bybit = { path = "bothan-bybit" }
-bothan-coinbase = { path = "bothan-coinbase" }
-bothan-coingecko = { path = "bothan-coingecko" }
-bothan-coinmarketcap = { path = "bothan-coinmarketcap" }
-bothan-htx = { path = "bothan-htx" }
-bothan-kraken = { path = "bothan-kraken" }
-bothan-okx = { path = "bothan-okx" }
+bothan-binance = { path = "bothan-binance", version = "0.0.1-beta.2" }
+bothan-bitfinex = { path = "bothan-bitfinex", version = "0.0.1-beta.2" }
+bothan-bybit = { path = "bothan-bybit", version = "0.0.1-beta.2" }
+bothan-coinbase = { path = "bothan-coinbase", version = "0.0.1-beta.2" }
+bothan-coingecko = { path = "bothan-coingecko", version = "0.0.1-beta.2" }
+bothan-coinmarketcap = { path = "bothan-coinmarketcap", version = "0.0.1-beta.2" }
+bothan-htx = { path = "bothan-htx", version = "0.0.1-beta.2" }
+bothan-kraken = { path = "bothan-kraken", version = "0.0.1-beta.2" }
+bothan-okx = { path = "bothan-okx", version = "0.0.1-beta.2" }
 
 anyhow = "1.0.86"
 async-trait = "0.1.77"
-bincode = "2.0.0-rc.3"
+bincode = "2.0.1"
 chrono = "0.4.39"
 derive_more = { version = "2.0.1", features = ["full"] }
 dirs = "6.0.0"
@@ -55,6 +55,7 @@ serde = { version = "1.0.197", features = ["std", "derive", "alloc"] }
 serde_json = "1.0.138"
 thiserror = "2.0.11"
 tokio = { version = "1.36.0", features = ["full"] }
+tokio-util = "0.7.13"
 tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
 tonic = "0.12.1"
 tracing = "0.1.40"

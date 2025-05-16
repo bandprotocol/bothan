@@ -80,7 +80,7 @@ impl<State> Encode for Registry<State> {
     }
 }
 
-impl Decode for Registry<Invalid> {
+impl<Context> Decode<Context> for Registry<Invalid> {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let inner = HashMap::decode(decoder)?;
         Ok(Registry {

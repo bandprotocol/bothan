@@ -6,9 +6,9 @@ addr = "0.0.0.0:50051"
 # Logging configuration
 [log]
 # The logging level, which can be "trace", "debug", "info", "warn", or "error".
-level = "info"
-core_log_level = "Error"
-source_log_level = "Error"
+log_level = "info"
+core_log_level = "error"
+source_log_level = "error"
 
 # IPFS configuration
 [ipfs]
@@ -49,8 +49,6 @@ stale_threshold = 300
 [manager.crypto.source.binance]
 # WebSocket URL for streaming data from Binance.
 url = "wss://stream.binance.com:9443/stream"
-# Internal channel size for Binance data streams.
-internal_ch_size = 1000
 
 # Configuration for Bitfinex.
 [manager.crypto.source.bitfinex]
@@ -63,15 +61,11 @@ update_interval = "1m"
 [manager.crypto.source.bybit]
 # WebSocket URL for streaming data from Bybit.
 url = "wss://stream.bybit.com/v5/public/spot"
-# Internal channel size for Bybit data streams.
-internal_ch_size = 1000
 
 # Configuration for Coinbase.
 [manager.crypto.source.coinbase]
 # WebSocket URL for streaming data from Coinbase.
 url = "wss://ws-feed.exchange.coinbase.com"
-# Internal channel size for Coinbase data streams.
-internal_ch_size = 1000
 
 # Configuration for Coingecko.
 [manager.crypto.source.coingecko]
@@ -97,19 +91,20 @@ update_interval = "1m"
 [manager.crypto.source.htx]
 # WebSocket URL for streaming data from HTX.
 url = "wss://api.huobi.pro/ws"
-# Internal channel size for Huobi data streams.
-internal_ch_size = 1000
 
 # Configuration for Kraken.
 [manager.crypto.source.kraken]
 # WebSocket URL for streaming data from Kraken.
 url = "wss://ws.kraken.com/v2"
-# Internal channel size for Kraken data streams.
-internal_ch_size = 1000
 
 # Configuration for OKX.
 [manager.crypto.source.okx]
 # WebSocket URL for streaming data from OKX.
 url = "wss://ws.okx.com:8443/ws/v5/public"
-# Internal channel size for OKX data streams.
-internal_ch_size = 1000
+
+# Telemetry configuration
+[telemetry]
+# Enable or disable telemetry.
+enabled = false
+# The address and port of Bothan's telemetry endpoint.
+addr = "127.0.0.1:4318"

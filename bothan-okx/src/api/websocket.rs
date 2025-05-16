@@ -1,123 +1,167 @@
-use futures_util::stream::{SplitSink, SplitStream};
+use bothan_lib::types::AssetInfo;
+use bothan_lib::worker::websocket::{AssetInfoProvider, AssetInfoProviderConnector, Data};
 use futures_util::{SinkExt, StreamExt};
+use rust_decimal::Decimal;
+use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
-use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
-use tracing::warn;
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
 
-use crate::api::error::{ConnectionError, MessageError, SendError};
-use crate::api::types::OkxResponse;
-use crate::api::types::message::{InstrumentType, Op, PriceRequestArgument, WebSocketMessage};
+use crate::api::error::{Error, ListeningError};
+use crate::api::types::ticker::{InstrumentType, Ticker};
+use crate::api::types::{Response, subscription, ticker};
 
 /// A connector for establishing a WebSocket connection to the OKX API.
-pub struct WebsocketConnector {
+pub struct WebSocketConnector {
     url: String,
 }
 
-impl WebsocketConnector {
+impl WebSocketConnector {
     /// Creates a new instance of `OkxWebSocketConnector`.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
     /// Connects to the OKX WebSocket API.
-    pub async fn connect(&self) -> Result<WebSocketConnection, ConnectionError> {
-        let (wss, resp) = connect_async(self.url.clone()).await?;
-
-        let status = resp.status();
-        if StatusCode::is_server_error(&status) || StatusCode::is_client_error(&status) {
-            warn!("failed to connect with response code {}", resp.status());
-            return Err(ConnectionError::UnsuccessfulWebSocketResponse(
-                resp.status(),
-            ));
-        }
+    pub async fn connect(&self) -> Result<WebSocketConnection, tungstenite::Error> {
+        let (wss, _) = connect_async(self.url.clone()).await?;
 
         Ok(WebSocketConnection::new(wss))
     }
 }
 
+#[async_trait::async_trait]
+impl AssetInfoProviderConnector for WebSocketConnector {
+    type Provider = WebSocketConnection;
+    type Error = tungstenite::Error;
+
+    async fn connect(&self) -> Result<WebSocketConnection, Self::Error> {
+        WebSocketConnector::connect(self).await
+    }
+}
+
 /// Represents an active WebSocket connection to the OKX API.
 pub struct WebSocketConnection {
-    sender: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
-    receiver: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
 impl WebSocketConnection {
     /// Creates a new `OkxWebSocketConnection` instance.
-    pub fn new(web_socket_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
-        let (sender, receiver) = web_socket_stream.split();
-        Self { sender, receiver }
+    pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
+        Self { ws_stream }
     }
 
     /// Subscribes to ticker updates for the given instrument IDs.
-    pub async fn subscribe_ticker(&mut self, inst_ids: &[&str]) -> Result<(), SendError> {
-        let ticker_args = build_ticker_arguments(inst_ids);
-        let msg = WebSocketMessage {
-            op: Op::Subscribe,
+    pub async fn subscribe_ticker<T: ToString>(
+        &mut self,
+        inst_ids: &[T],
+    ) -> Result<(), tungstenite::Error> {
+        let ticker_args = build_ticker_request(inst_ids);
+        let msg = subscription::Request {
+            op: subscription::Operation::Subscribe,
             args: Some(ticker_args),
         };
 
         // Send the subscription message.
-        let message = Message::Text(serde_json::to_string(&msg)?);
-        Ok(self.sender.send(message).await?)
+        // Note: json!() should never panic here
+        let message = Message::Text(json!(msg).to_string());
+        self.ws_stream.send(message).await
     }
 
     /// Unsubscribes from ticker updates for the given instrument IDs.
-    pub async fn unsubscribe_ticker(&mut self, inst_ids: &[&str]) -> Result<(), SendError> {
-        let ticker_args = build_ticker_arguments(inst_ids);
-        let msg = WebSocketMessage {
-            op: Op::Unsubscribe,
+    pub async fn unsubscribe_tickerr<T: ToString>(
+        &mut self,
+        inst_ids: &[T],
+    ) -> Result<(), tungstenite::Error> {
+        let ticker_args = build_ticker_request(inst_ids);
+        let msg = subscription::Request {
+            op: subscription::Operation::Unsubscribe,
             args: Some(ticker_args),
         };
 
         // Send the unsubscription message.
-        let message = Message::Text(serde_json::to_string(&msg)?);
-        Ok(self.sender.send(message).await?)
+        // Note: json!() should never panic here
+        let message = Message::Text(json!(msg).to_string());
+        self.ws_stream.send(message).await
     }
 
-    /// Receives the next message from the WebSocket connection.
-    pub async fn next(&mut self) -> Result<OkxResponse, MessageError> {
-        if let Some(result_msg) = self.receiver.next().await {
-            return match result_msg {
-                Ok(Message::Text(msg)) => serde_json::from_str::<OkxResponse>(&msg)
-                    .map_err(|_| MessageError::UnsupportedMessage),
-                Ok(Message::Close(_)) => Err(MessageError::ChannelClosed),
-                Err(err) => match err {
-                    TungsteniteError::Protocol(..) => Err(MessageError::ChannelClosed),
-                    TungsteniteError::ConnectionClosed => Err(MessageError::ChannelClosed),
-                    _ => Err(MessageError::UnsupportedMessage),
-                },
-                _ => Err(MessageError::UnsupportedMessage),
-            };
+    /// Receives the next message from the WebSocket.
+    pub async fn next(&mut self) -> Option<Result<Response, Error>> {
+        match self.ws_stream.next().await {
+            Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
+            Some(Ok(Message::Ping(_))) => Some(Ok(Response::Ping)),
+            Some(Ok(Message::Close(_))) => None,
+            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Err(_)) => None, // Consider the connection closed if error detected
+            None => None,
         }
-
-        Err(MessageError::ChannelClosed)
     }
 
-    pub async fn close(&mut self) -> Result<(), SendError> {
-        self.sender.close().await?;
+    pub async fn close(&mut self) -> Result<(), tungstenite::Error> {
+        self.ws_stream.close(None).await?;
         Ok(())
     }
 }
 
 /// Builds a ticker request with the given parameters.
-fn build_ticker_arguments(inst_ids: &[&str]) -> Vec<PriceRequestArgument> {
+fn build_ticker_request<T: ToString>(inst_ids: &[T]) -> Vec<ticker::Request> {
     let inst_ids = inst_ids
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
 
     inst_ids
-        .iter()
-        .map(|id| PriceRequestArgument {
+        .into_iter()
+        .map(|id| ticker::Request {
             channel: "tickers".to_string(),
             inst_type: Some(InstrumentType::Spot),
             inst_family: None,
-            inst_id: Some(id.clone()),
+            inst_id: Some(id),
         })
         .collect()
+}
+
+fn parse_msg(msg: String) -> Result<Response, Error> {
+    Ok(serde_json::from_str::<Response>(&msg)?)
+}
+
+#[async_trait::async_trait]
+impl AssetInfoProvider for WebSocketConnection {
+    type SubscriptionError = tungstenite::Error;
+    type ListeningError = ListeningError;
+
+    async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
+        self.subscribe_ticker(ids).await?;
+        Ok(())
+    }
+
+    async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
+        WebSocketConnection::next(self).await.map(|r| match r? {
+            Response::TickersChannel(data) => parse_tickers(data.data),
+            _ => Ok(Data::Unused),
+        })
+    }
+
+    async fn try_close(mut self) {
+        tokio::spawn(async move { self.close().await });
+    }
+}
+
+fn parse_tickers(tickers: Vec<Ticker>) -> Result<Data, ListeningError> {
+    Ok(Data::AssetInfo(
+        tickers
+            .into_iter()
+            .map(parse_ticker)
+            .collect::<Result<Vec<AssetInfo>, ListeningError>>()?,
+    ))
+}
+
+fn parse_ticker(ticker: Ticker) -> Result<AssetInfo, ListeningError> {
+    Ok(AssetInfo::new(
+        ticker.inst_id,
+        Decimal::from_str_exact(&ticker.last)?,
+        str::parse::<i64>(&ticker.ts)?,
+    ))
 }
 
 #[cfg(test)]
@@ -126,7 +170,7 @@ pub(crate) mod test {
     use ws_mock::ws_mock_server::{WsMock, WsMockServer};
 
     use super::*;
-    use crate::api::types::{ChannelArgument, ChannelResponse, OkxResponse, PushData, TickerData};
+    use crate::api::types::{ChannelArgument, PushData};
 
     pub(crate) async fn setup_mock_server() -> WsMockServer {
         WsMockServer::start().await
@@ -136,11 +180,11 @@ pub(crate) mod test {
     async fn test_recv_ticker() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = WebsocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Create a mock ticker data.
-        let mock_ticker = TickerData {
+        let mock_ticker = Ticker {
             inst_type: "SPOT".to_string(),
             inst_id: "BTC-USDT".to_string(),
             last: "10000".to_string(),
@@ -158,13 +202,14 @@ pub(crate) mod test {
             sod_utc8: "10000".to_string(),
             ts: "10000".to_string(),
         };
-        let mock_resp = OkxResponse::ChannelResponse(ChannelResponse::Ticker(PushData {
+
+        let mock_resp = Response::TickersChannel(PushData {
             arg: ChannelArgument {
                 channel: "tickers".to_string(),
                 inst_id: "BTC-USDT".to_string(),
             },
             data: vec![mock_ticker],
-        }));
+        });
 
         // Mount the mock WebSocket server and send the mock response.
         WsMock::new()
@@ -178,7 +223,7 @@ pub(crate) mod test {
 
         // Connect to the mock WebSocket server and retrieve the response.
         let mut connection = connector.connect().await.unwrap();
-        let resp = connection.next().await.unwrap();
+        let resp = connection.next().await.unwrap().unwrap();
         assert_eq!(resp, mock_resp);
     }
 
@@ -186,7 +231,7 @@ pub(crate) mod test {
     async fn test_recv_close() {
         // Set up the mock server and the WebSocket connector.
         let server = setup_mock_server().await;
-        let connector = WebsocketConnector::new(server.uri().await);
+        let connector = WebSocketConnector::new(server.uri().await);
         let (mpsc_send, mpsc_recv) = mpsc::channel::<Message>(32);
 
         // Mount the mock WebSocket server and send a close message.
@@ -199,6 +244,6 @@ pub(crate) mod test {
         // Connect to the mock WebSocket server and verify the connection closure.
         let mut connection = connector.connect().await.unwrap();
         let resp = connection.next().await;
-        assert!(resp.is_err());
+        assert!(resp.is_none());
     }
 }

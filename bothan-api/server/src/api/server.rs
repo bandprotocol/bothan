@@ -36,6 +36,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         _: Request<GetInfoRequest>,
     ) -> Result<Response<GetInfoResponse>, Status> {
         info!("received get info request");
+
         let info = self
             .manager
             .get_info()
@@ -66,7 +67,7 @@ impl<S: Store> BothanService for BothanServer<S> {
 
         let set_registry_result = self
             .manager
-            .set_registry_from_ipfs(&update_registry_request.ipfs_hash, version)
+            .set_registry_from_ipfs(update_registry_request.ipfs_hash, version)
             .await;
 
         match set_registry_result {
@@ -108,6 +109,7 @@ impl<S: Store> BothanService for BothanServer<S> {
         info!("received push monitoring records request");
         debug!("request: {:?}", request);
         let request = request.into_inner();
+
         let push_result = self
             .manager
             .push_monitoring_record(request.uuid, request.tx_hash)

@@ -32,7 +32,7 @@ impl Encode for AssetInfo {
     }
 }
 
-impl Decode for AssetInfo {
+impl<Context> Decode<Context> for AssetInfo {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let id: String = Decode::decode(decoder)?;
         let price_serialized: [u8; 16] = Decode::decode(decoder)?;

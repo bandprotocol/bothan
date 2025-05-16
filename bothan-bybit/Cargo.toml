@@ -1,6 +1,7 @@
 [package]
 name = "bothan-bybit"
 version = "0.0.1-beta.2"
+description = "Rust client for the Bybit exchange with Bothan integration"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -9,7 +10,6 @@ repository.workspace = true
 bothan-lib = { workspace = true }
 
 async-trait = { workspace = true }
-chrono = { workspace = true }
 futures-util = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true }
@@ -17,6 +17,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-tungstenite = { workspace = true }
+tokio-util = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]

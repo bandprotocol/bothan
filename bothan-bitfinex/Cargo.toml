@@ -1,13 +1,15 @@
 [package]
 name = "bothan-bitfinex"
 version = "0.0.1-beta.2"
+description = "Rust client for the Bitfinex exchange with Bothan integration"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
 [dependencies]
-async-trait = { workspace = true }
 bothan-lib = { workspace = true }
+
+async-trait = { workspace = true }
 chrono = { workspace = true }
 humantime-serde = { workspace = true }
 reqwest = { workspace = true }
@@ -16,5 +18,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
 url = { workspace = true }
 

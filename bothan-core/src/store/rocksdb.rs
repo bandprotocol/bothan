@@ -1,16 +1,14 @@
 pub mod error;
 mod key;
 
-use std::collections::HashSet;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use bincode::{Decode, Encode, config, decode_from_slice, encode_to_vec};
 use bothan_lib::registry::{Registry, Valid};
 use bothan_lib::store::Store;
 use bothan_lib::types::AssetInfo;
 use rust_rocksdb::{DB, Options, WriteBatch};
-use tokio::sync::RwLock;
 
 use crate::store::rocksdb::error::{LoadError, RocksDbError};
 use crate::store::rocksdb::key::Key;
@@ -22,16 +20,29 @@ pub struct RocksDbStore {
 }
 
 impl RocksDbStore {
-    pub fn new<P: AsRef<Path>>(flush_path: P) -> Result<Self, rust_rocksdb::Error> {
+    pub fn new<P: AsRef<Path>>(flush_path: P) -> Result<Self, RocksDbError> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         DB::destroy(&opts, &flush_path)?;
+        let registry = Registry::default();
+
+        let encoded_registry = encode_to_vec(&registry, config::standard())?;
+        let encoded_hash = encode_to_vec("", config::standard())?;
 
         let db = Arc::new(DB::open(&opts, &flush_path)?);
-        Ok(RocksDbStore {
+
+        let mut write_batch = WriteBatch::default();
+        write_batch.put(Key::Registry.to_prefixed_bytes(), encoded_registry);
+        write_batch.put(Key::RegistryIpfsHash.to_prefixed_bytes(), encoded_hash);
+
+        db.write(write_batch)?;
+
+        let store = RocksDbStore {
             db,
-            registry: Arc::new(RwLock::new(Registry::default())),
-        })
+            registry: Arc::new(RwLock::new(registry)),
+        };
+
+        Ok(store)
     }
 
     pub fn load<P: AsRef<Path>>(flush_path: P) -> Result<Self, LoadError> {
@@ -60,7 +71,7 @@ impl RocksDbStore {
         Ok(())
     }
 
-    fn get<V: Decode>(&self, key: &Key) -> Result<Option<V>, RocksDbError> {
+    fn get<V: Decode<()>>(&self, key: &Key) -> Result<Option<V>, RocksDbError> {
         let value = self
             .db
             .get(key.to_prefixed_bytes())?
@@ -81,46 +92,32 @@ impl Store for RocksDbStore {
         ipfs_hash: String,
     ) -> Result<(), Self::Error> {
         let encoded_registry = encode_to_vec(&registry, config::standard())?;
-        let encoded_hash = encode_to_vec(&ipfs_hash, config::standard())?;
+        let encoded_hash = encode_to_vec(ipfs_hash, config::standard())?;
 
-        // if the registry can be encoded, lock first to prevent race conditions
-        let mut curr_reg = self.registry.write().await;
+        let mut writer = self
+            .registry
+            .write()
+            .map_err(|_| RocksDbError::PoisonedError)?;
 
-        // save to db
         let mut write_batch = WriteBatch::default();
         write_batch.put(Key::Registry.to_prefixed_bytes(), encoded_registry);
         write_batch.put(Key::RegistryIpfsHash.to_prefixed_bytes(), encoded_hash);
 
         self.db.write(write_batch)?;
-
-        // save to local
-        *curr_reg = registry;
-
+        *writer = registry;
         Ok(())
     }
 
-    async fn get_registry(&self) -> Registry<Valid> {
-        self.registry.read().await.clone()
+    async fn get_registry(&self) -> Result<Registry<Valid>, Self::Error> {
+        Ok(self
+            .registry
+            .read()
+            .map_err(|_| RocksDbError::PoisonedError)?
+            .clone())
     }
 
     async fn get_registry_ipfs_hash(&self) -> Result<Option<String>, Self::Error> {
         self.get(&Key::RegistryIpfsHash)
-    }
-
-    async fn set_query_ids(&self, prefix: &str, ids: HashSet<String>) -> Result<(), Self::Error> {
-        self.set(&Key::QueryIDs { source_id: prefix }, &ids)
-    }
-
-    async fn get_query_ids(&self, prefix: &str) -> Result<Option<HashSet<String>>, Self::Error> {
-        self.get(&Key::QueryIDs { source_id: prefix })
-    }
-
-    async fn contains_query_id(&self, prefix: &str, id: &str) -> Result<bool, Self::Error> {
-        let bool = self
-            .get::<HashSet<String>>(&Key::QueryIDs { source_id: prefix })?
-            .unwrap_or_default()
-            .contains(id);
-        Ok(bool)
     }
 
     async fn get_asset_info(
@@ -130,7 +127,7 @@ impl Store for RocksDbStore {
     ) -> Result<Option<AssetInfo>, Self::Error> {
         self.get(&Key::AssetStore {
             source_id: prefix,
-            id,
+            asset_id: id,
         })
     }
 
@@ -141,12 +138,12 @@ impl Store for RocksDbStore {
     ) -> Result<(), Self::Error> {
         let key = Key::AssetStore {
             source_id: prefix,
-            id: &asset_info.id,
+            asset_id: &asset_info.id,
         };
         self.set(&key, &asset_info)
     }
 
-    async fn insert_asset_infos(
+    async fn insert_batch_asset_info(
         &self,
         prefix: &str,
         asset_infos: Vec<AssetInfo>,
@@ -155,7 +152,7 @@ impl Store for RocksDbStore {
         for asset_info in asset_infos {
             let key = Key::AssetStore {
                 source_id: prefix,
-                id: &asset_info.id,
+                asset_id: &asset_info.id,
             };
             let encoded = encode_to_vec(&asset_info, config::standard())?;
             write_batch.put(key.to_prefixed_bytes(), encoded);

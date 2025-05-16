@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum CryptoAssetWorkerOpts {
     Binance(bothan_binance::WorkerOpts),
     Bitfinex(bothan_bitfinex::WorkerOpts),
@@ -8,6 +9,22 @@ pub enum CryptoAssetWorkerOpts {
     Htx(bothan_htx::WorkerOpts),
     Kraken(bothan_kraken::WorkerOpts),
     Okx(bothan_okx::WorkerOpts),
+}
+
+impl CryptoAssetWorkerOpts {
+    pub fn name(&self) -> &str {
+        match self {
+            CryptoAssetWorkerOpts::Binance(_) => "binance",
+            CryptoAssetWorkerOpts::Bitfinex(_) => "bitfinex",
+            CryptoAssetWorkerOpts::Bybit(_) => "bybit",
+            CryptoAssetWorkerOpts::Coinbase(_) => "coinbase",
+            CryptoAssetWorkerOpts::CoinGecko(_) => "coingecko",
+            CryptoAssetWorkerOpts::CoinMarketCap(_) => "coinmarketcap",
+            CryptoAssetWorkerOpts::Htx(_) => "htx",
+            CryptoAssetWorkerOpts::Kraken(_) => "kraken",
+            CryptoAssetWorkerOpts::Okx(_) => "okx",
+        }
+    }
 }
 
 impl From<bothan_binance::WorkerOpts> for CryptoAssetWorkerOpts {
