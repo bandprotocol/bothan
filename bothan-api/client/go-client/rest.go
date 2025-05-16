@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
-	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
 	"github.com/levigross/grequests"
+
+	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
 )
 
 var _ Client = &RestClient{}
