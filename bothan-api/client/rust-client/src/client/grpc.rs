@@ -44,10 +44,11 @@ impl GrpcClient {
         Ok(())
     }
 
-    pub async fn push_monitoring_records(&self, uuid: &str, tx_hash: &str) -> Result<(), Status> {
+    pub async fn push_monitoring_records(&self, uuid: &str, tx_hash: &str, signal_ids: &[&str]) -> Result<(), Status> {
         let push_monitoring_records_request = PushMonitoringRecordsRequest {
             uuid: uuid.into(),
             tx_hash: tx_hash.into(),
+            signal_ids: signal_ids.iter().map(|s| s.to_string()).collect(),
         };
         let request = Request::new(push_monitoring_records_request);
         let _ = self
