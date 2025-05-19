@@ -2,7 +2,6 @@
 
 [![MIT Licensed][mit-license-image]][mit-license-link]
 [![Apache 2.0 Licensed][apache-license-image]][apache-license-link]
-![Rust Stable][rustc-image]
 ![Rust 1.85+][rustc-version]
 
 A high-performance cryptocurrency price data aggregation system built in Rust.
@@ -109,7 +108,5 @@ at your option.
 [apache-license-image]: https://img.shields.io/badge/License-Apache_2.0-blue.svg
 
 [apache-license-link]: LICENSE-APACHE
-
-[rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
 
 [rustc-version]: https://img.shields.io/badge/rustc-1.85+-blue.svg
