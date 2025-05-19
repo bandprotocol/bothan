@@ -74,6 +74,7 @@ A proxy layer that provides a REST interface over the gRPC implementation:
 Each provider has its own dedicated module:
 
 - `bothan-binance`: Integration with Binance
+- `bothan-bitfinex`: Integration with Bitfinex
 - `bothan-bybit`: Integration with Bybit
 - `bothan-coinbase`: Integration with Coinbase
 - `bothan-coingecko`: Integration with CoinGecko
@@ -81,7 +82,6 @@ Each provider has its own dedicated module:
 - `bothan-htx`: Integration with HTX
 - `bothan-kraken`: Integration with Kraken
 - `bothan-okx`: Integration with OKX
-- `bothan-bitfinex`: Integration with Bitfinex
 
 These modules implement provider-specific logic while conforming to common interfaces defined in the core components.
 
