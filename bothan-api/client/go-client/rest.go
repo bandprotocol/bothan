@@ -9,7 +9,7 @@ import (
 
 	"github.com/levigross/grequests"
 
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
+	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
 )
 
 var _ Client = &RestClient{}
@@ -78,7 +78,7 @@ func (c *RestClient) UpdateRegistry(ipfsHash string, version string) error {
 	return nil
 }
 
-func (c *RestClient) PushMonitoringRecords(uuid, txHash string) error {
+func (c *RestClient) PushMonitoringRecords(uuid, txHash string, signalIDs []string) error {
 	parsedUrl, err := url.Parse(c.url + "/monitoring_records")
 	if err != nil {
 		return err
@@ -87,9 +87,10 @@ func (c *RestClient) PushMonitoringRecords(uuid, txHash string) error {
 	resp, err := grequests.Post(
 		parsedUrl.String(), &grequests.RequestOptions{
 			RequestTimeout: c.timeout,
-			JSON: map[string]string{
-				"uuid":    uuid,
-				"tx_hash": txHash,
+			JSON: map[string]any{
+				"uuid":       uuid,
+				"tx_hash":    txHash,
+				"signal_ids": signalIDs,
 			},
 		},
 	)

@@ -580,12 +580,18 @@ impl serde::Serialize for PushMonitoringRecordsRequest {
         if !self.tx_hash.is_empty() {
             len += 1;
         }
+        if !self.signal_ids.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("bothan.v1.PushMonitoringRecordsRequest", len)?;
         if !self.uuid.is_empty() {
             struct_ser.serialize_field("uuid", &self.uuid)?;
         }
         if !self.tx_hash.is_empty() {
             struct_ser.serialize_field("txHash", &self.tx_hash)?;
+        }
+        if !self.signal_ids.is_empty() {
+            struct_ser.serialize_field("signalIds", &self.signal_ids)?;
         }
         struct_ser.end()
     }
@@ -600,12 +606,15 @@ impl<'de> serde::Deserialize<'de> for PushMonitoringRecordsRequest {
             "uuid",
             "tx_hash",
             "txHash",
+            "signal_ids",
+            "signalIds",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Uuid,
             TxHash,
+            SignalIds,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -629,6 +638,7 @@ impl<'de> serde::Deserialize<'de> for PushMonitoringRecordsRequest {
                         match value {
                             "uuid" => Ok(GeneratedField::Uuid),
                             "txHash" | "tx_hash" => Ok(GeneratedField::TxHash),
+                            "signalIds" | "signal_ids" => Ok(GeneratedField::SignalIds),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -650,6 +660,7 @@ impl<'de> serde::Deserialize<'de> for PushMonitoringRecordsRequest {
             {
                 let mut uuid__ = None;
                 let mut tx_hash__ = None;
+                let mut signal_ids__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Uuid => {
@@ -664,11 +675,18 @@ impl<'de> serde::Deserialize<'de> for PushMonitoringRecordsRequest {
                             }
                             tx_hash__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::SignalIds => {
+                            if signal_ids__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("signalIds"));
+                            }
+                            signal_ids__ = Some(map_.next_value()?);
+                        }
                     }
                 }
                 Ok(PushMonitoringRecordsRequest {
                     uuid: uuid__.unwrap_or_default(),
                     tx_hash: tx_hash__.unwrap_or_default(),
+                    signal_ids: signal_ids__.unwrap_or_default(),
                 })
             }
         }

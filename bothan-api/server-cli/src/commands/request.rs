@@ -29,6 +29,8 @@ enum RequestSubCommand {
         uuid: String,
         /// The transaction hash of the monitoring records
         tx_hash: String,
+        /// The list of signal ids to push
+        signal_ids: Vec<String>,
     },
     /// Get prices for a list of signal ids
     GetPrices {
@@ -66,9 +68,14 @@ impl RequestCli {
                     .with_context(|| "Failed to update registry")?;
                 println!("Registry updated");
             }
-            RequestSubCommand::PushMonitoringRecords { uuid, tx_hash } => {
+            RequestSubCommand::PushMonitoringRecords {
+                uuid,
+                tx_hash,
+                signal_ids,
+            } => {
+                let ids = signal_ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
                 client
-                    .push_monitoring_records(uuid, tx_hash)
+                    .push_monitoring_records(uuid, tx_hash, &ids)
                     .await
                     .with_context(|| "Failed to push monitoring records")?;
                 println!("Monitoring records pushed");

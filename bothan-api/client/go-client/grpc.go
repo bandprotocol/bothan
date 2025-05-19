@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
+	proto "github.com/bandprotocol/bothan/bothan-api/client/go-client/proto/bothan/v1"
 )
 
 var _ Client = &GrpcClient{}
@@ -42,12 +42,15 @@ func (c *GrpcClient) UpdateRegistry(ipfsHash string, version string) error {
 	return err
 }
 
-func (c *GrpcClient) PushMonitoringRecords(uuid, txHash string) error {
+func (c *GrpcClient) PushMonitoringRecords(uuid, txHash string, signalIDs []string) error {
 	client := proto.NewBothanServiceClient(c.connection)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
-	_, err := client.PushMonitoringRecords(ctx, &proto.PushMonitoringRecordsRequest{Uuid: uuid, TxHash: txHash})
+	_, err := client.PushMonitoringRecords(
+		ctx,
+		&proto.PushMonitoringRecordsRequest{Uuid: uuid, TxHash: txHash, SignalIds: signalIDs},
+	)
 	return err
 }
 

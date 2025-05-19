@@ -64,6 +64,8 @@ message PushMonitoringRecordsRequest {
   string uuid = 1;
   // The tx hash of the transaction associated with the monitoring records.
   string tx_hash = 2;
+  // A list of signal IDs of the monitoring records to be submitted on BandChain.
+  repeated string signal_ids = 3;
 }
 
 // PushMonitoringRecordsResponse defines the response message for the PushMonitoringRecords RPC method.

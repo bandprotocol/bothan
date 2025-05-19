@@ -1,9 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 
+use bothan_lib::metrics::store::Metrics;
 use bothan_lib::registry::{Invalid, Registry};
 use bothan_lib::store::Store;
+use bothan_lib::worker::AssetWorker;
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
@@ -33,6 +35,7 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
     registry_version_requirement: VersionReq,
     monitoring_client: Option<Arc<MonitoringClient>>,
     monitoring_cache: Option<Cache<String, Arc<Vec<PriceSignalComputationRecord>>>>,
+    metrics: Metrics,
 }
 
 impl<S: Store + 'static> CryptoAssetInfoManager<S> {
@@ -54,6 +57,8 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
 
+        let metrics = Metrics::new();
+
         let manager = CryptoAssetInfoManager {
             store,
             opts,
@@ -64,6 +69,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             registry_version_requirement,
             monitoring_client,
             monitoring_cache,
+            metrics,
         };
 
         Ok(manager)
@@ -78,7 +84,13 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .await?
             .unwrap_or(String::new()); // If value doesn't exist, return an empty string
         let registry_version_requirement = self.registry_version_requirement.to_string();
-        let active_sources = self.opts.keys().cloned().collect();
+        let active_sources = self
+            .workers
+            .lock()
+            .await
+            .iter()
+            .map(|w| w.name().to_string())
+            .collect();
 
         Ok(CryptoAssetManagerInfo::new(
             bothan_version,
@@ -127,8 +139,15 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let mut records = Vec::new();
 
-        let price_states =
-            get_signal_price_states(ids, &self.store, &registry, stale_cutoff, &mut records).await;
+        let price_states = get_signal_price_states(
+            ids,
+            &self.store,
+            &registry,
+            stale_cutoff,
+            &mut records,
+            &self.metrics,
+        )
+        .await;
 
         let uuid = create_uuid();
         if let Some(cache) = &self.monitoring_cache {
@@ -147,7 +166,11 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         &self,
         uuid: String,
         tx_hash: String,
+        signal_ids: Vec<String>,
     ) -> Result<(), PushMonitoringRecordError> {
+        // convert list of signalIds to set for O(1) lookup
+        let signal_ids_set: HashSet<String> = signal_ids.into_iter().collect();
+
         let client = self
             .monitoring_client
             .as_ref()
@@ -157,11 +180,18 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .as_ref()
             .ok_or(PushMonitoringRecordError::MonitoringNotEnabled)?;
 
-        let records = cache
+        let cached_records = cache
             .get(&uuid)
             .ok_or(PushMonitoringRecordError::RecordNotFound)?;
+
+        let records = cached_records
+            .iter()
+            .filter(|record| signal_ids_set.contains(&record.signal_id))
+            .cloned()
+            .collect::<Vec<_>>();
+
         client
-            .post_signal_record(uuid, tx_hash, records.clone())
+            .post_signal_record(uuid, tx_hash, records)
             .await?
             .error_for_status()?;
         Ok(())
