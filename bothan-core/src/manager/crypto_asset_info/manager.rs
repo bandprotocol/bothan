@@ -110,7 +110,13 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let uuid = create_uuid();
 
-        let active_sources = self.opts.keys().cloned().collect();
+        let active_sources = self
+            .workers
+            .lock()
+            .await
+            .iter()
+            .map(|w: &CryptoAssetWorker| w.name().to_string())
+            .collect();
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
             .store
