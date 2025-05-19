@@ -68,7 +68,11 @@ impl RequestCli {
                     .with_context(|| "Failed to update registry")?;
                 println!("Registry updated");
             }
-            RequestSubCommand::PushMonitoringRecords { uuid, tx_hash, signal_ids } => {
+            RequestSubCommand::PushMonitoringRecords {
+                uuid,
+                tx_hash,
+                signal_ids,
+            } => {
                 let ids = signal_ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
                 client
                     .push_monitoring_records(uuid, tx_hash, &ids)
