@@ -45,6 +45,7 @@ use crate::types::AssetInfo;
 /// # Variants
 ///
 /// * `AssetInfo` - Contains asset information updates to be stored
+/// * `Ping` - Represents a ping message from the server
 /// * `Unused` - Represents data that is not relevant to asset information updates
 pub enum Data {
     /// Asset information updates to be stored in the system.
@@ -53,11 +54,12 @@ pub enum Data {
     /// saved to the store.
     AssetInfo(Vec<AssetInfo>),
 
+    /// Serverside Ping messages.
     Ping,
 
     /// Data that is not relevant to asset information updates.
     ///
-    /// This variant is used for messages that should be acknowledged but don't
+    /// This variant is used for messages that should be acknowledged but don’t
     /// contain asset information, such as heartbeats or subscription acknowledgments.
     Unused,
 }
@@ -89,7 +91,7 @@ pub trait AssetInfoProviderConnector: Send + Sync {
     /// # Errors
     ///
     /// Returns a connector-specific error if the connection fails, such as when
-    /// the API is unavailable, authentication fails, or the connection cannot be
+    /// the API is unavailable, authentication fails, or the connection can’t be
     /// established for any other reason.
     async fn connect(&self) -> Result<Self::Provider, Self::Error>;
 }
@@ -122,7 +124,7 @@ pub trait AssetInfoProvider: Send + Sync {
     /// # Errors
     ///
     /// Returns a subscription-specific error if the operation fails, such as when
-    /// the API rejects the subscription request or the request cannot be sent.
+    /// the API rejects the subscription request or the request can’t be sent.
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError>;
 
     /// Waits for and returns the next data update from the WebSocket.
