@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use bothan_lib::registry::{Invalid, Registry};
 use bothan_lib::store::Store;
+use bothan_lib::worker::AssetWorker;
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
@@ -78,7 +79,13 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .await?
             .unwrap_or(String::new()); // If value doesn't exist, return an empty string
         let registry_version_requirement = self.registry_version_requirement.to_string();
-        let active_sources = self.opts.keys().cloned().collect();
+        let active_sources = self
+            .workers
+            .lock()
+            .await
+            .iter()
+            .map(|w| w.name().to_string())
+            .collect();
 
         Ok(CryptoAssetManagerInfo::new(
             bothan_version,
