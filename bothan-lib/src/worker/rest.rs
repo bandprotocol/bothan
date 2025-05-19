@@ -1,11 +1,12 @@
 use std::fmt::Display;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tokio::select;
 use tokio::time::{interval, timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info};
 
+use crate::metrics::rest::{Metrics, PollingResult};
 use crate::store::{Store, WorkerStore};
 use crate::types::AssetInfo;
 
@@ -26,6 +27,7 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
     provider: P,
     store: WorkerStore<S>,
     ids: Vec<String>,
+    metrics: Metrics,
 ) {
     if ids.is_empty() {
         debug!("no ids to poll");
@@ -41,22 +43,29 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
             },
             _ = interval.tick() => {
                 info!("polling");
-                match timeout(interval.period(), provider.get_asset_info(&ids)).await {
+                let start_time = Instant::now();
+
+                let polling_result = match timeout(interval.period(), provider.get_asset_info(&ids)).await {
                     Ok(Ok(asset_info)) => {
                         if let Err(e) = store.set_batch_asset_info(asset_info).await {
-                            error!("failed to store asset info with error: {e}");
-                        } else {
-                            info!("asset info updated successfully");
-                        }
+                        error!("failed to store asset info with error: {e}");
+                    } else {
+                        info!("asset info updated successfully");
+                    }
+                    PollingResult::Success
                     }
                     Ok(Err(e)) => {
                         error!("failed to poll asset info with error: {e}");
+                        PollingResult::Failed
                     }
                     Err(_) => {
                         error!("updating interval exceeded timeout");
+                        PollingResult::Timeout
                     }
-                }
-            }
+                };
+
+                metrics.update_rest_polling(start_time.elapsed().as_millis(), polling_result);
+            },
         }
     }
 }

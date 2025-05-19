@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use bothan_lib::metrics::websocket::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
 use bothan_lib::worker::error::AssetWorkerError;
@@ -57,6 +58,8 @@ impl AssetWorker for Worker {
                 name = WORKER_NAME,
                 connection_idx = i
             );
+            let worker = format!("{WORKER_NAME}_{i}");
+            let metrics = Metrics::new(WORKER_NAME, worker);
             tokio::spawn(
                 start_listening(
                     token.child_token(),
@@ -64,6 +67,7 @@ impl AssetWorker for Worker {
                     worker_store.clone(),
                     chunk.collect(),
                     TIMEOUT,
+                    metrics,
                 )
                 .instrument(span),
             );

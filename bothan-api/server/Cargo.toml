@@ -20,6 +20,7 @@ bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
 
 async-trait = { workspace = true }
+chrono = { workspace = true }
 dirs = { workspace = true }
 prost = { workspace = true }
 rust_decimal = { workspace = true }
