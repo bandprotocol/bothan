@@ -115,7 +115,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .lock()
             .await
             .iter()
-            .map(|w: &CryptoAssetWorker| w.name().to_string())
+            .map(|w| w.name().to_string())
             .collect();
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
