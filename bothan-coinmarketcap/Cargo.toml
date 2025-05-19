@@ -1,6 +1,6 @@
 [package]
 name = "bothan-coinmarketcap"
-version = "0.0.1-beta.2"
+version = "0.0.1-beta.3"
 description = "Rust client for the CoinMarketCap exchange with Bothan integration"
 edition.workspace = true
 license.workspace = true

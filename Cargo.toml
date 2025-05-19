@@ -17,19 +17,19 @@ resolver = "2"
 
 [workspace.dependencies]
 bothan-api = { path = "bothan-api/server" }
-bothan-core = { path = "bothan-core", version = "0.0.1-beta.2" }
-bothan-client = { path = "bothan-api/client/rust-client", version = "0.0.1-beta.2" }
-bothan-lib = { path = "bothan-lib", version = "0.0.1-beta.2" }
+bothan-core = { path = "bothan-core", version = "0.0.1-beta.3" }
+bothan-client = { path = "bothan-api/client/rust-client", version = "0.0.1-beta.3" }
+bothan-lib = { path = "bothan-lib", version = "0.0.1-beta.3" }
 
-bothan-binance = { path = "bothan-binance", version = "0.0.1-beta.2" }
-bothan-bitfinex = { path = "bothan-bitfinex", version = "0.0.1-beta.2" }
-bothan-bybit = { path = "bothan-bybit", version = "0.0.1-beta.2" }
-bothan-coinbase = { path = "bothan-coinbase", version = "0.0.1-beta.2" }
-bothan-coingecko = { path = "bothan-coingecko", version = "0.0.1-beta.2" }
-bothan-coinmarketcap = { path = "bothan-coinmarketcap", version = "0.0.1-beta.2" }
-bothan-htx = { path = "bothan-htx", version = "0.0.1-beta.2" }
-bothan-kraken = { path = "bothan-kraken", version = "0.0.1-beta.2" }
-bothan-okx = { path = "bothan-okx", version = "0.0.1-beta.2" }
+bothan-binance = { path = "bothan-binance", version = "0.0.1-beta.3" }
+bothan-bitfinex = { path = "bothan-bitfinex", version = "0.0.1-beta.3" }
+bothan-bybit = { path = "bothan-bybit", version = "0.0.1-beta.3" }
+bothan-coinbase = { path = "bothan-coinbase", version = "0.0.1-beta.3" }
+bothan-coingecko = { path = "bothan-coingecko", version = "0.0.1-beta.3" }
+bothan-coinmarketcap = { path = "bothan-coinmarketcap", version = "0.0.1-beta.3" }
+bothan-htx = { path = "bothan-htx", version = "0.0.1-beta.3" }
+bothan-kraken = { path = "bothan-kraken", version = "0.0.1-beta.3" }
+bothan-okx = { path = "bothan-okx", version = "0.0.1-beta.3" }
 
 anyhow = "1.0.86"
 async-trait = "0.1.77"
