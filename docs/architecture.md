@@ -1,27 +1,32 @@
 # Architecture
 
-This document describes the architecture of Bothan, a high-performance cryptocurrency price data aggregation system built in Rust.
+This document describes the architecture of Bothan, a high-performance cryptocurrency price data aggregation system
+built in Rust.
 
 ## Terms
 
 Some important terms and acronyms that are commonly used in this project include:
 
 * **Bothan**: The name of this cryptocurrency price data aggregation system.
-* **Provider**: A service that provides cryptocurrency market data (prices, volumes, etc.). This includes both exchanges (like Binance, Kraken) and data aggregation services (like CoinMarketCap, CoinGecko).
+* **Provider**: A service that provides cryptocurrency market data (prices, volumes, etc.). This includes both
+  exchanges (like Binance, Kraken) and data aggregation services (like CoinMarketCap, CoinGecko).
 * **Price Feed**: A continuous stream of price data for a specific cryptocurrency pair.
 
 ## Overview
 
-At its highest level, Bothan implements a unified system for collecting, processing, and serving cryptocurrency price data from multiple sources. The system is designed to be highly performant, reliable, and extensible, using Rust's powerful type system and async capabilities through Tokio.
+At its highest level, Bothan implements a unified system for collecting, processing, and serving cryptocurrency price
+data from multiple sources. The system is designed to be highly performant, reliable, and extensible, using Rust's
+powerful type system and async capabilities through Tokio.
 
-Bothan follows a modular architecture, with separate components for different providers and a common core that handles shared functionality. The system can be broken down into several key components:
+Bothan follows a modular architecture, with separate components for different providers and a common core that handles
+shared functionality. The system can be broken down into several key components:
 
 1. **Core Components**: Shared types, interfaces, and functionality used across the system.
 2. **Provider Connectors**: Specialized modules for interacting with individual providers.
 3. **API Server**: The interface for external systems to request price data.
 4. **API Proxy**: A REST interface layer that sits on top of the gRPC API implementation.
 
-![Bothan Architecture Diagram](architecture.png)
+![Bothan Architecture Diagram](assets/architecture.png)
 
 ## Component Descriptions
 
@@ -29,7 +34,8 @@ This section provides an overview of the various directories and modules in Both
 
 ### `bothan-core`
 
-The foundation of the system, containing core types, interfaces, and functionality shared across all components, including:
+The foundation of the system, containing core types, interfaces, and functionality shared across all components,
+including:
 
 - Data models and schemas
 - Storage interfaces
@@ -91,19 +97,23 @@ Protocol buffer definitions for the API, enabling:
 
 ### Async Runtime
 
-Bothan uses Tokio as its async runtime, allowing it to efficiently handle thousands of concurrent connections with minimal resource usage. The async programming model is used throughout the codebase to ensure optimal performance.
+Bothan uses Tokio as its async runtime, allowing it to efficiently handle thousands of concurrent connections with
+minimal resource usage. The async programming model is used throughout the codebase to ensure optimal performance.
 
 ### Error Handling
 
-Error handling in Bothan follows Rust's idiomatic approach using the `Result` type. The system uses `anyhow` for flexible error handling and `thiserror` for defining custom error types where appropriate.
+Error handling in Bothan follows Rust's idiomatic approach using the `Result` type. The system uses `anyhow` for
+flexible error handling and `thiserror` for defining custom error types where appropriate.
 
 ### Monitoring and Telemetry
 
-Bothan includes comprehensive monitoring capabilities to track system health, performance metrics, and error rates. The monitoring system is designed to integrate with industry-standard tools.
+Bothan includes comprehensive monitoring capabilities to track system health, performance metrics, and error rates. The
+monitoring system is designed to integrate with industry-standard tools.
 
 ### Testing
 
-The codebase includes unit tests for core functionality, as well as integration tests to verify interactions with external systems. Mock implementations are available for testing provider connectors without making actual API calls.
+The codebase includes unit tests for core functionality, as well as integration tests to verify interactions with
+external systems. Mock implementations are available for testing provider connectors without making actual API calls.
 
 ## Extensions and Customization
 
@@ -113,5 +123,3 @@ Bothan is designed to be extensible, allowing for:
 - Customizing data processing pipelines
 - Extending the API with new endpoints
 - Integrating with external systems
-
-For details on how to contribute or extend the system, see the [Contributing Guide](contributing.md).
