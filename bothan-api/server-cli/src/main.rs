@@ -9,6 +9,7 @@ use tracing_subscriber::filter::Directive;
 
 use crate::commands::config::ConfigCli;
 use crate::commands::key::KeyCli;
+use crate::commands::query::QueryCli;
 use crate::commands::request::RequestCli;
 use crate::commands::start::StartCli;
 use crate::helper::Exitable;
@@ -33,6 +34,8 @@ enum Command {
     Config(ConfigCli),
     /// Key command for the bothan-api server
     Key(KeyCli),
+    /// Query command for the bothan-api server-cli
+    Query(QueryCli),
     /// Request command for the bothan-api server
     Request(RequestCli),
     /// Starts the bothan-api server
@@ -83,6 +86,7 @@ async fn main() {
         let res = match command {
             Command::Config(config_cli) => config_cli.run().await,
             Command::Key(key_cli) => key_cli.run(app_config).await,
+            Command::Query(query_cli) => query_cli.run(app_config).await,
             Command::Request(request_cli) => request_cli.run(app_config).await,
             Command::Start(start_cli) => start_cli.run(app_config).await,
         };
