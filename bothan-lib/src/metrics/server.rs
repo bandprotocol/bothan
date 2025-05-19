@@ -29,10 +29,6 @@ impl Metrics {
             .f64_histogram("server_request_duration_milliseconds")
             .with_description("Time taken to process each request sent to the server")
             .with_unit("milliseconds")
-            .with_boundaries(vec![
-                0.1, 1.0, 2.0, 3.0, 5.0, 10.0, 15.0, 20.0, 25.0, 50.0, 75.0, 100.0, 250.0, 500.0,
-                750.0, 1000.0, 2500.0, 5000.0, 10000.0,
-            ])
             .build();
 
         Self {

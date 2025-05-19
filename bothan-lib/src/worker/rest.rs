@@ -37,36 +37,35 @@ pub async fn start_polling<S: Store, E: Display, P: AssetInfoProvider<Error = E>
 
     loop {
         select! {
-                    _ = cancellation_token.cancelled() => {
-                        info!("polling: cancelled");
-                        break
-                    },
-                    _ = interval.tick() => {
-                        info!("polling");
-        let start_time = Instant::now();
+            _ = cancellation_token.cancelled() => {
+                info!("polling: cancelled");
+                break
+            },
+            _ = interval.tick() => {
+                info!("polling");
+                let start_time = Instant::now();
 
-        let polling_result = match timeout(interval.period(), provider.get_asset_info(&ids)).await {
-            Ok(Ok(asset_info)) => {
-                if let Err(e) = store.set_batch_asset_info(asset_info).await {
-                    error!("failed to store asset info with error: {e}");
-                } else {
-                    info!("asset info updated successfully");
-                }
-                PollingResult::Success
-            }
-            Ok(Err(e)) => {
-                error!("failed to poll asset info with error: {e}");
-                PollingResult::Failed
-            }
-            Err(_) => {
-                error!("updating interval exceeded timeout");
-                PollingResult::Timeout
-            }
-        };
+                let polling_result = match timeout(interval.period(), provider.get_asset_info(&ids)).await {
+                    Ok(Ok(asset_info)) => {
+                        if let Err(e) = store.set_batch_asset_info(asset_info).await {
+                        error!("failed to store asset info with error: {e}");
+                    } else {
+                        info!("asset info updated successfully");
+                    }
+                    PollingResult::Success
+                    }
+                    Ok(Err(e)) => {
+                        error!("failed to poll asset info with error: {e}");
+                        PollingResult::Failed
+                    }
+                    Err(_) => {
+                        error!("updating interval exceeded timeout");
+                        PollingResult::Timeout
+                    }
+                };
 
-        metrics.update_rest_polling(start_time.elapsed().as_millis(), polling_result);
-
-                    },
-                }
+                metrics.update_rest_polling(start_time.elapsed().as_millis(), polling_result);
+            },
+        }
     }
 }

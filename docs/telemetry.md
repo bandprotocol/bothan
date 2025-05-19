@@ -20,9 +20,9 @@ addr = "127.0.0.1:4318"
 Tracks each incoming Bothan gRPC server request and measures the processing time for each function call.
 
 #### Metrics
-| Name                                 | Type      | Description                                      |
-|--------------------------------------|-----------|--------------------------------------------------|
-| `server_requests_total`                    | `u64` Counter   | Total number of requests sent to the server           |
+| Name                                   | Type            | Description                                 |
+| -------------------------------------- | --------------- | ------------------------------------------- |
+| `server_requests_total`                | `u64` Counter   | Total number of requests sent to the server |
 | `server_request_duration_milliseconds` | `f64` Histogram | Time taken to process each request (ms)     |
 
 #### Tags
@@ -38,10 +38,10 @@ Tracks each incoming Bothan gRPC server request and measures the processing time
 Tracks each operation that reads and writes asset information to RocksDB.
 
 #### Metrics
-| Name                              | Type      | Description                                                           |
-|-----------------------------------|-----------|-----------------------------------------------------------------------|
-| `store_operations_total`                    | `u64` Counter   | Total number of operations executed by the store
-| `store_operation_duration_microseconds` | `u64` Histogram | Time taken to execute each store operation (μs)                    |
+| Name                                    | Type            | Description                                      |
+| --------------------------------------- | --------------- | ------------------------------------------------ |
+| `store_operations_total`                | `u64` Counter   | Total number of operations executed by the store |
+| `store_operation_duration_microseconds` | `u64` Histogram | Time taken to execute each store operation (μs)  |
 
 #### Tags
 - `operation`: `get_asset_info`, `insert_batch_asset_info`
@@ -52,10 +52,10 @@ Tracks each operation that reads and writes asset information to RocksDB.
 Tracks workers that poll REST APIs from sources such as Coingecko and CoinMarketCap to retrieve asset information.
 
 #### Metrics
-| Name                              | Type      | Description                                                           |
-|-----------------------------------|-----------|-----------------------------------------------------------------------|
-| `rest_polling_total`                    | `u64` Counter   | Total number of polling requests sent by the worker to the source
-| `rest_polling_duration_milliseconds` | `u64` Histogram | Time taken by the worker to complete each polling request to fetch asset info (ms)                    |
+| Name                                 | Type            | Description                                                                        |
+| ------------------------------------ | --------------- | ---------------------------------------------------------------------------------- |
+| `rest_polling_total`                 | `u64` Counter   | Total number of polling requests sent by the worker to the source                  |
+| `rest_polling_duration_milliseconds` | `u64` Histogram | Time taken by the worker to complete each polling request to fetch asset info (ms) |
 
 #### Tags
 - `status`: `success`, `failed`, `timeout`
@@ -66,11 +66,11 @@ Tracks workers that poll REST APIs from sources such as Coingecko and CoinMarket
 Used by workers that establish WebSocket connections to each source: Binance, Bybit, Coinbase, HTX, Kraken, and OKX.
 
 #### Metrics
-| Name                                     | Type      | Description                                                                |
-|------------------------------------------|-----------|----------------------------------------------------------------------------|
-| `websocket_activity_messages_total`            | `u64` Counter   | Total number of messages sent by the source to indicate whether the source is active or not  |
-| `websocket_connection_duration_milliseconds` | `u64` Histogram | Time taken for worker to establish a websocket connection to the source (ms)                              |
-| `websocket_connection_total`                  | `u64` Counter   | Total number of connections established by a worker to the source                              |
+| Name                                         | Type            | Description                                                                                 |
+| -------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------- |
+| `websocket_activity_messages_total`          | `u64` Counter   | Total number of messages sent by the source to indicate whether the source is active or not |
+| `websocket_connection_duration_milliseconds` | `u64` Histogram | Time taken for worker to establish a websocket connection to the source (ms)                |
+| `websocket_connection_total`                 | `u64` Counter   | Total number of connections established by a worker to the source                           |
 
 #### Tags
 - `worker`: 

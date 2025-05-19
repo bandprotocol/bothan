@@ -26,10 +26,6 @@ impl Metrics {
             .u64_histogram("store_operation_duration_microseconds")
             .with_description("Time taken to execute each store operation")
             .with_unit("microseconds")
-            .with_boundaries(vec![
-                1.0, 2.0, 3.0, 5.0, 10.0, 15.0, 20.0, 25.0, 50.0, 75.0, 100.0, 250.0, 500.0, 750.0,
-                1000.0, 2500.0, 5000.0, 10000.0,
-            ])
             .build();
 
         Self {
