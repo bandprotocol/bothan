@@ -15,7 +15,19 @@ bothan-core = { workspace = true, features = ["rocksdb"] }
 bothan-client = { workspace = true }
 bothan-lib = { workspace = true }
 
+bothan-binance = { workspace = true }
+bothan-bitfinex = { workspace = true }
+bothan-bybit = { workspace = true }
+bothan-coinbase = { workspace = true }
+bothan-coingecko = { workspace = true }
+bothan-coinmarketcap = { workspace = true }
+bothan-htx = { workspace = true }
+bothan-kraken = { workspace = true }
+bothan-okx = { workspace = true }
+
 dirs = { workspace = true }
+futures = { workspace = true }
+itertools = { workspace = true }
 reqwest = { workspace = true }
 semver = { workspace = true }
 serde_json = { workspace = true }
@@ -29,3 +41,5 @@ clap = { version = "4.5.29", features = ["derive"] }
 inquire = "0.7.5"
 toml = "0.8.20"
 tonic-reflection = "0.12.3"
+humantime = "2.2.0"
+prettytable = "0.10.0"
