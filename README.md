@@ -3,7 +3,7 @@
 [![MIT Licensed][mit-license-image]][mit-license-link]
 [![Apache 2.0 Licensed][apache-license-image]][apache-license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.76+][rustc-version]
+![Rust 1.85+][rustc-version]
 
 A high-performance cryptocurrency price data aggregation system built in Rust.
 
