@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use reqwest::Response;
 use reqwest::header::HeaderMap;
 use semver::Version;
@@ -30,7 +28,7 @@ impl Client {
         &self,
         uuid: String,
         tx_hash: String,
-        records: Arc<Vec<SignalComputationRecord<T, U>>>,
+        records: Vec<SignalComputationRecord<T, U>>,
     ) -> Result<Response, Error>
     where
         T: Serialize + Sized,

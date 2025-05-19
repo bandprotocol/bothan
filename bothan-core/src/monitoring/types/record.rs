@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use bothan_lib::registry::post_processor::PostProcessError;
 use bothan_lib::registry::processor::ProcessError;
 use bothan_lib::registry::source::Operation;
@@ -9,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignalTransactionRecord<T, U> {
     pub tx_hash: String,
-    pub records: Arc<Vec<SignalComputationRecord<T, U>>>,
+    pub records: Vec<SignalComputationRecord<T, U>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

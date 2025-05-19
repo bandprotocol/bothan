@@ -112,7 +112,7 @@ impl<S: Store> BothanService for BothanServer<S> {
 
         let push_result = self
             .manager
-            .push_monitoring_record(request.uuid, request.tx_hash)
+            .push_monitoring_record(request.uuid, request.tx_hash, request.signal_ids)
             .await;
 
         match push_result {

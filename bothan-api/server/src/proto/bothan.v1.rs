@@ -51,6 +51,9 @@ pub struct PushMonitoringRecordsRequest {
     /// The tx hash of the transaction associated with the monitoring records.
     #[prost(string, tag="2")]
     pub tx_hash: ::prost::alloc::string::String,
+    /// A list of signal IDs of the monitoring records to be submitted on BandChain.
+    #[prost(string, repeated, tag="3")]
+    pub signal_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// PushMonitoringRecordsResponse defines the response message for the PushMonitoringRecords RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]

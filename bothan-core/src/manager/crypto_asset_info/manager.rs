@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -147,7 +147,11 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         &self,
         uuid: String,
         tx_hash: String,
+        signal_ids: Vec<String>,
     ) -> Result<(), PushMonitoringRecordError> {
+        // convert list of signalIds to set for O(1) lookup
+        let signal_ids_set: HashSet<String> = signal_ids.into_iter().collect();
+
         let client = self
             .monitoring_client
             .as_ref()
@@ -157,11 +161,18 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .as_ref()
             .ok_or(PushMonitoringRecordError::MonitoringNotEnabled)?;
 
-        let records = cache
+        let cached_records = cache
             .get(&uuid)
             .ok_or(PushMonitoringRecordError::RecordNotFound)?;
+
+        let records = cached_records
+            .iter()
+            .filter(|record| signal_ids_set.contains(&record.signal_id))
+            .cloned()
+            .collect::<Vec<_>>();
+
         client
-            .post_signal_record(uuid, tx_hash, records.clone())
+            .post_signal_record(uuid, tx_hash, records)
             .await?
             .error_for_status()?;
         Ok(())
