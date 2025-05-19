@@ -27,15 +27,15 @@ This project comprises primarily of 6 main components:
 ## Supported Data Sources
 
 - [Binance](bothan-binance)
+- [Bitfinex](bothan-bitfinex)
 - [Bybit](bothan-bybit)
+- [Coinbase](bothan-coinbase)
 - [CoinGecko](bothan-coingecko)
 - [CoinMarketCap](bothan-coinmarketcap)
 - [CryptoCompare](bothan-cryptocompare)
 - [HTX](bothan-htx)
 - [Kraken](bothan-kraken)
 - [OKX](bothan-okx)
-- [Bitfinex](bothan-bitfinex)
-- [Coinbase](bothan-coinbase)
 
 ## Features
 
@@ -101,10 +101,6 @@ Licensed under either of:
 - MIT License ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
-
-[build-image]: https://placeholder
-
-[build-link]: https://placeholder
 
 [mit-license-image]: https://img.shields.io/badge/license-MIT-blue
 
