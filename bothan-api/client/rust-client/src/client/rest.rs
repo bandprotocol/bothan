@@ -38,10 +38,16 @@ impl RestClient {
         Ok(())
     }
 
-    pub async fn push_monitoring_records(&self, uuid: &str, tx_hash: &str) -> Result<(), Error> {
+    pub async fn push_monitoring_records(
+        &self,
+        uuid: &str,
+        tx_hash: &str,
+        signal_ids: &[&str],
+    ) -> Result<(), Error> {
         let mut url = self.url.clone();
         url.set_path("/monitoring_records");
-        let payload = serde_json::json!({ "uuid": uuid, "tx_hash": tx_hash });
+        let payload =
+            serde_json::json!({ "uuid": uuid, "tx_hash": tx_hash, "signal_ids": signal_ids });
         let _ = self
             .client
             .post(url)
