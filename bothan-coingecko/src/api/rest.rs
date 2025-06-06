@@ -3,7 +3,7 @@
 //! This module provides the [`RestApi`], a client for interacting with the CoinGecko REST API.
 //! It includes methods for retrieving coin metadata and current USD prices, and is used internally
 //! to implement the [`AssetInfoProvider`] trait for asset workers.
-//! 
+//!
 //! This module provides:
 //!
 //! - Fetches the full list of coins from the `/coins/list` endpoint
@@ -43,7 +43,7 @@ use crate::api::types::{Coin, Price};
 ///     headers.insert("User-Agent", agent);
 ///
 ///     let client = ClientBuilder::new().default_headers(headers).build()?;
-/// 
+///
 ///     let api = RestApi::new(Url::parse("https://api.coingecko.com/api/v3/")?, client);
 ///     Ok(())
 /// }
@@ -70,7 +70,7 @@ impl RestApi {
     }
 
     /// Retrieves market data for the specified coins from the CoinGecko REST API.
-    /// 
+    ///
     /// This method constructs a request to the CoinGecko `/simple/price` endpoint
     /// and returns a mapping from coin IDs to [`Price`] structures containing the
     /// latest USD price and timestamp.
@@ -117,7 +117,7 @@ impl RestApi {
 ///
 /// This function executes the given [`RequestBuilder`], validates the HTTP response,
 /// and deserializes the response body into the expected type `T`.
-/// 
+///
 /// # Errors
 ///
 /// Returns a [`reqwest::Error`] if:
@@ -137,8 +137,8 @@ impl AssetInfoProvider for RestApi {
     type Error = ProviderError;
 
     /// Fetches asset information for a list of coin IDs from the CoinGecko REST API.
-    /// 
-    /// This method retrieves current USD prices for the given `ids` by calling 
+    ///
+    /// This method retrieves current USD prices for the given `ids` by calling
     /// [`RestApi::get_simple_price_usd`] iteratively and transforms the results into a vector of [`AssetInfo`] structs.
     ///
     /// Each entry in the response is converted into an [`AssetInfo`] instance using:
