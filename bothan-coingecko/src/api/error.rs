@@ -1,5 +1,5 @@
 //! Error types for CoinGecko REST API client operations.
-//! 
+//!
 //! This module provides custom error types used throughout the CoinGecko REST API integration,
 //! particularly for REST API client configuration and concurrent background data fetching.
 
@@ -33,7 +33,7 @@ pub enum ProviderError {
     #[error("failed to fetch tickers: {0}")]
     RequestError(#[from] reqwest::Error),
 
-    /// Indicates that the response data contains invalid numeric values (e.g., `NaN`). 
+    /// Indicates that the response data contains invalid numeric values (e.g., `NaN`).
     #[error("value contains nan")]
     InvalidValue,
 }

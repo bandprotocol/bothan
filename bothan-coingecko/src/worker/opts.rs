@@ -23,7 +23,7 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 /// [`WorkerOpts`] provides a way to specify custom values for creating a
 /// `CoinGeckoWorker`. It specifies parameters such as the API endpoint URL, an optional API key,
 /// a custom user agent, and the polling interval for fetching data.
-/// 
+///
 /// # Examples
 ///
 /// ```rust
@@ -39,7 +39,7 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 /// ```
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorkerOpts {
-    /// Optional base URL for the CoinGecko REST API. If not provided, 
+    /// Optional base URL for the CoinGecko REST API. If not provided,
     /// the default public URL will be used.
     #[serde(serialize_with = "none_is_default_url")]
     pub url: Option<String>,
@@ -76,7 +76,7 @@ impl Default for WorkerOpts {
     /// - No API key
     /// - Default user agent
     /// - Default update interval
-    /// 
+    ///
     /// # Returns
     ///
     /// A [`WorkerOpts`] instance with default settings
@@ -100,7 +100,7 @@ fn empty_string_is_none<'de, D: Deserializer<'de>>(
     Ok(s.filter(|s| !s.is_empty()))
 }
 /// Serializer helper: converts `None` to an empty string.
-/// 
+///
 /// This function is useful when serializing configuration data where a missing value (`None`)
 /// should be represented as an empty string (`""`) in the output format, such as JSON or YAML.
 fn none_is_empty_string<S: Serializer>(
@@ -114,7 +114,7 @@ fn none_is_empty_string<S: Serializer>(
 }
 
 /// Serializer helper: converts `None` to the default CoinGecko REST API URL.
-/// 
+///
 /// This function is useful when serializing configuration data where a missing value (`None`)
 /// should be represented as the default public CoinGecko REST API URL (`DEFAULT_URL`) in the output format, such as JSON or YAML.
 fn none_is_default_url<S: Serializer>(
