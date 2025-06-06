@@ -10,11 +10,11 @@
 //! # The module provides:
 //!
 //! - Polling of [`AssetInfo`](bothan_lib::types::AssetInfo) periodically in asynchronous task
-//! - Ensures graceful cancellation by using a CancellationToken to signal shutdown and a DropGuard 
+//! - Ensures graceful cancellation by using a CancellationToken to signal shutdown and a DropGuard
 //!   to automatically clean up resources when the worker is dropped
 //! - Metrics collection for observability
 //! - Configurable via user agent, API key, polling interval, and endpoint URL
-//! 
+//!
 //! # Examples
 //!
 //! ```rust
@@ -30,7 +30,7 @@
 //!
 //!     let worker = Worker::build(opts, &store, ids).await?;
 //! }
-//! 
+//!
 //! ```
 
 use bothan_lib::metrics::rest::Metrics;
@@ -71,7 +71,7 @@ impl AssetWorker for Worker {
     ///
     /// This method creates a CoinGecko REST API client, spawns a asynchronous polling task
     /// to periodically fetch asset data, and returns the running [`Worker`] instance.
-    /// 
+    ///
     /// # Errors
     ///
     /// Returns an [`AssetWorkerError`](bothan_lib::worker::error::AssetWorkerError) if:

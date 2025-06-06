@@ -9,7 +9,7 @@
 //! - [`rest`] — Core API client implementation, including HTTP request logic and integration with Bothan’s `AssetInfoProvider` trait.
 //! - [`types`] — Data types that represent CoinGecko REST API responses such as [`Coin`](types::Coin) and [`Price`](types::Price).
 //! - [`error`] — Custom error types used during API client configuration and request processing.
-//! 
+//!
 //! # Integration with Workers
 //!
 //! This module is intended to be used by worker implementations (such as [`Worker`](`crate::worker::Worker`))

@@ -3,7 +3,7 @@
 //! This module provides a builder for constructing [`RestApi`] clients used
 //! to interact with the CoinGecko REST API. The builder supports optional configuration
 //! of base URL, user agent, and API key.
-//! 
+//!
 //! The module provides:
 //!
 //! - The [`RestApiBuilder`] for REST API building
@@ -19,7 +19,7 @@ use crate::api::error::BuildError;
 use crate::api::types::{API_KEY_HEADER, DEFAULT_PRO_URL, DEFAULT_URL, DEFAULT_USER_AGENT};
 
 /// Builder for creating instances of [`RestApi`].
-/// 
+///
 /// The `RestApiBuilder` provides a builder pattern for setting up a [`RestApi`] instance
 /// by allowing users to specify optional configuration parameters such as the base URL,
 /// user agent, and API key.
@@ -78,7 +78,7 @@ impl RestApiBuilder {
     }
 
     /// Sets the URL for the API.
-    /// 
+    ///
     /// If not specified, the default URL is `DEFAULT_URL` when no API key is provided,
     /// and `DEFAULT_PRO_URL` when an API key is provided.
     pub fn with_url<T: Into<String>>(mut self, url: T) -> Self {
@@ -87,7 +87,7 @@ impl RestApiBuilder {
     }
 
     /// Sets the API key for the API.
-    /// 
+    ///
     /// The default is `None`.
     pub fn with_api_key<T: Into<String>>(mut self, api_key: T) -> Self {
         self.api_key = Some(api_key.into());
@@ -95,7 +95,7 @@ impl RestApiBuilder {
     }
 
     /// Sets the user agent for the API.
-    /// 
+    ///
     /// The default is `DEFAULT_USER_AGENT`.
     pub fn with_user_agent<T: Into<String>>(mut self, user_agent: T) -> Self {
         self.user_agent = user_agent.into();
@@ -138,11 +138,11 @@ impl RestApiBuilder {
 
 impl Default for RestApiBuilder {
     /// Creates a new [`RestApiBuilder`] instance with default values.
-    /// 
-    /// This method creates a default builder with no custom URL or API key, 
+    ///
+    /// This method creates a default builder with no custom URL or API key,
     /// using the default user agent.
-    /// 
-    /// # Returns 
+    ///
+    /// # Returns
     /// A [`RestApiBuilder`] pre-configured with default values, suitable for further customization.
     fn default() -> Self {
         RestApiBuilder {
