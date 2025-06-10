@@ -46,7 +46,6 @@ pub struct Subscriptions {
 
 /// Represents an error response.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct Error {
     pub message: String,
     pub reason: String,
