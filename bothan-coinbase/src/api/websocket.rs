@@ -11,6 +11,7 @@ use crate::api::Ticker;
 use crate::api::error::{Error, ListeningError};
 use crate::api::types::channels::Channel;
 use crate::api::types::{DEFAULT_URL, Response};
+use tracing::warn;
 
 /// A connector for establishing a WebSocket connection to the Coinbase API.
 pub struct WebSocketConnector {
@@ -135,6 +136,10 @@ impl AssetInfoProvider for WebSocketConnection {
             Ok(match r? {
                 Response::Ticker(t) => parse_ticker(t)?,
                 Response::Ping => Data::Ping,
+                Response::Error(e) => {
+                    warn!("received error in response: {:?}", e);
+                    Data::Unused
+                }
                 _ => Data::Unused,
             })
         })

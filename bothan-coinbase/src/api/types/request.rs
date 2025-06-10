@@ -43,3 +43,11 @@ pub struct Subscriptions {
     /// The list of subscribed account IDs (optional).
     pub account_ids: Option<Vec<String>>,
 }
+
+/// Represents an error response.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Error {
+    pub message: String,
+    pub reason: String,
+}
