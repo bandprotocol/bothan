@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use thiserror::Error;
 
 use crate::registry::Registry;
-use crate::registry::processor::{Processor, weighted_median::WeightedMedianProcessor};
+use crate::registry::processor::Processor;
+use crate::registry::processor::weighted_median::WeightedMedianProcessor;
 use crate::registry::source::SourceQuery;
 
 #[derive(Clone, Debug, Error, PartialEq)]
