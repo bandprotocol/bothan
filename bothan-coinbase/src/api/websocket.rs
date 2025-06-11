@@ -6,12 +6,12 @@ use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
+use tracing::warn;
 
 use crate::api::Ticker;
 use crate::api::error::{Error, ListeningError};
 use crate::api::types::channels::Channel;
 use crate::api::types::{DEFAULT_URL, Response};
-use tracing::warn;
 
 /// A connector for establishing a WebSocket connection to the Coinbase API.
 pub struct WebSocketConnector {
