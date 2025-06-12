@@ -43,11 +43,8 @@ pub(crate) fn validate_signal(
         .get(signal_id)
         .ok_or(ValidationError::InvalidDependency(signal_id.to_string()))?;
 
-    match signal.processor.clone() {
-        Processor::WeightedMedian(weighted_median) => {
-            validate_weighted_median_weights(&weighted_median, signal_id, &signal.source_queries)?;
-        }
-        _ => {}
+    if let Processor::WeightedMedian(weighted_median) = signal.processor.clone() {
+        validate_weighted_median_weights(&weighted_median, signal_id, &signal.source_queries)?;
     }
 
     for source_query in signal.source_queries.iter() {
