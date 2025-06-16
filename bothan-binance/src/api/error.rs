@@ -18,7 +18,7 @@ pub enum Error {
 }
 
 /// Errors encountered while listening for Binance API events.
-/// 
+///
 /// These errors can occur during subscription to asset updates or when processing
 /// incoming messages from the Binance WebSocket stream.
 #[derive(Debug, thiserror::Error)]

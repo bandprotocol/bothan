@@ -9,7 +9,7 @@
 //! - Serialization and deserialization support for configuration files
 //! - Defaults for WebSocket URL and maximum subscriptions per connection
 //! - Internal helpers for handling empty or missing configuration values
-//! 
+//!
 use serde::{Deserialize, Serialize};
 
 use crate::api::websocket::DEFAULT_URL;

@@ -16,7 +16,6 @@
 // !
 // ! The module exports [`WebSocketConnection`] and [`WebSocketConnector`] for WebSocket-based communication.
 
-
 pub use websocket::{WebSocketConnection, WebSocketConnector};
 
 pub mod error;
