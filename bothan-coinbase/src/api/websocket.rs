@@ -6,6 +6,7 @@ use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
+use tracing::warn;
 
 use crate::api::Ticker;
 use crate::api::error::{Error, ListeningError};
@@ -135,6 +136,10 @@ impl AssetInfoProvider for WebSocketConnection {
             Ok(match r? {
                 Response::Ticker(t) => parse_ticker(t)?,
                 Response::Ping => Data::Ping,
+                Response::Error(e) => {
+                    warn!("received error in response: {:?}", e);
+                    Data::Unused
+                }
                 _ => Data::Unused,
             })
         })
