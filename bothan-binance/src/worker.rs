@@ -1,3 +1,36 @@
+//! Binance worker implementation.
+//!
+//! This module provides an implementation of the [`AssetWorker`] trait for interacting with
+//! the Binance WebSocket API. It defines the [`Worker`], which is responsible for subscribing
+//! to asset updates via WebSocket connections and storing the data into a shared [`WorkerStore`].
+//!
+//! The worker is configurable via [`WorkerOpts`] and uses [`WebSocketConnector`] to establish
+//! WebSocket connections to Binance endpoints.
+//!
+//! # The module provides:
+//!
+//! - Subscription to asset updates via WebSocket connections in asynchronous tasks
+//! - Ensures graceful cancellation by using a CancellationToken to signal shutdown and a DropGuard
+//!   to automatically clean up resources when the worker is dropped
+//! - Metrics collection for observability
+//! - Configurable via endpoint URL and maximum subscriptions per connection
+//!
+//! # Examples
+//!
+//! ```rust
+//! use bothan_binance::worker::{Worker, WorkerOpts};
+//! use bothan_lib::worker::AssetWorker;
+//! use bothan_lib::store::Store;
+//!
+//! #[tokio::test]
+//! async fn test<T: Store>(store: T) {
+//!     let opts = WorkerOpts::default();
+//!     let ids = vec!["BTCUSDT".to_string(), "ETHUSDT".to_string()];
+//!
+//!     let worker = Worker::build(opts, &store, ids).await?;
+//! }
+//! ```
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -11,7 +44,7 @@ use itertools::Itertools;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::{Instrument, Level, span};
 
-use crate::WorkerOpts;
+pub use crate::WorkerOpts;
 use crate::api::websocket::WebSocketConnector;
 
 pub mod opts;
@@ -20,6 +53,10 @@ const WORKER_NAME: &str = "binance";
 const TIMEOUT: Duration = Duration::from_secs(720);
 const MAX_SUBSCRIPTION_PER_CONNECTION: usize = 200;
 
+/// Asset worker for subscribing to asset updates via the Binance WebSocket API.
+///
+/// The `Worker` manages asynchronous WebSocket connections for asset updates
+/// and ensures resources are properly cleaned up when dropped.
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
     // that the worker holds are dropped when the worker is dropped.
@@ -30,10 +67,21 @@ pub struct Worker {
 impl AssetWorker for Worker {
     type Opts = WorkerOpts;
 
+    /// Returns the name identifier for the worker.
     fn name(&self) -> &'static str {
         WORKER_NAME
     }
 
+    /// Builds and starts the `BinanceWorker`.
+    ///
+    /// This method creates a Binance WebSocket client, spawns asynchronous tasks
+    /// to subscribe to asset updates, and returns the running [`Worker`] instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AssetWorkerError`](bothan_lib::worker::error::AssetWorkerError) if:
+    /// - The WebSocket client fails to build due to invalid configuration
+    /// - Subscription tasks encounter errors during execution
     async fn build<S: Store + 'static>(
         opts: Self::Opts,
         store: &S,
