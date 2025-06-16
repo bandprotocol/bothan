@@ -231,7 +231,7 @@ impl AssetInfoProvider for WebSocketConnection {
     ///
     /// # Errors
     ///
-    /// Returns a [`SubscriptionError`] if the WebSocket subscription request fails.
+    /// Returns an error if the WebSocket subscription request fails.
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         self.subscribe_mini_ticker_stream(random(), ids).await?;
         Ok(())
