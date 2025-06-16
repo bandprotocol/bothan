@@ -272,7 +272,7 @@ fn parse_mini_ticker(mini_ticker: MiniTickerInfo) -> Result<Data, rust_decimal::
     let asset_info = AssetInfo::new(
         mini_ticker.symbol.to_ascii_lowercase(),
         Decimal::from_str(&mini_ticker.close_price)?,
-        mini_ticker.event_time,
+        mini_ticker.event_time / 1000, // convert from millisecond to second
     );
     Ok(Data::AssetInfo(vec![asset_info]))
 }

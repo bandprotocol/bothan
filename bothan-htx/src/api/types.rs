@@ -10,6 +10,7 @@ pub enum Response {
     Unsubscribed(Unsubscribed),
     DataUpdate(Data),
     Ping(Ping),
+    Error(Error),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -69,4 +70,13 @@ pub struct Ping {
 #[serde(rename_all = "camelCase")]
 pub struct Pong {
     pub pong: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct Error {
+    pub status: String,
+    pub ts: u64,
+    pub err_code: String,
+    pub err_msg: String,
 }
