@@ -77,44 +77,6 @@ pub struct WebSocketConnection {
 /// Represents a WebSocket connection to the Binance WebSocket API.
 /// This struct encapsulates the WebSocket stream and provides methods for subscribing to
 /// mini ticker streams, receiving messages, and closing the connection.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_binance::WebSocketConnector;
-/// use bothan_binance::api::websocket::WebSocketConnection;
-/// use bothan_binance::api::msgs::Event;
-///
-/// #[tokio::main]
-/// async fn main() {
-///     // Create a WebSocket connector and connect to the Binance WebSocket API.
-///     let connector = WebSocketConnector::new("wss://stream.binance.com:9443/stream");
-///     let mut connection = connector.connect().await.unwrap();
-///
-///     // Subscribe to mini ticker updates for BTCUSDT.
-///     connection.subscribe_mini_ticker_stream(1, &["BTCUSDT"]).await.unwrap();
-///
-///     // Retrieve the next event from the WebSocket stream.
-///     if let Some(Ok(event)) = connection.next().await {
-///         match event {
-///             Event::Stream(stream_event) => {
-///                 println!("Received stream event: {:?}", stream_event);
-///             }
-///             Event::Ping => {
-///                 println!("Received ping event");
-///             }
-///             _ => {
-///                 println!("Received unsupported event");
-///             }
-///         }
-///     }
-///
-///     // Unsubscribe from mini ticker updates for BTCUSDT.
-///     connection.unsubscribe_mini_ticker_stream(2, &["BTCUSDT"]).await.unwrap();
-///     // Close the WebSocket connection.
-///     connection.close().await.unwrap();
-/// }
-/// ```
 impl WebSocketConnection {
     /// Creates a new `BinanceWebSocketConnection`
     pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
