@@ -160,7 +160,7 @@ fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     let asset_info = AssetInfo::new(
         id,
         Decimal::from_f64_retain(data.tick.last_price).ok_or(ListeningError::InvalidPrice)?,
-        data.timestamp,
+        data.timestamp / 1000, // convert from millisecond to second
     );
     Ok(Data::AssetInfo(vec![asset_info]))
 }
