@@ -1,3 +1,38 @@
+//! CoinGecko worker implementation.
+//!
+//! This module provides an implementation of the [`AssetWorker`] trait for interacting with
+//! the CoinGecko REST API. It defines the [`Worker`], which is responsible for periodically
+//! polling [`AssetInfo`](bothan_lib::types::AssetInfo) from CoinGecko REST API and storing it to a shared [`WorkerStore`].
+//!
+//! The worker is configurable via [`WorkerOpts`] and uses [`RestApiBuilder`] to construct
+//! the API client. It supports both public and Pro CoinGecko endpoints.
+//!
+//! # The module provides:
+//!
+//! - Polling of [`AssetInfo`](bothan_lib::types::AssetInfo) periodically in asynchronous task
+//! - Ensures graceful cancellation by using a CancellationToken to signal shutdown and a DropGuard
+//!   to automatically clean up resources when the worker is dropped
+//! - Metrics collection for observability
+//! - Configurable via user agent, API key, polling interval, and endpoint URL
+//!
+//! # Examples
+//!
+//! ```rust
+//! use bothan_coingecko::worker::{Worker, WorkerOpts};
+//! use bothan_lib::worker::AssetWorker;
+//! use bothan_lib::store::Store;
+//! use std::path::PathBuf;
+//!
+//! #[tokio::test]
+//! async fn test<T: Store>(store: T) {
+//!     let opts = WorkerOpts::default();
+//!     let ids = vec!["bitcoin".to_string(), "ethereum".to_string()];
+//!
+//!     let worker = Worker::build(opts, &store, ids).await?;
+//! }
+//!
+//! ```
+
 use bothan_lib::metrics::rest::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
@@ -6,13 +41,17 @@ use bothan_lib::worker::rest::start_polling;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::{Instrument, Level, span};
 
-use crate::WorkerOpts;
-use crate::api::RestApiBuilder;
+pub use crate::WorkerOpts;
+pub use crate::api::RestApiBuilder;
 
 pub mod opts;
 
 const WORKER_NAME: &str = "coingecko";
 
+/// Asset worker for fetching data from the CoinGecko REST API.
+///
+/// The `Worker` manages asynchronous polling for [`AssetInfo`](bothan_lib::types::AssetInfo)
+/// and ensures resources are properly cleaned up when dropped.
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
     // that the worker holds are dropped when the worker is dropped.
@@ -23,10 +62,20 @@ pub struct Worker {
 impl AssetWorker for Worker {
     type Opts = WorkerOpts;
 
+    /// Returns the name identifier for the worker.
     fn name(&self) -> &'static str {
         WORKER_NAME
     }
 
+    /// Builds and starts the `CoinGeckoWorker`.
+    ///
+    /// This method creates a CoinGecko REST API client, spawns a asynchronous polling task
+    /// to periodically fetch asset data, and returns the running [`Worker`] instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AssetWorkerError`](bothan_lib::worker::error::AssetWorkerError) if:
+    /// - The API client fails to build due to invalid configuration
     async fn build<S: Store + 'static>(
         opts: Self::Opts,
         store: &S,
