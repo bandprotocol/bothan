@@ -9,6 +9,7 @@ use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
+use tracing::warn;
 
 use crate::api::error::{Error, ListeningError};
 use crate::api::types::Response;
@@ -135,6 +136,10 @@ impl AssetInfoProvider for WebSocketConnection {
         Some(match msg {
             Ok(Response::DataUpdate(d)) => parse_data(d),
             Ok(Response::Ping(p)) => reply_pong(self, p.ping).await,
+            Ok(Response::Error(e)) => {
+                warn!("received error in response: {:?}", e);
+                Ok(Data::Unused)
+            }
             Err(e) => Err(ListeningError::Error(e)),
             _ => Ok(Data::Unused),
         })
@@ -155,7 +160,7 @@ fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     let asset_info = AssetInfo::new(
         id,
         Decimal::from_f64_retain(data.tick.last_price).ok_or(ListeningError::InvalidPrice)?,
-        data.timestamp,
+        data.timestamp / 1000, // convert from millisecond to second
     );
     Ok(Data::AssetInfo(vec![asset_info]))
 }

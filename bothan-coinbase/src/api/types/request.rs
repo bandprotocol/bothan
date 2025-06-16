@@ -43,3 +43,12 @@ pub struct Subscriptions {
     /// The list of subscribed account IDs (optional).
     pub account_ids: Option<Vec<String>>,
 }
+
+/// Represents an error response from the Coinbase WebSocket API.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Error {
+    /// The error message describing what went wrong.
+    pub message: String,
+    /// The specific reason for the error.
+    pub reason: String,
+}

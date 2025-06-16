@@ -161,7 +161,7 @@ fn parse_ticker(ticker: Ticker) -> Result<AssetInfo, ListeningError> {
     Ok(AssetInfo::new(
         ticker.inst_id,
         Decimal::from_str_exact(&ticker.last)?,
-        str::parse::<i64>(&ticker.ts)?,
+        str::parse::<i64>(&ticker.ts)? / 1000,
     ))
 }
 

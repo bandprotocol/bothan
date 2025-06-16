@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::api::types::channels::ticker::Ticker;
-use crate::api::types::request::Subscriptions;
+use crate::api::types::request::{Error, Subscriptions};
 
 pub mod channels;
 pub mod request;
@@ -18,4 +18,5 @@ pub enum Response {
     /// A subscription update.
     Subscriptions(Subscriptions),
     Ping,
+    Error(Error),
 }

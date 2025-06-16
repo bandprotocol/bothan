@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use thiserror::Error;
 
 use crate::registry::Registry;
+use crate::registry::processor::Processor;
+use crate::registry::processor::weighted_median::WeightedMedianProcessor;
+use crate::registry::source::SourceQuery;
 
 #[derive(Clone, Debug, Error, PartialEq)]
 pub enum ValidationError {
@@ -11,6 +14,9 @@ pub enum ValidationError {
 
     #[error("Signal {0} contains an invalid dependency")]
     InvalidDependency(String),
+
+    #[error("Signal {0} contains an invalid weighted median processor: {1}")]
+    InvalidWeightedMedianProcessor(String, String),
 }
 
 pub enum VisitState {
@@ -37,6 +43,10 @@ pub(crate) fn validate_signal(
         .get(signal_id)
         .ok_or(ValidationError::InvalidDependency(signal_id.to_string()))?;
 
+    if let Processor::WeightedMedian(weighted_median) = &signal.processor {
+        validate_weighted_median_weights(weighted_median, signal_id, &signal.source_queries)?;
+    }
+
     for source_query in signal.source_queries.iter() {
         for route in source_query.routes.iter() {
             if !registry.contains(&route.signal_id) {
@@ -49,6 +59,26 @@ pub(crate) fn validate_signal(
     visited.insert(signal_id.to_string(), VisitState::Complete);
 
     Ok(())
+}
+
+fn validate_weighted_median_weights(
+    weighted_median: &WeightedMedianProcessor,
+    signal_id: &str,
+    source_queries: &[SourceQuery],
+) -> Result<(), ValidationError> {
+    source_queries.iter().try_for_each(|source_query| {
+        if !weighted_median
+            .source_weights
+            .contains_key(&source_query.source_id)
+        {
+            Err(ValidationError::InvalidWeightedMedianProcessor(
+                signal_id.to_string(),
+                source_query.source_id.to_string(),
+            ))
+        } else {
+            Ok(())
+        }
+    })
 }
 
 #[cfg(test)]

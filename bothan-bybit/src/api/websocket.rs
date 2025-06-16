@@ -133,7 +133,7 @@ fn parse_public_ticker(ticker: PublicTickerResponse) -> Result<Data, rust_decima
     let asset_info = AssetInfo::new(
         ticker.data.symbol,
         Decimal::from_str_exact(&ticker.data.last_price)?,
-        ticker.ts,
+        ticker.ts / 1000, // convert from millisecond to second
     );
     Ok(Data::AssetInfo(vec![asset_info]))
 }
