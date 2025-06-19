@@ -72,26 +72,27 @@ pub enum StreamEventData {
 /// use serde_json::json;
 ///
 /// let json_data = json!({
-///     "E": 1711356300,
+///     "e": "24hrMiniTicker",
+///     "E": 1750306632025i64,
 ///     "s": "BTCUSDT",
-///     "c": "67187.33",
-///     "o": "67000.00",
-///     "h": "68000.00",
-///     "l": "66000.00",
-///     "v": "100.5",
-///     "q": "6718733.50"
+///     "c": "105025.21000000",
+///     "o": "105242.08000000",
+///     "h": "105550.27000000",
+///     "l": "103500.00000000",
+///     "v": "14149.30183000",
+///     "q": "1480296671.36787530"
 /// });
 ///
 /// let mini_ticker: MiniTickerInfo = serde_json::from_value(json_data).unwrap();
 ///
-/// assert_eq!(mini_ticker.event_time, 1711356300);
+/// assert_eq!(mini_ticker.event_time, 1750306632025i64);
 /// assert_eq!(mini_ticker.symbol, "BTCUSDT");
-/// assert_eq!(mini_ticker.close_price, "67187.33");
-/// assert_eq!(mini_ticker.open_price, "67000.00");
-/// assert_eq!(mini_ticker.high_price, "68000.00");
-/// assert_eq!(mini_ticker.low_price, "66000.00");
-/// assert_eq!(mini_ticker.base_volume, "100.5");
-/// assert_eq!(mini_ticker.quote_volume, "6718733.50");
+/// assert_eq!(mini_ticker.close_price, "105025.21000000");
+/// assert_eq!(mini_ticker.open_price, "105242.08000000");
+/// assert_eq!(mini_ticker.high_price, "105550.27000000");
+/// assert_eq!(mini_ticker.low_price, "103500.00000000");
+/// assert_eq!(mini_ticker.base_volume, "14149.30183000");
+/// assert_eq!(mini_ticker.quote_volume, "1480296671.36787530");
 /// ```
 ///
 /// # Binance WebSocket API Response Example
@@ -99,14 +100,14 @@ pub enum StreamEventData {
 /// ```json
 /// {
 ///   "e": "24hrMiniTicker",
-///   "E": 1711356300,
+///   "E": 1750306632025,
 ///   "s": "BTCUSDT",
-///   "c": "67187.33",
-///   "o": "67000.00",
-///   "h": "68000.00",
-///   "l": "66000.00",
-///   "v": "100.5",
-///   "q": "6718733.50"
+///   "c": "105025.21000000",
+///   "o": "105242.08000000",
+///   "h": "105550.27000000",
+///   "l": "103500.00000000",
+///   "v": "14149.30183000",
+///   "q": "1480296671.36787530"
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
