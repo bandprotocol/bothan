@@ -1,3 +1,17 @@
+//! Binance WebSocket API client implementation.
+//!
+//! This module provides the [`WebSocketConnector`] and [`WebSocketConnection`] for interacting
+//! with the Binance WebSocket API. It enables real-time streaming of market data, such as mini ticker
+//! updates, and is used internally to implement the [`AssetInfoProvider`] trait for asset workers.
+//!
+//! This module provides:
+//!
+//! - Establishes WebSocket connections to Binance servers
+//! - Subscribes and unsubscribes to mini ticker streams for specified symbols
+//! - Processes incoming WebSocket messages, including mini ticker updates and ping events
+//! - Transforms WebSocket messages into [`AssetInfo`] for use in workers
+//! - Handles connection management, including closing connections gracefully
+
 use std::str::FromStr;
 
 use bothan_lib::types::AssetInfo;
@@ -15,31 +29,28 @@ use crate::api::msgs::{Event, MiniTickerInfo, StreamEventData};
 
 pub const DEFAULT_URL: &str = "wss://stream.binance.com:9443/stream";
 
-/// A connector for establishing WebSocket connections to Binance.
+/// A connector for establishing WebSocket connections to the Binance WebSocket API.
 pub struct WebSocketConnector {
     url: String,
 }
 
+/// This struct provides methods to create a new connector and connect to the WebSocket server.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_binance::WebSocketConnector;
+///
+/// let connector = WebSocketConnector::new("wss://example.com/socket");
+/// let connection = connector.connect();
+/// ```
 impl WebSocketConnector {
     /// Creates a new `BinanceWebSocketConnector` with the given URL.
-    ///
-    /// # Examples
-    ///
-    /// ```no_test
-    /// let connector = BinanceWebSocketConnector::new("wss://example.com/socket");
-    /// ```
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
     /// Establishes a WebSocket connection to the Binance server.
-    ///
-    /// # Examples
-    ///
-    /// ```no_test
-    /// let connector = BinanceWebSocketConnector::new("wss://example.com/socket");
-    /// let connection = connector.connect().await?;
-    /// ```
     pub async fn connect(&self) -> Result<WebSocketConnection, tungstenite::Error> {
         // Attempt to establish a WebSocket connection.
         let (wss, _) = connect_async(self.url.clone()).await?;
@@ -52,6 +63,7 @@ impl AssetInfoProviderConnector for WebSocketConnector {
     type Provider = WebSocketConnection;
     type Error = tungstenite::Error;
 
+    /// Connects to the Binance WebSocket API and returns a `WebSocketConnection`.
     async fn connect(&self) -> Result<WebSocketConnection, Self::Error> {
         WebSocketConnector::connect(self).await
     }
@@ -62,6 +74,9 @@ pub struct WebSocketConnection {
     ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
+/// Represents a WebSocket connection to the Binance WebSocket API.
+/// This struct encapsulates the WebSocket stream and provides methods for subscribing to
+/// mini ticker streams, receiving messages, and closing the connection.
 impl WebSocketConnection {
     /// Creates a new `BinanceWebSocketConnection`
     pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
@@ -70,12 +85,17 @@ impl WebSocketConnection {
 
     /// Subscribes to the mini ticker stream for the specified symbol IDs.
     ///
-    /// # Examples
+    /// This method sends a subscription request to the Binance WebSocket API for the specified symbol IDs.
+    /// Each symbol ID is transformed into a mini ticker stream identifier before being sent.
     ///
-    /// ```no_test
-    /// let mut connection = connector.connect().await?;
-    /// connection.subscribe_mini_ticker_stream(&["btcusdt"]).await?;
-    /// ```
+    /// # Parameters
+    ///
+    /// - `id`: A unique identifier for the subscription request.
+    /// - `tickers`: A slice of symbol IDs to subscribe to.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`tungstenite::Error`] if the WebSocket subscription request fails.  
     pub async fn subscribe_mini_ticker_stream<K: AsRef<str>>(
         &mut self,
         id: i64,
@@ -102,12 +122,17 @@ impl WebSocketConnection {
 
     /// Unsubscribes from the mini ticker stream for the specified symbol IDs.
     ///
-    /// # Examples
+    /// This method sends an unsubscription request to the Binance WebSocket API for the specified symbol IDs.
+    /// Each symbol ID is transformed into a mini ticker stream identifier before being sent.
     ///
-    /// ```no_test
-    /// let mut connection = connector.connect().await?;
-    /// connection.unsubscribe_mini_ticker_stream(&["btcusdt"]).await?;
-    /// ```
+    /// # Parameters
+    ///
+    /// - `id`: A unique identifier for the subscription request.
+    /// - `tickers`: A slice of symbol IDs to subscribe to.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`tungstenite::Error`] if the WebSocket unsubscription request fails.
     pub async fn unsubscribe_mini_ticker_stream<K: AsRef<str>>(
         &mut self,
         id: i64,
@@ -134,14 +159,8 @@ impl WebSocketConnection {
 
     /// Retrieves the next message from the WebSocket stream.
     ///
-    /// # Examples
-    ///
-    /// ```no_test
-    /// let mut connection = connector.connect().await?;
-    /// if let Ok(response) = connection.next().await {
-    ///     println!("Received response: {:?}", response);
-    /// }
-    /// ```
+    /// This method listens for incoming WebSocket messages and processes them.
+    /// Supported message types include text messages (parsed as `Event`), ping messages, and close messages.
     pub async fn next(&mut self) -> Option<Result<Event, Error>> {
         match self.ws_stream.next().await {
             Some(Ok(Message::Text(msg))) => match serde_json::from_str::<Event>(&msg) {
@@ -156,6 +175,9 @@ impl WebSocketConnection {
         }
     }
 
+    /// Closes the WebSocket connection gracefully.
+    ///
+    /// This method sends a close frame to the WebSocket server and waits for the connection to close.
     pub async fn close(&mut self) -> Result<(), tungstenite::Error> {
         self.ws_stream.close(None).await?;
         Ok(())
@@ -167,11 +189,29 @@ impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
     type ListeningError = ListeningError;
 
+    /// Subscribes to asset information updates for the given list of asset IDs.
+    ///
+    /// This method sends a subscription request to the Binance WebSocket API for the specified asset IDs.
+    /// Each asset ID is transformed into a mini ticker stream identifier before being sent.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the WebSocket subscription request fails.
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         self.subscribe_mini_ticker_stream(random(), ids).await?;
         Ok(())
     }
 
+    /// Retrieves the next asset information update from the WebSocket stream.
+    ///
+    /// This method listens for incoming WebSocket messages and processes them into [`Data`] instances.
+    /// Supported message types include mini ticker updates and ping events.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ListeningError`] if:
+    /// - The WebSocket message cannot be parsed
+    /// - The mini ticker data contains invalid values
     async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         WebSocketConnection::next(self).await.map(|r| {
             Ok(match r? {
@@ -184,6 +224,10 @@ impl AssetInfoProvider for WebSocketConnection {
         })
     }
 
+    /// Attempts to close the WebSocket connection gracefully.
+    ///
+    /// This method spawns a task to close the WebSocket connection asynchronously.
+    /// It ensures that the connection is terminated without blocking the caller.
     async fn try_close(mut self) {
         tokio::spawn(async move { self.close().await });
     }
