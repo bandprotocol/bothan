@@ -175,6 +175,9 @@ impl WebSocketConnection {
         }
     }
 
+    /// Closes the WebSocket connection gracefully.
+    ///
+    /// This method sends a close frame to the WebSocket server and waits for the connection to close.
     pub async fn close(&mut self) -> Result<(), tungstenite::Error> {
         self.ws_stream.close(None).await?;
         Ok(())
