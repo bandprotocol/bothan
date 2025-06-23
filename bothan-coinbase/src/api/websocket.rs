@@ -1,3 +1,17 @@
+//! Coinbase WebSocket API client implementation.
+//!
+//! This module provides the [`WebSocketConnector`] and [`WebSocketConnection`] for interacting
+//! with the Coinbase WebSocket API. It enables real-time streaming of market data, such as ticker
+//! updates, and is used internally to implement the [`AssetInfoProvider`] trait for asset workers.
+//!
+//! This module provides:
+//!
+//! - Establishes WebSocket connections to Coinbase servers
+//! - Subscribes and unsubscribes to ticker streams for specified symbols
+//! - Processes incoming WebSocket messages, including ticker updates and ping events
+//! - Transforms WebSocket messages into [`AssetInfo`] for use in workers
+//! - Handles connection management, including closing connections gracefully
+
 use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::websocket::{AssetInfoProvider, AssetInfoProviderConnector, Data};
 use futures_util::{SinkExt, StreamExt};
@@ -18,6 +32,16 @@ pub struct WebSocketConnector {
     url: String,
 }
 
+/// This struct is responsible for creating a WebSocket connection to the Coinbase API.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_coinbase::api::websocket::WebSocketConnector;
+///
+/// let connector = WebSocketConnector::new("wss://ws-feed.exchange.coinbase.com");
+/// let connection = connector.connect();
+/// ```
 impl WebSocketConnector {
     /// Creates a new `CoinbaseWebSocketConnector`.
     pub fn new(url: impl Into<String>) -> Self {
@@ -37,6 +61,7 @@ impl AssetInfoProviderConnector for WebSocketConnector {
     type Provider = WebSocketConnection;
     type Error = tungstenite::Error;
 
+    /// Connects to the WebSocket and returns a `WebSocketConnection`.
     async fn connect(&self) -> Result<WebSocketConnection, Self::Error> {
         WebSocketConnector::connect(self).await
     }
@@ -56,6 +81,9 @@ pub struct WebSocketConnection {
     ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
+/// Represents a WebSocket connection to the Coinbase API.
+/// This struct provides methods for subscribing and unsubscribing to channels,
+/// receiving messages, and closing the connection.
 impl WebSocketConnection {
     /// Creates a new `CoinbaseWebSocketConnection`.
     pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
@@ -63,6 +91,22 @@ impl WebSocketConnection {
     }
 
     /// Subscribes to the specified channels and product IDs.
+    ///
+    /// This method sends a subscription request to the WebSocket server for the specified channels
+    /// and product IDs.
+    ///
+    /// # Parameters
+    ///
+    /// - `channels`: A vector of channels to subscribe to.
+    /// - `product_ids`: A slice of product IDs to subscribe to.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating success or failure of the subscription request.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`tungstenite::Error`] if the WebSocket subscription request fails.  
     pub async fn subscribe<T: AsRef<str>>(
         &mut self,
         channels: Vec<Channel>,
@@ -82,6 +126,22 @@ impl WebSocketConnection {
     }
 
     /// Unsubscribes from the specified channels and product IDs.
+    ///
+    /// This method sends an unsubscription request to the WebSocket server for the specified channels
+    /// and product IDs.
+    ///
+    /// # Parameters
+    ///
+    /// - `channels`: A vector of channels to unsubscribe from.
+    /// - `product_ids`: A slice of product IDs to unsubscribe from.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating success or failure of the unsubscription request.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`tungstenite::Error`] if the WebSocket unsubscription request fails.
     pub async fn unsubscribe<T: AsRef<str>>(
         &mut self,
         channels: Vec<Channel>,
@@ -101,6 +161,9 @@ impl WebSocketConnection {
     }
 
     /// Receives the next message from the WebSocket.
+    ///
+    /// This method listens for incoming messages from the WebSocket stream and processes them.
+    /// It handles different message types, including text messages, ping messages, and close messages.
     pub async fn next(&mut self) -> Option<Result<Response, Error>> {
         match self.ws_stream.next().await {
             Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
@@ -112,6 +175,9 @@ impl WebSocketConnection {
         }
     }
 
+    /// Closes the WebSocket connection.
+    ///
+    /// This method sends a close message to the WebSocket server and waits for the connection to close.
     pub async fn close(&mut self) -> Result<(), tungstenite::Error> {
         self.ws_stream.close(None).await
     }
@@ -126,11 +192,33 @@ impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
     type ListeningError = ListeningError;
 
+    /// Subscribes to the given list of asset IDs.
+    ///
+    /// This method sends a subscription request to the WebSocket server for the specified asset IDs.
+    ///
+    /// # Parameters
+    /// - `ids`: A slice of asset IDs to subscribe to.
+    ///
+    /// # Returns
+    /// Returns a `Result` indicating success or failure of the subscription request.
+    ///
+    /// # Errors
+    /// If the WebSocket connection fails to send the subscription message, it returns a `tungstenite::Error`.
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         self.subscribe(vec![Channel::Ticker], ids).await?;
         Ok(())
     }
 
+    /// Receives the next asset info update from the WebSocket connection.
+    ///
+    /// This method listens for incoming messages from the WebSocket stream and processes them.
+    /// It handles different message types, including ticker updates, ping messages, and error messages.
+    ///
+    /// # Returns
+    /// Returns an `Option` containing a `Result` with the parsed `Data` or an error.
+    ///
+    /// # Errors
+    /// If the message cannot be parsed or if there is an error in processing the ticker data,
     async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         WebSocketConnection::next(self).await.map(|r| {
             Ok(match r? {
@@ -145,6 +233,9 @@ impl AssetInfoProvider for WebSocketConnection {
         })
     }
 
+    /// Attempts to close the WebSocket connection.
+    ///
+    /// This method spawns a task to close the WebSocket connection asynchronously.
     async fn try_close(mut self) {
         tokio::spawn(async move { self.close().await });
     }

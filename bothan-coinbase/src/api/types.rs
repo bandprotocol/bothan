@@ -1,3 +1,8 @@
+//! Types for interacting with the Coinbase WebSocket API.
+//!
+//! This module defines the types used for representing channels, requests, and responses
+//! from the Coinbase WebSocket feed.
+
 use serde::{Deserialize, Serialize};
 
 use crate::api::types::channels::ticker::Ticker;
