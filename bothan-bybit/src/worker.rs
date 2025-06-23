@@ -73,12 +73,6 @@ impl AssetWorker for Worker {
     ///
     /// This method creates a Bybit WebSocket client, spawns asynchronous tasks
     /// to subscribe to asset updates, and returns the running [`Worker`] instance.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`AssetWorkerError`](bothan_lib::worker::error::AssetWorkerError) if:
-    /// - The WebSocket client fails to build due to invalid configuration
-    /// - Subscription tasks encounter errors during execution
     async fn build<S: Store + 'static>(
         opts: Self::Opts,
         store: &S,
