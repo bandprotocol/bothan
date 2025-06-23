@@ -12,7 +12,6 @@
 //! - Transforms WebSocket messages into [`AssetInfo`] for use in workers
 //! - Handles connection management, including closing connections gracefully
 
-
 use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::websocket::{AssetInfoProvider, AssetInfoProviderConnector, Data};
 use futures_util::{SinkExt, StreamExt};

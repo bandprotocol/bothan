@@ -1,5 +1,5 @@
 //! Error types for Bybit API client operations.
-//! 
+//!
 //! This module provides custom error types used throughout the Bybit API integration,
 //! particularly for handling WebSocket messages and price validation errors.
 
@@ -18,7 +18,7 @@ pub enum Error {
 }
 
 /// Errors that can occur while listening for Bybit WebSocket events.
-/// 
+///
 /// These errors can occur during subscription to asset updates or when processing
 /// incoming messages from the Bybit WebSocket stream.
 #[derive(Debug, thiserror::Error)]
