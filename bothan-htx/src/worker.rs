@@ -1,3 +1,36 @@
+//! HTX worker implementation.
+//!
+//! This module provides an implementation of the [`AssetWorker`] trait for interacting with
+//! the HTX WebSocket API. It defines the [`Worker`], which is responsible for subscribing
+//! to asset updates via WebSocket connections and storing the data into a shared [`WorkerStore`].
+//!
+//! The worker is configurable via [`WorkerOpts`] and uses [`WebSocketConnector`] to establish
+//! WebSocket connections to HTX endpoints.
+//!
+//! # The module provides:
+//!
+//! - Subscription to asset updates via WebSocket connections in asynchronous tasks
+//! - Ensures graceful cancellation by using a CancellationToken to signal shutdown and a DropGuard
+//!   to automatically clean up resources when the worker is dropped
+//! - Metrics collection for observability
+//! - Configurable via endpoint URL
+//!
+//! # Examples
+//!
+//! ```rust
+//! use bothan_htx::{Worker, WorkerOpts};
+//! use bothan_lib::worker::AssetWorker;
+//! use bothan_lib::store::Store;
+//!
+//! #[tokio::test]
+//! async fn test<T: Store>(store: T) {
+//!     let opts = WorkerOpts::default();
+//!     let ids = vec!["btcusdt".to_string(), "ethusdt".to_string()];
+//!
+//!     let worker = Worker::build(opts, &store, ids).await?;
+//! }
+//! ```
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -17,6 +50,10 @@ pub mod opts;
 const WORKER_NAME: &str = "htx";
 const TIMEOUT: Duration = Duration::from_secs(60);
 
+/// Asset worker for subscribing to asset updates via the HTX WebSocket API.
+///
+/// The `Worker` manages asynchronous WebSocket connections for asset updates
+/// and ensures resources are properly cleaned up when dropped.
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
     // that the worker holds are dropped when the worker is dropped.
@@ -27,10 +64,39 @@ pub struct Worker {
 impl AssetWorker for Worker {
     type Opts = WorkerOpts;
 
+    /// Returns the name identifier for the worker.
+    ///
+    /// This method provides a unique identifier for the HTX worker,
+    /// which is used for metrics collection and logging.
+    ///
+    /// # Returns
+    ///
+    /// A static string slice containing the worker name "htx".
     fn name(&self) -> &'static str {
         WORKER_NAME
     }
 
+    /// Builds and starts the `HTXWorker`.
+    ///
+    /// This method creates an HTX WebSocket client, spawns an asynchronous task
+    /// to subscribe to asset updates, and returns the running [`Worker`] instance.
+    ///
+    /// # Parameters
+    ///
+    /// - `opts`: Configuration options for the worker, including URL
+    /// - `store`: The store instance for persisting asset data
+    /// - `ids`: A vector of asset identifiers to monitor
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing a `Worker` instance on success,
+    /// or an `AssetWorkerError` if the worker cannot be built.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AssetWorkerError`](bothan_lib::worker::error::AssetWorkerError) if:
+    /// - The WebSocket client fails to build due to invalid configuration
+    /// - Subscription tasks encounter errors during execution
     async fn build<S: Store + 'static>(
         opts: Self::Opts,
         store: &S,
