@@ -1,3 +1,15 @@
+//! CoinMarketCap REST API client implementation.
+//!
+//! This module provides the [`RestApi`], a client for interacting with the CoinMarketCap REST API.
+//! It includes methods for retrieving asset quotes and is used internally
+//! to implement the [`AssetInfoProvider`] trait for asset workers.
+//!
+//! This module provides:
+//!
+//! - Fetches the latest quotes for assets from the `/v2/cryptocurrency/quotes/latest` endpoint
+//! - Transforms API responses into [`AssetInfo`] for use in workers
+//! - Handles deserialization and error propagation
+
 use std::collections::HashMap;
 
 use bothan_lib::types::AssetInfo;
@@ -10,26 +22,63 @@ use crate::api::error::ParseError;
 use crate::api::types::{Quote, Response as CmcResponse};
 use crate::worker::error::ProviderError;
 
-/// CoinMarketCap REST API client.
+/// Client for interacting with the CoinMarketCap REST API.
+///
+/// The [`RestApi`] includes a base URL and HTTP client used to send
+/// requests to the CoinMarketCap REST API. It provides methods for fetching asset quotes. It is also used to implement the [`AssetInfoProvider`] trait
+/// for integration into the REST API worker.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_coinmarketcap::api::{RestApi, types::Quote};
+/// use reqwest::ClientBuilder;
+/// use reqwest::header::{HeaderMap, HeaderValue};
+/// use url::Url;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let mut headers = HeaderMap::new();
+///     let api_key = HeaderValue::from_str("your_api_key")?;
+///     headers.insert("X-CMC_PRO_API_KEY", api_key);
+///
+///     let client = ClientBuilder::new().default_headers(headers).build()?;
+///
+///     let api = RestApi::new(Url::parse("https://pro-api.coinmarketcap.com")?, client);
+///     Ok(())
+/// }
+/// ```
 pub struct RestApi {
+    /// The base URL of the CoinMarketCap REST API.
     url: Url,
+    /// The reqwest HTTP client used to make requests.
     client: Client,
 }
 
 impl RestApi {
-    /// Creates a new CoinMarketCap REST API client.
+    /// Creates a new instance of `CoinMarketCapRestAPI`.
     pub fn new(url: Url, client: Client) -> Self {
         Self { url, client }
     }
 
-    /// Fetches the latest quotes for the given cryptocurrency IDs, corresponding to the
-    /// `/v2/cryptocurrency/quotes/latest` endpoint.
+    /// Retrieves market data for the specified cryptocurrency IDs from the CoinMarketCap REST API.
     ///
-    /// Returns a vector of `Option<Quote>`, where each element corresponds to the ID at the same
+    /// This method constructs a request to the CoinMarketCap `/v2/cryptocurrency/quotes/latest` endpoint
+    /// and returns a vector of `Option<Quote>`, where each element corresponds to the ID at the same
     /// position in the input slice. If a quote is not found for a given ID, or if an ID appears
     /// more than once, `None` will be returned in that position.
     ///
-    /// Note: Duplicate IDs will return `None` on their second and subsequent occurrences.
+    /// # Query Construction
+    ///
+    /// The query includes:
+    /// - `id`: comma-separated list of coin IDs
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`reqwest::Error`] if:
+    /// - The request fails due to network issues
+    /// - The response status is not 2xx
+    /// - JSON deserialization into `HashMap<String, Quote>` fails
     pub async fn get_latest_quotes(
         &self,
         ids: &[u64],
@@ -57,6 +106,26 @@ impl RestApi {
 impl AssetInfoProvider for RestApi {
     type Error = ProviderError;
 
+    /// Fetches asset information for a list of coin IDs from the CoinMarketCap REST API.
+    ///
+    /// This method retrieves current quotes for the given `ids` by calling
+    /// [`RestApi::get_latest_quotes`] and transforms the results into a vector of [`AssetInfo`] structs.
+    ///
+    /// Each entry in the response is converted into an [`AssetInfo`] instance using:
+    /// - The coin ID as the asset identifier
+    /// - The USD price converted into a [`Decimal`] using `from_f64_retain`
+    /// - The last update timestamp returned by the API
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ProviderError`] if:
+    /// - The HTTP request fails or returns an invalid response
+    /// - The price contains a value that cannot be converted into a valid `Decimal`
+    ///
+    /// [`RestApi::get_latest_quotes`]: crate::api::RestApi::get_latest_quotes
+    /// [`AssetInfo`]: bothan_lib::types::AssetInfo
+    /// [`Decimal`]: rust_decimal::Decimal
+    /// [`ProviderError`]: crate::worker::error::ProviderError
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
         let int_ids = ids
             .iter()
@@ -77,6 +146,7 @@ impl AssetInfoProvider for RestApi {
     }
 }
 
+/// Parses a `Quote` into an [`AssetInfo`] struct.
 fn parse_quote(quote: Quote) -> Result<AssetInfo, ParseError> {
     let price_float = quote
         .price_quotes

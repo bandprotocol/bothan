@@ -1,3 +1,15 @@
+//! Builder for configuring and constructing `CoinMarketCapRestAPI`.
+//!
+//! This module provides a builder for constructing [`RestApi`] clients used
+//! to interact with the CoinMarketCap REST API. The builder supports optional configuration
+//! of base URL and API key.
+//!
+//! The module provides:
+//!
+//! - The [`RestApiBuilder`] for REST API building
+//! - Supports setting the API base URL and API key
+//! - Automatically uses the default CoinMarketCap URL when parameters are omitted during the [`build`](`RestApiBuilder::build`) call
+
 use reqwest::ClientBuilder;
 use reqwest::header::{HeaderMap, HeaderValue};
 use url::Url;
@@ -6,16 +18,47 @@ use crate::api::RestApi;
 use crate::api::error::BuildError;
 use crate::api::types::DEFAULT_URL;
 
-/// Builds a CoinMarketCapRestAPI with custom parameters.
-/// Methods can be chained to set the parameters and the
-/// `CoinMarketCapRestAPI` is constructed
-/// by calling the [`build`](RestApiBuilder::build) method.
+/// Builder for creating instances of [`RestApi`].
+///
+/// The `RestApiBuilder` provides a builder pattern for setting up a [`RestApi`] instance
+/// by allowing users to specify optional configuration parameters such as the base URL and API key.
+///
+/// # Example
+/// ```
+/// use bothan_coinmarketcap::api::RestApiBuilder;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let mut api = RestApiBuilder::default()
+///         .with_url("https://pro-api.coinmarketcap.com")
+///         .with_api_key("your_api_key")
+///         .build()
+///         .unwrap();
+/// }
+/// ```
 pub struct RestApiBuilder {
+    /// Base URL of the CoinMarketCap REST API.
     url: String,
+    /// Optional API key for CoinMarketCap.
     api_key: Option<String>,
 }
 
 impl RestApiBuilder {
+    /// Creates a new `RestApiBuilder` with the specified configuration.
+    ///
+    /// This method allows manual initialization of the builder using
+    /// optional parameter for API key, and a required URL string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bothan_coinmarketcap::api::RestApiBuilder;
+    ///
+    /// let builder = RestApiBuilder::new(
+    ///     "https://pro-api.coinmarketcap.com",
+    ///     Some("your_api_key"),
+    /// );
+    /// ```
     pub fn new<T, U>(url: T, api_key: Option<U>) -> Self
     where
         T: Into<String>,
@@ -41,7 +84,17 @@ impl RestApiBuilder {
         self
     }
 
-    /// Creates the configured `CoinMarketCapRestAPI`.
+    /// Builds the [`RestApi`] instance.
+    ///
+    /// This method consumes the builder and attempts to create a fully configured client.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`BuildError`] if:
+    /// - The URL is invalid
+    /// - The API key or HTTP headers are malformed
+    /// - The HTTP client fails to build
+    /// - The API key is missing (required for CoinMarketCap)
     pub fn build(self) -> Result<RestApi, BuildError> {
         let mut headers = HeaderMap::new();
 
