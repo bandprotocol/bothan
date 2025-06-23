@@ -42,8 +42,8 @@ use bothan_lib::worker::websocket::start_listening;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::{Instrument, Level, span};
 
-use crate::WorkerOpts;
-use crate::api::websocket::WebSocketConnector;
+pub use crate::WorkerOpts;
+pub use crate::api::websocket::WebSocketConnector;
 
 pub mod opts;
 
