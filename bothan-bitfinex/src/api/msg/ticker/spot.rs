@@ -3,18 +3,57 @@ use std::fmt;
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, de};
 
+/// Represents spot ticker data from the Bitfinex API.
+///
+/// `Ticker` struct contains fields matching those returned by the Bitfinex API
+/// for spot ticker events. It serves as an interface for JSON deserialization
+/// of spot trading market data, supporting both array and object-based responses.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_bitfinex::api::msg::ticker::spot::Ticker;
+/// use serde_json::json;
+///
+/// let json_data = json!(["tBTCUSD",101530,39.76548266,101540,32.24226311,2680,0.0271063,101550,661.88869229,102760,98740]);
+///
+/// let spot_ticker: Ticker = serde_json::from_value(json_data).unwrap();
+///
+/// assert_eq!(spot_ticker.symbol, "tBTCUSD");
+/// assert_eq!(spot_ticker.bid, 101530.0);
+/// assert_eq!(spot_ticker.bid_size, 39.76548266);
+/// assert_eq!(spot_ticker.ask, 101540.0);
+/// assert_eq!(spot_ticker.last_price, 101550.0);
+/// ```
+///
+/// # Bitfinex API Response Example
+///
+/// ```json
+/// ["tBTCUSD",101530,39.76548266,101540,32.24226311,2680,0.0271063,101550,661.88869229,102760,98740]
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Ticker {
+    /// The symbol of the requested ticker data (e.g., "tBTCUSD").
     pub symbol: String,
+    /// Price of last highest bid.
     pub bid: f64,
+    /// Sum of the 25 highest bid sizes.
     pub bid_size: f64,
+    /// Price of last lowest ask.
     pub ask: f64,
+    /// Sum of the 25 lowest ask sizes.
     pub ask_size: f64,
+    /// The amount that the last price has changed since yesterday.
     pub daily_change: f64,
+    /// Relative price change since yesterday (*100 for percentage change).
     pub daily_change_relative: f64,
+    /// Price of the last trade.
     pub last_price: f64,
+    /// Daily volume.
     pub volume: f64,
+    /// Daily high.
     pub high: f64,
+    /// Daily low.
     pub low: f64,
 }
 

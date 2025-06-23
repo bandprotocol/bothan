@@ -3,37 +3,65 @@ use std::fmt;
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, de};
 
+/// Represents funding ticker data from the Bitfinex API.
+///
+/// `Ticker` struct contains fields matching those returned by the Bitfinex API
+/// for funding ticker events. It serves as an interface for JSON deserialization
+/// of funding market data, supporting both array and object-based responses.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_bitfinex::api::msg::ticker::funding::Ticker;
+/// use serde_json::json;
+///
+/// let json_data = json!(["fUSD",0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814]);
+///
+/// let funding_ticker: Ticker = serde_json::from_value(json_data).unwrap();
+///
+/// assert_eq!(funding_ticker.symbol, "fUSD");
+/// assert_eq!(funding_ticker.frr, 0.00018055342465753425);
+/// assert_eq!(funding_ticker.bid, 0.0002);
+/// assert_eq!(funding_ticker.bid_period, 120);
+/// assert_eq!(funding_ticker.last_price, 0.00008219);
+/// ```
+///
+/// # Bitfinex API Response Example
+///
+/// ```json
+/// ["fUSD",0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814]
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Ticker {
-    // The symbol of the requested ticker data
+    /// The symbol of the requested ticker data (e.g., "fUSD").
     pub symbol: String,
-    // Flash Return Rate - average of all fixed rate funding over the last hour
+    /// Flash Return Rate - average of all fixed rate funding over the last hour.
     pub frr: f64,
-    // Price of last highest bid
+    /// Price of last highest bid.
     pub bid: f64,
-    // Bid period covered (in days)
+    /// Bid period covered (in days).
     pub bid_period: i64,
-    // Sum of the 25 highest bid sizes
+    /// Sum of the 25 highest bid sizes.
     pub bid_size: f64,
-    // Price of last lowest ask
+    /// Price of last lowest ask.
     pub ask: f64,
-    // Ask period covered (in days)
+    /// Ask period covered (in days).
     pub ask_period: i64,
-    // Sum of the 25 lowest ask sizes
+    /// Sum of the 25 lowest ask sizes.
     pub ask_size: f64,
-    // The amount that the last price has changed since yesterday
+    /// The amount that the last price has changed since yesterday.
     pub daily_change: f64,
-    // Relative price change since yesterday (*100 for percentage change)
+    /// Relative price change since yesterday (*100 for percentage change).
     pub daily_change_relative: f64,
-    // Price of the last trade
+    /// Price of the last trade.
     pub last_price: f64,
-    // Daily volume
+    /// Daily volume.
     pub volume: f64,
-    // Daily high
+    /// Daily high.
     pub high: f64,
-    // Daily low
+    /// Daily low.
     pub low: f64,
-    // The amount of funding that is available at the Flash Return Rate
+    /// The amount of funding that is available at the Flash Return Rate.
     pub frr_amount_available: f64,
 }
 
