@@ -4,8 +4,8 @@
 //! including both spot and funding ticker information. The module supports both array
 //! and object-based JSON responses from the Bitfinex API.
 
-mod funding;
-mod spot;
+pub mod funding;
+pub mod spot;
 
 use serde::{Deserialize, Serialize};
 

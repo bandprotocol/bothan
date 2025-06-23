@@ -29,18 +29,22 @@ pub const DEFAULT_URL: &str = "https://api-pub.bitfinex.com/v2/";
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// use bothan_bitfinex::api::rest::RestApi;
 /// use reqwest::Client;
 /// use url::Url;
 ///
-/// let url = Url::parse("https://api-pub.bitfinex.com/v2/").unwrap();
-/// let client = Client::new();
-/// let api = RestApi::new(url, client);
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let url = Url::parse("https://api-pub.bitfinex.com/v2/").unwrap();
+///     let client = Client::new();
+///     let api = RestApi::new(url, client);
 ///
-/// // Fetch ticker data for specific symbols
-/// let tickers = vec!["tBTCUSD", "tETHUSD"];
-/// let result = api.get_tickers(&tickers).await;
+///     // Fetch ticker data for specific symbols
+///     let tickers = vec!["tBTCUSD", "tETHUSD"];
+///     let result = api.get_tickers(&tickers).await?;
+///     Ok(())
+/// }
 /// ```
 pub struct RestApi {
     /// The base URL for the Bitfinex API.

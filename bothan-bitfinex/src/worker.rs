@@ -18,7 +18,8 @@
 //! # Examples
 //!
 //! ```rust
-//! use bothan_bitfinex::worker::{Worker, WorkerOpts};
+//! use bothan_bitfinex::worker::Worker;
+//! use bothan_bitfinex::worker::opts::WorkerOpts;
 //! use bothan_lib::worker::AssetWorker;
 //! use bothan_lib::store::Store;
 //!
