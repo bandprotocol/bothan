@@ -1,40 +1,111 @@
+//! Types for Kraken WebSocket public messages.
+//!
+//! This module provides types for constructing and parsing public messages used with the Kraken WebSocket API,
+//! including subscription commands and their responses.
+//!
+//! # Key Types
+//!
+//! - [`Method`] – Enum representing available message methods.
+//! - [`PublicMessage<T>`] – Generic structure representing WebSocket requests.
+//! - [`PublicMessageResponse`] – Structure representing WebSocket responses from Kraken.
+
 use serde::{Deserialize, Serialize};
 
-/// Represents the method type for a public message.
+/// Represents available methods for public messages to the Kraken WebSocket API.
+///
+/// This enum defines operations such as subscribing and unsubscribing from Kraken data channels.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Method {
+    /// Sends a ping to keep the WebSocket connection alive.
     Ping,
+
+    /// Subscribes to a channel to receive data updates.
     Subscribe,
+
+    /// Unsubscribes from a channel to stop receiving data updates.
     Unsubscribe,
 }
 
-/// Represents a public message with optional parameters.
+/// Represents a public request message to the Kraken WebSocket API.
+///
+/// This generic struct defines the format for sending subscription-related requests.
+/// It includes the method, optional parameters, and a request ID.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_kraken::api::types::message::{PublicMessage, Method};
+/// use bothan_kraken::api::types::channel::ticker::TickerRequestParameters;
+///
+/// let ticker_params = TickerRequestParameters {
+///     channel: "ticker".into(),
+///     symbol: vec!["BTC/USD".into()],
+///     event_trigger: None,
+///     snapshot: Some(true),
+/// };
+///
+/// let message = PublicMessage {
+///     method: Method::Subscribe,
+///     params: Some(ticker_params),
+///     req_id: Some(42),
+/// };
+/// ```
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PublicMessage<T> {
-    /// The method of the message.
+    /// The method of the request (e.g., subscribe, unsubscribe, ping).
     pub method: Method,
-    /// The parameters of the message.
+
+    /// Optional parameters specific to the method.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<T>,
-    /// The request ID of the message.
+
+    /// Optional request identifier for correlating responses.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub req_id: Option<usize>,
 }
 
-/// Represents the response to a public message.
+/// Represents a response message received from the Kraken WebSocket API.
+///
+/// This struct contains metadata indicating the result of public WebSocket requests,
+/// including subscription status and any associated errors.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_kraken::api::types::message::PublicMessageResponse;
+/// use serde_json::json;
+///
+/// let response_json = json!({
+///     "method": "subscribe",
+///     "success": true,
+///     "time_in": "2025-06-24T12:00:00.000Z",
+///     "time_out": "2025-06-24T12:00:00.010Z",
+///     "req_id": 42,
+///     "error": null
+/// });
+///
+/// let response: PublicMessageResponse = serde_json::from_value(response_json).unwrap();
+/// assert!(response.success);
+/// assert_eq!(response.req_id, Some(42));
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PublicMessageResponse {
-    /// The error message, if any.
+    /// Error message
     pub error: Option<String>,
-    /// The method of the message.
+
+    /// Method associated with the response (e.g., subscribe, unsubscribe).
     pub method: String,
-    /// The request ID of the message.
+
+    /// Optional client originated request identifier sent as acknowledgment in the response.
     pub req_id: Option<usize>,
-    /// Whether the request was successful.
+
+    /// Indicates whether the operation succeeded.
     pub success: bool,
-    /// The time the request was received.
+
+    /// Timestamp when the subscription was received on the wire, immediately before data parsing (RFC3339 format, e.g., `2022-12-25T09:30:59.123456Z`).
     pub time_in: String,
-    /// The time the response was sent.
+
+    /// Timestamp when the acknowledgment was sent on the wire, immediately before data transmission (RFC3339 format, e.g., `2022-12-25T09:30:59.123456Z`).
     pub time_out: String,
 }
