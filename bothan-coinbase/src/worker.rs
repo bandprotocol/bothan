@@ -76,11 +76,6 @@ impl AssetWorker for Worker {
     ///
     /// This method creates a Coinbase WebSocket client, spawns asynchronous tasks
     /// to subscribe to asset updates, and returns the running [`Worker`] instance.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `AssetWorkerError` if the worker fails to start or if there are issues
-    /// with the WebSocket connection or subscription.
     async fn build<S: Store + 'static>(
         opts: Self::Opts,
         store: &S,
