@@ -91,12 +91,6 @@ impl AssetWorker for Worker {
     ///
     /// Returns a `Result` containing a `Worker` instance on success,
     /// or an `AssetWorkerError` if the worker cannot be built.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`AssetWorkerError`](bothan_lib::worker::error::AssetWorkerError) if:
-    /// - The WebSocket client fails to build due to invalid configuration
-    /// - Subscription tasks encounter errors during execution
     async fn build<S: Store + 'static>(
         opts: Self::Opts,
         store: &S,
