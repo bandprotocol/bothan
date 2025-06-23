@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// let status_json = json!({
 ///     "api_version": "v2",
-///     "connection_id": 13834774380200032777,
+///     "connection_id": 13834,
 ///     "system": "online",
 ///     "version": "2.0.0"
 /// });

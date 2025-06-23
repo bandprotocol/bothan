@@ -168,7 +168,7 @@ impl WebSocketConnection {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use bothan_okx::api::websocket::WebSocketConnection;
+    /// use bothan_kraken::api::websocket::WebSocketConnection;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -253,7 +253,7 @@ impl WebSocketConnection {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use bothan_okx::api::websocket::WebSocketConnection;
+    /// use bothan_kraken::api::websocket::WebSocketConnection;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -295,7 +295,7 @@ impl WebSocketConnection {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use bothan_okx::api::websocket::WebSocketConnection;
+    /// use bothan_kraken::api::websocket::WebSocketConnection;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
