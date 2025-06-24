@@ -89,6 +89,7 @@ impl Default for WorkerOpts {
         }
     }
 }
+
 /// Deserializer helper: converts empty strings to `None`.
 ///
 /// This function is useful when parsing configuration files where empty strings or missing values
@@ -99,6 +100,7 @@ fn empty_string_is_none<'de, D: Deserializer<'de>>(
     let s: Option<String> = Option::deserialize(deserializer)?;
     Ok(s.filter(|s| !s.is_empty()))
 }
+
 /// Serializer helper: converts `None` to an empty string.
 ///
 /// This function is useful when serializing configuration data where a missing value (`None`)
