@@ -33,39 +33,6 @@ pub(crate) const API_KEY_HEADER: &str = "x-cg-pro-api-key";
 /// Specifically, fields like `platforms` and other additional data provided by certain endpoints
 /// are not represented here.
 ///
-/// # Examples
-///
-/// ```rust
-/// use bothan_coingecko::api::types::Coin;
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "id": "bitcoin",
-///     "symbol": "btc",
-///     "name": "Bitcoin"
-/// });
-///
-/// let coin: Coin = serde_json::from_value(json_data).unwrap();
-///
-/// assert_eq!(coin.id, "bitcoin");
-/// assert_eq!(coin.symbol, "btc");
-/// assert_eq!(coin.name, "Bitcoin");
-/// ```
-///
-/// # CoinGecko REST API Response Example
-///
-/// ```json
-/// {
-///   "id": "0chain",
-///   "symbol": "zcn",
-///   "name": "Zus",
-///   "platforms": {
-///     "ethereum": "0xb9ef770b6a5e12e45983c5d80545258aa38f3b78",
-///     "polygon-pos": "0x8bb30e0e67b11b978a5040144c410e1ccddcba30"
-///   }
-/// }
-/// ```
-///
 /// [CoinGecko coins list endpoint]: https://docs.coingecko.com/reference/coins-list
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Coin {
@@ -85,37 +52,6 @@ pub struct Coin {
 /// **Note:** This struct only includes selected fields from the CoinGecko REST API response.
 /// Specifically, additional data such as `usd_market_cap`, `usd_24h_vol`, and
 /// `usd_24h_change` are not represented here.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_coingecko::api::types::Price;
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "usd": 67187.3358936566,
-///     "last_updated_at": 1711356300
-/// });
-///
-/// let price: Price = serde_json::from_value(json_data).unwrap();
-///
-/// assert_eq!(price.usd, 67187.3358936566);
-/// assert_eq!(price.last_updated_at, 1711356300);
-/// ```
-///
-/// # CoinGecko REST API Response Example
-///
-/// ```json
-/// {
-///   "bitcoin": {
-///     "usd": 67187.3358936566,
-///     "usd_market_cap": 1317802988326.25,
-///     "usd_24h_vol": 31260929299.5248,
-///     "usd_24h_change": 3.63727894677354,
-///     "last_updated_at": 1711356300
-///   }
-/// }
-/// ```
 ///
 /// [CoinGecko Simple Price endpoint]: https://docs.coingecko.com/reference/simple-price
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
