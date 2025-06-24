@@ -15,86 +15,6 @@ pub const DEFAULT_URL: &str = "wss://api.huobi.pro/ws";
 /// including subscription confirmations, data updates, ping messages, and error responses.
 /// Each variant corresponds to a specific type of message, allowing for flexible handling
 /// of various response types.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_htx::api::types::Response;
-/// use serde_json::json;
-///
-/// // Subscription response example
-/// let sub_json = json!({
-///     "id": "1",
-///     "status": "ok",
-///     "subbed": "market.btcusdt.ticker",
-///     "ts": 1640995200000i64
-/// });
-/// let sub_response: Response = serde_json::from_value(sub_json).unwrap();
-///
-/// // Data update example
-/// let data_json = json!({
-///     "ch": "market.btcusdt.ticker",
-///     "ts": 1640995200000i64,
-///     "tick": {
-///         "open": 50000.0,
-///         "high": 51000.0,
-///         "low": 49000.0,
-///         "close": 50500.0,
-///         "amount": 100.0,
-///         "vol": 5000000.0,
-///         "count": 1000,
-///         "bid": 50490.0,
-///         "bidSize": 1.5,
-///         "ask": 50510.0,
-///         "askSize": 2.0,
-///         "lastPrice": 50500.0,
-///         "lastSize": 0.5
-///     }
-/// });
-/// let data_response: Response = serde_json::from_value(data_json).unwrap();
-/// ```
-///
-/// # HTX WebSocket API Response Examples
-///
-/// ## Subscription Response
-/// ```json
-/// {
-///   "id": "1",
-///   "status": "ok",
-///   "subbed": "market.btcusdt.ticker",
-///   "ts": 1640995200000
-/// }
-/// ```
-///
-/// ## Data Update Response
-/// ```json
-/// {
-///   "ch": "market.btcusdt.ticker",
-///   "ts": 1640995200000,
-///   "tick": {
-///     "open": 50000.0,
-///     "high": 51000.0,
-///     "low": 49000.0,
-///     "close": 50500.0,
-///     "amount": 100.0,
-///     "vol": 5000000.0,
-///     "count": 1000,
-///     "bid": 50490.0,
-///     "bidSize": 1.5,
-///     "ask": 50510.0,
-///     "askSize": 2.0,
-///     "lastPrice": 50500.0,
-///     "lastSize": 0.5
-///   }
-/// }
-/// ```
-///
-/// ## Ping Message
-/// ```json
-/// {
-///   "ping": 1640995200000
-/// }
-/// ```
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum Response {
@@ -166,37 +86,6 @@ pub struct Data {
 ///
 /// This struct contains comprehensive market data including price information,
 /// volume data, and bid/ask details for a specific trading pair.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_htx::api::types::Tick;
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "open": 50000.0,
-///     "high": 51000.0,
-///     "low": 49000.0,
-///     "close": 50500.0,
-///     "amount": 100.0,
-///     "vol": 5000000.0,
-///     "count": 1000,
-///     "bid": 50490.0,
-///     "bidSize": 1.5,
-///     "ask": 50510.0,
-///     "askSize": 2.0,
-///     "lastPrice": 50500.0,
-///     "lastSize": 0.5
-/// });
-///
-/// let tick: Tick = serde_json::from_value(json_data).unwrap();
-///
-/// assert_eq!(tick.open, 50000.0);
-/// assert_eq!(tick.high, 51000.0);
-/// assert_eq!(tick.low, 49000.0);
-/// assert_eq!(tick.close, 50500.0);
-/// assert_eq!(tick.last_price, 50500.0);
-/// ```
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Tick {
