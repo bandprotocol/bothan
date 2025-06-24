@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Ticker {
-    /// Represents funding ticker data for lending/borrowing markets.
+    /// Represents funding ticker data for leveraged trading markets.
     Funding(funding::Ticker),
     /// Represents spot ticker data for trading markets.
     Spot(spot::Ticker),
