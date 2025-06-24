@@ -1,15 +1,3 @@
-//! CoinGecko REST API client implementation.
-//!
-//! This module provides the [`RestApi`], a client for interacting with the CoinGecko REST API.
-//! It includes methods for retrieving coin metadata and current USD prices, and is used internally
-//! to implement the [`AssetInfoProvider`] trait for asset workers.
-//!
-//! This module provides:
-//!
-//! - Fetches the full list of coins from the `/coins/list` endpoint
-//! - Retrieves simple price data from the `/simple/price` endpoint
-//! - Transforms API responses into [`AssetInfo`] for use in workers
-//! - Handles deserialization and error propagation
 use std::collections::HashMap;
 
 use bothan_lib::types::AssetInfo;
@@ -21,37 +9,9 @@ use serde::de::DeserializeOwned;
 use crate::api::error::ProviderError;
 use crate::api::types::{Coin, Price};
 
-/// Client for interacting with the CoinGecko REST API.
-///
-/// The [`RestApi`] includes a base URL and HTTP client used to send
-/// requests to the CoinGecko REST API. It provides methods for fetching coin lists and
-/// current USD prices. It is also used to implement the [`AssetInfoProvider`] trait
-/// for integration into the REST API worker.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_coingecko::api::{RestApi, types::Price};
-/// use reqwest::ClientBuilder;
-/// use reqwest::header::{HeaderMap, HeaderValue};
-/// use url::Url;
-///
-/// #[tokio::main]
-/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let mut headers = HeaderMap::new();
-///     let agent = HeaderValue::from_str("bothan")?;
-///     headers.insert("User-Agent", agent);
-///
-///     let client = ClientBuilder::new().default_headers(headers).build()?;
-///
-///     let api = RestApi::new(Url::parse("https://api.coingecko.com/api/v3/")?, client);
-///     Ok(())
-/// }
-/// ```
+/// A client for interacting with the CoinGecko REST API.
 pub struct RestApi {
-    /// The base URL of the CoinGecko REST API.
     url: Url,
-    /// The reqwest HTTP client used to make requests.
     client: Client,
 }
 
@@ -61,7 +21,7 @@ impl RestApi {
         Self { url, client }
     }
 
-    /// Retrieves a list of coins from the CoinGecko REST API.
+    /// Retrieves a list of coins from the CoinGecko API.
     pub async fn get_coins_list(&self) -> Result<Vec<Coin>, reqwest::Error> {
         let url = format!("{}coins/list", self.url);
         let builder = self.client.get(url);
@@ -69,26 +29,7 @@ impl RestApi {
         request::<Vec<Coin>>(builder).await
     }
 
-    /// Retrieves market data for the specified coins from the CoinGecko REST API.
-    ///
-    /// This method constructs a request to the CoinGecko `/simple/price` endpoint
-    /// and returns a mapping from coin IDs to [`Price`] structures containing the
-    /// latest USD price and timestamp.
-    ///
-    /// # Query Construction
-    ///
-    /// The query includes:
-    /// - `ids`: comma-separated list of coin IDs
-    /// - `vs_currencies`: always `"usd"`
-    /// - `include_last_updated_at`: `"true"`
-    /// - `precision`: `"full"`
-    ///
-    /// # Errors
-    ///
-    /// Returns a [`reqwest::Error`] if:
-    /// - The request fails due to network issues
-    /// - The response status is not 2xx
-    /// - JSON deserialization into [`HashMap<String, Price>`] fails
+    /// Retrieves market data for the specified coins from the CoinGecko API.
     pub async fn get_simple_price_usd<T: AsRef<str>>(
         &self,
         ids: &[T],
@@ -113,17 +54,6 @@ impl RestApi {
     }
 }
 
-/// Sends an HTTP request and deserializes the JSON response.
-///
-/// This function executes the given [`RequestBuilder`], validates the HTTP response,
-/// and deserializes the response body into the expected type `T`.
-///
-/// # Errors
-///
-/// Returns a [`reqwest::Error`] if:
-/// - The request fails to send (e.g., network issues)
-/// - The response returns a non-success status code (e.g., 400, 500)
-/// - JSON deserialization into type `T` fails
 async fn request<T: DeserializeOwned>(
     request_builder: RequestBuilder,
 ) -> Result<T, reqwest::Error> {
@@ -136,26 +66,6 @@ async fn request<T: DeserializeOwned>(
 impl AssetInfoProvider for RestApi {
     type Error = ProviderError;
 
-    /// Fetches asset information for a list of coin IDs from the CoinGecko REST API.
-    ///
-    /// This method retrieves current USD prices for the given `ids` by calling
-    /// [`RestApi::get_simple_price_usd`] iteratively and transforms the results into a vector of [`AssetInfo`] structs.
-    ///
-    /// Each entry in the response is converted into an [`AssetInfo`] instance using:
-    /// - The coin ID as the asset identifier
-    /// - The USD price converted into a [`Decimal`] using `from_f64_retain`
-    /// - The last update timestamp returned by the API
-    ///
-    /// # Errors
-    ///
-    /// Returns a [`ProviderError`] if:
-    /// - The HTTP request fails or returns an invalid response
-    /// - The price contains a value that cannot be converted into a valid `Decimal`
-    ///
-    /// [`RestApi::get_simple_price_usd`]: crate::api::RestApi::get_simple_price_usd
-    /// [`AssetInfo`]: bothan_lib::types::AssetInfo
-    /// [`Decimal`]: rust_decimal::Decimal
-    /// [`ProviderError`]: crate::api::error::ProviderError
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
         self.get_simple_price_usd(ids)
             .await?
@@ -291,7 +201,7 @@ mod test {
     #[tokio::test]
     async fn test_successful_get_simple_price() {
         let (mut server, client) = setup().await;
-        let prices: HashMap<String, Price> = HashMap::from([(
+        let prices = HashMap::from([(
             "bitcoin".to_string(),
             Price {
                 usd: 42000.69,

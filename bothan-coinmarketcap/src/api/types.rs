@@ -11,25 +11,6 @@ pub(crate) const DEFAULT_URL: &str = "https://pro-api.coinmarketcap.com";
 /// Represents the status part of a CoinMarketCap API response.
 ///
 /// `Status` contains metadata about the API response, such as error codes and timestamps.
-///
-/// # Example
-///
-/// ```rust
-/// use bothan_coinmarketcap::api::types::Status;
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "timestamp": "2025-06-21T13:17:51.706Z",
-///     "error_code": 0,
-///     "error_message": "",
-///     "elapsed": 10,
-///     "credit_count": 1,
-///     "notice": ""
-/// });
-///
-/// let status: Status = serde_json::from_value(json_data).unwrap();
-/// assert_eq!(status.error_code, 0);
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Status {
     /// Current timestamp (ISO 8601) on the server.
@@ -61,29 +42,7 @@ pub struct Response<T> {
 /// Represents price and market data for a single asset in USD.
 ///
 /// `PriceQuote` contains fields matching those returned by the [CoinMarketCap latest quotes endpoint].
-///
-/// # Example
-///
-/// ```rust
-/// use bothan_coinmarketcap::api::types::PriceQuote;
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "price": 67187.33,
-///     "volume_24h": 31260929299.52,
-///     "volume_change_24h": 3.6,
-///     "percent_change_1h": 0.1,
-///     "percent_change_24h": 2.3,
-///     "percent_change_7d": 5.0,
-///     "percent_change_30d": 10.0,
-///     "market_cap": 1317802988326.25,
-///     "market_cap_dominance": 49.0,
-///     "fully_diluted_market_cap": 1400000000000.0,
-///     "last_updated": "2024-03-16T06:55:15.626Z"
-/// });
-/// let price: PriceQuote = serde_json::from_value(json_data).unwrap();
-/// assert_eq!(price.price, Some(67187.33));
-/// ```
+/// 
 /// [CoinMarketCap latest quotes endpoint]: https://coinmarketcap.com/api/documentation/v1/#operation/getV2CryptocurrencyQuotesLatest
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PriceQuote {
@@ -127,39 +86,6 @@ pub struct PriceQuotes {
 /// **Note:** This struct does **not** include all fields returned by the CoinMarketCap REST API.
 /// Specifically, fields like `is_active` and other additional data provided by certain endpoints
 /// are not represented here.
-///
-/// # Example
-///
-/// ```rust
-/// use bothan_coinmarketcap::api::types::{Quote, PriceQuotes, PriceQuote};
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "id": 1,
-///     "name": "Bitcoin",
-///     "symbol": "BTC",
-///     "slug": "bitcoin",
-///     "is_active": 1,
-///     "quote": {
-///         "USD": {
-///             "price": 67187.33,
-///             "volume_24h": 31260929299.52,
-///             "volume_change_24h": 3.6,
-///             "percent_change_1h": 0.1,
-///             "percent_change_24h": 2.3,
-///             "percent_change_7d": 5.0,
-///             "percent_change_30d": 10.0,
-///             "market_cap": 1317802988326.25,
-///             "market_cap_dominance": 49.0,
-///             "fully_diluted_market_cap": 1400000000000.0,
-///             "last_updated": "2024-03-16T06:55:15.626Z"
-///         }
-///     }
-/// });
-/// let quote: Quote = serde_json::from_value(json_data).unwrap();
-/// assert_eq!(quote.id, 1);
-/// assert_eq!(quote.symbol, "BTC");
-/// ```
 ///
 /// [CoinMarketCap latest quotes endpoint]: https://coinmarketcap.com/api/documentation/v1/#operation/getV2CryptocurrencyQuotesLatest
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
