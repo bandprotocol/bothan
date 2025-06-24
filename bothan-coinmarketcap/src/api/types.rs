@@ -42,7 +42,7 @@ pub struct Response<T> {
 /// Represents price and market data for a single asset in USD.
 ///
 /// `PriceQuote` contains fields matching those returned by the [CoinMarketCap latest quotes endpoint].
-/// 
+///
 /// [CoinMarketCap latest quotes endpoint]: https://coinmarketcap.com/api/documentation/v1/#operation/getV2CryptocurrencyQuotesLatest
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PriceQuote {
