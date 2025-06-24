@@ -35,7 +35,7 @@ pub struct TickerRequestParameters {
     /// Channel name (typically "ticker").
     pub channel: String,
 
-    /// A list of currency pairs subscribe to (e.g., BTC/USD).
+    /// A list of currency pairs subscribe to (e.g. BTC/USD).
     pub symbol: Vec<String>,
 
     /// Optional event trigger type for updates.
@@ -67,7 +67,7 @@ pub struct TickerSubscriptionResult {
 /// and percentage changes.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TickerResponse {
-    /// Symbol identifier for the trading pair (e.g., "BTC/USD").
+    /// Symbol identifier for the trading pair (e.g. "BTC/USD").
     pub symbol: String,
 
     /// Best bid price.
