@@ -12,24 +12,6 @@ use serde::{Deserialize, Serialize};
 /// Represents the status information from the Kraken WebSocket API.
 ///
 /// `Status` contains metadata about the current connection and API details provided by Kraken.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_kraken::api::types::channel::status::Status;
-/// use serde_json::json;
-///
-/// let status_json = json!({
-///     "api_version": "v2",
-///     "connection_id": 13834,
-///     "system": "online",
-///     "version": "2.0.0"
-/// });
-///
-/// let status: Status = serde_json::from_value(status_json).unwrap();
-/// assert_eq!(status.api_version, "v2");
-/// assert_eq!(status.system, "online");
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Status {
     /// The version of the websockets API.

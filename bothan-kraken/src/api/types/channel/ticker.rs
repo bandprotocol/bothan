@@ -30,19 +30,6 @@ pub enum EventTrigger {
 ///
 /// `TickerRequestParameters` is used to specify subscription options, including the symbols, event triggers,
 /// and whether a snapshot should be included.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_kraken::api::types::channel::ticker::{TickerRequestParameters, EventTrigger};
-///
-/// let params = TickerRequestParameters {
-///     channel: "ticker".into(),
-///     symbol: vec!["BTC/USD".into(), "ETH/USD".into()],
-///     event_trigger: Some(EventTrigger::Trades),
-///     snapshot: Some(true),
-/// };
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TickerRequestParameters {
     /// Channel name (typically "ticker").
@@ -78,32 +65,6 @@ pub struct TickerSubscriptionResult {
 ///
 /// `TickerResponse` includes market information such as bid and ask prices, volumes,
 /// and percentage changes.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_kraken::api::types::channel::ticker::TickerResponse;
-/// use serde_json::json;
-///
-/// let ticker_json = json!({
-///     "symbol": "BTC/USD",
-///     "bid": 30000.0,
-///     "bid_qty": 0.5,
-///     "ask": 30001.0,
-///     "ask_qty": 0.4,
-///     "last": 30000.5,
-///     "volume": 125.0,
-///     "vwap": 29950.0,
-///     "low": 29500.0,
-///     "high": 30500.0,
-///     "change": 500.0,
-///     "change_pct": 1.69
-/// });
-///
-/// let ticker: TickerResponse = serde_json::from_value(ticker_json).unwrap();
-/// assert_eq!(ticker.symbol, "BTC/USD");
-/// assert_eq!(ticker.bid, 30000.0);
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TickerResponse {
     /// Symbol identifier for the trading pair (e.g., "BTC/USD").

@@ -69,26 +69,6 @@ pub struct PublicMessage<T> {
 ///
 /// This struct contains metadata indicating the result of public WebSocket requests,
 /// including subscription status and any associated errors.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_kraken::api::types::message::PublicMessageResponse;
-/// use serde_json::json;
-///
-/// let response_json = json!({
-///     "method": "subscribe",
-///     "success": true,
-///     "time_in": "2025-06-24T12:00:00.000Z",
-///     "time_out": "2025-06-24T12:00:00.010Z",
-///     "req_id": 42,
-///     "error": null
-/// });
-///
-/// let response: PublicMessageResponse = serde_json::from_value(response_json).unwrap();
-/// assert!(response.success);
-/// assert_eq!(response.req_id, Some(42));
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PublicMessageResponse {
     /// Error message

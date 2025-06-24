@@ -16,39 +16,6 @@ pub mod ticker;
 /// Represents responses from Kraken WebSocket channels.
 ///
 /// Each variant corresponds to a specific type of channel data from the Kraken API.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_kraken::api::types::channel::{ChannelResponse, ticker::TickerResponse};
-/// use serde_json::json;
-///
-/// let response_json = json!({
-///     "channel": "ticker",
-///     "data": [
-///         {
-///             "symbol": "BTC/USD",
-///             "bid": 30000.0,
-///             "bid_qty": 740.0,
-///             "ask": 30001.0,
-///             "ask_qty": 1361.44813783,
-///             "last": 30000.5,
-///             "volume": 12.5,
-///             "vwap": 29950.0,
-///             "low": 29500.0,
-///             "high": 30500.0,
-///             "change": 500.0,
-///             "change_pct": 0.0169
-///         }
-///     ]
-/// });
-///
-/// let response: ChannelResponse = serde_json::from_value(response_json).unwrap();
-///
-/// if let ChannelResponse::Ticker(data) = response {
-///     assert_eq!(data[0].symbol, "BTC/USD");
-/// }
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "channel", content = "data", rename_all = "snake_case")]
 pub enum ChannelResponse {
