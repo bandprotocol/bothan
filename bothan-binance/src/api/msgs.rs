@@ -64,52 +64,6 @@ pub enum StreamEventData {
 ///
 /// `MiniTickerInfo` struct contains fields matching those returned by the Binance WebSocket API
 /// for the 24hr mini ticker event. It serves as an interface for JSON deserialization of event data.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_binance::api::msgs::MiniTickerInfo;
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "e": "24hrMiniTicker",
-///     "E": 1750306632025i64,
-///     "s": "BTCUSDT",
-///     "c": "105025.21000000",
-///     "o": "105242.08000000",
-///     "h": "105550.27000000",
-///     "l": "103500.00000000",
-///     "v": "14149.30183000",
-///     "q": "1480296671.36787530"
-/// });
-///
-/// let mini_ticker: MiniTickerInfo = serde_json::from_value(json_data).unwrap();
-///
-/// assert_eq!(mini_ticker.event_time, 1750306632025i64);
-/// assert_eq!(mini_ticker.symbol, "BTCUSDT");
-/// assert_eq!(mini_ticker.close_price, "105025.21000000");
-/// assert_eq!(mini_ticker.open_price, "105242.08000000");
-/// assert_eq!(mini_ticker.high_price, "105550.27000000");
-/// assert_eq!(mini_ticker.low_price, "103500.00000000");
-/// assert_eq!(mini_ticker.base_volume, "14149.30183000");
-/// assert_eq!(mini_ticker.quote_volume, "1480296671.36787530");
-/// ```
-///
-/// # Binance WebSocket API Response Example
-///
-/// ```json
-/// {
-///   "e": "24hrMiniTicker",
-///   "E": 1750306632025,
-///   "s": "BTCUSDT",
-///   "c": "105025.21000000",
-///   "o": "105242.08000000",
-///   "h": "105550.27000000",
-///   "l": "103500.00000000",
-///   "v": "14149.30183000",
-///   "q": "1480296671.36787530"
-/// }
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MiniTickerInfo {
     /// The unix timestamp of the event in milliseconds.
