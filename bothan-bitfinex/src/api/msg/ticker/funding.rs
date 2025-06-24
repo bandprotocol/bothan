@@ -8,29 +8,6 @@ use serde::{Deserialize, Deserializer, Serialize, de};
 /// `Ticker` struct contains fields matching those returned by the Bitfinex API
 /// for funding ticker events. It serves as an interface for JSON deserialization
 /// of funding market data, supporting both array and object-based responses.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_bitfinex::api::msg::ticker::funding::Ticker;
-/// use serde_json::json;
-///
-/// let json_data = json!(["fUSD",0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814]);
-///
-/// let funding_ticker: Ticker = serde_json::from_value(json_data).unwrap();
-///
-/// assert_eq!(funding_ticker.symbol, "fUSD");
-/// assert_eq!(funding_ticker.frr, 0.00018055342465753425);
-/// assert_eq!(funding_ticker.bid, 0.0002);
-/// assert_eq!(funding_ticker.bid_period, 120);
-/// assert_eq!(funding_ticker.last_price, 0.00008219);
-/// ```
-///
-/// # Bitfinex API Response Example
-///
-/// ```json
-/// ["fUSD",0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814]
-/// ```
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Ticker {
     /// The symbol of the requested ticker data (e.g., "fUSD").

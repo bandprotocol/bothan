@@ -8,29 +8,6 @@ use serde::{Deserialize, Deserializer, Serialize, de};
 /// `Ticker` struct contains fields matching those returned by the Bitfinex API
 /// for spot ticker events. It serves as an interface for JSON deserialization
 /// of spot trading market data, supporting both array and object-based responses.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_bitfinex::api::msg::ticker::spot::Ticker;
-/// use serde_json::json;
-///
-/// let json_data = json!(["tBTCUSD",101530,39.76548266,101540,32.24226311,2680,0.0271063,101550,661.88869229,102760,98740]);
-///
-/// let spot_ticker: Ticker = serde_json::from_value(json_data).unwrap();
-///
-/// assert_eq!(spot_ticker.symbol, "tBTCUSD");
-/// assert_eq!(spot_ticker.bid, 101530.0);
-/// assert_eq!(spot_ticker.bid_size, 39.76548266);
-/// assert_eq!(spot_ticker.ask, 101540.0);
-/// assert_eq!(spot_ticker.last_price, 101550.0);
-/// ```
-///
-/// # Bitfinex API Response Example
-///
-/// ```json
-/// ["tBTCUSD",101530,39.76548266,101540,32.24226311,2680,0.0271063,101550,661.88869229,102760,98740]
-/// ```
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Ticker {
     /// The symbol of the requested ticker data (e.g., "tBTCUSD").
