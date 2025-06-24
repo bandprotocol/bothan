@@ -4,8 +4,6 @@
 //! particularly for handling WebSocket messages and price validation errors.
 
 /// Errors related to Bybit API client operations.
-///
-/// Errors related to communication with the Bybit API.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Failed to parse a message from the WebSocket.
