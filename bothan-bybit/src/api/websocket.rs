@@ -1,3 +1,17 @@
+//! Bybit WebSocket API client implementation.
+//!
+//! This module provides the [`WebSocketConnector`] and [`WebSocketConnection`] for interacting
+//! with the Bybit WebSocket API. It enables real-time streaming of market data, such as ticker
+//! updates, and is used internally to implement the [`AssetInfoProvider`] trait for asset workers.
+//!
+//! This module provides:
+//!
+//! - Establishes WebSocket connections to Bybit servers
+//! - Subscribes and unsubscribes to ticker streams for specified symbols
+//! - Processes incoming WebSocket messages, including ticker updates and ping events
+//! - Transforms WebSocket messages into [`AssetInfo`] for use in workers
+//! - Handles connection management, including closing connections gracefully
+
 use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::websocket::{AssetInfoProvider, AssetInfoProviderConnector, Data};
 use futures_util::{SinkExt, StreamExt};
@@ -10,18 +24,32 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungsten
 use crate::api::error::{Error, ListeningError};
 use crate::api::types::{MAX_ARGS, PublicTickerResponse, Response};
 
-/// A connector for establishing a WebSocket connection to the Bybit API.
+/// A connector for establishing WebSocket connections to the Bybit WebSocket API.
 pub struct WebSocketConnector {
     url: String,
 }
 
+/// This struct provides methods to create a new connector and connect to the WebSocket server.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_bybit::WebSocketConnector;
+///
+/// let connector = WebSocketConnector::new("wss://example.com/socket");
+/// let connection = connector.connect();
+/// ```
 impl WebSocketConnector {
-    /// Creates a new instance of `BybitWebSocketConnector`.
+    /// Creates a new `BybitWebSocketConnector` with the given URL.
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
-    /// Connects to the Bybit WebSocket API.
+    /// Establishes a WebSocket connection to the Bybit server.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`tungstenite::Error`] if the WebSocket connection fails.
     pub async fn connect(&self) -> Result<WebSocketConnection, tungstenite::Error> {
         let (wss, _) = connect_async(self.url.clone()).await?;
 
@@ -39,18 +67,32 @@ impl AssetInfoProviderConnector for WebSocketConnector {
     }
 }
 
-/// Represents an active WebSocket connection to the Bybit API.
+/// Represents an active WebSocket connection to Bybit.
+///
+/// This struct encapsulates the WebSocket stream and provides methods for subscribing to
+/// ticker streams, receiving messages, and closing the connection.
 pub struct WebSocketConnection {
     ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
 impl WebSocketConnection {
-    /// Creates a new `BybitWebSocketConnection` instance.
+    /// Creates a new `BybitWebSocketConnection`.
     pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         Self { ws_stream }
     }
 
-    /// Subscribes to ticker updates for the given symbols.
+    /// Subscribes to the ticker stream for the specified symbol IDs.
+    ///
+    /// This method sends a subscription request to the Bybit WebSocket API for the specified symbol IDs.
+    /// Each symbol ID is transformed into a ticker stream identifier before being sent.
+    ///
+    /// # Parameters
+    ///
+    /// - `symbols`: A slice of symbol IDs to subscribe to.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`tungstenite::Error`] if the WebSocket subscription request fails.
     pub async fn subscribe_ticker<T: AsRef<str>>(
         &mut self,
         symbols: &[T],
@@ -65,7 +107,18 @@ impl WebSocketConnection {
         self.ws_stream.send(message).await
     }
 
-    /// Unsubscribes to ticker updates for the given symbols.
+    /// Unsubscribes from the ticker stream for the specified symbol IDs.
+    ///
+    /// This method sends an unsubscription request to the Bybit WebSocket API for the specified symbol IDs.
+    /// Each symbol ID is transformed into a ticker stream identifier before being sent.
+    ///
+    /// # Parameters
+    ///
+    /// - `symbols`: A slice of symbol IDs to unsubscribe from.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`tungstenite::Error`] if the WebSocket unsubscription request fails.
     pub async fn unsubscribe_ticker<T: AsRef<str>>(
         &mut self,
         symbols: &[T],
@@ -80,7 +133,10 @@ impl WebSocketConnection {
         self.ws_stream.send(message).await
     }
 
-    /// Receives the next message from the WebSocket connection.
+    /// Retrieves the next message from the WebSocket stream.
+    ///
+    /// This method listens for incoming WebSocket messages and processes them.
+    /// Supported message types include text messages (parsed as `Response`), ping messages, and close messages.
     pub async fn next(&mut self) -> Option<Result<Response, Error>> {
         match self.ws_stream.next().await {
             Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
@@ -92,6 +148,9 @@ impl WebSocketConnection {
         }
     }
 
+    /// Closes the WebSocket connection gracefully.
+    ///
+    /// This method sends a close frame to the WebSocket server and waits for the connection to close.
     pub async fn close(&mut self) -> Result<(), tungstenite::Error> {
         self.ws_stream.close(None).await?;
         Ok(())
