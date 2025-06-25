@@ -17,8 +17,9 @@
 //!
 //! # Examples
 //!
-//! ```ignore
-//! use bothan_coinbase::worker::{Worker, WorkerOpts};
+//! ```rust, no_run
+//! use bothan_coinbase::worker::Worker;
+//! use bothan_coinbase::WorkerOpts;
 //! use bothan_lib::worker::AssetWorker;
 //! use bothan_lib::store::Store;
 //!
