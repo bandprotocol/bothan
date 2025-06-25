@@ -17,7 +17,7 @@
 //!
 //! # Examples
 //!
-//! ```rust
+//! ```ignore
 //! use bothan_bybit::worker::{Worker, WorkerOpts};
 //! use bothan_lib::worker::AssetWorker;
 //! use bothan_lib::store::Store;
@@ -42,8 +42,8 @@ use bothan_lib::worker::websocket::start_listening;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::{Instrument, Level, span};
 
-pub use crate::WorkerOpts;
-pub use crate::api::websocket::WebSocketConnector;
+use crate::WorkerOpts;
+use crate::api::websocket::WebSocketConnector;
 
 pub mod opts;
 
