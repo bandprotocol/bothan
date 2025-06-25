@@ -4,8 +4,6 @@
 //! particularly for handling websocket messages and price validation errors.
 
 /// Errors related to Coinbase API client operations.
-///
-/// Errors related to communication with the Coinbase API.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Indicates a failure to parse a WebSocket message.
