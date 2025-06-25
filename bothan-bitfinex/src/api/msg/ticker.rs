@@ -1,16 +1,37 @@
-mod funding;
-mod spot;
+//! Types for Bitfinex ticker data interaction.
+//!
+//! This module provides types for deserializing ticker data from the Bitfinex REST API,
+//! including both spot and funding ticker information. The module supports both array
+//! and object-based JSON responses from the Bitfinex API.
+
+pub mod funding;
+pub mod spot;
 
 use serde::{Deserialize, Serialize};
 
+/// Represents ticker data from the Bitfinex API.
+///
+/// The `Ticker` enum can represent different types of ticker data returned by the Bitfinex API,
+/// including spot trading tickers and funding tickers. Each variant corresponds to a specific
+/// type of market data, allowing for flexible handling of various ticker types.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Ticker {
+    /// Represents funding ticker data for leveraged trading markets.
     Funding(funding::Ticker),
+    /// Represents spot ticker data for trading markets.
     Spot(spot::Ticker),
 }
 
 impl Ticker {
+    /// Returns the symbol identifier for the ticker.
+    ///
+    /// This method extracts the symbol from either a funding or spot ticker,
+    /// providing a unified interface for accessing the trading pair identifier.
+    ///
+    /// # Returns
+    ///
+    /// A string slice containing the symbol (e.g., "tBTCUSD", "fUSD").
     pub fn symbol(&self) -> &str {
         match self {
             Ticker::Funding(t) => &t.symbol,
@@ -18,6 +39,14 @@ impl Ticker {
         }
     }
 
+    /// Returns the last price from the ticker data.
+    ///
+    /// This method extracts the last price from either a funding or spot ticker,
+    /// providing a unified interface for accessing the current market price.
+    ///
+    /// # Returns
+    ///
+    /// A `f64` value representing the last traded price.
     pub fn price(&self) -> f64 {
         match self {
             Ticker::Funding(t) => t.last_price,
