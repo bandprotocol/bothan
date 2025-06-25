@@ -17,8 +17,9 @@
 //!
 //! # Examples
 //!
-//! ```ignore
-//! use bothan_bybit::worker::{Worker, WorkerOpts};
+//! ```rust, no_run
+//! use bothan_bybit::worker::Worker;
+//! use bothan_bybit::WorkerOpts;
 //! use bothan_lib::worker::AssetWorker;
 //! use bothan_lib::store::Store;
 //!
