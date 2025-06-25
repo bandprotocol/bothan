@@ -1,6 +1,6 @@
 [package]
 name = "bothan-htx"
-version = "0.0.1-beta.3"
+version = "0.0.1"
 description = "Rust client for the HTX exchange with Bothan integration"
 edition.workspace = true
 license.workspace = true

@@ -1,6 +1,6 @@
 [package]
 name = "bothan-bitfinex"
-version = "0.0.1-beta.3"
+version = "0.0.1"
 description = "Rust client for the Bitfinex exchange with Bothan integration"
 edition.workspace = true
 license.workspace = true
