@@ -13,22 +13,6 @@
 //!   to automatically clean up resources when the worker is dropped
 //! - Metrics collection for observability
 //! - Configurable via API key, polling interval, and endpoint URL
-//!
-//! # Examples
-//!
-//! ```rust
-//! use bothan_coinmarketcap::worker::{Worker, WorkerOpts};
-//! use bothan_lib::worker::AssetWorker;
-//! use bothan_lib::store::Store;
-//!
-//! #[tokio::test]
-//! async fn test<T: Store>(store: T) {
-//!     let opts = WorkerOpts::default();
-//!     let ids = vec!["1".to_string(), "1027".to_string()];
-//!
-//!     let worker = Worker::build(opts, &store, ids).await?;
-//! }
-//! ```
 
 use bothan_lib::metrics::rest::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
