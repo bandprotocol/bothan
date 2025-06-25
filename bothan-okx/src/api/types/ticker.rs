@@ -17,19 +17,6 @@ use serde::{Deserialize, Serialize};
 /// This struct defines the parameters needed to subscribe to ticker updates
 /// from the OKX WebSocket API. It follows the OKX v5 API specification for
 /// channel subscriptions.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_okx::api::types::ticker::{Request, InstrumentType};
-///
-/// let request = Request {
-///     channel: "tickers".to_string(),
-///     inst_type: Some(InstrumentType::Spot),
-///     inst_family: None,
-///     inst_id: Some("BTC-USDT".to_string()),
-/// };
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Request {
@@ -53,39 +40,6 @@ pub struct Request {
 ///
 /// This struct contains comprehensive market data information including price,
 /// volume, and 24-hour statistics for a specific trading instrument.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_okx::api::types::ticker::Ticker;
-/// use serde_json::json;
-///
-/// let json_data = json!({
-///     "instType": "SPOT",
-///     "instId": "BTC-USDT",
-///     "last": "50000",
-///     "lastSz": "0.1",
-///     "askPx": "50001",
-///     "askSz": "1.5",
-///     "bidPx": "49999",
-///     "bidSz": "2.0",
-///     "open24h": "49000",
-///     "high24h": "51000",
-///     "low24h": "48000",
-///     "volCcy24h": "1000000",
-///     "vol24h": "20",
-///     "sodUtc0": "49000",
-///     "sodUtc8": "49000",
-///     "ts": "1640995200000"
-/// });
-///
-/// let ticker: Ticker = serde_json::from_value(json_data).unwrap();
-///
-/// assert_eq!(ticker.inst_id, "BTC-USDT");
-/// assert_eq!(ticker.last, "50000");
-/// assert_eq!(ticker.ask_px, "50001");
-/// assert_eq!(ticker.bid_px, "49999");
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ticker {
@@ -142,15 +96,6 @@ pub struct Ticker {
 ///
 /// This enum defines the different types of instruments that can be parsed
 /// from the OKX platform. Currently, only spot is supported.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_okx::api::types::ticker::InstrumentType;
-///
-/// let inst_type = InstrumentType::Spot;
-/// assert_eq!(inst_type, InstrumentType::Spot);
-/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum InstrumentType {
