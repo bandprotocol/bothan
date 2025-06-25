@@ -16,8 +16,9 @@
 //!
 //! # Examples
 //!
-//! ```rust, no run
-//! use bothan_coinmarketcap::worker::{Worker, WorkerOpts};
+//! ```rust,no_run
+//! use bothan_coinmarketcap::worker::Worker;
+//! use bothan_coinmarketcap::WorkerOpts;
 //! use bothan_lib::worker::AssetWorker;
 //! use bothan_lib::store::Store;
 //!
@@ -39,8 +40,8 @@ use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::instrument::Instrument;
 use tracing::{Level, span};
 
-pub use crate::WorkerOpts;
-pub use crate::api::RestApiBuilder;
+use crate::WorkerOpts;
+use crate::api::RestApiBuilder;
 
 pub mod error;
 pub mod opts;
