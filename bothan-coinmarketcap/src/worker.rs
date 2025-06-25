@@ -1,3 +1,36 @@
+//! CoinMarketCap worker implementation.
+//!
+//! This module provides an implementation of the [`AssetWorker`] trait for interacting with
+//! the CoinMarketCap REST API. It defines the [`Worker`], which is responsible for periodically
+//! polling [`AssetInfo`](bothan_lib::types::AssetInfo) from CoinMarketCap REST API and storing it to a shared [`WorkerStore`].
+//!
+//! The worker is configurable via [`WorkerOpts`] and uses [`RestApiBuilder`] to construct
+//! the API client.
+//!
+//! # The module provides:
+//! - Polling of [`AssetInfo`](bothan_lib::types::AssetInfo) periodically in asynchronous task
+//! - Ensures graceful cancellation by using a CancellationToken to signal shutdown and a DropGuard
+//!   to automatically clean up resources when the worker is dropped
+//! - Metrics collection for observability
+//! - Configurable via API key, polling interval, and endpoint URL
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use bothan_coinmarketcap::worker::Worker;
+//! use bothan_coinmarketcap::WorkerOpts;
+//! use bothan_lib::worker::AssetWorker;
+//! use bothan_lib::store::Store;
+//!
+//! #[tokio::test]
+//! async fn test<T: Store>(store: T) {
+//!     let opts = WorkerOpts::default();
+//!     let ids = vec!["1".to_string(), "1027".to_string()];
+//!
+//!     let worker = Worker::build(opts, &store, ids).await?;
+//! }
+//! ```
+
 use bothan_lib::metrics::rest::Metrics;
 use bothan_lib::store::{Store, WorkerStore};
 use bothan_lib::worker::AssetWorker;
@@ -16,6 +49,10 @@ pub mod types;
 
 const WORKER_NAME: &str = "coinmarketcap";
 
+/// Asset worker for fetching data from the CoinMarketCap REST API.
+///
+/// The `Worker` manages asynchronous polling for [`AssetInfo`](bothan_lib::types::AssetInfo)
+/// and ensures resources are properly cleaned up when dropped.
 pub struct Worker {
     // We keep this DropGuard to ensure that all internal processes
     // that the worker holds are dropped when the worker is dropped.
@@ -26,10 +63,20 @@ pub struct Worker {
 impl AssetWorker for Worker {
     type Opts = WorkerOpts;
 
+    /// Returns the name identifier for the worker.
     fn name(&self) -> &'static str {
         WORKER_NAME
     }
 
+    /// Builds and starts the `CoinMarketCapWorker`.
+    ///
+    /// This method creates a CoinMarketCap REST API client, spawns an asynchronous polling task
+    /// to periodically fetch asset data, and returns the running [`Worker`] instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AssetWorkerError`](bothan_lib::worker::error::AssetWorkerError) if:
+    /// - The API client fails to build due to invalid configuration
     async fn build<S: Store + 'static>(
         opts: Self::Opts,
         store: &S,

@@ -1,3 +1,7 @@
+//! Channel types for the Coinbase WebSocket API.
+//!
+//! This module defines the available channels for the Coinbase WebSocket API and their representations.
+
 use serde::{Deserialize, Serialize};
 
 /// Module containing ticker-related types and functions.

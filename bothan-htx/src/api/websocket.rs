@@ -1,3 +1,17 @@
+//! HTX WebSocket API client implementation.
+//!
+//! This module provides the [`WebSocketConnector`] and [`WebSocketConnection`] for interacting
+//! with the HTX WebSocket API. It enables real-time streaming of market data, such as ticker
+//! updates, and is used internally to implement the [`AssetInfoProvider`] trait for asset workers.
+//!
+//! This module provides:
+//!
+//! - Establishes WebSocket connections to HTX servers
+//! - Subscribes and unsubscribes to ticker streams for specified symbols
+//! - Processes incoming WebSocket messages, including gzip-compressed binary messages
+//! - Transforms WebSocket messages into [`AssetInfo`] for use in workers
+//! - Handles connection management, including ping/pong keep-alive and graceful closing
+
 use std::io::Read;
 
 use bothan_lib::types::AssetInfo;
@@ -14,18 +28,79 @@ use tracing::warn;
 use crate::api::error::{Error, ListeningError};
 use crate::api::types::Response;
 
-/// A connector for establishing a WebSocket connection to the Htx API.
+/// A connector for establishing WebSocket connections to the HTX WebSocket API.
+///
+/// The `WebSocketConnector` provides methods to create a new connector and connect to the WebSocket server.
+/// It handles the initial connection setup and returns a `WebSocketConnection` for further operations.
+///
+/// # Examples
+///
+/// ```rust
+/// use bothan_htx::api::websocket::WebSocketConnector;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let connector = WebSocketConnector::new("wss://api.huobi.pro/ws");
+///     let connection = connector.connect().await?;
+///     Ok(())
+/// }
+/// ```
 pub struct WebSocketConnector {
+    /// The WebSocket URL for the HTX API.
     url: String,
 }
 
 impl WebSocketConnector {
-    /// Creates a new instance of `HtxWebSocketConnector`.
+    /// Creates a new instance of `WebSocketConnector` with the given URL.
+    ///
+    /// # Parameters
+    ///
+    /// - `url`: The WebSocket URL for the HTX API
+    ///
+    /// # Returns
+    ///
+    /// A new `WebSocketConnector` instance with the specified URL.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bothan_htx::api::websocket::WebSocketConnector;
+    ///
+    /// let connector = WebSocketConnector::new("wss://api.huobi.pro/ws");
+    /// ```
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 
-    /// Connects to the Htx WebSocket API.
+    /// Connects to the HTX WebSocket API.
+    ///
+    /// This method establishes a WebSocket connection to the HTX server and returns
+    /// a `WebSocketConnection` instance for further operations.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing a `WebSocketConnection` on success,
+    /// or a `tungstenite::Error` if the connection fails.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bothan_htx::api::websocket::WebSocketConnector;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let connector = WebSocketConnector::new("wss://api.huobi.pro/ws");
+    ///     let connection = connector.connect().await?;
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a `tungstenite::Error` if:
+    /// - The WebSocket connection cannot be established
+    /// - The URL is invalid
+    /// - Network connectivity issues occur
     pub async fn connect(&self) -> Result<WebSocketConnection, tungstenite::Error> {
         let (wss, _) = connect_async(self.url.clone()).await?;
 
@@ -38,23 +113,69 @@ impl AssetInfoProviderConnector for WebSocketConnector {
     type Provider = WebSocketConnection;
     type Error = tungstenite::Error;
 
+    /// Connects to the HTX WebSocket API and returns a `WebSocketConnection`.
+    ///
+    /// This method is part of the `AssetInfoProviderConnector` trait implementation,
+    /// providing a standardized way to establish WebSocket connections for asset workers.
     async fn connect(&self) -> Result<WebSocketConnection, Self::Error> {
         WebSocketConnector::connect(self).await
     }
 }
 
-/// Represents an active WebSocket connection to the Htx API.
+/// Represents an active WebSocket connection to the HTX API.
+///
+/// The `WebSocketConnection` encapsulates the WebSocket stream and provides methods for
+/// subscribing to ticker streams, receiving messages, handling ping/pong keep-alive,
+/// and closing the connection gracefully.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use bothan_htx::api::websocket::WebSocketConnection;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     // Assuming you have a connection
+///     // let mut connection = /* ... */;
+///     // connection.subscribe_ticker("btcusdt").await?;
+///     Ok(())
+/// }
+/// ```
 pub struct WebSocketConnection {
+    /// The underlying WebSocket stream for communication with the HTX API.
     ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
 }
 
 impl WebSocketConnection {
-    /// Creates a new `HtxWebSocketConnection` instance.
+    /// Creates a new `WebSocketConnection` instance.
+    ///
+    /// # Parameters
+    ///
+    /// - `ws_stream`: The WebSocket stream for communication with the HTX API
+    ///
+    /// # Returns
+    ///
+    /// A new `WebSocketConnection` instance.
     pub fn new(ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) -> Self {
         Self { ws_stream }
     }
 
     /// Subscribes to ticker updates for a single symbol.
+    ///
+    /// This method sends a subscription request to the HTX WebSocket API for the specified symbol.
+    /// The symbol is formatted into the HTX channel format (e.g., "market.btcusdt.ticker").
+    ///
+    /// # Parameters
+    ///
+    /// - `symbol`: The trading pair symbol to subscribe to (e.g., "btcusdt")
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating success or failure of the subscription request.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `tungstenite::Error` if the subscription request fails.
     pub async fn subscribe_ticker(&mut self, symbol: &str) -> Result<(), tungstenite::Error> {
         let formatted_symbol = format!("market.{}.ticker", symbol);
         let payload = json!({
@@ -68,6 +189,21 @@ impl WebSocketConnection {
     }
 
     /// Unsubscribes from ticker updates for a single symbol.
+    ///
+    /// This method sends an unsubscription request to the HTX WebSocket API for the specified symbol.
+    /// The symbol is formatted into the HTX channel format (e.g., "market.btcusdt.ticker").
+    ///
+    /// # Parameters
+    ///
+    /// - `symbol`: The trading pair symbol to unsubscribe from (e.g., "btcusdt")
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating success or failure of the unsubscription request.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `tungstenite::Error` if the unsubscription request fails.
     pub async fn unsubscribe_ticker(&mut self, symbol: &str) -> Result<(), tungstenite::Error> {
         let formatted_symbol = format!("market.{}.ticker", symbol);
         let payload = json!({
@@ -81,6 +217,21 @@ impl WebSocketConnection {
     }
 
     /// Sends a Pong message in response to a Ping message.
+    ///
+    /// This method sends a pong response to maintain the WebSocket connection keep-alive.
+    /// The pong value should match the ping value received from the server.
+    ///
+    /// # Parameters
+    ///
+    /// - `pong`: The pong value to send (typically echoing the ping value received)
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating success or failure of sending the pong message.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `tungstenite::Error` if the pong message cannot be sent.
     pub async fn send_pong(&mut self, pong: u64) -> Result<(), tungstenite::Error> {
         let payload = json!({
             "pong": pong,
@@ -93,6 +244,17 @@ impl WebSocketConnection {
     }
 
     /// Receives the next message from the WebSocket connection.
+    ///
+    /// This method listens for incoming WebSocket messages and processes them.
+    /// HTX sends gzip-compressed binary messages, which are automatically decompressed
+    /// and parsed into `Response` types.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `Option<Result<Response, Error>>` where:
+    /// - `Some(Ok(response))` contains a parsed response
+    /// - `Some(Err(error))` contains a parsing or I/O error
+    /// - `None` indicates the connection is closed or no message is available
     pub async fn next(&mut self) -> Option<Result<Response, Error>> {
         match self.ws_stream.next().await {
             Some(Ok(Message::Binary(msg))) => Some(decode_response(&msg)),
@@ -104,13 +266,36 @@ impl WebSocketConnection {
         }
     }
 
-    /// Closes the WebSocket connection.
+    /// Closes the WebSocket connection gracefully.
+    ///
+    /// This method sends a close frame to the WebSocket server and waits for the connection to close.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating success or failure of closing the connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `tungstenite::Error` if the connection cannot be closed properly.
     pub async fn close(&mut self) -> Result<(), tungstenite::Error> {
         self.ws_stream.close(None).await?;
         Ok(())
     }
 }
 
+/// Decodes a gzip-compressed binary message from the HTX WebSocket API.
+///
+/// This function decompresses the binary message and parses it into a `Response` type.
+/// HTX sends market data as gzip-compressed binary messages for efficiency.
+///
+/// # Parameters
+///
+/// - `msg`: The binary message data to decode
+///
+/// # Returns
+///
+/// Returns a `Result` containing a parsed `Response` on success,
+/// or an `Error` if decompression or parsing fails.
 fn decode_response(msg: &[u8]) -> Result<Response, Error> {
     let mut decoder = GzDecoder::new(msg);
     let mut decompressed_msg = String::new();
@@ -123,6 +308,22 @@ impl AssetInfoProvider for WebSocketConnection {
     type SubscriptionError = tungstenite::Error;
     type ListeningError = ListeningError;
 
+    /// Subscribes to asset information updates for the given list of asset IDs.
+    ///
+    /// This method sends subscription requests to the HTX WebSocket API for each asset ID.
+    /// Each asset ID is formatted into the HTX channel format before being sent.
+    ///
+    /// # Parameters
+    ///
+    /// - `ids`: A slice of asset identifiers to subscribe to
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` indicating success or failure of the subscription requests.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `tungstenite::Error` if any subscription request fails.
     async fn subscribe(&mut self, ids: &[String]) -> Result<(), Self::SubscriptionError> {
         for id in ids {
             self.subscribe_ticker(id).await?;
@@ -131,6 +332,20 @@ impl AssetInfoProvider for WebSocketConnection {
         Ok(())
     }
 
+    /// Processes the next message from the WebSocket stream.
+    ///
+    /// This method handles incoming messages from the HTX WebSocket API, including:
+    /// - Market data updates (converted to `AssetInfo`)
+    /// - Ping messages (responded to with pong)
+    /// - Error messages (logged as warnings)
+    /// - Other message types (ignored)
+    ///
+    /// # Returns
+    ///
+    /// Returns an `Option<Result<Data, ListeningError>>` where:
+    /// - `Some(Ok(data))` contains processed asset data or ping information
+    /// - `Some(Err(error))` contains a processing error
+    /// - `None` indicates no message is available
     async fn next(&mut self) -> Option<Result<Data, Self::ListeningError>> {
         let msg = WebSocketConnection::next(self).await?;
         Some(match msg {
@@ -145,11 +360,34 @@ impl AssetInfoProvider for WebSocketConnection {
         })
     }
 
+    /// Attempts to close the WebSocket connection gracefully.
+    ///
+    /// This method spawns a background task to close the connection,
+    /// ensuring that the close operation doesn't block the current thread.
     async fn try_close(mut self) {
         tokio::spawn(async move { self.close().await });
     }
 }
 
+/// Parses market data from the HTX WebSocket API into `AssetInfo`.
+///
+/// This function extracts the asset identifier from the channel name and creates
+/// an `AssetInfo` instance with the last price and timestamp from the ticker data.
+///
+/// # Parameters
+///
+/// - `data`: The market data update from the HTX API
+///
+/// # Returns
+///
+/// Returns a `Result` containing `AssetInfo` data on success,
+/// or a `ListeningError` if parsing fails.
+///
+/// # Errors
+///
+/// Returns a `ListeningError` if:
+/// - The channel ID cannot be extracted from the channel name
+/// - The price data contains invalid values (NaN)
 fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     let id = data
         .ch
@@ -165,6 +403,20 @@ fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     Ok(Data::AssetInfo(vec![asset_info]))
 }
 
+/// Sends a pong response to a ping message.
+///
+/// This function sends a pong message in response to a ping to maintain
+/// the WebSocket connection keep-alive.
+///
+/// # Parameters
+///
+/// - `connection`: The WebSocket connection to send the pong through
+/// - `ping`: The ping value to echo back in the pong response
+///
+/// # Returns
+///
+/// Returns a `Result` containing `Data::Ping` on success,
+/// or a `ListeningError` if the pong cannot be sent.
 async fn reply_pong(
     connection: &mut WebSocketConnection,
     ping: u64,
