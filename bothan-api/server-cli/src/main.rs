@@ -16,16 +16,16 @@
 //!
 //! ```bash
 //! # Start the server
-//! bothan-api-server start
+//! bothan start
 //!
 //! # Initialize configuration
-//! bothan-api-server config init
+//! bothan config init
 //!
 //! # Query market data
-//! bothan-api-server query price BTC/USD
+//! bothan query price BTC/USD
 //!
 //! # Use custom config file
-//! bothan-api-server --config /path/to/config.toml start
+//! bothan --config /path/to/config.toml start
 //! ```
 //!
 //! ## Configuration

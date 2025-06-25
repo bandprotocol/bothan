@@ -1,3 +1,7 @@
+//! Bothan core RocksDB store key types.
+//!
+//! Provides key types and utilities for RocksDB storage.
+
 use std::fmt::Display;
 
 pub enum Key<'a> {
@@ -9,6 +13,7 @@ pub enum Key<'a> {
     RegistryIpfsHash,
 }
 
+/// Key type for RocksDB store.
 impl Display for Key<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {

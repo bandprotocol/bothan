@@ -1,3 +1,7 @@
+//! Bothan core monitoring entry type.
+//!
+//! Defines the `Entry` struct for monitoring messages.
+
 use serde::Serialize;
 
 use super::topic::Topic;

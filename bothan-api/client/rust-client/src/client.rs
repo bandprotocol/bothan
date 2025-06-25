@@ -1,7 +1,6 @@
-//! # Client Module
+//! Bothan API Rust client module.
 //!
-//! This module provides client implementations for interacting with the Bothan API Server,
-//! supporting both gRPC and REST protocols.
+//! Provides gRPC and REST client implementations.
 //!
 //! ## Components
 //!
@@ -48,7 +47,6 @@
 
 /// gRPC client for Bothan API Server communication
 pub use grpc::GrpcClient;
-
 /// REST client for Bothan API Server communication
 pub use rest::RestClient;
 

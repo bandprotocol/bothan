@@ -1,3 +1,7 @@
+//! Bothan API Rust gRPC client implementation.
+//!
+//! Provides async gRPC client for Bothan API Server.
+
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -14,6 +18,7 @@ pub struct GrpcClient {
     client: Arc<Mutex<BothanServiceClient<Channel>>>,
 }
 
+/// Async gRPC client for Bothan API Server.
 impl GrpcClient {
     pub fn new(client: BothanServiceClient<Channel>) -> Self {
         Self {

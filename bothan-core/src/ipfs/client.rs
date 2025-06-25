@@ -1,3 +1,7 @@
+//! Bothan core IPFS client implementation.
+//!
+//! Provides async HTTP client for IPFS operations.
+
 use reqwest::{Client, StatusCode};
 
 use crate::ipfs::error::Error;

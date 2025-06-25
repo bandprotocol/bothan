@@ -1,7 +1,6 @@
-//! # Configuration Module
+//! Bothan API server configuration module.
 //!
-//! This module provides configuration management for the Bothan API Server,
-//! including all sub-modules for different configuration aspects.
+//! Centralizes configuration management for all server components.
 //!
 //! ## Configuration Components
 //!

@@ -1,3 +1,7 @@
+//! Bothan core RocksDB store error types.
+//!
+//! Defines errors for RocksDB-backed storage operations.
+
 use bincode::error::{DecodeError, EncodeError};
 use bothan_lib::registry::ValidationError;
 

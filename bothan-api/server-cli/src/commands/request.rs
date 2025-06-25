@@ -1,45 +1,57 @@
+//! Bothan CLI request subcommand module.
+//!
+//! Provides commands to make direct gRPC requests to the Bothan API server:
+//! - Get server info
+//! - Update the registry
+//! - Push monitoring records
+//! - Get prices for signal ids
+
 use anyhow::Context;
 use bothan_api::config::AppConfig;
 use bothan_client::client::GrpcClient;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
+/// CLI arguments for the `request` command.
 pub struct RequestCli {
+    /// Optional URI to connect to the Bothan API server.
     #[arg(long)]
     uri: Option<String>,
-
+    /// The subcommand to execute.
     #[command(subcommand)]
     subcommand: RequestSubCommand,
 }
 
 #[derive(Subcommand)]
+/// Supported request subcommands for the Bothan CLI.
 enum RequestSubCommand {
-    /// Get information about the server
+    /// Get information about the server.
     GetInfo,
-    /// Update the registry of the server
+    /// Update the registry of the server.
     UpdateRegistry {
-        /// The IPFS hash of the registry to update
+        /// The IPFS hash of the registry to update.
         ipfs_hash: String,
-        /// The version of the registry to update
+        /// The version of the registry to update.
         version: String,
     },
-    /// Push monitoring records to the server
+    /// Push monitoring records to the server.
     PushMonitoringRecords {
-        /// The UUID of the monitoring records
+        /// The UUID of the monitoring records.
         uuid: String,
-        /// The transaction hash of the monitoring records
+        /// The transaction hash of the monitoring records.
         tx_hash: String,
-        /// The list of signal ids to push
+        /// The list of signal ids to push.
         signal_ids: Vec<String>,
     },
-    /// Get prices for a list of signal ids
+    /// Get prices for a list of signal ids.
     GetPrices {
-        /// The list of signal ids to get prices for
+        /// The list of signal ids to get prices for.
         signal_ids: Vec<String>,
     },
 }
 
 impl RequestCli {
+    /// Runs the request command and executes the selected subcommand.
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         let uri = self
             .uri

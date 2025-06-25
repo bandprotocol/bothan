@@ -1,3 +1,7 @@
+//! Bothan core IPFS error types.
+//!
+//! Defines errors for IPFS client operations.
+
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error, PartialEq)]

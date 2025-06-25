@@ -1,3 +1,7 @@
+//! Bothan core monitoring signer module.
+//!
+//! Provides signing key management and signing utilities.
+
 use ed25519::signature::Signer as _;
 use ed25519_dalek::{SecretKey, SigningKey};
 use hex::{FromHex, FromHexError, ToHex};
@@ -7,6 +11,7 @@ pub struct Signer {
     pub signing_key: SigningKey,
 }
 
+/// Ed25519 signing key manager for monitoring.
 impl Signer {
     pub fn random() -> Self {
         Self {

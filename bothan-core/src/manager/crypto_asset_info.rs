@@ -1,3 +1,7 @@
+//! Bothan core crypto asset info manager module.
+//!
+//! Provides types and logic for managing crypto asset information.
+
 pub use manager::CryptoAssetInfoManager;
 pub use worker::CryptoAssetWorker;
 pub use worker::opts::CryptoAssetWorkerOpts;

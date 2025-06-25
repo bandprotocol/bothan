@@ -1,39 +1,6 @@
-//! # Bothan API Server Library
+//! Bothan API server main module.
 //!
-//! This library provides the core server implementation for the Bothan API,
-//! which serves as a centralized gateway for cryptocurrency data aggregation
-//! and processing.
-//!
-//! ## Overview
-//!
-//! The Bothan API Server is responsible for:
-//! - Exposing gRPC and REST endpoints for data access
-//! - Managing connections to various cryptocurrency exchanges
-//! - Processing and aggregating market data
-//! - Providing real-time price feeds and market information
-//!
-//! ## Key Components
-//!
-//! - **API Module**: gRPC and REST server implementations
-//! - **Config Module**: Configuration management and validation
-//! - **Proto Module**: Protocol buffer definitions and generated code
-//!
-//! ## Usage
-//!
-//! ```rust,no_run
-//! use bothan_api::{api, config};
-//!
-//! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let config = config::AppConfig::with_name("config")?;
-//!     // Initialize and run server
-//!     Ok(())
-//! }
-//! ```
-//!
-//! ## Version Information
-//!
-//! The library version and registry requirements are exposed as constants
-//! for integration with the broader Bothan ecosystem.
+//! Core server implementation for cryptocurrency data aggregation and processing.
 
 pub mod api;
 pub mod config;

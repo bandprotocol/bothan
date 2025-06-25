@@ -1,3 +1,7 @@
+//! Price cache utility for storing and retrieving price states.
+//!
+//! Provides the `PriceCache` struct for managing cached `PriceState` values by key.
+
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -6,6 +10,7 @@ use rust_decimal::Decimal;
 
 use crate::manager::crypto_asset_info::types::PriceState;
 
+/// In-memory cache for storing `PriceState` values keyed by asset or signal ID.
 pub struct PriceCache<K> {
     cache: HashMap<K, PriceState>,
 }

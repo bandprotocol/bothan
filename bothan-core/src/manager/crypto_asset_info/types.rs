@@ -1,3 +1,5 @@
+//! Types and constants for the crypto asset info manager.
+
 use std::time::Duration;
 
 use bothan_lib::types::AssetInfo;

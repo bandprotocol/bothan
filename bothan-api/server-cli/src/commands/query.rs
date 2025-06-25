@@ -1,3 +1,22 @@
+//! Bothan CLI query subcommand module.
+//!
+//! Query prices and asset info from supported exchanges and data sources.
+//!
+//! Supports querying prices from multiple exchanges and data sources with customizable timeout and pretty-printed output.
+//!
+//! ## Features
+//!
+//! - Query prices from Binance, Bitfinex, Bybit, Coinbase, CoinGecko, CoinMarketCap, HTX, Kraken, OKX
+//! - Customizable timeout and query IDs
+//! - Pretty-printed table output
+//!
+//! ## Usage
+//!
+//! ```bash
+//! bothan query binance BTC/USD ETH/USD
+//! bothan query coingecko BTC ETH
+//! ```
+
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::sync::Arc;
@@ -20,12 +39,14 @@ use tokio::time::timeout;
 const DEFAULT_TIMEOUT: &str = "10s";
 
 #[derive(Parser)]
+/// CLI arguments for the `query` command.
 pub struct QueryCli {
     #[command(subcommand)]
     subcommand: QuerySubCommand,
 }
 
 #[derive(Args, Debug, Clone)]
+/// Arguments for querying prices.
 pub struct QueryArgs {
     /// The list of query ids to query prices for
     pub query_ids: Vec<String>,
@@ -36,6 +57,7 @@ pub struct QueryArgs {
 }
 
 #[derive(Subcommand, Debug)]
+/// Supported query subcommands for each exchange or data source.
 pub enum QuerySubCommand {
     /// Query Binance prices
     Binance {

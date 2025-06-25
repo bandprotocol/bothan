@@ -1,3 +1,7 @@
+//! Bothan core telemetry server module.
+//!
+//! Provides HTTP server for exposing Prometheus metrics.
+
 use std::net::SocketAddr;
 
 use axum::http::{StatusCode, header};

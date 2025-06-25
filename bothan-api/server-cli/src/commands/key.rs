@@ -1,3 +1,7 @@
+//! Bothan CLI key subcommand module.
+//!
+//! Generate, export, import, and display monitoring keys.
+
 use std::fs::{create_dir_all, read, read_to_string, write};
 
 use anyhow::{Context, anyhow};
@@ -7,12 +11,14 @@ use clap::{Parser, Subcommand};
 use inquire::{Password, PasswordDisplayMode};
 
 #[derive(Parser)]
+/// CLI arguments for the `key` command.
 pub struct KeyCli {
     #[command(subcommand)]
     subcommand: KeySubCommand,
 }
 
 #[derive(Subcommand)]
+/// Supported key subcommands.
 enum KeySubCommand {
     /// Generates a new monitoring key
     Generate {
@@ -33,6 +39,7 @@ enum KeySubCommand {
 }
 
 impl KeyCli {
+    /// Runs the key command.
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         match &self.subcommand {
             KeySubCommand::Generate { override_ } => generate_key(&app_config, *override_),

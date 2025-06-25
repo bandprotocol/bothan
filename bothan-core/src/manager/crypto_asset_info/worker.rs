@@ -1,3 +1,5 @@
+//! Worker trait and implementations for crypto asset sources.
+
 pub mod opts;
 
 use std::collections::HashMap;

@@ -1,3 +1,10 @@
+//! Price computation tasks for the crypto asset info manager.
+//!
+//! This module contains the logic to compute the price states for a list of signal ids.
+//! It retrieves the necessary data from the store, processes it according to the signal's
+//! processor and post-processors, and handles any missing prerequisites by recursively
+//! fetching the required data.
+
 use std::collections::HashSet;
 use std::time::Instant;
 

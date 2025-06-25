@@ -1,3 +1,7 @@
+//! Bothan API Rust REST client implementation.
+//!
+//! Provides async REST client for Bothan API Server.
+
 use reqwest::{Client, Error};
 use url::{ParseError, Url};
 
@@ -8,6 +12,7 @@ pub struct RestClient {
     client: Client,
 }
 
+/// Async REST client for Bothan API Server.
 impl RestClient {
     pub fn new(url: String) -> Result<Self, ParseError> {
         Ok(RestClient {

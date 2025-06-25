@@ -1,7 +1,6 @@
-//! # API Module
+//! Bothan API server main module.
 //!
-//! This module provides the core API server implementation for the Bothan API,
-//! including gRPC and REST endpoints for cryptocurrency data access.
+//! Provides the core API server implementation, including gRPC and REST endpoints.
 //!
 //! ## Components
 //!
