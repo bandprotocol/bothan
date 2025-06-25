@@ -31,26 +31,6 @@ pub enum Method {
 ///
 /// This generic struct defines the format for sending subscription-related requests.
 /// It includes the method, optional parameters, and a request ID.
-///
-/// # Examples
-///
-/// ```rust
-/// use bothan_kraken::api::types::message::{PublicMessage, Method};
-/// use bothan_kraken::api::types::channel::ticker::TickerRequestParameters;
-///
-/// let ticker_params = TickerRequestParameters {
-///     channel: "ticker".into(),
-///     symbol: vec!["BTC/USD".into()],
-///     event_trigger: None,
-///     snapshot: Some(true),
-/// };
-///
-/// let message = PublicMessage {
-///     method: Method::Subscribe,
-///     params: Some(ticker_params),
-///     req_id: Some(42),
-/// };
-/// ```
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PublicMessage<T> {
     /// The method of the request (e.g., subscribe, unsubscribe, ping).
