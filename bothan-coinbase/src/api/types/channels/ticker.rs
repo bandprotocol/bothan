@@ -1,6 +1,12 @@
+//! Ticker type for the Coinbase WebSocket API
+//!
+//! This module defines the structure of a ticker message received from the Coinbase WebSocket API.
+//! It includes fields for price, volume, and other relevant trading data.
 use serde::{Deserialize, Serialize};
 
-/// Represents a ticker with various market data.
+/// Ticker type for the Coinbase WebSocket API.
+///
+/// This module defines the structure of a ticker message received from the Coinbase WebSocket API.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Ticker {
     /// The sequence number of the ticker.

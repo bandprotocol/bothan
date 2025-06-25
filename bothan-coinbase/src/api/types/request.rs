@@ -1,3 +1,8 @@
+//! Types for Coinbase WebSocket API subscription requests and responses.
+//!
+//! This module provides types for serializing and deserializing subscription requests,
+//! channels, and error responses for the Coinbase WebSocket API.
+
 use serde::{Deserialize, Serialize};
 
 use crate::api::types::channels::Channel;
