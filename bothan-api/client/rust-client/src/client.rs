@@ -34,10 +34,10 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     // gRPC client
-//!     let grpc_client = GrpcClient::new("http://localhost:9090").await?;
+//!     let grpc_client = GrpcClient::connect("http://localhost:9090").await?;
 //!     
 //!     // REST client
-//!     let rest_client = RestClient::new("http://localhost:8080")?;
+//!     let rest_client = RestClient::new("http://localhost:8080".to_string());
 //!     
 //!     Ok(())
 //! }

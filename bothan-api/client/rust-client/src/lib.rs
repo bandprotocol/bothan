@@ -20,27 +20,6 @@
 //! - **Async Support**: Built on tokio for efficient async operations
 //! - **Error Handling**: Comprehensive error types and handling
 //!
-//! ## Usage
-//!
-//! ```rust,no_run
-//! use bothan_client::{client::BothanClient, proto::bothan::v1::PriceRequest};
-//!
-//! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let client = BothanClient::new("http://localhost:9090").await?;
-//!     
-//!     let request = PriceRequest {
-//!         symbol: "BTC/USD".to_string(),
-//!         ..Default::default()
-//!     };
-//!     
-//!     let response = client.get_price(request).await?;
-//!     println!("Price: {}", response.price);
-//!     
-//!     Ok(())
-//! }
-//! ```
-//!
 //! ## Modules
 //!
 //! - **client**: Main client implementations and abstractions
