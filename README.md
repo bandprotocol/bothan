@@ -50,22 +50,13 @@ This project comprises primarily of 6 main components:
 
 ### Prerequisites
 
-Choose one of the following development approaches:
-
-#### Using Docker (Recommended for quick setup)
-
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-
-#### Using Rust (For development and customization)
-
-- [Rust](https://www.rust-lang.org/tools/install) (latest stable version)
 
 ### Running the API Stack
 
 1. Configure the services:
     - Copy `bothan-api/server/config.toml.example` to `bothan-api/server/config.toml`
-    - Copy `bothan-api-proxy/config.toml.example` to `bothan-api-proxy/config.toml`
     - Update the configuration files with your API keys and settings
 
 2. Start the services:
@@ -88,7 +79,8 @@ pull request template.
 ## Resources
 
 - [Architecture Documentation](docs/architecture.md)
-- [Setup Guide](docs/setup_bothan.md)
+- [Build and Run Locally](docs/build_and_run_locally.md)
+- [Telemetry Documentation](docs/telemetry.md)
 
 ## License
 
