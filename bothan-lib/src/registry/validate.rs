@@ -1,3 +1,15 @@
+//! Signal validation logic for the registry module.
+//!
+//! This module provides functions and error types for validating signals defined in the registry.
+//! Validation includes checks for cyclic dependencies, missing dependencies, and proper configuration
+//! of weighted median processors.
+//!
+//! Signal validation ensures that:
+//!
+//! - There are no cyclic dependencies among signals.
+//! - All signal dependencies exist and are properly defined in the registry.
+//! - Weighted median processors have correctly specified source weights.
+
 use std::collections::HashMap;
 
 use thiserror::Error;
@@ -7,20 +19,39 @@ use crate::registry::processor::Processor;
 use crate::registry::processor::weighted_median::WeightedMedianProcessor;
 use crate::registry::source::SourceQuery;
 
+/// Errors returned during the signal validation process.
+///
+/// This enum defines detailed errors for common signal validation issues such as:
+///
+/// - Dependency cycles.
+/// - Non-existent dependencies.
+/// - Improper configuration of weighted median processors.
+///
+/// These errors provide clear messages that can be displayed to users or logged.
 #[derive(Clone, Debug, Error, PartialEq)]
 pub enum ValidationError {
+    /// Indicates that a cyclic dependency has been detected among signals.
     #[error("Signal {0} contains a cycle")]
     CycleDetected(String),
 
+    /// Indicates a dependency on a signal that does not exist in the registry.
     #[error("Signal {0} contains an invalid dependency")]
     InvalidDependency(String),
 
+    /// Indicates incorrect weighted median processor configuration, specifying missing weights.
     #[error("Signal {0} contains an invalid weighted median processor: {1}")]
     InvalidWeightedMedianProcessor(String, String),
 }
 
+/// Tracks visitation state of signals during validation.
+///
+/// This enum is used internally to detect cycles by marking signals as either currently
+/// being validated (`InProgress`) or already validated (`Complete`).
 pub enum VisitState {
+    /// Currently validating this signal; helps detect cycles.
     InProgress,
+
+    /// Signal validation has been completed without errors.
     Complete,
 }
 
@@ -33,7 +64,9 @@ pub(crate) fn validate_signal(
         Some(VisitState::InProgress) => {
             return Err(ValidationError::CycleDetected(signal_id.to_string()));
         }
-        Some(VisitState::Complete) => return Ok(()),
+        Some(VisitState::Complete) => {
+            return Ok(());
+        }
         None => {
             visited.insert(signal_id.to_string(), VisitState::InProgress);
         }

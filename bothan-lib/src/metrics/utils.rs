@@ -1,5 +1,18 @@
+//! Utility functions for metrics modules.
+//!
+//! This module provides helper functions for working with gRPC codes and other metrics-related utilities.
+
 use tonic::Code;
 
+/// Converts a gRPC [`Code`] to a human-readable string for labeling metrics.
+///
+/// # Arguments
+///
+/// * `code` - The gRPC status code to convert.
+///
+/// # Returns
+///
+/// A string representation of the gRPC code suitable for use as a metric label.
 pub fn code_to_str(code: Code) -> String {
     match code {
         Code::Ok => "ok".to_string(),

@@ -1,16 +1,43 @@
+//! Metrics collection for websocket operations.
+//!
+//! This module provides the [`Metrics`] struct and related types for tracking websocket connection and message statistics
+//! such as the number of activity messages, connection attempts, and their durations. It leverages OpenTelemetry for metrics
+//! instrumentation, supporting monitoring and observability.
+
 use opentelemetry::metrics::{Counter, Histogram};
 use opentelemetry::{KeyValue, global};
 use strum_macros::Display;
 
+/// Holds counters and histograms for websocket metrics.
 #[derive(Clone, Debug)]
 pub struct Metrics {
+    /// The worker identifier for labeling metrics.
     worker: String,
+    /// Counter tracking total activity messages sent.
     activity_messages_total: Counter<u64>,
+    /// Histogram recording connection durations in milliseconds.
     connection_duration: Histogram<u64>,
+    /// Counter tracking total websocket connections established.
     connections_total: Counter<u64>,
 }
 
 impl Metrics {
+    /// Creates a new [`Metrics`] instance configured for a specified source and worker.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - A static string identifying the source whose metrics are being recorded.
+    /// * `worker` - The worker identifier for labeling metrics.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bothan_lib::metrics::websocket::{Metrics, MessageType, ConnectionResult};
+    ///
+    /// let metrics = Metrics::new("example_source", "worker-1".to_string());
+    /// metrics.increment_activity_messages_total(MessageType::Ping);
+    /// metrics.update_websocket_connection(200, ConnectionResult::Success);
+    /// ```
     pub fn new(source: &'static str, worker: String) -> Self {
         let meter = global::meter(source);
 
@@ -38,6 +65,11 @@ impl Metrics {
         }
     }
 
+    /// Increments the activity message counter for a given message type.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - The type of activity message sent.
     pub fn increment_activity_messages_total(&self, message: MessageType) {
         self.activity_messages_total.add(
             1,
@@ -48,6 +80,12 @@ impl Metrics {
         );
     }
 
+    /// Records a websocket connection attempt and its duration.
+    ///
+    /// # Arguments
+    ///
+    /// * `elapsed_time` - Duration of the connection attempt in milliseconds.
+    /// * `status` - The result of the connection attempt.
     pub fn update_websocket_connection(&self, elapsed_time: u128, status: ConnectionResult) {
         let labels = &[
             KeyValue::new("worker", self.worker.clone()),
@@ -59,18 +97,26 @@ impl Metrics {
     }
 }
 
+/// Possible types of websocket activity messages.
 #[derive(Display)]
 #[strum(serialize_all = "snake_case")]
 pub enum MessageType {
+    /// Asset information message.
     AssetInfo,
+    /// Ping message.
     Ping,
+    /// Unused message type.
     Unused,
+    /// Error message.
     Error,
 }
 
+/// Possible results for a websocket connection attempt.
 #[derive(Display)]
 #[strum(serialize_all = "snake_case")]
 pub enum ConnectionResult {
+    /// The connection was successful.
     Success,
+    /// The connection failed.
     Failed,
 }
