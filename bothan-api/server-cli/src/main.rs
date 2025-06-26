@@ -12,22 +12,6 @@
 //! - **request**: Make direct API requests to the server
 //! - **start**: Start the Bothan API server
 //!
-//! ## Usage
-//!
-//! ```bash
-//! # Start the server
-//! bothan start
-//!
-//! # Initialize configuration
-//! bothan config init
-//!
-//! # Query market data
-//! bothan query price BTC/USD
-//!
-//! # Use custom config file
-//! bothan --config /path/to/config.toml start
-//! ```
-//!
 //! ## Configuration
 //!
 //! The CLI automatically looks for configuration in `~/.bothan/config.toml`.
