@@ -1,10 +1,20 @@
+//! Metrics collection for store operations.
+//!
+//! This module provides the [`Metrics`] struct and related types for tracking store operation statistics
+//! such as the number of operations and their execution durations. It leverages OpenTelemetry for metrics
+//! instrumentation, supporting monitoring and observability.
+
 use opentelemetry::metrics::{Counter, Histogram};
 use opentelemetry::{KeyValue, global};
 use strum_macros::Display;
 
+/// Holds counters and histograms for store operation metrics.
 #[derive(Clone, Debug)]
 pub struct Metrics {
+    /// Counter tracking total store operations.
     operations_total: Counter<u64>,
+
+    /// Histogram recording operation durations in microseconds.
     operation_duration: Histogram<u64>,
 }
 
@@ -15,6 +25,16 @@ impl Default for Metrics {
 }
 
 impl Metrics {
+    /// Creates a new [`Metrics`] instance configured for the store.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bothan_lib::metrics::store::{Metrics, Operation, OperationStatus};
+    ///
+    /// let metrics = Metrics::new();
+    /// metrics.update_store_operation("source".to_string(), 100, Operation::GetAssetInfo, OperationStatus::Success);
+    /// ```
     pub fn new() -> Self {
         let meter = global::meter("store");
 
@@ -34,6 +54,14 @@ impl Metrics {
         }
     }
 
+    /// Records a store operation result and duration.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The source of the operation.
+    /// * `elapsed_time` - Duration of the operation in microseconds.
+    /// * `operation` - The type of operation performed.
+    /// * `status` - The result of the operation.
     pub fn update_store_operation(
         &self,
         source: String,
@@ -52,18 +80,26 @@ impl Metrics {
     }
 }
 
+/// Possible store operations.
 #[derive(Display)]
 #[strum(serialize_all = "snake_case")]
 pub enum Operation {
+    /// Retrieve asset information from the store.
     GetAssetInfo,
+    /// Insert a batch of asset information into the store.
     InsertBatchAssetInfo,
 }
 
+/// Possible results for a store operation.
 #[derive(Display)]
 #[strum(serialize_all = "snake_case")]
 pub enum OperationStatus {
+    /// The operation completed successfully.
     Success,
+    /// The operation completed but the data was stale.
     Stale,
+    /// The requested data was not found.
     NotFound,
+    /// The operation failed.
     Failed,
 }
