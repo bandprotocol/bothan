@@ -58,15 +58,16 @@ pub mod telemetry;
 ///
 /// ```toml
 /// [grpc]
-/// port = 9090
+/// port = 50051
 /// host = "0.0.0.0"
 ///
 /// [log]
-/// level = "info"
-/// format = "json"
+/// log_level = "info"
+/// core_log_level = "error"
+/// source_log_level = "error"
 ///
 /// [store]
-/// path = "/data/bothan"
+/// path = "/.bothan"
 /// ```
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AppConfig {

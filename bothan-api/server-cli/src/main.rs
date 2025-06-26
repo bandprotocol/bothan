@@ -133,27 +133,6 @@ async fn main() {
     }
 }
 
-/// Creates a logging directive for a specific module and log level.
-///
-/// This function constructs a tracing directive string that controls
-/// the logging level for individual Bothan components.
-///
-/// # Arguments
-///
-/// * `module` - The module name to create a directive for
-/// * `log_level` - The desired logging level
-///
-/// # Returns
-///
-/// Returns a `Directive` that can be added to the logging filter.
-///
-/// # Example
-///
-/// ```rust,no_run
-/// use bothan_api::config::log::LogLevel;
-///
-/// let directive = create_directive("bothan_api", &LogLevel::Info);
-/// ```
 fn create_directive(module: &str, log_level: &LogLevel) -> Directive {
     Directive::from_str(&format!("{module}={log_level}")).expect("Failed to create directive}")
 }
