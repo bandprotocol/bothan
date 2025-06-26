@@ -13,8 +13,8 @@
 //! ## Usage
 //!
 //! ```bash
-//! bothan query binance BTC/USD ETH/USD
-//! bothan query coingecko BTC ETH
+//! bothan query binance BTCUSDT ETHUSDT
+//! bothan query coingecko bitcoin ethereum
 //! ```
 
 use std::collections::{HashMap, HashSet};
