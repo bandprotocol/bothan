@@ -39,9 +39,7 @@ pub enum ValidationError {
     InvalidDependency(String),
 
     /// Indicates incorrect weighted median processor configuration, specifying missing weights.
-    #[error(
-        "Signal {0} contains an invalid weighted median processor: missing weight for source '{1}'"
-    )]
+    #[error("Signal {0} contains an invalid weighted median processor: {1}")]
     InvalidWeightedMedianProcessor(String, String),
 }
 
@@ -76,24 +74,23 @@ pub(crate) fn validate_signal(
 
     let signal = registry
         .get(signal_id)
-        .ok_or_else(|| ValidationError::InvalidDependency(signal_id.to_string()))?;
+        .ok_or(ValidationError::InvalidDependency(signal_id.to_string()))?;
 
     if let Processor::WeightedMedian(weighted_median) = &signal.processor {
         validate_weighted_median_weights(weighted_median, signal_id, &signal.source_queries)?;
     }
 
-    for source_query in &signal.source_queries {
-        for route in &source_query.routes {
+    for source_query in signal.source_queries.iter() {
+        for route in source_query.routes.iter() {
             if !registry.contains(&route.signal_id) {
-                return Err(ValidationError::InvalidDependency(
-                    route.signal_id.to_string(),
-                ));
+                return Err(ValidationError::InvalidDependency(signal_id.to_string()));
             }
             validate_signal(&route.signal_id, visited, registry)?;
         }
     }
 
     visited.insert(signal_id.to_string(), VisitState::Complete);
+
     Ok(())
 }
 
@@ -102,18 +99,19 @@ fn validate_weighted_median_weights(
     signal_id: &str,
     source_queries: &[SourceQuery],
 ) -> Result<(), ValidationError> {
-    for source_query in source_queries.iter() {
+    source_queries.iter().try_for_each(|source_query| {
         if !weighted_median
             .source_weights
             .contains_key(&source_query.source_id)
         {
-            return Err(ValidationError::InvalidWeightedMedianProcessor(
+            Err(ValidationError::InvalidWeightedMedianProcessor(
                 signal_id.to_string(),
                 source_query.source_id.to_string(),
-            ));
+            ))
+        } else {
+            Ok(())
         }
-    }
-    Ok(())
+    })
 }
 
 #[cfg(test)]
@@ -121,33 +119,33 @@ mod tests {
     use super::*;
     use crate::registry::tests::{complete_circular_dependency_mock_registry, valid_mock_registry};
 
-    /// Tests successful validation of a correctly defined signal.
     #[test]
     fn test_validate_signal() {
         let registry = valid_mock_registry();
-        let result = validate_signal("CS:BTC-USD", &mut HashMap::new(), &registry);
-        assert!(result.is_ok());
+
+        let res = validate_signal("CS:BTC-USD", &mut HashMap::new(), &registry);
+        assert!(res.is_ok());
     }
 
-    /// Tests validation failure due to referencing a non-existent signal.
     #[test]
     fn test_validate_signal_with_invalid_signal() {
         let registry = valid_mock_registry();
-        let result = validate_signal("CS:DNE-USD", &mut HashMap::new(), &registry);
+
+        let res = validate_signal("CS:DNE-USD", &mut HashMap::new(), &registry);
         assert_eq!(
-            result,
+            res,
             Err(ValidationError::InvalidDependency("CS:DNE-USD".to_string()))
         );
     }
 
-    /// Tests detection of cyclic dependencies in signals.
     #[test]
     fn test_validate_signal_with_circular_dependency() {
         let registry = complete_circular_dependency_mock_registry();
         let mut visited = HashMap::new();
-        let result = validate_signal("CS:USDT-USD", &mut visited, &registry);
+
+        let res = validate_signal("CS:USDT-USD", &mut visited, &registry);
         assert_eq!(
-            result,
+            res,
             Err(ValidationError::CycleDetected("CS:USDT-USD".to_string()))
         );
     }
