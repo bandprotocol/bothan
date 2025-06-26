@@ -1,3 +1,7 @@
+//! Bothan core monitoring info type.
+//!
+//! Defines the `BothanInfo` struct for heartbeat and status reporting.
+
 use semver::Version;
 use serde::Serialize;
 use serde::ser::SerializeStruct;

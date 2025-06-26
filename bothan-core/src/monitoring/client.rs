@@ -1,3 +1,7 @@
+//! Bothan core monitoring client implementation.
+//!
+//! Provides HTTP client for posting monitoring records and heartbeats.
+
 use reqwest::Response;
 use reqwest::header::HeaderMap;
 use semver::Version;
@@ -15,6 +19,7 @@ pub struct Client {
     signer: Signer,
 }
 
+/// HTTP client for posting monitoring records and heartbeats.
 impl Client {
     pub fn new<T: Into<String>>(url: T, signer: Signer) -> Self {
         Self {

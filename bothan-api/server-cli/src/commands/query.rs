@@ -1,3 +1,22 @@
+//! Bothan CLI query subcommand module.
+//!
+//! Query prices and asset info from supported exchanges and data sources.
+//!
+//! Supports querying prices from multiple exchanges and data sources with customizable timeout and pretty-printed output.
+//!
+//! ## Features
+//!
+//! - Query prices from Binance, Bitfinex, Bybit, Coinbase, CoinGecko, CoinMarketCap, HTX, Kraken, OKX
+//! - Customizable timeout and query IDs
+//! - Pretty-printed table output
+//!
+//! ## Usage
+//!
+//! ```bash
+//! bothan query binance BTCUSDT ETHUSDT
+//! bothan query coingecko bitcoin ethereum
+//! ```
+
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::sync::Arc;
@@ -20,12 +39,14 @@ use tokio::time::timeout;
 const DEFAULT_TIMEOUT: &str = "10s";
 
 #[derive(Parser)]
+/// CLI arguments for the `query` command.
 pub struct QueryCli {
     #[command(subcommand)]
     subcommand: QuerySubCommand,
 }
 
 #[derive(Args, Debug, Clone)]
+/// Arguments for querying prices.
 pub struct QueryArgs {
     /// The list of query ids to query prices for
     pub query_ids: Vec<String>,
@@ -34,50 +55,59 @@ pub struct QueryArgs {
     #[arg(short, long, default_value = DEFAULT_TIMEOUT)]
     pub timeout: HumanDuration,
 }
-
 #[derive(Subcommand, Debug)]
+/// Supported query subcommands for each exchange or data source.
 pub enum QuerySubCommand {
     /// Query Binance prices
+    #[clap(name = "binance")]
     Binance {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query Bitfinex prices
+    #[clap(name = "bitfinex")]
     Bitfinex {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query Bybit prices
+    #[clap(name = "bybit")]
     Bybit {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query Coinbase prices
+    #[clap(name = "coinbase")]
     Coinbase {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query CoinGecko prices
+    #[clap(name = "coingecko")]
     CoinGecko {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query CoinMarketCap prices
+    #[clap(name = "coinmarketcap")]
     CoinMarketCap {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query HTX prices
+    #[clap(name = "htx")]
     Htx {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query Kraken prices
+    #[clap(name = "kraken")]
     Kraken {
         #[clap(flatten)]
         args: QueryArgs,
     },
     /// Query OKX prices
+    #[clap(name = "okx")]
     Okx {
         #[clap(flatten)]
         args: QueryArgs,

@@ -1,3 +1,18 @@
+//! # Bothan API Server Implementation
+//!
+//! This module contains the main server implementation for the Bothan API,
+//! including the `BothanServer` struct and its gRPC service implementation.
+//!
+//! ## Components
+//!
+//! - `BothanServer`: Main server struct implementing the gRPC service
+//!
+//! ## Features
+//!
+//! - Handles gRPC requests for info, prices, and monitoring
+//! - Integrates with metrics and core manager
+//! - Provides error handling and logging
+
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -25,7 +40,7 @@ pub struct BothanServer<S: Store + 'static> {
 }
 
 impl<S: Store> BothanServer<S> {
-    /// Creates a new `CryptoQueryServer` instance.
+    /// Creates a new `BothanServer` instance.
     pub fn new(manager: Arc<CryptoAssetInfoManager<S>>, metrics: Metrics) -> Self {
         BothanServer { manager, metrics }
     }

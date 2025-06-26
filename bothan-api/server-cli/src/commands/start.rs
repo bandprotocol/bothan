@@ -1,3 +1,7 @@
+//! Bothan CLI start subcommand module.
+//!
+//! Start the Bothan API server with various configuration options.
+
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all, read_to_string, write};
 use std::io::BufReader;
@@ -31,6 +35,7 @@ use tonic_reflection::server::Builder as ReflectionBuilder;
 use tracing::{debug, error, info};
 
 #[derive(Parser)]
+/// CLI arguments for the `start` command.
 pub struct StartCli {
     /// The configuration file to use with bothan
     #[arg(long)]
@@ -50,6 +55,7 @@ pub struct StartCli {
 }
 
 impl StartCli {
+    /// Runs the start command.
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         init_telemetry_server(&app_config).await?;
 

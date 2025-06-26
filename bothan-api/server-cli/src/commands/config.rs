@@ -1,3 +1,7 @@
+//! Bothan CLI config subcommand module.
+//!
+//! Initialize and manage the Bothan API server configuration file.
+
 use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
 
@@ -9,12 +13,14 @@ use clap::{Parser, Subcommand};
 use crate::bothan_home_dir;
 
 #[derive(Parser)]
+/// CLI arguments for the `config` command.
 pub struct ConfigCli {
     #[command(subcommand)]
     subcommand: ConfigSubCommand,
 }
 
 #[derive(Subcommand)]
+/// Supported config subcommands.
 enum ConfigSubCommand {
     /// Initialize the configuration file.
     Init {
@@ -29,6 +35,7 @@ enum ConfigSubCommand {
 }
 
 impl ConfigCli {
+    /// Runs the config command.
     pub async fn run(&self) -> anyhow::Result<()> {
         match &self.subcommand {
             ConfigSubCommand::Init { path, override_ } => {

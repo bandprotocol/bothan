@@ -1,3 +1,7 @@
+//! Bothan core telemetry registry module.
+//!
+//! Provides initialization for Prometheus/OpenTelemetry registry.
+
 use opentelemetry::global;
 use opentelemetry_sdk::Resource;
 use opentelemetry_sdk::metrics::{MetricError, SdkMeterProvider};

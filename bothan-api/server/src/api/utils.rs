@@ -1,3 +1,12 @@
+//! # API Utilities Module
+//!
+//! This module provides utility functions for the Bothan API server implementation.
+//! It includes helpers for parsing price state and converting to API response types.
+//!
+//! ## Functions
+//!
+//! - `parse_price_state`: Converts a `PriceState` to a `Price` API response.
+
 use bothan_core::manager::crypto_asset_info::types::PriceState;
 use rust_decimal::prelude::Zero;
 use tracing::warn;
@@ -5,6 +14,16 @@ use tracing::warn;
 use crate::api::server::PRECISION;
 use crate::proto::bothan::v1::{Price, Status};
 
+/// Converts a `PriceState` to a `Price` API response.
+///
+/// # Arguments
+///
+/// * `id` - The signal or asset identifier.
+/// * `price_state` - The price state to convert.
+///
+/// # Returns
+///
+/// Returns a `Price` struct suitable for API responses.
 pub fn parse_price_state(id: String, price_state: PriceState) -> Price {
     match price_state {
         PriceState::Available(mut raw_price) => {

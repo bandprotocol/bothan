@@ -1,3 +1,13 @@
+//! # Protocol Buffer Bindings and API Types
+//!
+//! This module contains the generated protocol buffer bindings and
+//! additional API types for the Bothan API server.
+//!
+//! ## Notes
+//!
+//! - This file includes generated code and should not be edited manually.
+//! - Additional helper methods and trait implementations are provided for API types.
+
 #![allow(clippy::all)]
 pub mod bothan {
     pub mod v1 {
@@ -10,6 +20,7 @@ pub mod bothan {
         pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("proto/descriptor.pb");
 
         impl Price {
+            /// Creates a new `Price` instance for API responses.
             pub fn new<T: Into<String>, U: Into<u64>>(
                 signal_id: T,
                 price: U,

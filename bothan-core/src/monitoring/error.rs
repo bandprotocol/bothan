@@ -1,3 +1,7 @@
+//! Bothan core monitoring error types.
+//!
+//! Defines errors for monitoring client operations.
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Failed to send request: {0}")]

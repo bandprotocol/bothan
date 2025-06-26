@@ -1,3 +1,7 @@
+//! Bothan core monitoring utilities.
+//!
+//! Provides utility functions for monitoring, such as UUID generation.
+
 use rand::RngCore;
 use rand::rngs::OsRng;
 

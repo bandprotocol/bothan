@@ -1,3 +1,5 @@
+//! Error types for price computation in the crypto asset info manager.
+
 use std::collections::HashSet;
 
 use bothan_lib::registry::post_processor::PostProcessError;

@@ -1,3 +1,8 @@
+//! Bothan core crypto asset info manager implementation.
+//!
+//! Provides the `CryptoAssetInfoManager` struct and its async methods for managing
+//! crypto asset information, registry, monitoring, and price queries.
+
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;

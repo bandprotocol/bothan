@@ -1,3 +1,7 @@
+//! Bothan core monitoring record types.
+//!
+//! Defines types for signal computation, process, and source records.
+
 use bothan_lib::registry::post_processor::PostProcessError;
 use bothan_lib::registry::processor::ProcessError;
 use bothan_lib::registry::source::Operation;

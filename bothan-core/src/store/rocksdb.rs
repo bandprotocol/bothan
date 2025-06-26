@@ -1,3 +1,7 @@
+//! Bothan core RocksDB store implementation.
+//!
+//! Provides RocksDB-backed storage for Bothan core, including serialization, deserialization, and batch operations for registry and asset information.
+
 pub mod error;
 mod key;
 
@@ -16,6 +20,7 @@ use crate::store::rocksdb::error::{LoadError, RocksDbError};
 use crate::store::rocksdb::key::Key;
 
 #[derive(Clone)]
+/// RocksDB-backed store for Bothan core.
 pub struct RocksDbStore {
     db: Arc<DB>,
     registry: Arc<RwLock<Registry<Valid>>>,

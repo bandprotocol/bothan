@@ -1,3 +1,7 @@
+//! Bothan core IPFS client builder module.
+//!
+//! Provides builder for constructing IPFS clients.
+
 use std::time::Duration;
 
 use reqwest::ClientBuilder;

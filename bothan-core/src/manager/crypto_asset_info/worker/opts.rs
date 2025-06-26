@@ -1,3 +1,5 @@
+//! Worker options for configuring crypto asset source workers.
+
 #[derive(Clone)]
 pub enum CryptoAssetWorkerOpts {
     Binance(bothan_binance::WorkerOpts),

@@ -1,3 +1,7 @@
+//! Bothan core crypto asset info manager error types.
+//!
+//! Defines errors for registry, monitoring record, and heartbeat operations.
+
 use thiserror::Error;
 
 use crate::monitoring::error::Error as MonitoringError;
