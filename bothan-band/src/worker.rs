@@ -38,7 +38,7 @@ use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::rest::start_polling;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::instrument::Instrument;
-use tracing::{Level, span, error};
+use tracing::{Level, error, span};
 
 use crate::WorkerOpts;
 use crate::api::RestApiBuilder;

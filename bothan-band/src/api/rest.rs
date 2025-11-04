@@ -16,9 +16,8 @@ use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
 
-use crate::api::error::ParseError;
-use crate::api::types::{Price};
-use crate::api::error::ProviderError;
+use crate::api::error::{ParseError, ProviderError};
+use crate::api::types::Price;
 
 /// Client for interacting with the Band REST API.
 ///
@@ -73,19 +72,14 @@ impl RestApi {
     /// - The request fails due to network issues
     /// - The response status is not 2xx
     /// - JSON deserialization into `HashMap<String, Quote>` fails
-    pub async fn get_latest_prices(
-        &self,
-        ids: &[String],
-    ) -> Result<Vec<Price>, reqwest::Error> {
+    pub async fn get_latest_prices(&self, ids: &[String]) -> Result<Vec<Price>, reqwest::Error> {
         let url = format!("{}prices/", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
         let params = vec![("signals", ids_string)];
 
         let request_builder = self.client.get(&url).query(&params);
         let response = request_builder.send().await?.error_for_status()?;
-        let prices = response
-            .json::<Vec<Price>>()
-            .await?;
+        let prices = response.json::<Vec<Price>>().await?;
 
         Ok(prices)
     }

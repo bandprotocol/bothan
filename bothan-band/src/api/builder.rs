@@ -11,7 +11,7 @@
 //! - Automatically uses the default Band URL when parameters are omitted during the [`build`](`RestApiBuilder::build`) call
 
 use reqwest::ClientBuilder;
-use reqwest::header::{HeaderMap};
+use reqwest::header::HeaderMap;
 use url::Url;
 
 use crate::api::RestApi;
@@ -59,9 +59,7 @@ impl RestApiBuilder {
     where
         T: Into<String>,
     {
-        RestApiBuilder {
-            url: url.into(),
-        }
+        RestApiBuilder { url: url.into() }
     }
 
     /// Sets the URL for the Band API.
