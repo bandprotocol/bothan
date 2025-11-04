@@ -32,6 +32,10 @@ pub struct CryptoSourceConfigs {
     pub kraken: Option<bothan_kraken::WorkerOpts>,
     /// OKX worker options.
     pub okx: Option<bothan_okx::WorkerOpts>,
+    /// Band1 worker options.
+    pub band1: Option<bothan_band::WorkerOpts>,
+    /// Band2 worker options.
+    pub band2: Option<bothan_band::WorkerOpts>,
 }
 
 impl CryptoSourceConfigs {
@@ -47,6 +51,8 @@ impl CryptoSourceConfigs {
             htx: Some(bothan_htx::WorkerOpts::default()),
             kraken: Some(bothan_kraken::WorkerOpts::default()),
             okx: Some(bothan_okx::WorkerOpts::default()),
+            band1: Some(bothan_band::WorkerOpts::default()),
+            band2: Some(bothan_band::WorkerOpts::default()),
         }
     }
 }
