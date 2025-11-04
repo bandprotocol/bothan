@@ -28,8 +28,10 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 ///
 /// ```rust
 /// use bothan_band::worker::opts::WorkerOpts;
+/// use std::time::Duration;
 ///
 /// let opts = WorkerOpts {
+///     name: "band".to_string(),
 ///     url: "https://bandsource-url.com".to_string(),
 ///     update_interval: Duration::from_secs(30),
 /// };

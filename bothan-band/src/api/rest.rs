@@ -28,7 +28,7 @@ use crate::api::types::Price;
 /// # Examples
 ///
 /// ```rust
-/// use bothan_band::api::{RestApi, types::Quote};
+/// use bothan_band::api::{RestApi, types::Price};
 /// use reqwest::ClientBuilder;
 /// use reqwest::header::{HeaderMap, HeaderValue};
 /// use url::Url;
