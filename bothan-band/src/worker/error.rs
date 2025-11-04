@@ -1,11 +1,11 @@
-//! Error types for CoinMarketCap worker operations.
+//! Error types for Band worker operations.
 //!
-//! This module provides custom error types used throughout the CoinMarketCap worker integration,
+//! This module provides custom error types used throughout the Band worker integration,
 //! particularly for asset polling and data fetching.
 
 use thiserror::Error;
 
-/// Errors from fetching and handling data in the CoinMarketCap worker.
+/// Errors from fetching and handling data in the Band worker.
 ///
 /// These errors typically occur during API calls, response parsing, or data validation in the worker context.
 #[derive(Debug, Error)]

@@ -12,7 +12,7 @@
 //! - Ensures graceful cancellation by using a CancellationToken to signal shutdown and a DropGuard
 //!   to automatically clean up resources when the worker is dropped
 //! - Metrics collection for observability
-//! - Configurable via API key, polling interval, and endpoint URL
+//! - Configurable via polling interval and endpoint URL
 //!
 //! # Examples
 //!

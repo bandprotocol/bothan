@@ -29,7 +29,7 @@ use crate::api::types::DEFAULT_URL;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let mut api = RestApiBuilder::default()
+///     let api = RestApiBuilder::default()
 ///         .with_url("https://bandsource-url.com")
 ///         .build()
 ///         .unwrap();
