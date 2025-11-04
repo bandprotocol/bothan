@@ -38,7 +38,7 @@ use bothan_lib::worker::error::AssetWorkerError;
 use bothan_lib::worker::rest::start_polling;
 use tokio_util::sync::{CancellationToken, DropGuard};
 use tracing::instrument::Instrument;
-use tracing::{Level, error, span};
+use tracing::{Level, span};
 
 use crate::WorkerOpts;
 use crate::api::RestApiBuilder;
@@ -64,7 +64,7 @@ impl AssetWorker for Worker {
 
     /// Returns the name identifier for the worker.
     fn name(&self) -> &'static str {
-        &self.name
+        self.name
     }
 
     /// Builds and starts the `BandWorker`.

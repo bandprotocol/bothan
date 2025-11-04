@@ -177,7 +177,7 @@ impl WebSocketConnection {
     ///
     /// Returns a `tungstenite::Error` if the subscription request fails.
     pub async fn subscribe_ticker(&mut self, symbol: &str) -> Result<(), tungstenite::Error> {
-        let formatted_symbol = format!("market.{}.ticker", symbol);
+        let formatted_symbol = format!("market.{symbol}.ticker");
         let payload = json!({
             "sub": formatted_symbol,
         });
@@ -205,7 +205,7 @@ impl WebSocketConnection {
     ///
     /// Returns a `tungstenite::Error` if the unsubscription request fails.
     pub async fn unsubscribe_ticker(&mut self, symbol: &str) -> Result<(), tungstenite::Error> {
-        let formatted_symbol = format!("market.{}.ticker", symbol);
+        let formatted_symbol = format!("market.{symbol}.ticker");
         let payload = json!({
             "unsub": formatted_symbol,
         });

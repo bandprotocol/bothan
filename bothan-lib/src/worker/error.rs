@@ -121,7 +121,7 @@ impl fmt::Display for AssetWorkerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.msg)?;
         if let Some(source) = &self.source {
-            write!(f, ": {}", source)?;
+            write!(f, ": {source}")?;
         }
         Ok(())
     }
@@ -139,7 +139,7 @@ where
 {
     fn from(err: E) -> Self {
         Self {
-            msg: format!("An error occurred: {}", err),
+            msg: format!("An error occurred: {err}"),
             source: Some(Box::new(err)),
         }
     }

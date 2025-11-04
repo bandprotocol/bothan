@@ -74,7 +74,7 @@ fn export_key(config: &AppConfig) -> anyhow::Result<()> {
         read(&config.monitoring.path).with_context(|| "Failed to read monitoring key file")?;
     let pk = String::from_utf8(pkb).with_context(|| "Failed to parse monitoring key file")?;
     println!("Private Key");
-    println!("{}", pk);
+    println!("{pk}");
     Ok(())
 }
 
