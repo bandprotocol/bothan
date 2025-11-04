@@ -127,3 +127,120 @@ fn parse_price(band_price: Price) -> Result<AssetInfo, ParseError> {
     let ts = band_price.timestamp;
     Ok(AssetInfo::new(band_price.signal, price, ts))
 }
+
+#[cfg(test)]
+mod test {
+    use mockito::{Matcher, Mock, Server, ServerGuard};
+
+    use super::*;
+    use crate::api::RestApiBuilder;
+    use crate::api::types::Price;
+
+    // Setup a test server and RestApi client instance
+    async fn setup() -> (ServerGuard, RestApi) {
+        let server = Server::new_async().await;
+        let builder = RestApiBuilder::default().with_url(&server.url());
+        let api = builder.build().unwrap();
+        (server, api)
+    }
+
+    fn mock_price(signal: &str, price: f64, timestamp: i64) -> Price {
+        Price {
+            signal: signal.to_string(),
+            price,
+            timestamp,
+        }
+    }
+
+    trait MockBandRest {
+        fn set_successful_prices(&mut self, ids: &[String], prices: &[Price]) -> Mock;
+        fn set_arbitrary_prices<StrOrBytes: AsRef<[u8]>>(
+            &mut self,
+            ids: &[String],
+            data: StrOrBytes,
+        ) -> Mock;
+        fn set_failed_prices(&mut self, ids: &[String]) -> Mock;
+    }
+
+    impl MockBandRest for ServerGuard {
+        fn set_successful_prices(&mut self, ids: &[String], prices: &[Price]) -> Mock {
+            let response = serde_json::to_string(prices).unwrap();
+            self.mock("GET", "/prices/")
+                .match_query(Matcher::UrlEncoded("signals".into(), ids.join(",")))
+                .with_status(200)
+                .with_body(response)
+                .create()
+        }
+
+        fn set_arbitrary_prices<StrOrBytes: AsRef<[u8]>>(
+            &mut self,
+            ids: &[String],
+            data: StrOrBytes,
+        ) -> Mock {
+            self.mock("GET", "/prices/")
+                .match_query(Matcher::UrlEncoded("signals".into(), ids.join(",")))
+                .with_status(200)
+                .with_body(data)
+                .create()
+        }
+
+        fn set_failed_prices(&mut self, ids: &[String]) -> Mock {
+            self.mock("GET", "/prices/")
+                .match_query(Matcher::UrlEncoded("signals".into(), ids.join(",")))
+                .with_status(500)
+                .create()
+        }
+    }
+
+    #[tokio::test]
+    async fn test_successful_get_latest_prices() {
+        let (mut server, client) = setup().await;
+
+        let ids = vec!["BTC".to_string()];
+        let prices = vec![mock_price("BTC", 80000.0, 100000)];
+        let mock = server.set_successful_prices(&ids, &prices);
+
+        let result = client.get_latest_prices(&ids).await;
+        mock.assert();
+        assert_eq!(result.unwrap(), prices);
+    }
+
+    #[tokio::test]
+    async fn test_successful_get_latest_prices_with_multiple_assets() {
+        let (mut server, client) = setup().await;
+
+        let ids = vec!["BTC".to_string(), "ETH".to_string()];
+        let prices = vec![
+            mock_price("BTC", 80000.0, 100000),
+            mock_price("ETH", 3500.0, 100002),
+        ];
+        let mock = server.set_successful_prices(&ids, &prices);
+
+        let result = client.get_latest_prices(&ids).await;
+        mock.assert();
+        assert_eq!(result.unwrap(), prices);
+    }
+
+    #[tokio::test]
+    async fn test_get_latest_prices_with_unparseable_data() {
+        let (mut server, client) = setup().await;
+
+        let ids = vec!["BTC".to_string()];
+        let mock = server.set_arbitrary_prices(&ids, "not valid json");
+
+        let result = client.get_latest_prices(&ids).await;
+        mock.assert();
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_failed_get_latest_prices() {
+        let (mut server, client) = setup().await;
+        let ids = vec!["BTC".to_string()];
+        let mock = server.set_failed_prices(&ids);
+
+        let result = client.get_latest_prices(&ids).await;
+        mock.assert();
+        assert!(result.is_err());
+    }
+}

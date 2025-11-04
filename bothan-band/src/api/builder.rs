@@ -2,12 +2,12 @@
 //!
 //! This module provides a builder for constructing [`RestApi`] clients used
 //! to interact with the Band REST API. The builder supports optional configuration
-//! of base URL and API key.
+//! of base URL.
 //!
 //! The module provides:
 //!
 //! - The [`RestApiBuilder`] for REST API building
-//! - Supports setting the API base URL and API key
+//! - Supports setting the API base URL
 //! - Automatically uses the default Band URL when parameters are omitted during the [`build`](`RestApiBuilder::build`) call
 
 use reqwest::ClientBuilder;
@@ -21,7 +21,7 @@ use crate::api::types::DEFAULT_URL;
 /// Builder for creating instances of [`RestApi`].
 ///
 /// The `RestApiBuilder` provides a builder pattern for setting up a [`RestApi`] instance
-/// by allowing users to specify optional configuration parameters such as the base URL and API key.
+/// by allowing users to specify optional configuration parameters such as the base URL.
 ///
 /// # Example
 /// ```
@@ -44,7 +44,7 @@ impl RestApiBuilder {
     /// Creates a new `RestApiBuilder` with the specified configuration.
     ///
     /// This method allows manual initialization of the builder using
-    /// optional parameter for API key, and a required URL string.
+    /// a required URL string.
     ///
     /// # Examples
     ///
@@ -77,9 +77,7 @@ impl RestApiBuilder {
     ///
     /// Returns a [`BuildError`] if:
     /// - The URL is invalid
-    /// - The API key or HTTP headers are malformed
     /// - The HTTP client fails to build
-    /// - The API key is missing (required for Band)
     pub fn build(self) -> Result<RestApi, BuildError> {
         let headers = HeaderMap::new();
 
@@ -93,7 +91,7 @@ impl RestApiBuilder {
 
 impl Default for RestApiBuilder {
     /// Creates a new `BandRestAPIBuilder` with the
-    /// default URL and no API key.
+    /// default URL.
     fn default() -> Self {
         RestApiBuilder {
             url: DEFAULT_URL.into(),
