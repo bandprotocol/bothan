@@ -26,8 +26,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use bothan_api::config::AppConfig;
-use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::log::LogLevel;
+use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::Directive;

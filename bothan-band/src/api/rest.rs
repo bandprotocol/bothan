@@ -140,7 +140,7 @@ mod test {
     // Setup a test server and RestApi client instance
     async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;
-        let builder = RestApiBuilder::new(&server.url());
+        let builder = RestApiBuilder::new(server.url());
         let api = builder.build().unwrap();
         (server, api)
     }

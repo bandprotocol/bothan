@@ -28,8 +28,7 @@ use crate::api::error::BuildError;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let api = RestApiBuilder::default()
-///         .with_url("https://bandsource-url.com")
+///     let api = RestApiBuilder::new("https://bandsource-url.com")
 ///         .build()
 ///         .unwrap();
 /// }

@@ -98,8 +98,14 @@ impl CryptoSourceConfigs {
             htx: Some(bothan_htx::WorkerOpts::default()),
             kraken: Some(bothan_kraken::WorkerOpts::default()),
             okx: Some(bothan_okx::WorkerOpts::default()),
-            band1: Some(bothan_band::WorkerOpts::new("band1", "https://bandsource1.bandchain.org")),
-            band2: Some(bothan_band::WorkerOpts::new("band2", "https://bandsource1.bandchain.org")),
+            band1: Some(bothan_band::WorkerOpts::new(
+                "band1",
+                "https://bandsource1.bandchain.org",
+            )),
+            band2: Some(bothan_band::WorkerOpts::new(
+                "band2",
+                "https://bandsource1.bandchain.org",
+            )),
         }
     }
 }

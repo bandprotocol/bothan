@@ -81,10 +81,7 @@ impl AssetWorker for Worker {
         store: &S,
         ids: Vec<String>,
     ) -> Result<Self, AssetWorkerError> {
-        let name = opts
-            .name
-            .clone()
-            .unwrap();
+        let name = opts.name.clone().unwrap();
         let api = RestApiBuilder::new(opts.url).build()?;
         let worker_store = WorkerStore::new(store, name.clone());
         let token = CancellationToken::new();
