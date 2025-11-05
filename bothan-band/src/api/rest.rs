@@ -123,8 +123,9 @@ impl AssetInfoProvider for RestApi {
 
 /// Parses a `Price` into an [`AssetInfo`] struct.
 fn parse_price(band_price: Price) -> Result<AssetInfo, ParseError> {
-    let price = Decimal::from_f64_retain(band_price.price).ok_or(ParseError::InvalidPrice)?;
-    let ts = band_price.timestamp;
+    let price = band_price.price.ok_or(ParseError::InvalidPrice)?;
+    let price = Decimal::from_f64_retain(price).ok_or(ParseError::InvalidPrice)?;
+    let ts = band_price.timestamp.ok_or(ParseError::InvalidTimestamp)?;
     Ok(AssetInfo::new(band_price.signal, price, ts))
 }
 
@@ -139,7 +140,7 @@ mod test {
     // Setup a test server and RestApi client instance
     async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;
-        let builder = RestApiBuilder::default().with_url(&server.url());
+        let builder = RestApiBuilder::new(&server.url());
         let api = builder.build().unwrap();
         (server, api)
     }
@@ -147,8 +148,8 @@ mod test {
     fn mock_price(signal: &str, price: f64, timestamp: i64) -> Price {
         Price {
             signal: signal.to_string(),
-            price,
-            timestamp,
+            price: Some(price),
+            timestamp: Some(timestamp),
         }
     }
 

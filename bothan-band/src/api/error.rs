@@ -62,4 +62,7 @@ pub enum ParseError {
     /// Indicates that the price value is not a valid number (NaN).
     #[error("price is NaN")]
     InvalidPrice,
+    /// Indicates that the timestamp value is missing or invalid.
+    #[error("invalid timestamp")]
+    InvalidTimestamp,
 }

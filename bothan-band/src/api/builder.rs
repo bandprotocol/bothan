@@ -16,7 +16,6 @@ use url::Url;
 
 use crate::api::RestApi;
 use crate::api::error::BuildError;
-use crate::api::types::DEFAULT_URL;
 
 /// Builder for creating instances of [`RestApi`].
 ///
@@ -86,15 +85,5 @@ impl RestApiBuilder {
         let client = ClientBuilder::new().default_headers(headers).build()?;
 
         Ok(RestApi::new(parsed_url, client))
-    }
-}
-
-impl Default for RestApiBuilder {
-    /// Creates a new `BandRestAPIBuilder` with the
-    /// default URL.
-    fn default() -> Self {
-        RestApiBuilder {
-            url: DEFAULT_URL.into(),
-        }
     }
 }

@@ -81,12 +81,16 @@ impl AssetWorker for Worker {
         store: &S,
         ids: Vec<String>,
     ) -> Result<Self, AssetWorkerError> {
+        let name = opts
+            .name
+            .clone()
+            .unwrap();
         let api = RestApiBuilder::new(opts.url).build()?;
-        let worker_store = WorkerStore::new(store, opts.name.clone());
+        let worker_store = WorkerStore::new(store, name.clone());
         let token = CancellationToken::new();
-        let metrics = Metrics::new(Box::leak(opts.name.clone().into_boxed_str()));
+        let metrics = Metrics::new(Box::leak(name.clone().into_boxed_str()));
 
-        let span = span!(Level::ERROR, "source", name = opts.name.clone());
+        let span = span!(Level::ERROR, "source", name = name.clone());
         tokio::spawn(
             start_polling(
                 token.child_token(),
@@ -100,7 +104,7 @@ impl AssetWorker for Worker {
         );
 
         Ok(Worker {
-            name: Box::leak(opts.name.clone().into_boxed_str()),
+            name: Box::leak(name.clone().into_boxed_str()),
             _drop_guard: token.drop_guard(),
         })
     }

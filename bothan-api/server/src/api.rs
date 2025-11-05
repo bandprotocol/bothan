@@ -21,9 +21,11 @@
 //! ```rust,no_run
 //! use bothan_api::api::BothanServer;
 //! use bothan_api::config::AppConfig;
+//! use crate::config::manager::crypto_info::sources::CryptoSourceConfigs;
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let config = AppConfig::default();
+//!     config.manager.crypto.source = CryptoSourceConfigs::with_default_sources();
 //!     // Initialize server with config
 //!     Ok(())
 //! }

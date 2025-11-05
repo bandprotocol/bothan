@@ -26,6 +26,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use bothan_api::config::AppConfig;
+use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use bothan_api::config::log::LogLevel;
 use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
@@ -98,7 +99,9 @@ async fn main() {
             "Failed to load config. Try deleting the config file and running 'config init'.",
         )
     } else {
-        AppConfig::default()
+        let mut config = AppConfig::default();
+        config.manager.crypto.source = CryptoSourceConfigs::with_default_sources();
+        config
     };
 
     let log_lvl = &app_config.log.log_level;
