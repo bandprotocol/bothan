@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// Represents price and market data for a single asset in USD.
 ///
-/// `Price` contains fields matching those returned by the [Band api endpoint].
+/// `Price` contains fields matching those returned by the Band API endpoint.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Price {
     pub signal: String,

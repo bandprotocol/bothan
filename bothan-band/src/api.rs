@@ -5,7 +5,7 @@
 //!
 //! The module provides:
 //!
-//! - [`builder`] — A builder pattern for creating [`RestApi`] clients with optional parameters like base URL and API key.
+//! - [`builder`] — A builder pattern for creating [`RestApi`] clients with parameters like base URL.
 //! - [`rest`] — Core API client implementation, including HTTP request logic and integration with Bothan's `AssetInfoProvider` trait.
 //! - [`types`] — Data types that represent Band REST API responses such as [`Price`](types::Price)
 //! - [`error`] — Custom error types used during API client configuration and request processing.

@@ -1,13 +1,12 @@
 //! Configuration options for initializing a `BandWorker`.
 //!
 //! This module provides the [`WorkerOpts`] used to configure a `BandWorker`.
-//! It allows setting the API endpoint, authentication, and polling interval used by [`Worker`](`crate::worker::Worker`) to fetch data from the Band REST API.
+//! It allows setting the API endpoint and polling interval used by [`Worker`](`crate::worker::Worker`) to fetch data from the Band REST API.
 //!
 //! The module provides:
 //! - The [`WorkerOpts`] for specifying worker parameters
 //! - Serialization and deserialization support for configuration files
 //! - Defaults for update interval
-//! - Internal helpers for handling empty or missing configuration values
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -53,8 +52,8 @@ impl WorkerOpts {
     /// Creates a new `WorkerOpts` with default values.
     ///
     /// This method initializes the configuration with:
-    /// - Default name (must change if multiple workers are used)
-    /// - Default Band API URL
+    /// - Band worker name (must be provided by the caller)
+    /// - Band API URL (must be provided by the caller)
     /// - Default update interval
     ///
     /// # Returns

@@ -6,7 +6,7 @@
 //!
 //! This module provides:
 //!
-//! - Fetches the latest quotes for assets from the `/v2/cryptocurrency/quotes/latest` endpoint
+//! - Fetches the latest quotes for assets from the Band `/prices/` endpoint
 //! - Transforms API responses into [`AssetInfo`] for use in workers
 //! - Handles deserialization and error propagation
 
@@ -30,13 +30,11 @@ use crate::api::types::Price;
 /// ```rust
 /// use bothan_band::api::{RestApi, types::Price};
 /// use reqwest::ClientBuilder;
-/// use reqwest::header::{HeaderMap, HeaderValue};
 /// use url::Url;
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let mut headers = HeaderMap::new();
-///     let client = ClientBuilder::new().default_headers(headers).build()?;
+///     let client = ClientBuilder::new().build()?;
 ///
 ///     let api = RestApi::new(Url::parse("https://bandsource-url.com")?, client);
 ///     Ok(())
@@ -58,20 +56,20 @@ impl RestApi {
     /// Retrieves market data for the specified cryptocurrency IDs from the Band REST API.
     ///
     /// This method constructs a request to the Band endpoint
-    /// and returns a vector of `Price<...>`, where each element corresponds to the ID at the same
+    /// and returns a vector of `Price`, where each element corresponds to the ID at the same
     /// position in the input slice.
     ///
     /// # Query Construction
     ///
     /// The query includes:
-    /// - `id`: comma-separated list of coin IDs
+    /// - `signals`: comma-separated list of coin IDs
     ///
     /// # Errors
     ///
     /// Returns a [`reqwest::Error`] if:
     /// - The request fails due to network issues
     /// - The response status is not 2xx
-    /// - JSON deserialization into `HashMap<String, Quote>` fails
+    /// - JSON deserialization into `Vec<Price>` fails
     pub async fn get_latest_prices(&self, ids: &[String]) -> Result<Vec<Price>, reqwest::Error> {
         let url = format!("{}prices/", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");

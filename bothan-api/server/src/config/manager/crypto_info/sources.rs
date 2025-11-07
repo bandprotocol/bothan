@@ -6,6 +6,7 @@
 //!
 //! ```rust,no_run
 //! use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
+//! let sources = CryptoSourceConfigs::default();
 //! ```
 
 use serde::{Deserialize, Serialize};

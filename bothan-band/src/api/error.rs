@@ -26,7 +26,7 @@ pub enum BuildError {
 #[derive(Debug, Error)]
 pub enum ProviderError {
     /// Indicates HTTP request failure due to network issues or HTTP errors.
-    #[error("failed to fetch tickers: {0}")]
+    #[error("failed to fetch prices: {0}")]
     RequestError(#[from] reqwest::Error),
 
     /// Indicates a failure to parse the API response.

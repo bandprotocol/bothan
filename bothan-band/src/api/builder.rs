@@ -8,7 +8,7 @@
 //!
 //! - The [`RestApiBuilder`] for REST API building
 //! - Supports setting the API base URL
-//! - Automatically uses the default Band URL when parameters are omitted during the [`build`](`RestApiBuilder::build`) call
+//! - Requires the API base URL to be specified when constructing the builder
 
 use reqwest::ClientBuilder;
 use url::Url;
@@ -60,7 +60,6 @@ impl RestApiBuilder {
     }
 
     /// Sets the URL for the Band API.
-    /// The default URL is `DEFAULT_URL`.
     pub fn with_url(mut self, url: &str) -> Self {
         self.url = url.into();
         self

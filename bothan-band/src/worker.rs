@@ -24,7 +24,7 @@
 //!
 //! #[tokio::test]
 //! async fn test<T: Store>(store: T) {
-//!     let opts = WorkerOpts::default();
+//!     let opts = WorkerOpts::new("band", "https://example.com");;
 //!     let ids = vec!["CS:BTC-USD".to_string(), "CS:ETH-USD".to_string()];
 //!
 //!     let worker = Worker::build(opts, &store, ids).await?;
