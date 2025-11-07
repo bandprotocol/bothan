@@ -7,7 +7,6 @@ use std::path::PathBuf;
 
 use anyhow::{Context, anyhow};
 use bothan_api::config::AppConfig;
-use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use clap::{Parser, Subcommand};
 
 use crate::bothan_home_dir;
@@ -54,8 +53,7 @@ impl ConfigCli {
                         .with_context(|| "Failed to create parent directories")?;
                 }
 
-                let mut app_config = AppConfig::default();
-                app_config.manager.crypto.source = CryptoSourceConfigs::with_default_sources();
+                let app_config = AppConfig::default();
 
                 let config_str =
                     toml::to_string(&app_config).with_context(|| "Failed to serialize config")?;

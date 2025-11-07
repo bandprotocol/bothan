@@ -27,7 +27,6 @@ use std::str::FromStr;
 
 use bothan_api::config::AppConfig;
 use bothan_api::config::log::LogLevel;
-use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::Directive;
@@ -99,9 +98,7 @@ async fn main() {
             "Failed to load config. Try deleting the config file and running 'config init'.",
         )
     } else {
-        let mut config = AppConfig::default();
-        config.manager.crypto.source = CryptoSourceConfigs::with_default_sources();
-        config
+        AppConfig::default()
     };
 
     let log_lvl = &app_config.log.log_level;
@@ -120,7 +117,8 @@ async fn main() {
         .add_directive(create_directive("bothan_cryptocompare", src_log_lvl))
         .add_directive(create_directive("bothan_htx", src_log_lvl))
         .add_directive(create_directive("bothan_kraken", src_log_lvl))
-        .add_directive(create_directive("bothan_okx", src_log_lvl));
+        .add_directive(create_directive("bothan_okx", src_log_lvl))
+        .add_directive(create_directive("bothan_band", src_log_lvl));
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 

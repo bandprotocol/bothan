@@ -27,16 +27,15 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 /// use std::time::Duration;
 ///
 /// let opts = WorkerOpts {
-///     name: Some("band".to_string()),
+///     name: "band",
 ///     url: "https://bandsource-url.com".to_string(),
 ///     update_interval: Duration::from_secs(30),
 /// };
 /// ```
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
 pub struct WorkerOpts {
     #[serde(skip)]
-    pub name: Option<String>,
+    pub name: &'static str,
     /// The URL for the Band REST API.
     pub url: String,
     /// Duration between API polling.
@@ -61,9 +60,9 @@ impl WorkerOpts {
     /// # Returns
     ///
     /// A [`WorkerOpts`] instance with default settings
-    pub fn new(name: &str, url: &str) -> Self {
+    pub fn new(name: &'static str, url: &str) -> Self {
         Self {
-            name: Some(name.to_string()),
+            name,
             url: url.to_string(),
             update_interval: default_update_interval(),
         }

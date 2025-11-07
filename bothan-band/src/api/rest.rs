@@ -113,8 +113,7 @@ impl AssetInfoProvider for RestApi {
             .get_latest_prices(ids)
             .await?
             .into_iter()
-            .map(parse_price)
-            .filter_map(|price| price.ok())
+            .filter_map(|price| parse_price(price).ok())
             .collect();
 
         Ok(asset_info)

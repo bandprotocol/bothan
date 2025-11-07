@@ -11,7 +11,6 @@
 //! - Automatically uses the default Band URL when parameters are omitted during the [`build`](`RestApiBuilder::build`) call
 
 use reqwest::ClientBuilder;
-use reqwest::header::HeaderMap;
 use url::Url;
 
 use crate::api::RestApi;
@@ -77,11 +76,9 @@ impl RestApiBuilder {
     /// - The URL is invalid
     /// - The HTTP client fails to build
     pub fn build(self) -> Result<RestApi, BuildError> {
-        let headers = HeaderMap::new();
-
         let parsed_url = Url::parse(&self.url)?;
 
-        let client = ClientBuilder::new().default_headers(headers).build()?;
+        let client = ClientBuilder::new().build()?;
 
         Ok(RestApi::new(parsed_url, client))
     }

@@ -43,7 +43,6 @@ use tracing::{Level, span};
 use crate::WorkerOpts;
 use crate::api::RestApiBuilder;
 
-pub mod error;
 pub mod opts;
 
 /// Asset worker for fetching data from the Band REST API.
@@ -81,13 +80,12 @@ impl AssetWorker for Worker {
         store: &S,
         ids: Vec<String>,
     ) -> Result<Self, AssetWorkerError> {
-        let name = opts.name.clone().unwrap();
         let api = RestApiBuilder::new(opts.url).build()?;
-        let worker_store = WorkerStore::new(store, name.clone());
+        let worker_store = WorkerStore::new(store, opts.name);
         let token = CancellationToken::new();
-        let metrics = Metrics::new(Box::leak(name.clone().into_boxed_str()));
+        let metrics = Metrics::new(opts.name);
 
-        let span = span!(Level::ERROR, "source", name = name.clone());
+        let span = span!(Level::ERROR, "source", name = opts.name);
         tokio::spawn(
             start_polling(
                 token.child_token(),
@@ -101,7 +99,7 @@ impl AssetWorker for Worker {
         );
 
         Ok(Worker {
-            name: Box::leak(name.clone().into_boxed_str()),
+            name: opts.name,
             _drop_guard: token.drop_guard(),
         })
     }

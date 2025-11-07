@@ -25,7 +25,6 @@
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let mut config = AppConfig::default();
-//!     config.manager.crypto.source = CryptoSourceConfigs::with_default_sources();
 //!     // Initialize server with config
 //!     Ok(())
 //! }
