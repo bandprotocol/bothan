@@ -26,7 +26,7 @@ impl CryptoAssetWorkerOpts {
             CryptoAssetWorkerOpts::Htx(_) => "htx",
             CryptoAssetWorkerOpts::Kraken(_) => "kraken",
             CryptoAssetWorkerOpts::Okx(_) => "okx",
-            CryptoAssetWorkerOpts::Band(opts) => opts.name,
+            CryptoAssetWorkerOpts::Band(opts) => opts.name(),
         }
     }
 }

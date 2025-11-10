@@ -32,12 +32,12 @@ pub struct CryptoSourceConfigs {
     pub kraken: Option<bothan_kraken::WorkerOpts>,
     /// OKX worker options.
     pub okx: Option<bothan_okx::WorkerOpts>,
-    /// Band1 worker options.
-    #[serde(deserialize_with = "de_band1")]
-    pub band1: Option<bothan_band::WorkerOpts>,
-    /// Band2 worker options.
-    #[serde(deserialize_with = "de_band2")]
-    pub band2: Option<bothan_band::WorkerOpts>,
+    /// Band/kiwi worker options.
+    #[serde(deserialize_with = "de_kiwi")]
+    pub band_kiwi: Option<bothan_band::WorkerOpts>,
+    /// Band/macaw worker options.
+    #[serde(deserialize_with = "de_macaw")]
+    pub band_macaw: Option<bothan_band::WorkerOpts>,
 }
 
 macro_rules! de_band_named {
@@ -46,19 +46,21 @@ macro_rules! de_band_named {
         where
             D: serde::Deserializer<'de>,
         {
-            let mut v = Option::<bothan_band::WorkerOpts>::deserialize(d)?;
-            if let Some(ref mut w) = v {
-                w.name = $name;
-            }
+            let v = Option::<bothan_band::WorkerOpts>::deserialize(d)?;
+            let v = v.map(|w| bothan_band::WorkerOpts::new(
+                $name,
+                &w.url,
+                Some(w.update_interval),
+            ));
             Ok(v)
         }
     };
 }
 
-const BAND1_WORKER_NAME: &str = "band1";
-de_band_named!(de_band1, BAND1_WORKER_NAME);
-const BAND2_WORKER_NAME: &str = "band2";
-de_band_named!(de_band2, BAND2_WORKER_NAME);
+const BAND1_WORKER_NAME: &str = "band/kiwi";
+de_band_named!(de_kiwi, BAND1_WORKER_NAME);
+const BAND2_WORKER_NAME: &str = "band/macaw";
+de_band_named!(de_macaw, BAND2_WORKER_NAME);
 
 impl Default for CryptoSourceConfigs {
     fn default() -> Self {
@@ -72,13 +74,15 @@ impl Default for CryptoSourceConfigs {
             htx: Some(bothan_htx::WorkerOpts::default()),
             kraken: Some(bothan_kraken::WorkerOpts::default()),
             okx: Some(bothan_okx::WorkerOpts::default()),
-            band1: Some(bothan_band::WorkerOpts::new(
-                "band1",
-                "https://bandsource1.bandchain.org",
+            band_kiwi: Some(bothan_band::WorkerOpts::new(
+                "band/kiwi",
+                "https://kiwi.bandchain.org",
+                None,
             )),
-            band2: Some(bothan_band::WorkerOpts::new(
-                "band2",
-                "https://bandsource2.bandchain.org",
+            band_macaw: Some(bothan_band::WorkerOpts::new(
+                "band/macaw",
+                "https://macaw.banddchain.org",
+                None,
             )),
         }
     }

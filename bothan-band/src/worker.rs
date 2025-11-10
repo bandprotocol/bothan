@@ -24,7 +24,7 @@
 //!
 //! #[tokio::test]
 //! async fn test<T: Store>(store: T) {
-//!     let opts = WorkerOpts::new("band", "https://example.com");;
+//!     let opts = WorkerOpts::new("band", "https://example.com");
 //!     let ids = vec!["CS:BTC-USD".to_string(), "CS:ETH-USD".to_string()];
 //!
 //!     let worker = Worker::build(opts, &store, ids).await?;
@@ -80,12 +80,13 @@ impl AssetWorker for Worker {
         store: &S,
         ids: Vec<String>,
     ) -> Result<Self, AssetWorkerError> {
+        let name: &str = opts.name();
         let api = RestApiBuilder::new(opts.url).build()?;
-        let worker_store = WorkerStore::new(store, opts.name);
+        let worker_store = WorkerStore::new(store, name);
         let token = CancellationToken::new();
-        let metrics = Metrics::new(opts.name);
+        let metrics = Metrics::new(name);
 
-        let span = span!(Level::ERROR, "source", name = opts.name);
+        let span = span!(Level::ERROR, "source", name = name);
         tokio::spawn(
             start_polling(
                 token.child_token(),
@@ -99,7 +100,7 @@ impl AssetWorker for Worker {
         );
 
         Ok(Worker {
-            name: opts.name,
+            name: name,
             _drop_guard: token.drop_guard(),
         })
     }

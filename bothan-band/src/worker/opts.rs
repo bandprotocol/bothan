@@ -34,7 +34,7 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct WorkerOpts {
     #[serde(skip)]
-    pub name: &'static str,
+    name: &'static str,
     /// The URL for the Band REST API.
     pub url: String,
     /// Duration between API polling.
@@ -59,11 +59,14 @@ impl WorkerOpts {
     /// # Returns
     ///
     /// A [`WorkerOpts`] instance with default settings
-    pub fn new(name: &'static str, url: &str) -> Self {
+    pub fn new(name: &'static str, url: &str, update_interval: Option<Duration>) -> Self {
         Self {
             name,
             url: url.to_string(),
-            update_interval: default_update_interval(),
+            update_interval: update_interval.unwrap_or(default_update_interval()),
         }
     }
+
+    /// Returns the name identifier for the worker.
+    pub fn name(&self) -> &'static str { self.name }
 }
