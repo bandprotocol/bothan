@@ -64,6 +64,32 @@ This project comprises primarily of 6 main components:
    docker-compose up
    ```
 
+## Generating Protobuf Files
+
+Bothan uses [Buf](https://buf.build/) for protobuf file generation and linting.
+
+1. **Generate all proto files for Go client, Rust client, and server:**
+
+   Run the following command from the root of the project:
+
+   ```bash
+   buf generate
+   ```
+
+   This command will generate protobuf files for all supported languages (Go, Rust, server stubs, etc.) as specified in the `buf.gen.yaml` configuration.
+
+2. **Generate the descriptor file for the server:**
+
+   To create a protobuf descriptor file needed by the server, run:
+
+   ```bash
+   buf build -o bothan-api/server/src/proto/descriptor.pb
+   ```
+
+   This will output the descriptor file to `bothan-api/server/src/proto/descriptor.pb`.
+
+For more information on modifying or generating protobuf files, refer to [Buf documentation](https://docs.buf.build/).
+
 ## Support
 
 If you encounter any issues or have questions related to Bothan, we encourage you to open a GitHub issue. This ensures a
