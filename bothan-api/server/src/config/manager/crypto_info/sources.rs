@@ -47,11 +47,7 @@ macro_rules! de_band_named {
             D: serde::Deserializer<'de>,
         {
             let v = Option::<bothan_band::WorkerOpts>::deserialize(d)?;
-            let v = v.map(|w| bothan_band::WorkerOpts::new(
-                $name,
-                &w.url,
-                Some(w.update_interval),
-            ));
+            let v = v.map(|w| bothan_band::WorkerOpts::new($name, &w.url, Some(w.update_interval)));
             Ok(v)
         }
     };

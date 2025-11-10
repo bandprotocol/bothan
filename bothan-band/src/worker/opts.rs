@@ -25,11 +25,11 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 /// use bothan_band::worker::opts::WorkerOpts;
 /// use std::time::Duration;
 ///
-/// let opts = WorkerOpts {
-///     name: "band",
-///     url: "https://bandsource-url.com".to_string(),
-///     update_interval: Duration::from_secs(30),
-/// };
+/// let opts = WorkerOpts::new(
+///     "band",
+///     "https://bandsource-url.com",
+///     Some(Duration::from_secs(30)),
+/// );
 /// ```
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct WorkerOpts {
@@ -68,5 +68,7 @@ impl WorkerOpts {
     }
 
     /// Returns the name identifier for the worker.
-    pub fn name(&self) -> &'static str { self.name }
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
 }

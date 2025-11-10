@@ -100,7 +100,7 @@ impl AssetWorker for Worker {
         );
 
         Ok(Worker {
-            name: name,
+            name,
             _drop_guard: token.drop_guard(),
         })
     }
