@@ -77,7 +77,7 @@ impl Default for CryptoSourceConfigs {
             )),
             band_macaw: Some(bothan_band::WorkerOpts::new(
                 "band/macaw",
-                "https://macaw.banddchain.org",
+                "https://macaw.bandchain.org",
                 None,
             )),
         }
