@@ -161,14 +161,21 @@ impl AssetInfoProvider for RestApi {
         let tickers = self.get_tickers(ids).await?;
         let mut asset_infos = Vec::with_capacity(tickers.len());
 
-        for t in tickers {
-            match Decimal::from_f64_retain(t.price()) {
-                Some(price) => {
-                    asset_infos.push(AssetInfo::new(t.symbol().to_string(), price, timestamp));
+        // Build a map from symbol to ticker for quick lookup
+        let ticker_map: std::collections::HashMap<&str, &Ticker> = tickers.iter().map(|t| (t.symbol(), t)).collect();
+
+        for id in ids {
+            if let Some(t) = ticker_map.get(id.as_str()) {
+                match Decimal::from_f64_retain(t.price()) {
+                    Some(price) => {
+                        asset_infos.push(AssetInfo::new(id.clone(), price, timestamp));
+                    }
+                    None => {
+                        warn!("failed to parse price for symbol '{}'", t.symbol());
+                    }
                 }
-                None => {
-                    warn!("failed to parse price for symbol '{}'", t.symbol());
-                }
+            } else {
+                warn!("ticker data for id '{}' not found.", id);
             }
         }
 
