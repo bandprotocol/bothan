@@ -19,9 +19,8 @@ use reqwest::{Client, Url};
 use rust_decimal::Decimal;
 use tracing::warn;
 
-use crate::api::error::ParseError;
+use crate::api::error::{ParseError, ProviderError};
 use crate::api::types::{Quote, Response as CmcResponse};
-use crate::worker::error::ProviderError;
 
 /// Client for interacting with the CoinMarketCap REST API.
 ///
@@ -76,23 +75,48 @@ impl RestApi {
     ///
     /// # Errors
     ///
-    /// Returns a [`reqwest::Error`] if:
-    /// - The request fails due to network issues
-    /// - The response status is not 2xx
-    /// - JSON deserialization into `HashMap<String, Quote>` fails
+    /// Returns a [`ProviderError`] if:
+    /// - The request fails due to network issues (`SendingRequestError`)
+    /// - The response status is not 2xx (`HttpStatusError`)
+    /// - JSON deserialization into `HashMap<String, Quote>` fails (`ParseResponseError`)
     pub async fn get_latest_quotes(
         &self,
         ids: &[u64],
-    ) -> Result<Vec<Option<Quote>>, reqwest::Error> {
+    ) -> Result<Vec<Option<Quote>>, ProviderError> {
         let url = format!("{}v2/cryptocurrency/quotes/latest", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
-        let params = vec![("id", ids_string)];
+        let params = vec![("id", &ids_string)];
 
         let request_builder = self.client.get(&url).query(&params);
-        let response = request_builder.send().await?.error_for_status()?;
+        let response =
+            request_builder
+                .send()
+                .await
+                .map_err(|error| ProviderError::SendingRequestError {
+                    error,
+                    ids: ids_string.clone(),
+                })?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let body = response
+                .text()
+                .await
+                .unwrap_or_else(|err| format!("failed to read response body: {err}"));
+            return Err(ProviderError::HttpStatusError {
+                status,
+                body,
+                ids: ids_string,
+            });
+        }
+
         let cmc_response = response
             .json::<CmcResponse<HashMap<String, Quote>>>()
-            .await?;
+            .await
+            .map_err(|source| ProviderError::ParseResponseError {
+                source,
+                ids: ids_string.clone(),
+            })?;
         let mut quote_map = cmc_response.data;
 
         let quotes = ids
@@ -126,7 +150,7 @@ impl AssetInfoProvider for RestApi {
     /// [`RestApi::get_latest_quotes`]: crate::api::RestApi::get_latest_quotes
     /// [`AssetInfo`]: bothan_lib::types::AssetInfo
     /// [`Decimal`]: rust_decimal::Decimal
-    /// [`ProviderError`]: crate::worker::error::ProviderError
+    /// [`ProviderError`]: crate::api::error::ProviderError
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
         let mut int_ids = Vec::with_capacity(ids.len());
         for id in ids {

@@ -260,7 +260,9 @@ impl WebSocketConnection {
             Some(Ok(Message::Binary(msg))) => Some(decode_response(&msg)),
             Some(Ok(Message::Ping(_))) => None,
             Some(Ok(Message::Close(_))) => None,
-            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Ok(m)) => Some(Err(Error::UnsupportedWebsocketMessageType(format!(
+                "{m:?}"
+            )))),
             Some(Err(_)) => None, // Consider the connection closed if error detected
             None => None,
         }
@@ -300,7 +302,10 @@ fn decode_response(msg: &[u8]) -> Result<Response, Error> {
     let mut decoder = GzDecoder::new(msg);
     let mut decompressed_msg = String::new();
     decoder.read_to_string(&mut decompressed_msg)?;
-    Ok(serde_json::from_str::<Response>(&decompressed_msg)?)
+    serde_json::from_str::<Response>(&decompressed_msg).map_err(|source| Error::ParseError {
+        source,
+        msg: decompressed_msg,
+    })
 }
 
 #[async_trait::async_trait]
@@ -389,16 +394,22 @@ impl AssetInfoProvider for WebSocketConnection {
 /// - The channel ID cannot be extracted from the channel name
 /// - The price data contains invalid values (NaN)
 fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
-    let id = data
-        .ch
+    let ch = data.ch;
+    let id = ch
+        .clone()
         .split('.')
         .nth(1)
-        .ok_or(ListeningError::InvalidChannelId)?
+        .ok_or(ListeningError::InvalidChannelId(ch))?
         .to_string();
+    let price = data.tick.last_price.to_string();
     let asset_info = AssetInfo::new(
-        id,
-        Decimal::from_f64_retain(data.tick.last_price).ok_or(ListeningError::InvalidPrice)?,
-        data.timestamp / 1000, // convert from millisecond to second
+        id.clone(),
+        Decimal::from_str_exact(&price).map_err(|source| ListeningError::InvalidPrice {
+            source,
+            symbol: id,
+            price,
+        })?,
+        data.timestamp / 1000,
     );
     Ok(Data::AssetInfo(vec![asset_info]))
 }

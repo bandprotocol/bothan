@@ -3,6 +3,7 @@
 //! This module provides custom error types used throughout the CoinGecko REST API integration,
 //! particularly for REST API client configuration and concurrent background data fetching.
 
+use reqwest::StatusCode;
 use thiserror::Error;
 
 /// Errors from initializing the CoinGecko REST API builder.
@@ -30,10 +31,30 @@ pub enum BuildError {
 #[derive(Debug, Error)]
 pub enum ProviderError {
     /// Indicates HTTP request failure due to network issues or HTTP errors.
-    #[error("failed to fetch tickers: {0}")]
-    RequestError(#[from] reqwest::Error),
+    #[error("failed to fetch {resource}: {error}")]
+    SendingRequestError {
+        #[source]
+        error: reqwest::Error,
+        resource: String,
+    },
+
+    /// Indicates a non-success HTTP status code.
+    #[error("returned HTTP {status} for {resource}: {body}")]
+    HttpStatusError {
+        status: StatusCode,
+        body: String,
+        resource: String,
+    },
+
+    /// Indicates the response body could not be parsed into the expected shape.
+    #[error("failed to parse {resource}: {source}")]
+    ParseResponseError {
+        #[source]
+        source: reqwest::Error,
+        resource: String,
+    },
 
     /// Indicates that the response data contains invalid numeric values (e.g., `NaN`).
-    #[error("value contains nan")]
-    InvalidValue,
+    #[error("invalid price value {price} for id {id}")]
+    InvalidValue { price: f64, id: String },
 }

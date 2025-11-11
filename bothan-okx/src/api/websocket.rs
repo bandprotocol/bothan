@@ -284,7 +284,9 @@ impl WebSocketConnection {
             Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
             Some(Ok(Message::Ping(_))) => Some(Ok(Response::Ping)),
             Some(Ok(Message::Close(_))) => None,
-            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Ok(m)) => Some(Err(Error::UnsupportedWebsocketMessageType(format!(
+                "{m:?}"
+            )))),
             Some(Err(_)) => None, // Consider the connection closed if error detected
             None => None,
         }
@@ -365,7 +367,7 @@ fn build_ticker_request<T: ToString>(inst_ids: &[T]) -> Vec<ticker::Request> {
 /// Returns a `Result` containing a parsed `Response` on success,
 /// or an `Error` if parsing fails.
 fn parse_msg(msg: String) -> Result<Response, Error> {
-    Ok(serde_json::from_str::<Response>(&msg)?)
+    serde_json::from_str::<Response>(&msg).map_err(|source| Error::ParseError { source, msg })
 }
 
 #[async_trait::async_trait]
@@ -472,9 +474,15 @@ fn parse_tickers(tickers: Vec<Ticker>) -> Result<Data, ListeningError> {
 /// - The price data contains invalid values
 /// - The timestamp cannot be parsed
 fn parse_ticker(ticker: Ticker) -> Result<AssetInfo, ListeningError> {
+    let symbol = ticker.inst_id;
+    let price = ticker.last;
     Ok(AssetInfo::new(
-        ticker.inst_id,
-        Decimal::from_str_exact(&ticker.last)?,
+        symbol.clone(),
+        Decimal::from_str_exact(&price).map_err(|source| ListeningError::InvalidPrice {
+            source,
+            symbol,
+            price,
+        })?,
         str::parse::<i64>(&ticker.ts)? / 1000,
     ))
 }

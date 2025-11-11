@@ -142,7 +142,9 @@ impl WebSocketConnection {
             Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
             Some(Ok(Message::Ping(_))) => Some(Ok(Response::Ping)),
             Some(Ok(Message::Close(_))) => None,
-            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Ok(m)) => Some(Err(Error::UnsupportedWebsocketMessageType(format!(
+                "{m:?}"
+            )))),
             Some(Err(_)) => None, // Consider the connection closed if error detected
             None => None,
         }
@@ -158,7 +160,7 @@ impl WebSocketConnection {
 }
 
 fn parse_msg(msg: String) -> Result<Response, Error> {
-    Ok(serde_json::from_str::<Response>(&msg)?)
+    serde_json::from_str::<Response>(&msg).map_err(|source| Error::ParseError { source, msg })
 }
 
 #[async_trait::async_trait]
@@ -188,11 +190,17 @@ impl AssetInfoProvider for WebSocketConnection {
     }
 }
 
-fn parse_public_ticker(ticker: PublicTickerResponse) -> Result<Data, rust_decimal::Error> {
+fn parse_public_ticker(ticker: PublicTickerResponse) -> Result<Data, ListeningError> {
+    let symbol = ticker.data.symbol;
+    let price = ticker.data.last_price;
     let asset_info = AssetInfo::new(
-        ticker.data.symbol,
-        Decimal::from_str_exact(&ticker.data.last_price)?,
-        ticker.ts / 1000, // convert from millisecond to second
+        symbol.clone(),
+        Decimal::from_str_exact(&price).map_err(|source| ListeningError::InvalidPrice {
+            source,
+            symbol,
+            price,
+        })?,
+        ticker.ts / 1000,
     );
     Ok(Data::AssetInfo(vec![asset_info]))
 }

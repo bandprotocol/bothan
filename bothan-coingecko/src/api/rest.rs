@@ -63,11 +63,11 @@ impl RestApi {
     }
 
     /// Retrieves a list of coins from the CoinGecko REST API.
-    pub async fn get_coins_list(&self) -> Result<Vec<Coin>, reqwest::Error> {
+    pub async fn get_coins_list(&self) -> Result<Vec<Coin>, ProviderError> {
         let url = format!("{}coins/list", self.url);
         let builder = self.client.get(url);
 
-        request::<Vec<Coin>>(builder).await
+        request::<Vec<Coin>>(builder, "coins list".to_string()).await
     }
 
     /// Retrieves market data for the specified coins from the CoinGecko REST API.
@@ -86,14 +86,14 @@ impl RestApi {
     ///
     /// # Errors
     ///
-    /// Returns a [`reqwest::Error`] if:
-    /// - The request fails due to network issues
-    /// - The response status is not 2xx
-    /// - JSON deserialization into [`HashMap<String, Price>`] fails
+    /// Returns a [`ProviderError`] if:
+    /// - The request fails due to network issues (`SendingRequestError`)
+    /// - The response status is not 2xx (`HttpStatusError`)
+    /// - JSON deserialization into [`HashMap<String, Price>`] fails (`ParseResponseError`)
     pub async fn get_simple_price_usd<T: AsRef<str>>(
         &self,
         ids: &[T],
-    ) -> Result<HashMap<String, Price>, reqwest::Error> {
+    ) -> Result<HashMap<String, Price>, ProviderError> {
         let url = format!("{}simple/price", self.url);
         let joined_ids = ids
             .iter()
@@ -110,7 +110,11 @@ impl RestApi {
 
         let builder_with_query = self.client.get(&url).query(&params);
 
-        request::<HashMap<String, Price>>(builder_with_query).await
+        request::<HashMap<String, Price>>(
+            builder_with_query,
+            format!("simple price (ids={joined_ids})"),
+        )
+        .await
     }
 }
 
@@ -121,16 +125,40 @@ impl RestApi {
 ///
 /// # Errors
 ///
-/// Returns a [`reqwest::Error`] if:
+/// Returns a [`ProviderError`] if:
 /// - The request fails to send (e.g., network issues)
 /// - The response returns a non-success status code (e.g., 400, 500)
 /// - JSON deserialization into type `T` fails
 async fn request<T: DeserializeOwned>(
     request_builder: RequestBuilder,
-) -> Result<T, reqwest::Error> {
-    let response = request_builder.send().await?.error_for_status()?;
+    resource: String,
+) -> Result<T, ProviderError> {
+    let response =
+        request_builder
+            .send()
+            .await
+            .map_err(|error| ProviderError::SendingRequestError {
+                error,
+                resource: resource.clone(),
+            })?;
 
-    response.json::<T>().await
+    let status = response.status();
+    if !status.is_success() {
+        let body = response
+            .text()
+            .await
+            .unwrap_or_else(|err| format!("failed to read response body: {err}"));
+        return Err(ProviderError::HttpStatusError {
+            status,
+            body,
+            resource,
+        });
+    }
+
+    response
+        .json::<T>()
+        .await
+        .map_err(|source| ProviderError::ParseResponseError { source, resource })
 }
 
 #[async_trait::async_trait]
@@ -165,8 +193,11 @@ impl AssetInfoProvider for RestApi {
             match simple_prices.get(id) {
                 Some(p) => {
                     let price =
-                        Decimal::from_f64_retain(p.usd).ok_or(ProviderError::InvalidValue)?;
-                    asset_infos.push(AssetInfo::new(id.clone(), price, p.last_updated_at));
+                        Decimal::from_f64_retain(p.usd).ok_or(ProviderError::InvalidValue {
+                            price: p.usd,
+                            id: id.into(),
+                        })?;
+                    asset_infos.push(AssetInfo::new(id.into(), price, p.last_updated_at));
                 }
                 None => {
                     warn!("price data for id '{id}' not found.");

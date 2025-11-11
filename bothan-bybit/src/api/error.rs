@@ -7,12 +7,16 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Failed to parse a message from the WebSocket.
-    #[error("failed to parse message")]
-    ParseError(#[from] serde_json::Error),
+    #[error("failed to parse message: {msg}")]
+    ParseError {
+        #[source]
+        source: serde_json::Error,
+        msg: String,
+    },
 
     /// Received an unsupported message type from the WebSocket.
-    #[error("unsupported message")]
-    UnsupportedWebsocketMessageType,
+    #[error("unsupported message: {0}")]
+    UnsupportedWebsocketMessageType(String),
 }
 
 /// Errors that can occur while listening for Bybit WebSocket events.
@@ -26,6 +30,11 @@ pub enum ListeningError {
     Error(#[from] Error),
 
     /// An invalid price was encountered while parsing a message.
-    #[error(transparent)]
-    InvalidPrice(#[from] rust_decimal::Error),
+    #[error("invalid price value {price} for symbol {symbol}")]
+    InvalidPrice {
+        #[source]
+        source: rust_decimal::Error,
+        symbol: String,
+        price: String,
+    },
 }
