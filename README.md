@@ -35,6 +35,8 @@ This project comprises primarily of 6 main components:
 - [HTX](bothan-htx)
 - [Kraken](bothan-kraken)
 - [OKX](bothan-okx)
+- [Band/kiwi](bothan-band)
+- [Band/macaw](bothan-band)
 
 ## Features
 

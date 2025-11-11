@@ -112,6 +112,18 @@ pub enum QuerySubCommand {
         #[clap(flatten)]
         args: QueryArgs,
     },
+    /// Query Band/kiwi prices
+    #[clap(name = "band/kiwi")]
+    BandKiwi {
+        #[clap(flatten)]
+        args: QueryArgs,
+    },
+    /// Query Band/macaw prices
+    #[clap(name = "band/macaw")]
+    BandMacaw {
+        #[clap(flatten)]
+        args: QueryArgs,
+    },
 }
 
 impl QueryCli {
@@ -154,6 +166,14 @@ impl QueryCli {
             QuerySubCommand::Okx { args } => {
                 let opts = source_config.okx.ok_or(config_err)?;
                 query_okx(opts, &args.query_ids, args.timeout).await?;
+            }
+            QuerySubCommand::BandKiwi { args} => {
+                let opts = source_config.band_kiwi.ok_or(config_err)?;
+                query_band(opts, &args.query_ids, args.timeout).await?;
+            }
+            QuerySubCommand::BandMacaw { args} => {
+                let opts = source_config.band_macaw.ok_or(config_err)?;
+                query_band(opts, &args.query_ids, args.timeout).await?;
             }
         }
 
@@ -293,6 +313,23 @@ async fn query_okx<T: Into<Duration>>(
     display_asset_infos(asset_infos);
     Ok(())
 }
+
+async fn query_band<T: Into<Duration>>(
+    opts: bothan_band::WorkerOpts,
+    query_ids: &[String],
+    timeout_interval: T,
+) -> anyhow::Result<()> {
+    let api = bothan_band::api::RestApiBuilder::new(opts.url).build()?;
+    let asset_infos = timeout(
+        timeout_interval.into(),
+        api.get_asset_info(&dedup(query_ids)),
+    )
+    .await??;
+
+    display_asset_infos(asset_infos);
+    Ok(())
+}
+
 
 async fn query_websocket_with_max_sub<C, P, E1, E2>(
     connector: Arc<C>,

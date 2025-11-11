@@ -460,6 +460,7 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "bothan-api",
+ "bothan-band",
  "bothan-binance",
  "bothan-bitfinex",
  "bothan-bybit",

@@ -71,7 +71,7 @@ impl RestApi {
     /// - The response status is not 2xx
     /// - JSON deserialization into `Vec<Price>` fails
     pub async fn get_latest_prices(&self, ids: &[String]) -> Result<Vec<Price>, reqwest::Error> {
-        let url = format!("{}prices/", self.url);
+        let url = format!("{}prices", self.url);
         let ids_string = ids.iter().map(|id| id.to_string()).join(",");
         let params = vec![("signals", ids_string)];
 
@@ -111,8 +111,8 @@ impl AssetInfoProvider for RestApi {
             .get_latest_prices(ids)
             .await?
             .into_iter()
-            .filter_map(|price| parse_price(price).ok())
-            .collect();
+            .map(|price| parse_price(price))
+            .collect::<Result<Vec<AssetInfo>, _>>()?;
 
         Ok(asset_info)
     }
