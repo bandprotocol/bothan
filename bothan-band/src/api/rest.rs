@@ -6,7 +6,7 @@
 //!
 //! This module provides:
 //!
-//! - Fetches the latest quotes for assets from the Band `/prices/` endpoint
+//! - Fetches the latest quotes for assets from the Band `/prices` endpoint
 //! - Transforms API responses into [`AssetInfo`] for use in workers
 //! - Handles deserialization and error propagation
 
@@ -111,7 +111,7 @@ impl AssetInfoProvider for RestApi {
             .get_latest_prices(ids)
             .await?
             .into_iter()
-            .map(|price| parse_price(price))
+            .map(parse_price)
             .collect::<Result<Vec<AssetInfo>, _>>()?;
 
         Ok(asset_info)
@@ -163,7 +163,7 @@ mod test {
     impl MockBandRest for ServerGuard {
         fn set_successful_prices(&mut self, ids: &[String], prices: &[Price]) -> Mock {
             let response = serde_json::to_string(prices).unwrap();
-            self.mock("GET", "/prices/")
+            self.mock("GET", "/prices")
                 .match_query(Matcher::UrlEncoded("signals".into(), ids.join(",")))
                 .with_status(200)
                 .with_body(response)
@@ -175,7 +175,7 @@ mod test {
             ids: &[String],
             data: StrOrBytes,
         ) -> Mock {
-            self.mock("GET", "/prices/")
+            self.mock("GET", "/prices")
                 .match_query(Matcher::UrlEncoded("signals".into(), ids.join(",")))
                 .with_status(200)
                 .with_body(data)
@@ -183,7 +183,7 @@ mod test {
         }
 
         fn set_failed_prices(&mut self, ids: &[String]) -> Mock {
-            self.mock("GET", "/prices/")
+            self.mock("GET", "/prices")
                 .match_query(Matcher::UrlEncoded("signals".into(), ids.join(",")))
                 .with_status(500)
                 .create()

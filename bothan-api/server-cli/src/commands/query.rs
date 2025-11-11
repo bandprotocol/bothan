@@ -167,11 +167,11 @@ impl QueryCli {
                 let opts = source_config.okx.ok_or(config_err)?;
                 query_okx(opts, &args.query_ids, args.timeout).await?;
             }
-            QuerySubCommand::BandKiwi { args} => {
+            QuerySubCommand::BandKiwi { args } => {
                 let opts = source_config.band_kiwi.ok_or(config_err)?;
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
-            QuerySubCommand::BandMacaw { args} => {
+            QuerySubCommand::BandMacaw { args } => {
                 let opts = source_config.band_macaw.ok_or(config_err)?;
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
@@ -329,7 +329,6 @@ async fn query_band<T: Into<Duration>>(
     display_asset_infos(asset_infos);
     Ok(())
 }
-
 
 async fn query_websocket_with_max_sub<C, P, E1, E2>(
     connector: Arc<C>,
