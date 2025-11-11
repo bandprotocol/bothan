@@ -15,6 +15,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
+use tracing::warn;
 
 use crate::api::error::{ParseError, ProviderError};
 use crate::api::types::Price;
@@ -107,12 +108,18 @@ impl AssetInfoProvider for RestApi {
     /// [`Decimal`]: rust_decimal::Decimal
     /// [`ProviderError`]: crate::worker::error::ProviderError
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
-        let asset_info = self
-            .get_latest_prices(ids)
-            .await?
-            .into_iter()
-            .map(parse_price)
-            .collect::<Result<Vec<AssetInfo>, _>>()?;
+        let prices = self.get_latest_prices(ids).await?;
+        let mut asset_info = Vec::with_capacity(prices.len());
+
+        for band_price in prices {
+            let signal = band_price.signal.clone();
+            match parse_price(band_price) {
+                Ok(info) => asset_info.push(info),
+                Err(e) => {
+                    warn!("failed to parse price id '{signal}': {e}");
+                }
+            }
+        }
 
         Ok(asset_info)
     }

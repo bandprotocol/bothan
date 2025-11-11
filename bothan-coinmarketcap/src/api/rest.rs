@@ -17,6 +17,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
+use tracing::warn;
 
 use crate::api::error::ParseError;
 use crate::api::types::{Quote, Response as CmcResponse};
@@ -127,20 +128,32 @@ impl AssetInfoProvider for RestApi {
     /// [`Decimal`]: rust_decimal::Decimal
     /// [`ProviderError`]: crate::worker::error::ProviderError
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
-        let int_ids = ids
-            .iter()
-            .map(|id| {
-                id.parse::<u64>()
-                    .map_err(|_| ProviderError::InvalidId(id.clone()))
-            })
-            .collect::<Result<Vec<u64>, _>>()?;
+        let mut int_ids = Vec::with_capacity(ids.len());
+        for id in ids {
+            match id.parse::<u64>() {
+                Ok(val) => int_ids.push(val),
+                Err(_) => {
+                    warn!("invalid CoinMarketCap id '{id}': cannot parse to u64",);
+                }
+            }
+        }
 
-        let asset_info = self
-            .get_latest_quotes(&int_ids)
-            .await?
-            .into_iter()
-            .filter_map(|quote| quote.and_then(|q| parse_quote(q).ok()))
-            .collect();
+        let mut asset_info = Vec::with_capacity(int_ids.len());
+        let quotes = self.get_latest_quotes(&int_ids).await?;
+
+        for (idx, quote_opt) in quotes.into_iter().enumerate() {
+            match quote_opt {
+                Some(q) => match parse_quote(q) {
+                    Ok(info) => asset_info.push(info),
+                    Err(e) => {
+                        warn!("failed to parse quote for id '{}': {e}", int_ids[idx]);
+                    }
+                },
+                None => {
+                    warn!("no quote found for id '{}'", int_ids[idx]);
+                }
+            }
+        }
 
         Ok(asset_info)
     }

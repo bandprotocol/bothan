@@ -76,7 +76,7 @@ api_key = ""
 # User agent string for HTTP requests to CoinGecko.
 user_agent = "Bothan"
 # Update interval for polling data from CoinGecko.
-update_interval = "30s"
+update_interval = "1m"
 
 # Configuration for CoinMarketCap.
 [manager.crypto.source.coinmarketcap]

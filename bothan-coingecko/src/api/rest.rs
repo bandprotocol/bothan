@@ -17,6 +17,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, RequestBuilder, Url};
 use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
+use tracing::warn;
 
 use crate::api::error::ProviderError;
 use crate::api::types::{Coin, Price};
@@ -157,14 +158,22 @@ impl AssetInfoProvider for RestApi {
     /// [`Decimal`]: rust_decimal::Decimal
     /// [`ProviderError`]: crate::api::error::ProviderError
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
-        self.get_simple_price_usd(ids)
-            .await?
-            .into_iter()
-            .map(|(id, p)| {
-                let price = Decimal::from_f64_retain(p.usd).ok_or(ProviderError::InvalidValue)?;
-                Ok(AssetInfo::new(id, price, p.last_updated_at))
-            })
-            .collect()
+        let simple_prices = self.get_simple_price_usd(ids).await?;
+        let mut asset_infos = Vec::with_capacity(ids.len());
+
+        for id in ids {
+            match simple_prices.get(id) {
+                Some(p) => {
+                    let price =
+                        Decimal::from_f64_retain(p.usd).ok_or(ProviderError::InvalidValue)?;
+                    asset_infos.push(AssetInfo::new(id.clone(), price, p.last_updated_at));
+                }
+                None => {
+                    warn!("price data for id '{id}' not found.");
+                }
+            }
+        }
+        Ok(asset_infos)
     }
 }
 
