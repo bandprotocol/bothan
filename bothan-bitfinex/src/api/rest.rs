@@ -162,7 +162,8 @@ impl AssetInfoProvider for RestApi {
         let mut asset_infos = Vec::with_capacity(tickers.len());
 
         // Build a map from symbol to ticker for quick lookup
-        let ticker_map: std::collections::HashMap<&str, &Ticker> = tickers.iter().map(|t| (t.symbol(), t)).collect();
+        let ticker_map: std::collections::HashMap<&str, &Ticker> =
+            tickers.iter().map(|t| (t.symbol(), t)).collect();
 
         for id in ids {
             if let Some(t) = ticker_map.get(id.as_str()) {
