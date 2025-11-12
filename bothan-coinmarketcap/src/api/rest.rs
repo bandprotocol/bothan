@@ -220,6 +220,30 @@ pub(crate) mod test {
         }
     }
 
+    pub(crate) fn mock_quote_no_price() -> Quote {
+        Quote {
+            id: 2,
+            symbol: "ETH".to_string(),
+            slug: "ethereum".to_string(),
+            name: "Ethereum".to_string(),
+            price_quotes: PriceQuotes {
+                usd: PriceQuote {
+                    price: None,
+                    volume_24h: 999.0,
+                    volume_change_24h: 111.0,
+                    market_cap: Some(20000000.0),
+                    market_cap_dominance: 88.0,
+                    fully_diluted_market_cap: 4200000.0,
+                    percent_change_1h: 1.5,
+                    percent_change_24h: 5.0,
+                    percent_change_7d: 9.9,
+                    percent_change_30d: 0.0,
+                    last_updated: "2024-03-16T06:55:15.700Z".to_string(),
+                },
+            },
+        }
+    }
+
     pub(crate) trait MockCoinMarketCap {
         fn set_successful_quotes(&mut self, ids: &[&str], quotes: &[Quote]) -> Mock;
         fn set_arbitrary_quotes<StrOrBytes: AsRef<[u8]>>(
@@ -322,5 +346,59 @@ pub(crate) mod test {
         let result = client.get_latest_quotes(&[1]).await;
         mock.assert();
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_get_asset_info_with_none_price() {
+        let (mut server, client) = setup().await;
+        let mut quotes = vec![mock_quote()];
+        let quote_none_price = mock_quote_no_price();
+        quotes.push(quote_none_price.clone());
+
+        // ids as strings; 1 has price, 2 does not
+        let ids = vec!["1".to_string(), "2".to_string()];
+
+        // Both quotes in the response map
+        let mock = server.set_successful_quotes(&["1", "2"], &quotes);
+
+        let asset_infos = client.get_asset_info(&ids).await.unwrap();
+
+        mock.assert();
+
+        // Only the first asset (price Some) should be included.
+        assert_eq!(asset_infos.len(), 1);
+        assert_eq!(asset_infos[0].id, "1");
+        assert_eq!(
+            asset_infos[0].price,
+            rust_decimal::Decimal::from_f64_retain(80000.0).unwrap()
+        );
+        // Verify timestamp parsed for the correct quote
+        assert_eq!(
+            asset_infos[0].timestamp,
+            chrono::DateTime::parse_from_rfc3339("2024-03-16T06:55:15.626Z")
+                .unwrap()
+                .timestamp()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_asset_info_with_no_quotes_returned() {
+        let (mut server, client) = setup().await;
+
+        // No quotes in response
+        let quotes: Vec<Quote> = Vec::new();
+
+        // ids for which no quotes will be returned
+        let ids = vec!["1".to_string(), "2".to_string(), "3".to_string()];
+
+        // The server mock returns no quotes for the requested ids
+        let mock = server.set_successful_quotes(&["1", "2", "3"], &quotes);
+
+        let asset_infos = client.get_asset_info(&ids).await.unwrap();
+
+        mock.assert();
+
+        // No asset info should be included since there are no quotes
+        assert_eq!(asset_infos.len(), 0);
     }
 }

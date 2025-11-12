@@ -46,6 +46,10 @@ pub struct CryptoSourceConfigs {
     pub band_macaw: Option<bothan_band::WorkerOpts>,
 }
 
+// Macro to generate deserialization functions for Band workers with preset names.
+// This macro defines a function that:
+// - Deserializes an Option<WorkerOpts>,
+// - If present, creates a new WorkerOpts with the given name and original URL/update_interval.
 macro_rules! de_band_named {
     ($fn_name:ident, $name:expr) => {
         fn $fn_name<'de, D>(d: D) -> Result<Option<bothan_band::WorkerOpts>, D::Error>
