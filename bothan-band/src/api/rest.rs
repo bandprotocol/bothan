@@ -189,6 +189,14 @@ mod test {
         }
     }
 
+    fn mock_price_none(signal: &str, timestamp: i64) -> Price {
+        Price {
+            signal: signal.to_string(),
+            price: None,
+            timestamp: Some(timestamp),
+        }
+    }
+
     trait MockBandRest {
         fn set_successful_prices(&mut self, ids: &[String], prices: &[Price]) -> Mock;
         fn set_arbitrary_prices<StrOrBytes: AsRef<[u8]>>(
@@ -279,5 +287,71 @@ mod test {
         let result = client.get_latest_prices(&ids).await;
         mock.assert();
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_get_asset_info_price_is_none() {
+        let (mut server, client) = setup().await;
+
+        let ids = vec!["BTC".to_string(), "ETH".to_string()];
+        let prices = vec![
+            mock_price("BTC", 80000.0, 100000),
+            // ETH will have price = None
+            mock_price_none("ETH", 100002),
+        ];
+        let mock = server.set_successful_prices(&ids, &prices);
+
+        let asset_infos = client.get_asset_info(&ids).await.unwrap();
+
+        mock.assert();
+
+        // Only BTC info should be present; ETH is skipped due to None price
+        assert_eq!(asset_infos.len(), 1);
+        assert_eq!(asset_infos[0].id, "BTC");
+        assert_eq!(
+            asset_infos[0].price,
+            rust_decimal::Decimal::from_f64_retain(80000.0).unwrap()
+        );
+        assert_eq!(asset_infos[0].timestamp, 100000);
+    }
+
+    #[tokio::test]
+    async fn test_get_asset_info_success_multiple_assets() {
+        let (mut server, client) = setup().await;
+
+        let ids = vec!["BTC".to_string(), "ETH".to_string(), "BAND".to_string()];
+        let prices = vec![
+            mock_price("BTC", 80000.0, 100000),
+            mock_price("ETH", 3500.0, 100002),
+            mock_price("BAND", 1.6, 100003),
+        ];
+        let mock = server.set_successful_prices(&ids, &prices);
+
+        let asset_infos = client.get_asset_info(&ids).await.unwrap();
+
+        mock.assert();
+
+        assert_eq!(asset_infos.len(), 3);
+
+        assert_eq!(asset_infos[0].id, "BTC");
+        assert_eq!(
+            asset_infos[0].price,
+            rust_decimal::Decimal::from_f64_retain(80000.0).unwrap()
+        );
+        assert_eq!(asset_infos[0].timestamp, 100000);
+
+        assert_eq!(asset_infos[1].id, "ETH");
+        assert_eq!(
+            asset_infos[1].price,
+            rust_decimal::Decimal::from_f64_retain(3500.0).unwrap()
+        );
+        assert_eq!(asset_infos[1].timestamp, 100002);
+
+        assert_eq!(asset_infos[2].id, "BAND");
+        assert_eq!(
+            asset_infos[2].price,
+            rust_decimal::Decimal::from_f64_retain(1.6).unwrap()
+        );
+        assert_eq!(asset_infos[2].timestamp, 100003);
     }
 }
