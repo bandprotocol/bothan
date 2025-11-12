@@ -75,14 +75,6 @@ pub enum ProviderError {
         source: reqwest::Error,
         ids: String,
     },
-
-    /// Indicates the ticker data contains invalid values for a specific asset.
-    #[error("invalid quote for id {id}: {source}")]
-    InvalidQuote {
-        #[source]
-        source: ParseError,
-        id: String,
-    },
 }
 
 /// Errors that can occur while parsing CoinMarketCap API responses.

@@ -196,7 +196,11 @@ impl AssetInfoProvider for RestApi {
                         asset_infos.push(AssetInfo::new(id.clone(), price, timestamp));
                     }
                     None => {
-                        warn!("failed to parse price for symbol '{}'", t.symbol());
+                        warn!(
+                            "failed to parse price {} for symbol '{}'",
+                            t.price(),
+                            t.symbol()
+                        );
                     }
                 }
             } else {

@@ -137,11 +137,10 @@ impl AssetInfoProvider for RestApi {
         let mut asset_info = Vec::with_capacity(prices.len());
 
         for band_price in prices {
-            let signal = band_price.signal.clone();
             match parse_price(band_price) {
                 Ok(info) => asset_info.push(info),
                 Err(e) => {
-                    warn!("failed to parse price id '{signal}': {e}");
+                    warn!("failed to parse price: {e}");
                 }
             }
         }

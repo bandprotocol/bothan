@@ -49,14 +49,6 @@ pub enum ProviderError {
         source: reqwest::Error,
         signals: String,
     },
-
-    /// Indicates a failure to parse the API response.
-    #[error("invalid price payload for signal {signal}: {source}")]
-    ParsePriceError {
-        #[source]
-        source: ParseError,
-        signal: String,
-    },
 }
 
 /// Errors that can occur while parsing Band API responses.

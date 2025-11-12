@@ -49,8 +49,4 @@ pub enum ProviderError {
         source: reqwest::Error,
         symbols: String,
     },
-
-    /// Indicates that the ticker data contains invalid values.
-    #[error("invalid price value {price} from symbol {symbol}")]
-    InvalidValue { price: f64, symbol: String },
 }
