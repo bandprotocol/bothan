@@ -428,7 +428,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-api"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-band",
@@ -456,7 +456,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-api-cli"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "bothan-api",
@@ -493,7 +493,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-band"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -514,7 +514,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-binance"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -534,7 +534,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-bitfinex"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -553,7 +553,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-bybit"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -571,7 +571,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-client"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "pbjson",
  "prost",
@@ -585,7 +585,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-coinbase"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -605,7 +605,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-coingecko"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -624,7 +624,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-coinmarketcap"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -645,7 +645,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-core"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum 0.8.4",
@@ -687,7 +687,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-htx"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -706,7 +706,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-kraken"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
@@ -725,7 +725,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-lib"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -747,7 +747,7 @@ dependencies = [
 
 [[package]]
 name = "bothan-okx"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bothan-lib",
