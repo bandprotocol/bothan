@@ -403,11 +403,8 @@ fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     let price = data.tick.last_price;
     let asset_info = AssetInfo::new(
         id.clone(),
-        Decimal::try_from(price).map_err(|source| ListeningError::InvalidPrice {
-            source,
-            symbol: id.clone(),
-            price,
-        })?,
+        Decimal::from_f64_retain(data.tick.last_price)
+            .ok_or(ListeningError::InvalidPrice { symbol: id, price })?,
         data.timestamp / 1000,
     );
     Ok(Data::AssetInfo(vec![asset_info]))
