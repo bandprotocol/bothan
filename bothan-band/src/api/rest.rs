@@ -141,7 +141,7 @@ impl AssetInfoProvider for RestApi {
                 Ok(info) => asset_info.push(info),
                 Err(ParseError::InvalidPrice { price, signal }) => {
                     error!("failed to parse price '{price}' for signal '{signal}'");
-                }, 
+                }
                 Err(ParseError::MissingPrice(signal)) => {
                     warn!("missing price for '{signal}'");
                 }

@@ -50,7 +50,7 @@ pub enum ListeningError {
         #[source]
         source: rust_decimal::Error,
         symbol: String,
-        price: String,
+        price: f64,
     },
 
     /// Indicates a failure to send a pong response to a ping message.

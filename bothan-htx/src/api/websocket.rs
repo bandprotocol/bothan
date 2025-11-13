@@ -400,12 +400,12 @@ fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
         .nth(1)
         .map(|s| s.to_string())
         .ok_or_else(|| ListeningError::InvalidChannelId(ch))?;
-    let price = data.tick.last_price.to_string();
+    let price = data.tick.last_price;
     let asset_info = AssetInfo::new(
         id.clone(),
-        Decimal::from_str_exact(&price).map_err(|source| ListeningError::InvalidPrice {
+        Decimal::try_from(price).map_err(|source| ListeningError::InvalidPrice {
             source,
-            symbol: id,
+            symbol: id.clone(),
             price,
         })?,
         data.timestamp / 1000,
