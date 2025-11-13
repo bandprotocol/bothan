@@ -47,10 +47,5 @@ pub enum ListeningError {
 
     /// Indicates that the received price data contains invalid values.
     #[error("invalid price value {price} for symbol {symbol}")]
-    InvalidPrice {
-        #[source]
-        source: rust_decimal::Error,
-        symbol: String,
-        price: String,
-    },
+    InvalidPrice { symbol: String, price: f64 },
 }

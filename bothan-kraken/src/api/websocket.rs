@@ -509,14 +509,10 @@ fn parse_tickers(tickers: Vec<TickerResponse>, timestamp: i64) -> Result<Data, L
 /// - The price data contains invalid values
 fn parse_ticker(ticker: TickerResponse, timestamp: i64) -> Result<AssetInfo, ListeningError> {
     let symbol = ticker.symbol;
-    let price = ticker.last.to_string();
+    let price = ticker.last;
     Ok(AssetInfo::new(
         symbol.clone(),
-        Decimal::from_str_exact(&price).map_err(|source| ListeningError::InvalidPrice {
-            source,
-            symbol,
-            price,
-        })?,
+        Decimal::from_f64_retain(price).ok_or(ListeningError::InvalidPrice { symbol, price })?,
         timestamp,
     ))
 }
