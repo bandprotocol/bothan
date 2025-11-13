@@ -46,10 +46,7 @@ pub enum ListeningError {
 
     /// Indicates that the received price data contains invalid values.
     #[error("invalid price value {price} for symbol {symbol}")]
-    InvalidPrice {
-        symbol: String,
-        price: f64,
-    },
+    InvalidPrice { symbol: String, price: f64 },
 
     /// Indicates a failure to send a pong response to a ping message.
     #[error("failed to pong")]
