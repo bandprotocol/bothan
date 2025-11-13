@@ -36,13 +36,13 @@ pub struct CryptoSourceConfigs {
     ///
     /// NOTE: The `name` field in `WorkerOpts` is marked with `#[serde(skip)]`, so deserialized instances
     /// will have an empty/default name. The custom deserializer `de_kiwi` reconstructs the options
-    #[serde(deserialize_with = "de_kiwi")]
+    #[serde(default, deserialize_with = "de_kiwi")]
     pub band_kiwi: Option<bothan_band::WorkerOpts>,
     /// Band/macaw worker options.
     ///
     /// NOTE: The `name` field in `WorkerOpts` is marked with `#[serde(skip)]`, so deserialized instances
     /// will have an empty/default name. The custom deserializer `de_macaw` reconstructs the options
-    #[serde(deserialize_with = "de_macaw")]
+    #[serde(default, deserialize_with = "de_macaw")]
     pub band_macaw: Option<bothan_band::WorkerOpts>,
 }
 
