@@ -15,7 +15,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::api::error::{ParseError, ProviderError};
 use crate::api::types::Price;
@@ -139,8 +139,14 @@ impl AssetInfoProvider for RestApi {
         for band_price in prices {
             match parse_price(band_price) {
                 Ok(info) => asset_info.push(info),
-                Err(e) => {
-                    error!("failed to parse price: {e}");
+                Err(ParseError::InvalidPrice { price, signal }) => {
+                    error!("failed to parse price '{price}' for signal '{signal}'");
+                }, 
+                Err(ParseError::MissingPrice(signal)) => {
+                    warn!("missing price for '{signal}'");
+                }
+                Err(ParseError::MissingTimestamp(signal)) => {
+                    warn!("missing timestamp for '{signal}'");
                 }
             }
         }
