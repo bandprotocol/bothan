@@ -399,7 +399,7 @@ fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
         .clone()
         .split('.')
         .nth(1)
-        .ok_or_else(|| ListeningError::InvalidChannelId(ch))?
+        .ok_or(ListeningError::InvalidChannelId(ch))?
         .to_string();
     let price = data.tick.last_price;
     let asset_info = AssetInfo::new(
