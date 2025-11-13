@@ -9,7 +9,7 @@
 
 use bothan_core::manager::crypto_asset_info::types::PriceState;
 use rust_decimal::prelude::Zero;
-use tracing::warn;
+use tracing::error;
 
 use crate::api::server::PRECISION;
 use crate::proto::bothan::v1::{Price, Status};
@@ -32,7 +32,7 @@ pub fn parse_price_state(id: String, price_state: PriceState) -> Price {
             match u64::try_from(mantissa) {
                 Ok(p) => Price::new(id, p, Status::Available),
                 Err(_) => {
-                    warn!("failed to convert {mantissa} to u64 for id {id}");
+                    error!("failed to convert {mantissa} to u64 for id {id}");
                     Price::new(id, 0u64, Status::Unavailable)
                 }
             }

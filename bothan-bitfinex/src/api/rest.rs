@@ -16,7 +16,7 @@ use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::api::error::ProviderError;
 use crate::api::msg::ticker::Ticker;
@@ -196,7 +196,7 @@ impl AssetInfoProvider for RestApi {
                         asset_infos.push(AssetInfo::new(id.clone(), price, timestamp));
                     }
                     None => {
-                        warn!(
+                        error!(
                             "failed to parse price {} for symbol '{}'",
                             t.price(),
                             t.symbol()

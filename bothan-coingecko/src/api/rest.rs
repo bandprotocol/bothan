@@ -17,7 +17,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, RequestBuilder, Url};
 use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::api::error::ProviderError;
 use crate::api::types::{Coin, Price};
@@ -197,7 +197,7 @@ impl AssetInfoProvider for RestApi {
                             asset_infos.push(AssetInfo::new(id.clone(), price, p.last_updated_at));
                         }
                         None => {
-                            warn!("failed to parse price for id '{id}': invalid or NaN value.");
+                            error!("failed to parse price '{usd}' for id '{id}'");
                         }
                     },
                     None => {

@@ -17,7 +17,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::api::error::{ParseError, ProviderError};
 use crate::api::types::{Quote, Response as CmcResponse};
@@ -157,7 +157,7 @@ impl AssetInfoProvider for RestApi {
             match id.parse::<u64>() {
                 Ok(val) => int_ids.push(val),
                 Err(_) => {
-                    warn!("invalid CoinMarketCap id '{id}': cannot parse to u64",);
+                    error!("invalid CoinMarketCap id '{id}': cannot parse to u64",);
                 }
             }
         }
@@ -170,7 +170,7 @@ impl AssetInfoProvider for RestApi {
                 Some(q) => match parse_quote(q) {
                     Ok(info) => asset_info.push(info),
                     Err(e) => {
-                        warn!("failed to parse quote for id '{}': {e}", int_ids[idx]);
+                        error!("failed to parse quote for id '{}': {e}", int_ids[idx]);
                     }
                 },
                 None => {

@@ -23,7 +23,7 @@ use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
-use tracing::warn;
+use tracing::error;
 
 use crate::api::error::{Error, ListeningError};
 use crate::api::types::Response;
@@ -357,7 +357,7 @@ impl AssetInfoProvider for WebSocketConnection {
             Ok(Response::DataUpdate(d)) => parse_data(d),
             Ok(Response::Ping(p)) => reply_pong(self, p.ping).await,
             Ok(Response::Error(e)) => {
-                warn!("received error in response: {:?}", e);
+                error!("received error in response: {:?}", e);
                 Ok(Data::Unused)
             }
             Err(e) => Err(ListeningError::Error(e)),
