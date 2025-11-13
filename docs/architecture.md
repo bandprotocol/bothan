@@ -82,6 +82,7 @@ Each provider has its own dedicated module:
 - `bothan-htx`: Integration with HTX
 - `bothan-kraken`: Integration with Kraken
 - `bothan-okx`: Integration with OKX
+- `bothan-band`: Integration with Band sources (e.g. band/kiwi, band/macaw)
 
 These modules implement provider-specific logic while conforming to common interfaces defined in the core components.
 

@@ -431,6 +431,7 @@ name = "bothan-api"
 version = "0.0.1"
 dependencies = [
  "async-trait",
+ "bothan-band",
  "bothan-binance",
  "bothan-bitfinex",
  "bothan-bybit",
@@ -459,6 +460,7 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "bothan-api",
+ "bothan-band",
  "bothan-binance",
  "bothan-bitfinex",
  "bothan-bybit",
@@ -487,6 +489,27 @@ dependencies = [
  "tonic-reflection",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "bothan-band"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "bothan-lib",
+ "chrono",
+ "humantime-serde",
+ "itertools 0.14.0",
+ "mockito",
+ "reqwest",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
 ]
 
 [[package]]
@@ -627,6 +650,7 @@ dependencies = [
  "async-trait",
  "axum 0.8.4",
  "bincode",
+ "bothan-band",
  "bothan-binance",
  "bothan-bitfinex",
  "bothan-bybit",

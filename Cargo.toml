@@ -30,6 +30,7 @@ bothan-coinmarketcap = { path = "bothan-coinmarketcap", version = "0.0.1" }
 bothan-htx = { path = "bothan-htx", version = "0.0.1" }
 bothan-kraken = { path = "bothan-kraken", version = "0.0.1" }
 bothan-okx = { path = "bothan-okx", version = "0.0.1" }
+bothan-band = { path = "bothan-band", version = "0.0.1" }
 
 anyhow = "1.0.86"
 async-trait = "0.1.77"

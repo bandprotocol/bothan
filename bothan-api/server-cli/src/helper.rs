@@ -32,7 +32,7 @@ impl<T> Exitable<T> for anyhow::Result<T> {
         match self {
             Ok(t) => t,
             Err(e) => {
-                eprintln!("{:?}", e);
+                eprintln!("{e:?}");
                 std::process::exit(code);
             }
         }

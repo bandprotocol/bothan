@@ -21,9 +21,10 @@
 //! ```rust,no_run
 //! use bothan_api::api::BothanServer;
 //! use bothan_api::config::AppConfig;
+//! use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let config = AppConfig::default();
+//!     let mut config = AppConfig::default();
 //!     // Initialize server with config
 //!     Ok(())
 //! }

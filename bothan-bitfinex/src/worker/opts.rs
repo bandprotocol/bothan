@@ -32,7 +32,7 @@ const DEFAULT_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 ///
 /// let opts = WorkerOpts {
 ///     url: "https://api-pub.bitfinex.com/v2/".to_string(),
-///     update_interval: Duration::from_secs(30),
+///     update_interval: Duration::from_secs(60),
 /// };
 ///
 /// // Or use defaults

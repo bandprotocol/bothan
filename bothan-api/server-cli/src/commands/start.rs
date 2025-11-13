@@ -251,6 +251,8 @@ async fn init_crypto_opts(
     add_worker_opts(&mut worker_opts, &source.htx).await?;
     add_worker_opts(&mut worker_opts, &source.kraken).await?;
     add_worker_opts(&mut worker_opts, &source.okx).await?;
+    add_worker_opts(&mut worker_opts, &source.band_kiwi).await?;
+    add_worker_opts(&mut worker_opts, &source.band_macaw).await?;
 
     Ok(worker_opts)
 }

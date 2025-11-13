@@ -76,7 +76,7 @@ api_key = ""
 # User agent string for HTTP requests to CoinGecko.
 user_agent = "Bothan"
 # Update interval for polling data from CoinGecko.
-update_interval = "30s"
+update_interval = "1m"
 
 # Configuration for CoinMarketCap.
 [manager.crypto.source.coinmarketcap]
@@ -101,6 +101,18 @@ url = "wss://ws.kraken.com/v2"
 [manager.crypto.source.okx]
 # WebSocket URL for streaming data from OKX.
 url = "wss://ws.okx.com:8443/ws/v5/public"
+
+[manager.crypto.source.band_kiwi]
+# URL for Band Kiwi source
+url = "https://kiwi.bandchain.org"
+# Update interval for Band Kiwi source
+update_interval = "1m"
+
+[manager.crypto.source.band_macaw]
+# URL for Band Macaw source
+url = "https://macaw.bandchain.org"
+# Update interval for Band Macaw source
+update_interval = "1m"
 
 # Telemetry configuration
 [telemetry]

@@ -24,6 +24,7 @@ bothan-coinmarketcap = { workspace = true }
 bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
+bothan-band = { workspace = true }
 
 dirs = { workspace = true }
 futures = { workspace = true }

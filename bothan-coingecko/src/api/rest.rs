@@ -17,6 +17,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, RequestBuilder, Url};
 use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
+use tracing::warn;
 
 use crate::api::error::ProviderError;
 use crate::api::types::{Coin, Price};
@@ -157,23 +158,42 @@ impl AssetInfoProvider for RestApi {
     /// [`Decimal`]: rust_decimal::Decimal
     /// [`ProviderError`]: crate::api::error::ProviderError
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
-        self.get_simple_price_usd(ids)
-            .await?
-            .into_iter()
-            .map(|(id, p)| {
-                let price = Decimal::from_f64_retain(p.usd).ok_or(ProviderError::InvalidValue)?;
-                Ok(AssetInfo::new(id, price, p.last_updated_at))
-            })
-            .collect()
+        let simple_prices = self.get_simple_price_usd(ids).await?;
+        let mut asset_infos = Vec::with_capacity(ids.len());
+
+        for id in ids {
+            match simple_prices.get(id) {
+                Some(p) => match p.usd {
+                    Some(usd) => match Decimal::from_f64_retain(usd) {
+                        Some(price) => {
+                            asset_infos.push(AssetInfo::new(id.clone(), price, p.last_updated_at));
+                        }
+                        None => {
+                            warn!("failed to parse price for id '{id}': invalid or NaN value.");
+                        }
+                    },
+                    None => {
+                        warn!("price data for id '{id}' has a missing USD value.");
+                    }
+                },
+                None => {
+                    warn!("price data for id '{id}' not found.");
+                }
+            }
+        }
+        Ok(asset_infos)
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use mockito::{Matcher, Mock, Server, ServerGuard};
 
     use super::*;
     use crate::api::RestApiBuilder;
+    use crate::api::types::Price;
 
     async fn setup() -> (ServerGuard, RestApi) {
         let server = Server::new_async().await;
@@ -294,7 +314,7 @@ mod test {
         let prices: HashMap<String, Price> = HashMap::from([(
             "bitcoin".to_string(),
             Price {
-                usd: 42000.69,
+                usd: Some(42000.69),
                 last_updated_at: 42000,
             },
         )]);
@@ -314,7 +334,7 @@ mod test {
         let prices = HashMap::from([(
             "bitcoin".to_string(),
             Price {
-                usd: 42000.69,
+                usd: Some(42000.69),
                 last_updated_at: 42000,
             },
         )]);
@@ -350,5 +370,75 @@ mod test {
         let result = client.get_simple_price_usd(&["bitcoin"]).await;
         mock.assert();
         assert!(result.is_err());
+    }
+
+    // New test: AssetInfoProvider returns empty AssetInfo for not found / null prices
+    #[tokio::test]
+    async fn test_asset_info_id_not_found_in_result() {
+        let (mut server, client) = setup().await;
+
+        let prices: HashMap<String, Price> = HashMap::from([(
+            "bitcoin".to_string(),
+            Price {
+                usd: Some(42000.0),
+                last_updated_at: 1700000000,
+            },
+        )]);
+        // "missingcoin" does not exist in returned prices
+        let ids = vec!["bitcoin".to_string(), "missingcoin".to_string()];
+
+        let mock = server.set_successful_simple_price(&["bitcoin", "missingcoin"], &prices);
+
+        let asset_infos = client.get_asset_info(&ids).await.unwrap();
+
+        mock.assert();
+
+        // Only bitcoin is returned, missingcoin should be skipped (not found, only one result)
+        assert_eq!(asset_infos.len(), 1);
+        assert_eq!(asset_infos[0].id, "bitcoin");
+        assert_eq!(
+            asset_infos[0].price,
+            Decimal::from_f64_retain(42000.0).unwrap()
+        );
+        assert_eq!(asset_infos[0].timestamp, 1700000000);
+    }
+
+    #[tokio::test]
+    async fn test_asset_info_price_is_nan_or_invalid() {
+        let (mut server, client) = setup().await;
+        // Insert a value that is NaN
+        let prices = HashMap::from([
+            (
+                "bitcoin".to_string(),
+                Price {
+                    usd: None,
+                    last_updated_at: 123456,
+                },
+            ),
+            (
+                "ethereum".to_string(),
+                Price {
+                    usd: Some(2500.0),
+                    last_updated_at: 789012,
+                },
+            ),
+        ]);
+
+        let ids = vec!["bitcoin".to_string(), "ethereum".to_string()];
+
+        let mock = server.set_successful_simple_price(&["bitcoin", "ethereum"], &prices);
+
+        let asset_infos = client.get_asset_info(&ids).await.unwrap();
+
+        mock.assert();
+
+        // Only ethereum should be in the result; bitcoin is skipped due to NaN
+        assert_eq!(asset_infos.len(), 1);
+        assert_eq!(asset_infos[0].id, "ethereum");
+        assert_eq!(
+            asset_infos[0].price,
+            Decimal::from_f64_retain(2500.0).unwrap()
+        );
+        assert_eq!(asset_infos[0].timestamp, 789012);
     }
 }

@@ -57,7 +57,7 @@ pub struct Coin {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Price {
     /// Latest price in USD.
-    pub usd: f64,
+    pub usd: Option<f64>,
     /// Unix timestamp (in seconds) of the latest price update.
     pub last_updated_at: i64,
 }

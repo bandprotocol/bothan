@@ -16,6 +16,7 @@ use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
+use tracing::warn;
 
 use crate::api::error::ProviderError;
 use crate::api::msg::ticker::Ticker;
@@ -157,14 +158,28 @@ impl AssetInfoProvider for RestApi {
     /// - The ticker data contains invalid values such as NaN (`InvalidValue`)
     async fn get_asset_info(&self, ids: &[String]) -> Result<Vec<AssetInfo>, Self::Error> {
         let timestamp = chrono::Utc::now().timestamp();
-        self.get_tickers(ids)
-            .await?
-            .into_iter()
-            .map(|t| {
-                let price =
-                    Decimal::from_f64_retain(t.price()).ok_or(ProviderError::InvalidValue)?;
-                Ok(AssetInfo::new(t.symbol().to_string(), price, timestamp))
-            })
-            .collect()
+        let tickers = self.get_tickers(ids).await?;
+        let mut asset_infos = Vec::with_capacity(tickers.len());
+
+        // Build a map from symbol to ticker for quick lookup
+        let ticker_map: std::collections::HashMap<&str, &Ticker> =
+            tickers.iter().map(|t| (t.symbol(), t)).collect();
+
+        for id in ids {
+            if let Some(t) = ticker_map.get(id.as_str()) {
+                match Decimal::from_f64_retain(t.price()) {
+                    Some(price) => {
+                        asset_infos.push(AssetInfo::new(id.clone(), price, timestamp));
+                    }
+                    None => {
+                        warn!("failed to parse price for symbol '{}'", t.symbol());
+                    }
+                }
+            } else {
+                warn!("ticker data for id '{}' not found.", id);
+            }
+        }
+
+        Ok(asset_infos)
     }
 }

@@ -6,13 +6,13 @@
 //!
 //! ```rust,no_run
 //! use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
-//! let sources = CryptoSourceConfigs::with_default_sources();
+//! let sources = CryptoSourceConfigs::default();
 //! ```
 
 use serde::{Deserialize, Serialize};
 
 /// Configuration for the worker sources for crypto asset info.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CryptoSourceConfigs {
     /// Binance worker options.
     pub binance: Option<bothan_binance::WorkerOpts>,
@@ -32,11 +32,44 @@ pub struct CryptoSourceConfigs {
     pub kraken: Option<bothan_kraken::WorkerOpts>,
     /// OKX worker options.
     pub okx: Option<bothan_okx::WorkerOpts>,
+    /// Band/kiwi worker options.
+    ///
+    /// NOTE: The `name` field in `WorkerOpts` is marked with `#[serde(skip)]`, so deserialized instances
+    /// will have an empty/default name. The custom deserializer `de_kiwi` reconstructs the options
+    #[serde(default, deserialize_with = "de_kiwi")]
+    pub band_kiwi: Option<bothan_band::WorkerOpts>,
+    /// Band/macaw worker options.
+    ///
+    /// NOTE: The `name` field in `WorkerOpts` is marked with `#[serde(skip)]`, so deserialized instances
+    /// will have an empty/default name. The custom deserializer `de_macaw` reconstructs the options
+    #[serde(default, deserialize_with = "de_macaw")]
+    pub band_macaw: Option<bothan_band::WorkerOpts>,
 }
 
-impl CryptoSourceConfigs {
-    /// Creates a new `CryptoSourceConfigs` with all sources set to their default options.
-    pub fn with_default_sources() -> Self {
+// Macro to generate deserialization functions for Band workers with preset names.
+// This macro defines a function that:
+// - Deserializes an Option<WorkerOpts>,
+// - If present, creates a new WorkerOpts with the given name and original URL/update_interval.
+macro_rules! de_band_named {
+    ($fn_name:ident, $name:expr) => {
+        fn $fn_name<'de, D>(d: D) -> Result<Option<bothan_band::WorkerOpts>, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            let v = Option::<bothan_band::WorkerOpts>::deserialize(d)?;
+            let v = v.map(|w| bothan_band::WorkerOpts::new($name, &w.url, Some(w.update_interval)));
+            Ok(v)
+        }
+    };
+}
+
+const BAND1_WORKER_NAME: &str = "band/kiwi";
+de_band_named!(de_kiwi, BAND1_WORKER_NAME);
+const BAND2_WORKER_NAME: &str = "band/macaw";
+de_band_named!(de_macaw, BAND2_WORKER_NAME);
+
+impl Default for CryptoSourceConfigs {
+    fn default() -> Self {
         CryptoSourceConfigs {
             binance: Some(bothan_binance::WorkerOpts::default()),
             bitfinex: Some(bothan_bitfinex::WorkerOpts::default()),
@@ -47,6 +80,16 @@ impl CryptoSourceConfigs {
             htx: Some(bothan_htx::WorkerOpts::default()),
             kraken: Some(bothan_kraken::WorkerOpts::default()),
             okx: Some(bothan_okx::WorkerOpts::default()),
+            band_kiwi: Some(bothan_band::WorkerOpts::new(
+                "band/kiwi",
+                "https://kiwi.bandchain.org",
+                None,
+            )),
+            band_macaw: Some(bothan_band::WorkerOpts::new(
+                "band/macaw",
+                "https://macaw.bandchain.org",
+                None,
+            )),
         }
     }
 }

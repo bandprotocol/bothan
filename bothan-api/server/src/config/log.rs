@@ -68,7 +68,7 @@ impl Display for LogLevel {
             LogLevel::Warn => "warn".to_string(),
             LogLevel::Error => "error".to_string(),
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 

@@ -86,7 +86,7 @@ async fn main() {
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             std::process::exit(1);
         }
     };
@@ -117,7 +117,8 @@ async fn main() {
         .add_directive(create_directive("bothan_cryptocompare", src_log_lvl))
         .add_directive(create_directive("bothan_htx", src_log_lvl))
         .add_directive(create_directive("bothan_kraken", src_log_lvl))
-        .add_directive(create_directive("bothan_okx", src_log_lvl));
+        .add_directive(create_directive("bothan_okx", src_log_lvl))
+        .add_directive(create_directive("bothan_band", src_log_lvl));
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 

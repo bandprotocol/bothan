@@ -18,6 +18,7 @@ bothan-coinmarketcap = { workspace = true }
 bothan-htx = { workspace = true }
 bothan-kraken = { workspace = true }
 bothan-okx = { workspace = true }
+bothan-band = { workspace = true }
 
 async-trait = { workspace = true }
 chrono = { workspace = true }

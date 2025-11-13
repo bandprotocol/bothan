@@ -11,6 +11,7 @@ pub enum CryptoAssetWorkerOpts {
     Htx(bothan_htx::WorkerOpts),
     Kraken(bothan_kraken::WorkerOpts),
     Okx(bothan_okx::WorkerOpts),
+    Band(bothan_band::WorkerOpts),
 }
 
 impl CryptoAssetWorkerOpts {
@@ -25,6 +26,7 @@ impl CryptoAssetWorkerOpts {
             CryptoAssetWorkerOpts::Htx(_) => "htx",
             CryptoAssetWorkerOpts::Kraken(_) => "kraken",
             CryptoAssetWorkerOpts::Okx(_) => "okx",
+            CryptoAssetWorkerOpts::Band(opts) => opts.name(),
         }
     }
 }
@@ -80,5 +82,11 @@ impl From<bothan_kraken::WorkerOpts> for CryptoAssetWorkerOpts {
 impl From<bothan_okx::WorkerOpts> for CryptoAssetWorkerOpts {
     fn from(value: bothan_okx::WorkerOpts) -> Self {
         CryptoAssetWorkerOpts::Okx(value)
+    }
+}
+
+impl From<bothan_band::WorkerOpts> for CryptoAssetWorkerOpts {
+    fn from(value: bothan_band::WorkerOpts) -> Self {
+        CryptoAssetWorkerOpts::Band(value)
     }
 }

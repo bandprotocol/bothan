@@ -60,7 +60,7 @@ impl RequestCli {
         let client = match GrpcClient::connect(&uri).await {
             Ok(client) => client,
             Err(e) => {
-                eprintln!("Failed to connect to server: {:#?}", e);
+                eprintln!("Failed to connect to server: {e:#?}");
                 std::process::exit(1);
             }
         };
@@ -71,7 +71,7 @@ impl RequestCli {
                     .get_info()
                     .await
                     .with_context(|| "Failed to get info")?;
-                println!("{:#?}", info);
+                println!("{info:#?}");
             }
             RequestSubCommand::UpdateRegistry { ipfs_hash, version } => {
                 client
@@ -98,7 +98,7 @@ impl RequestCli {
                     .get_prices(&ids)
                     .await
                     .with_context(|| "Failed to get prices")?;
-                println!("{:#?}", prices);
+                println!("{prices:#?}");
             }
         }
         Ok(())

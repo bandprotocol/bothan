@@ -25,6 +25,7 @@ pub enum CryptoAssetWorker {
     Htx(bothan_htx::Worker),
     Kraken(bothan_kraken::Worker),
     Okx(bothan_okx::Worker),
+    Band(bothan_band::Worker),
 }
 
 #[async_trait::async_trait]
@@ -42,6 +43,7 @@ impl AssetWorker for CryptoAssetWorker {
             CryptoAssetWorker::Htx(w) => w.name(),
             CryptoAssetWorker::Kraken(w) => w.name(),
             CryptoAssetWorker::Okx(w) => w.name(),
+            CryptoAssetWorker::Band(w) => w.name(),
         }
     }
 
@@ -77,6 +79,9 @@ impl AssetWorker for CryptoAssetWorker {
             }
             CryptoAssetWorkerOpts::Okx(opts) => {
                 CryptoAssetWorker::from(bothan_okx::Worker::build(opts, store, ids).await?)
+            }
+            CryptoAssetWorkerOpts::Band(opts) => {
+                CryptoAssetWorker::from(bothan_band::Worker::build(opts, store, ids).await?)
             }
         })
     }

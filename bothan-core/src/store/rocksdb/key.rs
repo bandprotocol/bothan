@@ -20,11 +20,11 @@ impl Display for Key<'_> {
             Key::AssetStore {
                 source_id,
                 asset_id,
-            } => format!("asset_store::{}::{}", source_id, asset_id),
+            } => format!("asset_store::{source_id}::{asset_id}"),
             Key::Registry => "registry".to_string(),
             Key::RegistryIpfsHash => "registry_ipfs_hash".to_string(),
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
