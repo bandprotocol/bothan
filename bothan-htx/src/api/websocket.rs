@@ -396,11 +396,10 @@ impl AssetInfoProvider for WebSocketConnection {
 fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     let ch = data.ch;
     let id = ch
-        .clone()
         .split('.')
         .nth(1)
-        .ok_or(ListeningError::InvalidChannelId(ch))?
-        .to_string();
+        .map(|s| s.to_string())
+        .ok_or_else(|| ListeningError::InvalidChannelId(ch))?;
     let price = data.tick.last_price.to_string();
     let asset_info = AssetInfo::new(
         id.clone(),
