@@ -394,12 +394,11 @@ impl AssetInfoProvider for WebSocketConnection {
 /// - The channel ID cannot be extracted from the channel name
 /// - The price data contains invalid values (NaN)
 fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
-    let ch = data.ch;
-    let id = ch
+    let id = data.ch
         .split('.')
         .nth(1)
         .map(|s| s.to_string())
-        .ok_or_else(|| ListeningError::InvalidChannelId(ch))?;
+        .ok_or_else(|| ListeningError::InvalidChannelId(data.ch))?;
     let price = data.tick.last_price;
     let asset_info = AssetInfo::new(
         id.clone(),
