@@ -3,6 +3,7 @@
 //! This module provides custom error types used throughout the CoinMarketCap REST API integration,
 //! particularly for REST API client configuration and concurrent background data fetching.
 
+use reqwest::StatusCode;
 use thiserror::Error;
 
 /// Errors from initializing the CoinMarketCap REST API builder.
@@ -48,16 +49,32 @@ pub enum Error {
 #[derive(Debug, Error)]
 pub enum ProviderError {
     /// Indicates that an ID in the request is not a valid integer.
-    #[error("ids contains non integer value")]
-    InvalidId,
+    #[error("ids contains non integer value: {0}")]
+    InvalidId(String),
 
     /// Indicates HTTP request failure due to network issues or HTTP errors.
-    #[error("failed to fetch tickers: {0}")]
-    RequestError(#[from] reqwest::Error),
+    #[error("failed to fetch quotes (ids={ids}): {error}")]
+    SendingRequestError {
+        #[source]
+        error: reqwest::Error,
+        ids: String,
+    },
 
-    /// Indicates a failure to parse the API response.
-    #[error("parse error: {0}")]
-    ParseError(#[from] ParseError),
+    /// Indicates a non-success HTTP status code.
+    #[error("returned HTTP {status} for ids={ids}: {body}")]
+    HttpStatusError {
+        status: StatusCode,
+        body: String,
+        ids: String,
+    },
+
+    /// Indicates the response body could not be parsed into the expected shape.
+    #[error("failed to parse response for ids={ids}: {source}")]
+    ParseResponseError {
+        #[source]
+        source: reqwest::Error,
+        ids: String,
+    },
 }
 
 /// Errors that can occur while parsing CoinMarketCap API responses.

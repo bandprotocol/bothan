@@ -16,7 +16,7 @@ use bothan_lib::store::Store;
 use bothan_lib::types::AssetInfo;
 use num_traits::Zero;
 use rust_decimal::Decimal;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::manager::crypto_asset_info::price::cache::PriceCache;
 use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisiteError};
@@ -71,15 +71,15 @@ pub async fn get_signal_price_states<S: Store>(
                 continue;
             }
             Err(Error::InvalidSignal) => {
-                warn!("signal with id {} is not supported", id);
+                debug!("signal with id {} is not supported", id);
                 cache.set_unsupported(id);
             }
             Err(Error::FailedToProcessSignal(e)) => {
-                warn!("error while processing signal id {}: {}", id, e);
+                error!("error while processing signal id {}: {}", id, e);
                 cache.set_unavailable(id);
             }
             Err(Error::FailedToPostProcessSignal(e)) => {
-                warn!("error while post processing signal id {}: {}", id, e);
+                error!("error while post processing signal id {}: {}", id, e);
                 cache.set_unavailable(id);
             }
         }
@@ -241,7 +241,7 @@ async fn process_source_query<S: Store>(
             Ok(None)
         }
         Err(_) => {
-            warn!("error while querying source {source_id} for {query_id}");
+            error!("error while querying source {source_id} for {query_id}");
             metrics.update_store_operation(
                 source_id.clone(),
                 start_time.elapsed().as_micros(),

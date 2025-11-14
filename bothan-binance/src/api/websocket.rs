@@ -163,13 +163,12 @@ impl WebSocketConnection {
     /// Supported message types include text messages (parsed as `Event`), ping messages, and close messages.
     pub async fn next(&mut self) -> Option<Result<Event, Error>> {
         match self.ws_stream.next().await {
-            Some(Ok(Message::Text(msg))) => match serde_json::from_str::<Event>(&msg) {
-                Ok(msg) => Some(Ok(msg)),
-                Err(e) => Some(Err(Error::ParseError(e))),
-            },
+            Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
             Some(Ok(Message::Ping(_))) => Some(Ok(Event::Ping)),
             Some(Ok(Message::Close(_))) => None,
-            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Ok(m)) => Some(Err(Error::UnsupportedWebsocketMessageType(format!(
+                "{m:?}"
+            )))),
             Some(Err(_)) => None, // Consider the connection closed if error detected
             None => None,
         }
@@ -182,6 +181,10 @@ impl WebSocketConnection {
         self.ws_stream.close(None).await?;
         Ok(())
     }
+}
+
+fn parse_msg(msg: String) -> Result<Event, Error> {
+    serde_json::from_str::<Event>(&msg).map_err(|source| Error::ParseError { source, msg })
 }
 
 #[async_trait::async_trait]
@@ -233,10 +236,16 @@ impl AssetInfoProvider for WebSocketConnection {
     }
 }
 
-fn parse_mini_ticker(mini_ticker: MiniTickerInfo) -> Result<Data, rust_decimal::Error> {
+fn parse_mini_ticker(mini_ticker: MiniTickerInfo) -> Result<Data, ListeningError> {
+    let symbol = mini_ticker.symbol.to_ascii_lowercase();
+    let price = mini_ticker.close_price;
     let asset_info = AssetInfo::new(
-        mini_ticker.symbol.to_ascii_lowercase(),
-        Decimal::from_str(&mini_ticker.close_price)?,
+        symbol.clone(),
+        Decimal::from_str(&price).map_err(|source| ListeningError::InvalidPrice {
+            source,
+            symbol,
+            price,
+        })?,
         mini_ticker.event_time / 1000, // convert from millisecond to second
     );
     Ok(Data::AssetInfo(vec![asset_info]))

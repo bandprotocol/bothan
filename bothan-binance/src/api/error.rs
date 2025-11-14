@@ -9,12 +9,16 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Indicates a failure to parse a websocket message.
-    #[error("failed to parse message")]
-    ParseError(#[from] serde_json::Error),
+    #[error("failed to parse message: {msg}")]
+    ParseError {
+        #[source]
+        source: serde_json::Error,
+        msg: String,
+    },
 
     /// Indicates that the websocket message type is not supported.
-    #[error("unsupported message")]
-    UnsupportedWebsocketMessageType,
+    #[error("unsupported message: {0}")]
+    UnsupportedWebsocketMessageType(String),
 }
 
 /// Errors encountered while listening for Binance API events.
@@ -28,6 +32,11 @@ pub enum ListeningError {
     Error(#[from] Error),
 
     /// Indicates an error while parsing a message from the WebSocket stream.
-    #[error(transparent)]
-    InvalidPrice(#[from] rust_decimal::Error),
+    #[error("invalid price value {price} for symbol {symbol}")]
+    InvalidPrice {
+        #[source]
+        source: rust_decimal::Error,
+        symbol: String,
+        price: String,
+    },
 }

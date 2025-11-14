@@ -2,7 +2,7 @@
 //!
 //! This module provides custom error types used throughout the Bitfinex API integration,
 //! particularly for handling REST API requests and price validation errors.
-
+use reqwest::StatusCode;
 use thiserror::Error;
 
 /// Errors related to Bitfinex API client configuration and building.
@@ -27,10 +27,26 @@ pub enum BuildError {
 #[derive(Debug, Error)]
 pub enum ProviderError {
     /// Indicates a failure to fetch ticker data from the Bitfinex API.
-    #[error("failed to fetch tickers: {0}")]
-    RequestError(#[from] reqwest::Error),
+    #[error("failed to fetch tickers (symbols={symbols}): {error}")]
+    SendingRequestError {
+        #[source]
+        error: reqwest::Error,
+        symbols: String,
+    },
 
-    /// Indicates that the ticker data contains invalid values (e.g., NaN).
-    #[error("value contains nan")]
-    InvalidValue,
+    /// Indicates a non-success HTTP status code.
+    #[error("returned HTTP {status} for symbols={symbols}: {body}")]
+    HttpStatusError {
+        status: StatusCode,
+        body: String,
+        symbols: String,
+    },
+
+    /// Indicates the response body could not be parsed into the expected shape.
+    #[error("failed to parse response for symbols={symbols}: {source}")]
+    ParseResponseError {
+        #[source]
+        source: reqwest::Error,
+        symbols: String,
+    },
 }

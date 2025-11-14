@@ -16,7 +16,7 @@ use bothan_lib::types::AssetInfo;
 use bothan_lib::worker::rest::AssetInfoProvider;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::api::error::ProviderError;
 use crate::api::msg::ticker::Ticker;
@@ -110,25 +110,49 @@ impl RestApi {
     ///
     /// # Errors
     ///
-    /// Returns a `reqwest::Error` if:
-    /// - The HTTP request fails due to network issues
-    /// - The API returns an error response
-    /// - The response cannot be parsed as JSON
+    /// Returns a [`ProviderError`] if:
+    /// - The HTTP request fails due to network issues (`SendingRequestError`)
+    /// - The API returns an error response (`HttpStatusError`)
+    /// - The response cannot be parsed as JSON (`ParseResponseError`)
     pub async fn get_tickers<T: AsRef<str>>(
         &self,
         tickers: &[T],
-    ) -> Result<Vec<Ticker>, reqwest::Error> {
+    ) -> Result<Vec<Ticker>, ProviderError> {
         let url = format!("{}/tickers", self.url);
         let symbols = tickers
             .iter()
             .map(|t| t.as_ref())
             .collect::<Vec<&str>>()
             .join(",");
-        let params = vec![("symbols", symbols)];
+        let params = vec![("symbols", &symbols)];
 
-        let resp = self.client.get(&url).query(&params).send().await?;
-        resp.error_for_status_ref()?;
-        resp.json().await
+        let resp = self
+            .client
+            .get(&url)
+            .query(&params)
+            .send()
+            .await
+            .map_err(|e| ProviderError::SendingRequestError {
+                error: e,
+                symbols: symbols.clone(),
+            })?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let body = resp
+                .text()
+                .await
+                .unwrap_or_else(|err| format!("failed to read response body: {err}"));
+            return Err(ProviderError::HttpStatusError {
+                status,
+                body,
+                symbols: symbols.clone(),
+            });
+        }
+
+        resp.json()
+            .await
+            .map_err(|source| ProviderError::ParseResponseError { source, symbols })
     }
 }
 
@@ -172,7 +196,11 @@ impl AssetInfoProvider for RestApi {
                         asset_infos.push(AssetInfo::new(id.clone(), price, timestamp));
                     }
                     None => {
-                        warn!("failed to parse price for symbol '{}'", t.symbol());
+                        error!(
+                            "failed to parse price {} for symbol '{}'",
+                            t.price(),
+                            t.symbol()
+                        );
                     }
                 }
             } else {

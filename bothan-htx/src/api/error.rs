@@ -18,12 +18,16 @@ pub enum Error {
     Io(#[from] io::Error),
 
     /// Indicates a failure to parse a WebSocket message.
-    #[error("failed to parse message")]
-    ParseError(#[from] serde_json::Error),
+    #[error("failed to parse message: {msg}")]
+    ParseError {
+        #[source]
+        source: serde_json::Error,
+        msg: String,
+    },
 
     /// Indicates that the WebSocket message type is not supported.
-    #[error("unsupported message")]
-    UnsupportedWebsocketMessageType,
+    #[error("unsupported message: {0}")]
+    UnsupportedWebsocketMessageType(String),
 }
 
 /// Errors encountered while listening for HTX API events.
@@ -37,12 +41,12 @@ pub enum ListeningError {
     Error(#[from] Error),
 
     /// Indicates that the received channel ID is invalid or malformed.
-    #[error("received invalid channel id")]
-    InvalidChannelId,
+    #[error("received invalid channel id: {0}")]
+    InvalidChannelId(String),
 
-    /// Indicates that the received price data contains NaN values.
-    #[error("received NaN")]
-    InvalidPrice,
+    /// Indicates that the received price data contains invalid values.
+    #[error("invalid price value {price} for symbol {symbol}")]
+    InvalidPrice { symbol: String, price: f64 },
 
     /// Indicates a failure to send a pong response to a ping message.
     #[error("failed to pong")]

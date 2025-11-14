@@ -15,7 +15,7 @@ use bothan_lib::worker::rest::AssetInfoProvider;
 use itertools::Itertools;
 use reqwest::{Client, Url};
 use rust_decimal::Decimal;
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::api::error::{ParseError, ProviderError};
 use crate::api::types::Price;
@@ -67,20 +67,45 @@ impl RestApi {
     ///
     /// # Errors
     ///
-    /// Returns a [`reqwest::Error`] if:
+    /// Returns a [`ProviderError`] if:
     /// - The request fails due to network issues
     /// - The response status is not 2xx
     /// - JSON deserialization into `Vec<Price>` fails
-    pub async fn get_latest_prices(&self, ids: &[String]) -> Result<Vec<Price>, reqwest::Error> {
+    pub async fn get_latest_prices(&self, ids: &[String]) -> Result<Vec<Price>, ProviderError> {
         let url = format!("{}prices", self.url);
-        let ids_string = ids.iter().map(|id| id.to_string()).join(",");
-        let params = vec![("signals", ids_string)];
+        let ids_string = ids.iter().map(String::as_str).join(",");
+        let params = vec![("signals", &ids_string)];
 
-        let request_builder = self.client.get(&url).query(&params);
-        let response = request_builder.send().await?.error_for_status()?;
-        let prices = response.json::<Vec<Price>>().await?;
+        let resp = self
+            .client
+            .get(&url)
+            .query(&params)
+            .send()
+            .await
+            .map_err(|error| ProviderError::SendingRequestError {
+                error,
+                signals: ids_string.clone(),
+            })?;
 
-        Ok(prices)
+        let status = resp.status();
+        if !status.is_success() {
+            let body = resp
+                .text()
+                .await
+                .unwrap_or_else(|err| format!("failed to read response body: {err}"));
+            return Err(ProviderError::HttpStatusError {
+                status,
+                body,
+                signals: ids_string.clone(),
+            });
+        }
+
+        resp.json::<Vec<Price>>()
+            .await
+            .map_err(|source| ProviderError::ParseResponseError {
+                source,
+                signals: ids_string,
+            })
     }
 }
 
@@ -112,11 +137,16 @@ impl AssetInfoProvider for RestApi {
         let mut asset_info = Vec::with_capacity(prices.len());
 
         for band_price in prices {
-            let signal = band_price.signal.clone();
             match parse_price(band_price) {
                 Ok(info) => asset_info.push(info),
-                Err(e) => {
-                    warn!("failed to parse price id '{signal}': {e}");
+                Err(ParseError::InvalidPrice { price, signal }) => {
+                    error!("failed to parse price '{price}' for signal '{signal}'");
+                }
+                Err(ParseError::MissingPrice(signal)) => {
+                    warn!("missing price for '{signal}'");
+                }
+                Err(ParseError::MissingTimestamp(signal)) => {
+                    warn!("missing timestamp for '{signal}'");
                 }
             }
         }
@@ -127,10 +157,18 @@ impl AssetInfoProvider for RestApi {
 
 /// Parses a `Price` into an [`AssetInfo`] struct.
 fn parse_price(band_price: Price) -> Result<AssetInfo, ParseError> {
-    let price = band_price.price.ok_or(ParseError::InvalidPrice)?;
-    let price = Decimal::from_f64_retain(price).ok_or(ParseError::InvalidPrice)?;
-    let ts = band_price.timestamp.ok_or(ParseError::InvalidTimestamp)?;
-    Ok(AssetInfo::new(band_price.signal, price, ts))
+    let signal = band_price.signal;
+    let price = band_price
+        .price
+        .ok_or(ParseError::MissingPrice(signal.clone()))?;
+    let price = Decimal::from_f64_retain(price).ok_or(ParseError::InvalidPrice {
+        price,
+        signal: signal.clone(),
+    })?;
+    let ts = band_price
+        .timestamp
+        .ok_or(ParseError::MissingTimestamp(signal.clone()))?;
+    Ok(AssetInfo::new(signal, price, ts))
 }
 
 #[cfg(test)]

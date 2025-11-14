@@ -20,7 +20,7 @@ use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
-use tracing::warn;
+use tracing::error;
 
 use crate::api::Ticker;
 use crate::api::error::{Error, ListeningError};
@@ -169,7 +169,9 @@ impl WebSocketConnection {
             Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
             Some(Ok(Message::Ping(_))) => Some(Ok(Response::Ping)),
             Some(Ok(Message::Close(_))) => None,
-            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Ok(m)) => Some(Err(Error::UnsupportedWebsocketMessageType(format!(
+                "{m:?}"
+            )))),
             Some(Err(_)) => None, // Consider the connection closed if error detected
             None => None,
         }
@@ -184,7 +186,7 @@ impl WebSocketConnection {
 }
 
 fn parse_msg(msg: String) -> Result<Response, Error> {
-    Ok(serde_json::from_str::<Response>(&msg)?)
+    serde_json::from_str::<Response>(&msg).map_err(|source| Error::ParseError { source, msg })
 }
 
 #[async_trait::async_trait]
@@ -225,7 +227,7 @@ impl AssetInfoProvider for WebSocketConnection {
                 Response::Ticker(t) => parse_ticker(t)?,
                 Response::Ping => Data::Ping,
                 Response::Error(e) => {
-                    warn!("received error in response: {:?}", e);
+                    error!("received error in response: {:?}", e);
                     Data::Unused
                 }
                 _ => Data::Unused,
@@ -242,9 +244,15 @@ impl AssetInfoProvider for WebSocketConnection {
 }
 
 fn parse_ticker(ticker: Box<Ticker>) -> Result<Data, ListeningError> {
+    let symbol = ticker.product_id;
+    let price = ticker.price;
     let asset_info = AssetInfo::new(
-        ticker.product_id,
-        Decimal::from_str_exact(&ticker.price)?,
+        symbol.clone(),
+        Decimal::from_str_exact(&price).map_err(|source| ListeningError::InvalidPrice {
+            source,
+            symbol,
+            price,
+        })?,
         chrono::DateTime::parse_from_rfc3339(&ticker.time)?.timestamp(),
     );
     Ok(Data::AssetInfo(vec![asset_info]))

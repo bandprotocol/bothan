@@ -315,7 +315,9 @@ impl WebSocketConnection {
             Some(Ok(Message::Text(msg))) => Some(parse_msg(msg)),
             Some(Ok(Message::Ping(_))) => Some(Ok(Response::Ping)),
             Some(Ok(Message::Close(_))) => None,
-            Some(Ok(_)) => Some(Err(Error::UnsupportedWebsocketMessageType)),
+            Some(Ok(m)) => Some(Err(Error::UnsupportedWebsocketMessageType(format!(
+                "{m:?}"
+            )))),
             Some(Err(_)) => None, // Consider the connection closed if error detected
             None => None,
         }
@@ -398,7 +400,7 @@ fn build_ticker_request<T: ToString>(
 /// Returns a `Result` containing a parsed `Response` on success,
 /// or an `Error` if parsing fails.
 fn parse_msg(msg: String) -> Result<Response, Error> {
-    Ok(serde_json::from_str::<Response>(&msg)?)
+    serde_json::from_str::<Response>(&msg).map_err(|source| Error::ParseError { source, msg })
 }
 
 #[async_trait::async_trait]
@@ -506,9 +508,11 @@ fn parse_tickers(tickers: Vec<TickerResponse>, timestamp: i64) -> Result<Data, L
 /// Returns a `ListeningError` if:
 /// - The price data contains invalid values
 fn parse_ticker(ticker: TickerResponse, timestamp: i64) -> Result<AssetInfo, ListeningError> {
+    let symbol = ticker.symbol;
+    let price = ticker.last;
     Ok(AssetInfo::new(
-        ticker.symbol,
-        Decimal::from_f64_retain(ticker.last).ok_or(ListeningError::InvalidPrice)?,
+        symbol.clone(),
+        Decimal::from_f64_retain(price).ok_or(ListeningError::InvalidPrice { symbol, price })?,
         timestamp,
     ))
 }

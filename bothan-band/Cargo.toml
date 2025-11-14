@@ -1,6 +1,6 @@
 [package]
 name = "bothan-band"
-version = "0.0.1"
+version = "0.1.0"
 description = "Rust client for the Band source with Bothan integration"
 edition.workspace = true
 license.workspace = true

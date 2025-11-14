@@ -28,15 +28,19 @@ pub enum Error {
     ///
     /// This variant wraps serde JSON errors that can occur when parsing
     /// WebSocket messages from the OKX API.
-    #[error("failed to parse message")]
-    ParseError(#[from] serde_json::Error),
+    #[error("failed to parse message: {msg}")]
+    ParseError {
+        #[source]
+        source: serde_json::Error,
+        msg: String,
+    },
 
     /// Received an unsupported WebSocket message type.
     ///
     /// This variant indicates that the WebSocket connection received a message
     /// type that is not supported by the OKX integration.
-    #[error("unsupported message")]
-    UnsupportedWebsocketMessageType,
+    #[error("unsupported message: {0}")]
+    UnsupportedWebsocketMessageType(String),
 }
 
 /// Errors that can occur during the listening and processing phase.
@@ -57,8 +61,13 @@ pub enum ListeningError {
     ///
     /// This variant indicates that the price data received from the OKX API
     /// could not be converted to a valid decimal value.
-    #[error(transparent)]
-    InvalidPrice(#[from] rust_decimal::Error),
+    #[error("invalid price value {price} for symbol {symbol}")]
+    InvalidPrice {
+        #[source]
+        source: rust_decimal::Error,
+        symbol: String,
+        price: String,
+    },
 
     /// Invalid timestamp data encountered during processing.
     ///
