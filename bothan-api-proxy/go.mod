@@ -3,7 +3,7 @@ module go-proxy
 go 1.24.2
 
 require (
-	github.com/bandprotocol/bothan/bothan-api/client/go-client v0.0.1
+	github.com/bandprotocol/bothan/bothan-api/client/go-client v0.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0
 	google.golang.org/grpc v1.67.1
 )
