@@ -2,6 +2,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use bothan_lib::registry::{Registry, Valid};
 
+use crate::manager::asset_info::types::AssetType;
+
 // Returns a mapping of source_id to a set of query_ids that are batched together
 // This is used to determine which queries should be batched together
 // e.g. if we have a registry with the following entries:
@@ -55,12 +57,15 @@ use bothan_lib::registry::{Registry, Valid};
 // }
 pub fn get_source_batched_query_ids(
     registry: &Registry<Valid>,
+    asset_type: AssetType,
 ) -> HashMap<String, HashSet<String>> {
     let mut source_query_ids: HashMap<String, HashSet<String>> = HashMap::new();
     // Seen signal_ids
     let mut seen = HashSet::<String>::new();
 
-    let mut queue = VecDeque::from_iter(registry.signal_ids());
+    let signal_ids = get_signal_ids_by_asset_type(registry.signal_ids(), asset_type);
+
+    let mut queue = VecDeque::from_iter(signal_ids);
     while let Some(signal_id) = queue.pop_front() {
         if seen.contains(signal_id) {
             continue;
@@ -88,6 +93,19 @@ pub fn get_source_batched_query_ids(
     source_query_ids
 }
 
+fn get_signal_ids_by_asset_type<'a>(
+    signal_ids: impl Iterator<Item = &'a String>,
+    asset_type: AssetType,
+) -> HashSet<&'a String> {
+    let mut result = HashSet::new();
+    for signal_id in signal_ids {
+        if signal_id.starts_with(asset_type.as_ref()) {
+            result.insert(signal_id);
+        }
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use bothan_lib::registry::Invalid;
@@ -103,7 +121,7 @@ mod tests {
     fn test_get_source_batched_query_ids() {
         let registry = mock_registry().validate().unwrap();
 
-        let diff = get_source_batched_query_ids(&registry);
+        let diff = get_source_batched_query_ids(&registry, AssetType::Crypto);
         let expected = HashMap::from_iter([
             (
                 "binance".to_string(),

@@ -15,11 +15,13 @@ use bothan_api::api::BothanServer;
 use bothan_api::config::AppConfig;
 use bothan_api::config::ipfs::IpfsAuthentication;
 use bothan_api::config::manager::crypto_info::sources::CryptoSourceConfigs;
+use bothan_api::config::manager::forex_info::sources::ForexSourceConfigs;
 use bothan_api::proto::bothan::v1::{BothanServiceServer, FILE_DESCRIPTOR_SET};
 use bothan_api::{REGISTRY_REQUIREMENT, VERSION};
 use bothan_core::ipfs::{IpfsClient, IpfsClientBuilder};
-use bothan_core::manager::CryptoAssetInfoManager;
-use bothan_core::manager::crypto_asset_info::CryptoAssetWorkerOpts;
+use bothan_core::manager::AssetInfoManager;
+use bothan_core::manager::asset_info::CryptoAssetWorkerOpts;
+use bothan_core::manager::asset_info::forex::worker::opts::ForexAssetWorkerOpts;
 use bothan_core::monitoring::{Client as MonitoringClient, Signer};
 use bothan_core::store::rocksdb::RocksDbStore;
 use bothan_core::telemetry;
@@ -193,15 +195,24 @@ async fn init_bothan_server<S: Store + 'static>(
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
 
-    let opts = match init_crypto_opts(&config.manager.crypto.source).await {
+    let crypto_opts = match init_crypto_opts(&config.manager.crypto.source).await {
         Ok(workers) => workers,
         Err(e) => {
             bail!("failed to initialize workers: {:?}", e);
         }
     };
-    let manager = match CryptoAssetInfoManager::build(
+
+    let forex_opts = match init_forex_opts(&config.manager.forex.source).await {
+        Ok(workers) => workers,
+        Err(e) => {
+            bail!("failed to initialize workers: {:?}", e);
+        }
+    };
+
+    let manager = match AssetInfoManager::build(
         store,
-        opts,
+        crypto_opts,
+        forex_opts,
         ipfs_client,
         stale_threshold,
         bothan_version,
@@ -242,23 +253,47 @@ async fn init_crypto_opts(
 ) -> Result<HashMap<String, CryptoAssetWorkerOpts>, AssetWorkerError> {
     let mut worker_opts = HashMap::new();
 
-    add_worker_opts(&mut worker_opts, &source.binance).await?;
-    add_worker_opts(&mut worker_opts, &source.bitfinex).await?;
-    add_worker_opts(&mut worker_opts, &source.bybit).await?;
-    add_worker_opts(&mut worker_opts, &source.coinbase).await?;
-    add_worker_opts(&mut worker_opts, &source.coingecko).await?;
-    add_worker_opts(&mut worker_opts, &source.coinmarketcap).await?;
-    add_worker_opts(&mut worker_opts, &source.htx).await?;
-    add_worker_opts(&mut worker_opts, &source.kraken).await?;
-    add_worker_opts(&mut worker_opts, &source.okx).await?;
-    add_worker_opts(&mut worker_opts, &source.band_kiwi).await?;
-    add_worker_opts(&mut worker_opts, &source.band_macaw).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.binance).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.bitfinex).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.bybit).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.coinbase).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.coingecko).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.coinmarketcap).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.htx).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.kraken).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.okx).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.band_kiwi).await?;
+    add_crypto_worker_opts(&mut worker_opts, &source.band_macaw).await?;
 
     Ok(worker_opts)
 }
 
-async fn add_worker_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
+async fn add_crypto_worker_opts<O: Clone + Into<CryptoAssetWorkerOpts>>(
     workers_opts: &mut HashMap<String, CryptoAssetWorkerOpts>,
+    opts: &Option<O>,
+) -> Result<(), AssetWorkerError> {
+    if let Some(opts) = opts {
+        let worker_opts = opts.clone().into();
+        let worker_name = worker_opts.name();
+        info!("{} worker is enabled", worker_name);
+        workers_opts.insert(worker_name.to_string(), worker_opts);
+    }
+
+    Ok(())
+}
+
+async fn init_forex_opts(
+    source: &ForexSourceConfigs,
+) -> Result<HashMap<String, ForexAssetWorkerOpts>, AssetWorkerError> {
+    let mut worker_opts = HashMap::new();
+
+    add_forex_worker_opts(&mut worker_opts, &source.band_kiwi2).await?;
+
+    Ok(worker_opts)
+}
+
+async fn add_forex_worker_opts<O: Clone + Into<ForexAssetWorkerOpts>>(
+    workers_opts: &mut HashMap<String, ForexAssetWorkerOpts>,
     opts: &Option<O>,
 ) -> Result<(), AssetWorkerError> {
     if let Some(opts) = opts {

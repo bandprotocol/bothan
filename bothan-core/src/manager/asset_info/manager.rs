@@ -19,21 +19,29 @@ use tokio::time::sleep;
 
 use crate::ipfs::IpfsClient;
 use crate::ipfs::error::Error as IpfsError;
-use crate::manager::crypto_asset_info::error::{
+use crate::manager::asset_info::crypto::worker::opts::CryptoAssetWorkerOpts;
+use crate::manager::asset_info::crypto::worker::{
+    CryptoAssetWorker, build_workers as build_crypto_workers,
+};
+use crate::manager::asset_info::error::{
     PostHeartbeatError, PushMonitoringRecordError, SetRegistryError,
 };
-use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
-use crate::manager::crypto_asset_info::types::{
-    CryptoAssetManagerInfo, MONITORING_TTL, PriceSignalComputationRecord, PriceState,
+use crate::manager::asset_info::forex::worker::opts::ForexAssetWorkerOpts;
+use crate::manager::asset_info::forex::worker::{
+    ForexAssetWorker, build_workers as build_forex_workers,
 };
-use crate::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
-use crate::manager::crypto_asset_info::worker::{CryptoAssetWorker, build_workers};
+use crate::manager::asset_info::price::tasks::get_signal_price_states;
+use crate::manager::asset_info::types::{
+    AssetManagerInfo, MONITORING_TTL, PriceSignalComputationRecord, PriceState,
+};
 use crate::monitoring::{Client as MonitoringClient, create_uuid};
 
-pub struct CryptoAssetInfoManager<S: Store + 'static> {
+pub struct AssetInfoManager<S: Store + 'static> {
     store: S,
-    opts: HashMap<String, CryptoAssetWorkerOpts>,
-    workers: Mutex<Vec<CryptoAssetWorker>>,
+    crypto_opts: HashMap<String, CryptoAssetWorkerOpts>,
+    forex_opts: HashMap<String, ForexAssetWorkerOpts>,
+    crypto_workers: Mutex<Vec<CryptoAssetWorker>>,
+    forex_workers: Mutex<Vec<ForexAssetWorker>>,
     stale_threshold: i64,
     ipfs_client: IpfsClient,
     bothan_version: Version,
@@ -43,11 +51,13 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
     metrics: Metrics,
 }
 
-impl<S: Store + 'static> CryptoAssetInfoManager<S> {
-    /// builds a new `CryptoAssetInfoManager`.
+impl<S: Store + 'static> AssetInfoManager<S> {
+    /// builds a new `AssetInfoManager`.
+    #[allow(clippy::too_many_arguments)]
     pub async fn build(
         store: S,
-        opts: HashMap<String, CryptoAssetWorkerOpts>,
+        crypto_opts: HashMap<String, CryptoAssetWorkerOpts>,
+        forex_opts: HashMap<String, ForexAssetWorkerOpts>,
         ipfs_client: IpfsClient,
         stale_threshold: i64,
         bothan_version: Version,
@@ -60,14 +70,19 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let registry = store.get_registry().await?;
 
-        let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
+        let crypto_workers =
+            Mutex::new(build_crypto_workers(&registry, &crypto_opts, store.clone()).await);
+        let forex_workers =
+            Mutex::new(build_forex_workers(&registry, &forex_opts, store.clone()).await);
 
         let metrics = Metrics::new();
 
-        let manager = CryptoAssetInfoManager {
+        let manager = AssetInfoManager {
             store,
-            opts,
-            workers,
+            crypto_opts,
+            forex_opts,
+            crypto_workers,
+            forex_workers,
             stale_threshold,
             ipfs_client,
             bothan_version,
@@ -80,8 +95,8 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         Ok(manager)
     }
 
-    /// Gets the `CryptoAssetManagerInfo`.
-    pub async fn get_info(&self) -> Result<CryptoAssetManagerInfo, S::Error> {
+    /// Gets the `AssetManagerInfo`.
+    pub async fn get_info(&self) -> Result<AssetManagerInfo, S::Error> {
         let bothan_version = self.bothan_version.to_string();
         let registry_hash = self
             .store
@@ -89,15 +104,28 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .await?
             .unwrap_or(String::new()); // If value doesn't exist, return an empty string
         let registry_version_requirement = self.registry_version_requirement.to_string();
-        let active_sources = self
-            .workers
+        let crypto_active_sources = self
+            .crypto_workers
             .lock()
             .await
             .iter()
             .map(|w| w.name().to_string())
-            .collect();
+            .collect::<Vec<String>>();
 
-        Ok(CryptoAssetManagerInfo::new(
+        let forex_active_sources = self
+            .forex_workers
+            .lock()
+            .await
+            .iter()
+            .map(|w| w.name().to_string())
+            .collect::<Vec<String>>();
+
+        let active_sources = crypto_active_sources
+            .into_iter()
+            .chain(forex_active_sources)
+            .collect::<Vec<String>>();
+
+        Ok(AssetManagerInfo::new(
             bothan_version,
             registry_hash,
             registry_version_requirement,
@@ -115,13 +143,27 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let uuid = create_uuid();
 
-        let active_sources = self
-            .workers
+        let crypto_active_sources = self
+            .crypto_workers
             .lock()
             .await
             .iter()
             .map(|w| w.name().to_string())
-            .collect();
+            .collect::<Vec<String>>();
+
+        let forex_active_sources = self
+            .forex_workers
+            .lock()
+            .await
+            .iter()
+            .map(|w| w.name().to_string())
+            .collect::<Vec<String>>();
+
+        let active_sources = crypto_active_sources
+            .into_iter()
+            .chain(forex_active_sources)
+            .collect::<Vec<String>>();
+
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
             .store
@@ -243,14 +285,24 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .await
             .map_err(|_| SetRegistryError::FailedToSetRegistry)?;
 
-        // drop old workers to kill connection
-        let mut locked_workers = self.workers.lock().await;
+        // drop old crypto workers to kill connection
+        let mut locked_workers = self.crypto_workers.lock().await;
         locked_workers.clear();
 
         // TODO: find method to wait for connections to clear up thats better than sleeping for 1 second
         sleep(Duration::from_secs(1)).await;
 
-        let workers = build_workers(&registry, &self.opts, self.store.clone()).await;
+        let workers = build_crypto_workers(&registry, &self.crypto_opts, self.store.clone()).await;
+        *locked_workers = workers;
+
+        // drop old forex workers to kill connection
+        let mut locked_workers = self.forex_workers.lock().await;
+        locked_workers.clear();
+
+        // TODO: find method to wait for connections to clear up thats better than sleeping for 1 second
+        sleep(Duration::from_secs(1)).await;
+
+        let workers = build_forex_workers(&registry, &self.forex_opts, self.store.clone()).await;
         *locked_workers = workers;
 
         Ok(())

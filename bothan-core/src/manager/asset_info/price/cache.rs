@@ -8,7 +8,7 @@ use std::hash::Hash;
 
 use rust_decimal::Decimal;
 
-use crate::manager::crypto_asset_info::types::PriceState;
+use crate::manager::asset_info::types::PriceState;
 
 /// In-memory cache for storing `PriceState` values keyed by asset or signal ID.
 pub struct PriceCache<K> {

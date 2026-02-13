@@ -2,6 +2,6 @@
 //!
 //! Provides the crypto asset info manager and related types.
 
-pub use crypto_asset_info::CryptoAssetInfoManager;
+pub use asset_info::AssetInfoManager;
 
-pub mod crypto_asset_info;
+pub mod asset_info;

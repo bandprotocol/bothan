@@ -7,7 +7,7 @@
 //!
 //! - `parse_price_state`: Converts a `PriceState` to a `Price` API response.
 
-use bothan_core::manager::crypto_asset_info::types::PriceState;
+use bothan_core::manager::asset_info::types::PriceState;
 use rust_decimal::prelude::Zero;
 use tracing::error;
 

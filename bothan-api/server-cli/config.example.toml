@@ -114,6 +114,12 @@ url = "https://macaw.bandchain.org"
 # Update interval for Band Macaw source
 update_interval = "1m"
 
+[manager.forex.source.band_kiki]
+# URL for Band Macaw source
+url = "https://macaw.bandchain.org"
+# Update interval for Band Macaw source
+update_interval = "1m"
+
 # Telemetry configuration
 [telemetry]
 # Enable or disable telemetry.

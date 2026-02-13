@@ -18,9 +18,9 @@ use num_traits::Zero;
 use rust_decimal::Decimal;
 use tracing::{debug, error, info, warn};
 
-use crate::manager::crypto_asset_info::price::cache::PriceCache;
-use crate::manager::crypto_asset_info::price::error::{Error, MissingPrerequisiteError};
-use crate::manager::crypto_asset_info::types::{PriceSignalComputationRecord, PriceState};
+use crate::manager::asset_info::price::cache::PriceCache;
+use crate::manager::asset_info::price::error::{Error, MissingPrerequisiteError};
+use crate::manager::asset_info::types::{PriceSignalComputationRecord, PriceState};
 use crate::monitoring::types::{OperationRecord, ProcessRecord, SourceRecord};
 
 // TODO: Allow records to be Option<T>

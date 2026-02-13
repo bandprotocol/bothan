@@ -11,8 +11,9 @@ use bothan_lib::worker::error::AssetWorkerError;
 use derive_more::From;
 use tracing::{error, info};
 
-use crate::manager::crypto_asset_info::signal_ids::get_source_batched_query_ids;
-use crate::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
+use crate::manager::asset_info::crypto::worker::opts::CryptoAssetWorkerOpts;
+use crate::manager::asset_info::signal_ids::get_source_batched_query_ids;
+use crate::manager::asset_info::types::AssetType;
 
 #[derive(From)]
 pub enum CryptoAssetWorker {
@@ -93,7 +94,7 @@ pub async fn build_workers<S: Store + 'static>(
     store: S,
 ) -> Vec<CryptoAssetWorker> {
     let mut workers = Vec::with_capacity(opts.len());
-    for (source_id, query_id) in get_source_batched_query_ids(registry).drain() {
+    for (source_id, query_id) in get_source_batched_query_ids(registry, AssetType::Crypto).drain() {
         match opts.get(&source_id) {
             Some(opts) => {
                 let ids = query_id.into_iter().collect();
