@@ -1,4 +1,4 @@
-//! Worker options for configuring crypto asset source workers.
+//! Worker options for configuring forex asset source workers.
 
 #[derive(Clone)]
 pub enum ForexAssetWorkerOpts {
