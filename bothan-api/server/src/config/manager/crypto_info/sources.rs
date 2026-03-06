@@ -65,6 +65,7 @@ macro_rules! de_band_named {
 
 const BAND1_WORKER_NAME: &str = "band/kiwi";
 de_band_named!(de_kiwi, BAND1_WORKER_NAME);
+
 const BAND2_WORKER_NAME: &str = "band/macaw";
 de_band_named!(de_macaw, BAND2_WORKER_NAME);
 

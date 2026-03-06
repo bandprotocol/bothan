@@ -287,7 +287,9 @@ async fn init_forex_opts(
 ) -> Result<HashMap<String, ForexAssetWorkerOpts>, AssetWorkerError> {
     let mut worker_opts = HashMap::new();
 
-    add_forex_worker_opts(&mut worker_opts, &source.band_kiwi2).await?;
+    add_forex_worker_opts(&mut worker_opts, &source.band_owlet).await?;
+    add_forex_worker_opts(&mut worker_opts, &source.band_fieldfare).await?;
+    add_forex_worker_opts(&mut worker_opts, &source.band_xenops).await?;
 
     Ok(worker_opts)
 }

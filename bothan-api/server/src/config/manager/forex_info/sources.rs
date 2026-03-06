@@ -7,9 +7,15 @@ use serde::{Deserialize, Serialize};
 /// Configuration for the worker sources for forex asset info.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ForexSourceConfigs {
-    /// Band/kiwi worker options.
-    #[serde(default, deserialize_with = "de_kiwi2")]
-    pub band_kiwi2: Option<bothan_band::WorkerOpts>,
+    /// Band/owlet worker options.
+    #[serde(default, deserialize_with = "de_owlet")]
+    pub band_owlet: Option<bothan_band::WorkerOpts>,
+    /// Band/fieldfare worker options.
+    #[serde(default, deserialize_with = "de_fieldfare")]
+    pub band_fieldfare: Option<bothan_band::WorkerOpts>,
+    /// Band/xenops worker options.
+    #[serde(default, deserialize_with = "de_xenops")]
+    pub band_xenops: Option<bothan_band::WorkerOpts>,
 }
 
 // Macro to generate deserialization functions for Band workers with preset names.
@@ -26,15 +32,31 @@ macro_rules! de_band_named {
     };
 }
 
-const BAND1_WORKER_NAME: &str = "band/kiwi2";
-de_band_named!(de_kiwi2, BAND1_WORKER_NAME);
+const BAND1_WORKER_NAME: &str = "band/owlet";
+de_band_named!(de_owlet, BAND1_WORKER_NAME);
+
+const BAND2_WORKER_NAME: &str = "band/fieldfare";
+de_band_named!(de_fieldfare, BAND2_WORKER_NAME);
+
+const BAND3_WORKER_NAME: &str = "band/xenops";
+de_band_named!(de_xenops, BAND3_WORKER_NAME);
 
 impl Default for ForexSourceConfigs {
     fn default() -> Self {
         ForexSourceConfigs {
-            band_kiwi2: Some(bothan_band::WorkerOpts::new(
-                "band/kiwi2",
-                "https://kiwi.bandchain.org",
+            band_owlet: Some(bothan_band::WorkerOpts::new(
+                "band/owlet",
+                "https://owlet.bandchain.org",
+                None,
+            )),
+            band_fieldfare: Some(bothan_band::WorkerOpts::new(
+                "band/fieldfare",
+                "https://fieldfare.bandchain.org",
+                None,
+            )),
+            band_xenops: Some(bothan_band::WorkerOpts::new(
+                "band/xenops",
+                "https://xenops.bandchain.org",
                 None,
             )),
         }
