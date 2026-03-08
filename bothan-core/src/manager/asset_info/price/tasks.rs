@@ -5,7 +5,7 @@
 //! processor and post-processors, and handles any missing prerequisites by recursively
 //! fetching the required data.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 
 use bothan_lib::metrics::store::{Metrics, Operation, OperationStatus};
@@ -29,11 +29,13 @@ pub async fn get_signal_price_states<S: Store>(
     ids: Vec<String>,
     store: &S,
     registry: &Registry<Valid>,
-    stale_cutoff: i64,
+    prefix_stale_thresholds: &HashMap<String, i64>,
     records: &mut Vec<PriceSignalComputationRecord>,
     metrics: &Metrics,
 ) -> Vec<PriceState> {
     let mut cache = PriceCache::new();
+
+    let current_time = chrono::Utc::now().timestamp();
 
     let mut queue = ids.clone();
     while let Some(id) = queue.pop() {
@@ -46,7 +48,8 @@ pub async fn get_signal_price_states<S: Store>(
             &id,
             store,
             registry,
-            stale_cutoff,
+            current_time,
+            prefix_stale_thresholds,
             &cache,
             &mut record,
             metrics,
@@ -91,17 +94,22 @@ pub async fn get_signal_price_states<S: Store>(
         .collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn compute_signal_result<S: Store>(
     id: &str,
     store: &S,
     registry: &Registry<Valid>,
-    stale_cutoff: i64,
+    current_time: i64,
+    prefix_stale_thresholds: &HashMap<String, i64>,
     cache: &PriceCache<String>,
     record: &mut PriceSignalComputationRecord,
     metrics: &Metrics,
 ) -> Result<Decimal, Error> {
-    match registry.get(id) {
-        Some(signal) => {
+    match (
+        registry.get(id),
+        get_stale_cutoff(id, current_time, prefix_stale_thresholds),
+    ) {
+        (Some(signal), Some(stale_cutoff)) => {
             let source_results =
                 compute_source_result(signal, store, cache, stale_cutoff, record, metrics).await?;
 
@@ -136,8 +144,19 @@ async fn compute_signal_result<S: Store>(
 
             Ok(processed_signal)
         }
-        None => Err(Error::InvalidSignal),
+        _ => Err(Error::InvalidSignal),
     }
+}
+
+fn get_stale_cutoff(
+    id: &str,
+    current_time: i64,
+    prefix_stale_thresholds: &HashMap<String, i64>,
+) -> Option<i64> {
+    let prefix = id.split(':').next()?;
+    prefix_stale_thresholds
+        .get(prefix)
+        .map(|threshold| current_time - threshold)
 }
 
 async fn compute_source_result<S: Store>(
@@ -400,7 +419,9 @@ mod tests {
         );
 
         let registry = mock_registry();
-        let stale_cutoff = 0;
+        let current_timestamp = chrono::Utc::now().timestamp();
+        let mut prefix_stale_thresholds = HashMap::new();
+        prefix_stale_thresholds.insert("CS".to_string(), current_timestamp);
         let mut records = Vec::new();
         let metrics = Metrics::new();
 
@@ -408,7 +429,7 @@ mod tests {
             ids,
             &mock_store,
             &registry,
-            stale_cutoff,
+            &prefix_stale_thresholds,
             &mut records,
             &metrics,
         )
@@ -484,14 +505,16 @@ mod tests {
         let ids = vec!["CS:BTC-USD".to_string(), "CS:USDT-USD".to_string()];
         let mock_store = MockStore::default();
         let registry = mock_registry();
-        let stale_cutoff = 0;
+        let current_timestamp = chrono::Utc::now().timestamp();
+        let mut prefix_stale_thresholds = HashMap::new();
+        prefix_stale_thresholds.insert("CS".to_string(), current_timestamp);
         let mut records = Vec::new();
         let metrics = Metrics::new();
         let res = get_signal_price_states(
             ids,
             &mock_store,
             &registry,
-            stale_cutoff,
+            &prefix_stale_thresholds,
             &mut records,
             &metrics,
         )
@@ -569,7 +592,9 @@ mod tests {
         );
 
         let registry = mock_registry();
-        let stale_cutoff = 10000;
+        let current_timestamp = chrono::Utc::now().timestamp();
+        let mut prefix_stale_thresholds = HashMap::new();
+        prefix_stale_thresholds.insert("CS".to_string(), current_timestamp - 10000);
         let mut records = Vec::new();
         let metrics = Metrics::new();
 
@@ -577,7 +602,7 @@ mod tests {
             ids,
             &mock_store,
             &registry,
-            stale_cutoff,
+            &prefix_stale_thresholds,
             &mut records,
             &metrics,
         )

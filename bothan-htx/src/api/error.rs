@@ -50,5 +50,6 @@ pub enum ListeningError {
 
     /// Indicates a failure to send a pong response to a ping message.
     #[error("failed to pong")]
+    #[allow(clippy::result_large_err)]
     PongFailed(#[from] tungstenite::Error),
 }

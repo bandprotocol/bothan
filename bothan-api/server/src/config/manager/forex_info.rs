@@ -23,7 +23,7 @@ pub struct ForexInfoManagerConfig {
 
 /// Returns the default stale threshold (in seconds).
 fn default_stale_threshold() -> i64 {
-    300
+    3600
 }
 
 impl Default for ForexInfoManagerConfig {
