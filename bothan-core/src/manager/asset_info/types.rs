@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use bothan_lib::types::AssetInfo;
 use rust_decimal::Decimal;
-use strum_macros::AsRefStr;
 
 use crate::monitoring::types::SignalComputationRecord;
 
@@ -18,14 +17,6 @@ pub enum PriceState {
     Available(Decimal),
     Unavailable,
     Unsupported,
-}
-
-#[derive(Debug, AsRefStr)]
-pub enum AssetType {
-    #[strum(serialize = "CS")]
-    Crypto,
-    #[strum(serialize = "FS")]
-    Forex,
 }
 
 pub struct AssetManagerInfo {

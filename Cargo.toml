@@ -31,8 +31,6 @@ bothan-htx = { path = "bothan-htx", version = "0.1.0" }
 bothan-kraken = { path = "bothan-kraken", version = "0.1.0" }
 bothan-okx = { path = "bothan-okx", version = "0.1.0" }
 bothan-band = { path = "bothan-band", version = "0.1.0" }
-
-anyhow = "1.0.86"
 async-trait = "0.1.77"
 bincode = "2.0.1"
 chrono = "0.4.39"
@@ -46,8 +44,6 @@ mockito = "1.4.0"
 num-traits = "0.2.19"
 opentelemetry = { version = "0.28.0", features = ["metrics"] }
 prost = "0.13.1"
-protoc-gen-prost = "0.4.0"
-protoc-gen-tonic = "0.4.1"
 rand = "0.8.5"
 reqwest = { version = "0.12.3", features = ["json"] }
 rust_decimal = "1.10.2"
