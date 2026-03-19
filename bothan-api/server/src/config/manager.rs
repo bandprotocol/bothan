@@ -24,5 +24,7 @@ pub struct ManagerConfig {
     /// The configuration for the crypto info manager.
     pub crypto: CryptoInfoManagerConfig,
     /// The configuration for the forex info manager.
+    /// Note: This field is optional and will be set to default if not provided.
+    #[serde(default)]
     pub forex: ForexInfoManagerConfig,
 }

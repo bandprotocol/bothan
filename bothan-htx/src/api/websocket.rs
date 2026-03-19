@@ -375,7 +375,6 @@ impl AssetInfoProvider for WebSocketConnection {
 }
 
 /// Parses market data from the HTX WebSocket API into `AssetInfo`.
-///
 /// This function extracts the asset identifier from the channel name and creates
 /// an `AssetInfo` instance with the last price and timestamp from the ticker data.
 ///
