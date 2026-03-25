@@ -8,17 +8,29 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ForexSourceConfigs {
     /// Band/owlet worker options.
+    ///
+    /// NOTE: The `name` field in `WorkerOpts` is marked with `#[serde(skip)]`, so deserialized instances
+    /// will have an empty/default name. The custom deserializer `de_owlet` reconstructs the options
     #[serde(default, deserialize_with = "de_owlet")]
     pub band_owlet: Option<bothan_band::WorkerOpts>,
     /// Band/fieldfare worker options.
+    ///
+    /// NOTE: The `name` field in `WorkerOpts` is marked with `#[serde(skip)]`, so deserialized instances
+    /// will have an empty/default name. The custom deserializer `de_fieldfare` reconstructs the options
     #[serde(default, deserialize_with = "de_fieldfare")]
     pub band_fieldfare: Option<bothan_band::WorkerOpts>,
     /// Band/xenops worker options.
+    ///
+    /// NOTE: The `name` field in `WorkerOpts` is marked with `#[serde(skip)]`, so deserialized instances
+    /// will have an empty/default name. The custom deserializer `de_xenops` reconstructs the options
     #[serde(default, deserialize_with = "de_xenops")]
     pub band_xenops: Option<bothan_band::WorkerOpts>,
 }
 
 // Macro to generate deserialization functions for Band workers with preset names.
+// This macro defines a function that:
+// - Deserializes an Option<WorkerOpts>,
+// - If present, creates a new WorkerOpts with the given name and original URL/update_interval.
 macro_rules! de_band_named {
     ($fn_name:ident, $name:expr) => {
         fn $fn_name<'de, D>(d: D) -> Result<Option<bothan_band::WorkerOpts>, D::Error>
