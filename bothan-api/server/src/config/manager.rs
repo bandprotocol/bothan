@@ -13,6 +13,8 @@ use crypto_info::CryptoInfoManagerConfig;
 use forex_info::ForexInfoManagerConfig;
 use serde::{Deserialize, Serialize};
 
+/// Shared Band worker serde helpers.
+pub(crate) mod band_serde;
 /// Crypto info manager configuration module.
 pub mod crypto_info;
 /// Forex info manager configuration module.
