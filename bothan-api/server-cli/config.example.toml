@@ -44,7 +44,7 @@ stale_threshold = 300
 # Manager configuration for handling forex data sources
 [manager.forex]
 # The threshold in seconds after which data is considered stale.
-stale_threshold = 3600
+stale_threshold = 7200
 
 # Configuration for the data sources that the manager will use.
 # If any of these [manager.crypto.source] sections (e.g., section manager.crypto.source.binance) are removed,
