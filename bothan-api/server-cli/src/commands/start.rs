@@ -254,11 +254,8 @@ async fn init_bothan_server<S: Store + 'static>(
 fn init_prefix_stale_thresholds(
     crypto_stale_threshold: i64,
     forex_stale_threshold: i64,
-) -> HashMap<String, i64> {
-    HashMap::from([
-        ("CS".to_string(), crypto_stale_threshold),
-        ("FS".to_string(), forex_stale_threshold),
-    ])
+) -> HashMap<char, i64> {
+    HashMap::from([('C', crypto_stale_threshold), ('F', forex_stale_threshold)])
 }
 
 async fn init_crypto_opts(

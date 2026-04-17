@@ -23,13 +23,15 @@ use crate::manager::asset_info::price::error::{Error, MissingPrerequisiteError};
 use crate::manager::asset_info::types::{PriceSignalComputationRecord, PriceState};
 use crate::monitoring::types::{OperationRecord, ProcessRecord, SourceRecord};
 
+const DEFAULT_STALE_TIME: i64 = 600; // 10 minutes
+
 // TODO: Allow records to be Option<T>
 /// Computes the price states for a list of signal ids.
 pub async fn get_signal_price_states<S: Store>(
     ids: Vec<String>,
     store: &S,
     registry: &Registry<Valid>,
-    prefix_stale_thresholds: &HashMap<String, i64>,
+    prefix_stale_thresholds: &HashMap<char, i64>,
     records: &mut Vec<PriceSignalComputationRecord>,
     metrics: &Metrics,
 ) -> Vec<PriceState> {
@@ -100,16 +102,14 @@ async fn compute_signal_result<S: Store>(
     store: &S,
     registry: &Registry<Valid>,
     current_time: i64,
-    prefix_stale_thresholds: &HashMap<String, i64>,
+    prefix_stale_thresholds: &HashMap<char, i64>,
     cache: &PriceCache<String>,
     record: &mut PriceSignalComputationRecord,
     metrics: &Metrics,
 ) -> Result<Decimal, Error> {
-    match (
-        registry.get(id),
-        get_stale_cutoff(id, current_time, prefix_stale_thresholds),
-    ) {
-        (Some(signal), Some(stale_cutoff)) => {
+    match registry.get(id) {
+        Some(signal) => {
+            let stale_cutoff = current_time - get_stale_time(id, prefix_stale_thresholds);
             let source_results =
                 compute_source_result(signal, store, cache, stale_cutoff, record, metrics).await?;
 
@@ -148,15 +148,17 @@ async fn compute_signal_result<S: Store>(
     }
 }
 
-fn get_stale_cutoff(
-    id: &str,
-    current_time: i64,
-    prefix_stale_thresholds: &HashMap<String, i64>,
-) -> Option<i64> {
-    let prefix = id.split(':').next()?;
-    prefix_stale_thresholds
-        .get(prefix)
-        .map(|threshold| current_time - threshold)
+fn get_stale_time(id: &str, prefix_stale_thresholds: &HashMap<char, i64>) -> i64 {
+    match id.split(':').next() {
+        Some(prefix) => match prefix.chars().next() {
+            Some(first_letter) => prefix_stale_thresholds
+                .get(&first_letter)
+                .cloned()
+                .unwrap_or(DEFAULT_STALE_TIME),
+            None => DEFAULT_STALE_TIME,
+        },
+        None => DEFAULT_STALE_TIME,
+    }
 }
 
 async fn compute_source_result<S: Store>(
@@ -421,7 +423,7 @@ mod tests {
         let registry = mock_registry();
         let current_timestamp = chrono::Utc::now().timestamp();
         let mut prefix_stale_thresholds = HashMap::new();
-        prefix_stale_thresholds.insert("CS".to_string(), current_timestamp);
+        prefix_stale_thresholds.insert('C', current_timestamp);
         let mut records = Vec::new();
         let metrics = Metrics::new();
 
@@ -507,7 +509,7 @@ mod tests {
         let registry = mock_registry();
         let current_timestamp = chrono::Utc::now().timestamp();
         let mut prefix_stale_thresholds = HashMap::new();
-        prefix_stale_thresholds.insert("CS".to_string(), current_timestamp);
+        prefix_stale_thresholds.insert('C', current_timestamp);
         let mut records = Vec::new();
         let metrics = Metrics::new();
         let res = get_signal_price_states(
@@ -594,7 +596,7 @@ mod tests {
         let registry = mock_registry();
         let current_timestamp = chrono::Utc::now().timestamp();
         let mut prefix_stale_thresholds = HashMap::new();
-        prefix_stale_thresholds.insert("CS".to_string(), current_timestamp - 10000);
+        prefix_stale_thresholds.insert('C', current_timestamp - 10000);
         let mut records = Vec::new();
         let metrics = Metrics::new();
 
