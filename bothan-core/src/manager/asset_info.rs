@@ -11,4 +11,4 @@ pub(super) mod manager;
 pub(super) mod price;
 pub(super) mod signal_ids;
 pub mod types;
-pub mod worker;
+pub(super) mod worker;
