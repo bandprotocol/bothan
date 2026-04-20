@@ -20,7 +20,7 @@ pub mod sources;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CryptoInfoManagerConfig {
     /// The source configuration for the crypto asset info manager.
-    pub source: CryptoSourceConfigs,
+    pub source: Option<CryptoSourceConfigs>,
     /// The stale threshold for the crypto asset info (in seconds).
     /// Any source that has not been updated in this amount of time
     /// relative to the call will be considered stale.
@@ -37,7 +37,7 @@ impl Default for CryptoInfoManagerConfig {
     /// Creates a new `CryptoInfoManagerConfig` with default values.
     fn default() -> Self {
         CryptoInfoManagerConfig {
-            source: CryptoSourceConfigs::default(),
+            source: Some(CryptoSourceConfigs::default()),
             stale_threshold: default_stale_threshold(),
         }
     }

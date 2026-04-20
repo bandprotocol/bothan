@@ -19,7 +19,7 @@ pub enum PriceState {
     Unsupported,
 }
 
-pub struct CryptoAssetManagerInfo {
+pub struct AssetManagerInfo {
     pub bothan_version: String,
     pub registry_hash: String,
     pub registry_version_requirement: String,
@@ -27,7 +27,7 @@ pub struct CryptoAssetManagerInfo {
     pub monitoring_enabled: bool,
 }
 
-impl CryptoAssetManagerInfo {
+impl AssetManagerInfo {
     pub fn new(
         bothan_version: String,
         registry_hash: String,
@@ -35,7 +35,7 @@ impl CryptoAssetManagerInfo {
         active_sources: Vec<String>,
         monitoring_enabled: bool,
     ) -> Self {
-        CryptoAssetManagerInfo {
+        AssetManagerInfo {
             bothan_version,
             registry_hash,
             registry_version_requirement,

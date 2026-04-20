@@ -32,6 +32,8 @@ pub struct Ticker {
     pub high: f64,
     /// Daily low.
     pub low: f64,
+    /// Timestamp of the first trade.
+    pub first_trade: i64,
 }
 
 impl<'de> Deserialize<'de> for Ticker {
@@ -53,6 +55,7 @@ impl<'de> Deserialize<'de> for Ticker {
             Volume,
             High,
             Low,
+            FirstTrade,
         }
 
         struct SpotTickerVisitor {}
@@ -60,7 +63,7 @@ impl<'de> Deserialize<'de> for Ticker {
             type Value = Ticker;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("tuple with length 11")
+                formatter.write_str("tuple with length 12")
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<Ticker, V::Error>
@@ -100,6 +103,11 @@ impl<'de> Deserialize<'de> for Ticker {
                 let low = seq
                     .next_element()?
                     .ok_or_else(|| de::Error::invalid_length(10, &self))?;
+                let first_trade = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(11, &self))?;
+
+                while seq.next_element::<serde::de::IgnoredAny>()?.is_some() {}
 
                 let spot_ticker = Ticker {
                     symbol,
@@ -113,6 +121,7 @@ impl<'de> Deserialize<'de> for Ticker {
                     volume,
                     high,
                     low,
+                    first_trade,
                 };
                 Ok(spot_ticker)
             }
@@ -132,6 +141,7 @@ impl<'de> Deserialize<'de> for Ticker {
                 let mut volume = None;
                 let mut high = None;
                 let mut low = None;
+                let mut first_trade = None;
 
                 while let Some(key) = map.next_key()? {
                     match key {
@@ -201,6 +211,12 @@ impl<'de> Deserialize<'de> for Ticker {
                             }
                             low = Some(map.next_value()?);
                         }
+                        Field::FirstTrade => {
+                            if first_trade.is_some() {
+                                return Err(de::Error::duplicate_field("first_trade"));
+                            }
+                            first_trade = Some(map.next_value()?);
+                        }
                     }
                 }
 
@@ -218,6 +234,8 @@ impl<'de> Deserialize<'de> for Ticker {
                 let volume = volume.ok_or_else(|| de::Error::missing_field("volume"))?;
                 let high = high.ok_or_else(|| de::Error::missing_field("high"))?;
                 let low = low.ok_or_else(|| de::Error::missing_field("low"))?;
+                let first_trade =
+                    first_trade.ok_or_else(|| de::Error::missing_field("first_trade"))?;
 
                 let ticker = Ticker {
                     symbol,
@@ -231,6 +249,7 @@ impl<'de> Deserialize<'de> for Ticker {
                     volume,
                     high,
                     low,
+                    first_trade,
                 };
                 Ok(ticker)
             }
@@ -248,6 +267,7 @@ impl<'de> Deserialize<'de> for Ticker {
             "volume",
             "high",
             "low",
+            "first_trade",
         ];
         deserializer.deserialize_struct("SpotTicker", FIELDS, SpotTickerVisitor {})
     }
@@ -259,7 +279,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_spot_ticker_from_array() {
-        let json = r#"["tBTCUSD",101740,93.86022424,101750,38.06413103,2132,0.02140175,101750,663.27534767,102760,98740]"#;
+        let json = r#"["tBTCUSD",101740,93.86022424,101750,38.06413103,2132,0.02140175,101750,663.27534767,102760,98740,1457539475000]"#;
         let spot_ticker: Ticker = serde_json::from_str(json).unwrap();
 
         let expected = Ticker {
@@ -274,6 +294,7 @@ mod tests {
             volume: 663.27534767,
             high: 102760.0,
             low: 98740.0,
+            first_trade: 1457539475000,
         };
 
         assert_eq!(spot_ticker, expected);
@@ -286,7 +307,7 @@ mod tests {
 
         assert_eq!(
             spot_ticker.err().unwrap().to_string(),
-            "invalid length 9, expected tuple with length 11 at line 1 column 85"
+            "invalid length 9, expected tuple with length 12 at line 1 column 85"
         );
     }
 
@@ -304,7 +325,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_spot_ticker_from_map() {
-        let json = r#"{"symbol":"tBTCUSD","bid":101740,"bid_size":93.86022424,"ask":101750,"ask_size":38.06413103,"daily_change":2132,"daily_change_relative":0.02140175,"last_price":101750,"volume":663.27534767,"high":102760,"low":98740.0}"#;
+        let json = r#"{"symbol":"tBTCUSD","bid":101740,"bid_size":93.86022424,"ask":101750,"ask_size":38.06413103,"daily_change":2132,"daily_change_relative":0.02140175,"last_price":101750,"volume":663.27534767,"high":102760,"low":98740.0,"first_trade":1457539475000}"#;
         let spot_ticker: Ticker = serde_json::from_str(json).unwrap();
 
         let expected = Ticker {
@@ -319,6 +340,7 @@ mod tests {
             volume: 663.27534767,
             high: 102760.0,
             low: 98740.0,
+            first_trade: 1457539475000,
         };
 
         assert_eq!(spot_ticker, expected);
@@ -342,7 +364,7 @@ mod tests {
 
         assert_eq!(
             spot_ticker.err().unwrap().to_string(),
-            "unknown field `abc`, expected one of `symbol`, `bid`, `bid_size`, `ask`, `ask_size`, `daily_change`, `daily_change_relative`, `last_price`, `volume`, `high`, `low` at line 1 column 6"
+            "unknown field `abc`, expected one of `symbol`, `bid`, `bid_size`, `ask`, `ask_size`, `daily_change`, `daily_change_relative`, `last_price`, `volume`, `high`, `low`, `first_trade` at line 1 column 6"
         );
     }
 

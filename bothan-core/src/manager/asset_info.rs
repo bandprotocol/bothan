@@ -2,9 +2,9 @@
 //!
 //! Provides types and logic for managing crypto asset information.
 
-pub use manager::CryptoAssetInfoManager;
-pub use worker::CryptoAssetWorker;
-pub use worker::opts::CryptoAssetWorkerOpts;
+pub use manager::AssetInfoManager;
+pub use worker::AnyAssetWorker;
+pub use worker::opts::AssetWorkerOpts;
 
 pub mod error;
 pub(super) mod manager;

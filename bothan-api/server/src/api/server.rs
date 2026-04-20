@@ -16,8 +16,8 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use bothan_core::manager::CryptoAssetInfoManager;
-use bothan_core::manager::crypto_asset_info::error::{PushMonitoringRecordError, SetRegistryError};
+use bothan_core::manager::AssetInfoManager;
+use bothan_core::manager::asset_info::error::{PushMonitoringRecordError, SetRegistryError};
 use bothan_lib::metrics::server::{Metrics, ServiceName};
 use bothan_lib::store::Store;
 use semver::Version;
@@ -35,13 +35,13 @@ pub const PRECISION: u32 = 9;
 
 /// The `BothanServer` struct represents a server that implements the `BothanService` trait.
 pub struct BothanServer<S: Store + 'static> {
-    manager: Arc<CryptoAssetInfoManager<S>>,
+    manager: Arc<AssetInfoManager<S>>,
     metrics: Metrics,
 }
 
 impl<S: Store> BothanServer<S> {
     /// Creates a new `BothanServer` instance.
-    pub fn new(manager: Arc<CryptoAssetInfoManager<S>>, metrics: Metrics) -> Self {
+    pub fn new(manager: Arc<AssetInfoManager<S>>, metrics: Metrics) -> Self {
         BothanServer { manager, metrics }
     }
 }

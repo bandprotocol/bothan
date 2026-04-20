@@ -11,6 +11,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::config::manager::band_serde::de_band_named;
+
 /// Configuration for the worker sources for crypto asset info.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CryptoSourceConfigs {
@@ -46,25 +48,9 @@ pub struct CryptoSourceConfigs {
     pub band_macaw: Option<bothan_band::WorkerOpts>,
 }
 
-// Macro to generate deserialization functions for Band workers with preset names.
-// This macro defines a function that:
-// - Deserializes an Option<WorkerOpts>,
-// - If present, creates a new WorkerOpts with the given name and original URL/update_interval.
-macro_rules! de_band_named {
-    ($fn_name:ident, $name:expr) => {
-        fn $fn_name<'de, D>(d: D) -> Result<Option<bothan_band::WorkerOpts>, D::Error>
-        where
-            D: serde::Deserializer<'de>,
-        {
-            let v = Option::<bothan_band::WorkerOpts>::deserialize(d)?;
-            let v = v.map(|w| bothan_band::WorkerOpts::new($name, &w.url, Some(w.update_interval)));
-            Ok(v)
-        }
-    };
-}
-
 const BAND1_WORKER_NAME: &str = "band/kiwi";
 de_band_named!(de_kiwi, BAND1_WORKER_NAME);
+
 const BAND2_WORKER_NAME: &str = "band/macaw";
 de_band_named!(de_macaw, BAND2_WORKER_NAME);
 

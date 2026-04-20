@@ -40,6 +40,8 @@ pub struct Ticker {
     pub low: f64,
     /// The amount of funding that is available at the Flash Return Rate.
     pub frr_amount_available: f64,
+    /// Timestamp of the first trade
+    pub first_trade: i64,
 }
 
 impl<'de> Deserialize<'de> for Ticker {
@@ -65,6 +67,7 @@ impl<'de> Deserialize<'de> for Ticker {
             High,
             Low,
             FrrAmountAvailable,
+            FirstTrade,
         }
 
         struct FundingTickerVisitor {}
@@ -72,7 +75,7 @@ impl<'de> Deserialize<'de> for Ticker {
             type Value = Ticker;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("tuple with length 15")
+                formatter.write_str("tuple with length 18")
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<Ticker, V::Error>
@@ -131,6 +134,9 @@ impl<'de> Deserialize<'de> for Ticker {
                 let frr_amount_available = seq
                     .next_element()?
                     .ok_or_else(|| de::Error::invalid_length(16, &self))?;
+                let first_trade = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(17, &self))?;
 
                 let funding_ticker = Ticker {
                     symbol,
@@ -148,6 +154,7 @@ impl<'de> Deserialize<'de> for Ticker {
                     high,
                     low,
                     frr_amount_available,
+                    first_trade,
                 };
                 Ok(funding_ticker)
             }
@@ -171,6 +178,7 @@ impl<'de> Deserialize<'de> for Ticker {
                 let mut high = None;
                 let mut low = None;
                 let mut frr_amount_available = None;
+                let mut first_trade = None;
 
                 while let Some(key) = map.next_key()? {
                     match key {
@@ -264,6 +272,12 @@ impl<'de> Deserialize<'de> for Ticker {
                             }
                             frr_amount_available = Some(map.next_value()?);
                         }
+                        Field::FirstTrade => {
+                            if first_trade.is_some() {
+                                return Err(de::Error::duplicate_field("first_trade"));
+                            }
+                            first_trade = Some(map.next_value()?);
+                        }
                     }
                 }
 
@@ -288,6 +302,8 @@ impl<'de> Deserialize<'de> for Ticker {
                 let low = low.ok_or_else(|| de::Error::missing_field("low"))?;
                 let frr_amount_available = frr_amount_available
                     .ok_or_else(|| de::Error::missing_field("frr_amount_available"))?;
+                let first_trade =
+                    first_trade.ok_or_else(|| de::Error::missing_field("first_trade"))?;
 
                 let ticker = Ticker {
                     symbol,
@@ -305,6 +321,7 @@ impl<'de> Deserialize<'de> for Ticker {
                     high,
                     low,
                     frr_amount_available,
+                    first_trade,
                 };
 
                 Ok(ticker)
@@ -327,6 +344,7 @@ impl<'de> Deserialize<'de> for Ticker {
             "high",
             "low",
             "frr_amount_available",
+            "first_trade",
         ];
         deserializer.deserialize_struct("FundingTicker", FIELDS, FundingTickerVisitor {})
     }
@@ -338,7 +356,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_funding_ticker_from_array() {
-        let json = r#"["fUSD",0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814]"#;
+        let json = r#"["fUSD",0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814,1457539475000]"#;
         let funding_ticker: Ticker = serde_json::from_str(json).unwrap();
 
         let expected = Ticker {
@@ -357,6 +375,7 @@ mod tests {
             high: 0.000137,
             low: 0.000025,
             frr_amount_available: 5817583.43063814,
+            first_trade: 1457539475000,
         };
 
         assert_eq!(funding_ticker, expected);
@@ -369,13 +388,13 @@ mod tests {
 
         assert_eq!(
             funding_ticker.err().unwrap().to_string(),
-            "invalid length 16, expected tuple with length 15 at line 1 column 178"
+            "invalid length 16, expected tuple with length 18 at line 1 column 178"
         );
     }
 
     #[test]
     fn test_deserialize_funding_ticker_from_array_with_invalid_value() {
-        let json = r#"[1000000,0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814]"#;
+        let json = r#"[1000000,0.00018055342465753425,0.0002,120,35545399.51575242,0.00008219178082191781,2,28117235.06098758,-0.0000278,-0.2528,0.00008219,413386933.358769,0.000137,0.000025,null,null,5817583.43063814,1457539475000]"#;
         let funding_ticker: Result<Ticker, _> = serde_json::from_str(json);
 
         assert_eq!(
@@ -386,7 +405,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_funding_ticker_from_map() {
-        let json = r#"{"symbol":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_relative":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814}"#;
+        let json = r#"{"symbol":"fUSD","frr":0.00018055342465753425,"bid":0.0002,"bid_period":120,"bid_size":35545399.51575242,"ask":0.00008219178082191781,"ask_period":2,"ask_size":28117235.06098758,"daily_change":-0.0000278,"daily_change_relative":-0.2528,"last_price":0.00008219,"volume":413386933.358769,"high":0.000137,"low":0.000025,"frr_amount_available":5817583.43063814,"first_trade":1457539475000}"#;
         let funding_ticker: Ticker = serde_json::from_str(json).unwrap();
 
         let expected = Ticker {
@@ -405,6 +424,7 @@ mod tests {
             high: 0.000137,
             low: 0.000025,
             frr_amount_available: 5817583.43063814,
+            first_trade: 1457539475000,
         };
 
         assert_eq!(funding_ticker, expected);
@@ -428,7 +448,7 @@ mod tests {
 
         assert_eq!(
             funding_ticker.err().unwrap().to_string(),
-            "unknown field `abc`, expected one of `symbol`, `frr`, `bid`, `bid_period`, `bid_size`, `ask`, `ask_period`, `ask_size`, `daily_change`, `daily_change_relative`, `last_price`, `volume`, `high`, `low`, `frr_amount_available` at line 1 column 6"
+            "unknown field `abc`, expected one of `symbol`, `frr`, `bid`, `bid_period`, `bid_size`, `ask`, `ask_period`, `ask_size`, `daily_change`, `daily_change_relative`, `last_price`, `volume`, `high`, `low`, `frr_amount_available`, `first_trade` at line 1 column 6"
         );
     }
 

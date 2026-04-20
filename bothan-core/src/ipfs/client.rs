@@ -6,6 +6,7 @@ use reqwest::{Client, StatusCode};
 
 use crate::ipfs::error::Error;
 
+#[derive(Clone)]
 pub struct IpfsClient {
     url: String,
     client: Client,

@@ -41,6 +41,11 @@ enabled = false
 # The threshold in seconds after which data is considered stale.
 stale_threshold = 300
 
+# Manager configuration for handling forex data sources
+[manager.forex]
+# The threshold in seconds after which data is considered stale.
+stale_threshold = 7200
+
 # Configuration for the data sources that the manager will use.
 # If any of these [manager.crypto.source] sections (e.g., section manager.crypto.source.binance) are removed,
 # that specific source will not be used in bothan.
@@ -112,6 +117,24 @@ update_interval = "1m"
 # URL for Band Macaw source
 url = "https://macaw.bandchain.org"
 # Update interval for Band Macaw source
+update_interval = "1m"
+
+[manager.forex.source.band_owlet]
+# URL for Band Owlet source
+url = "https://owlet.bandchain.org"
+# Update interval for Band Owlet source
+update_interval = "1m"
+
+[manager.forex.source.band_fieldfare]
+# URL for Band Fieldfare source
+url = "https://fieldfare.bandchain.org"
+# Update interval for Band Fieldfare source
+update_interval = "1m"
+
+[manager.forex.source.band_xenops]
+# URL for Band Xenops source
+url = "https://xenops.bandchain.org"
+# Update interval for Band Xenops source
 update_interval = "1m"
 
 # Telemetry configuration

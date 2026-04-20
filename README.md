@@ -23,7 +23,7 @@ This project comprises primarily of 6 main components:
 - `bothan-{exchange}` - Exchange-specific implementations
 - [`proto`](proto/) - Protocol buffer definitions
 
-## Supported Data Sources
+## Supported Crypto Data Sources
 
 - [Binance](bothan-binance)
 - [Bitfinex](bothan-bitfinex)
@@ -37,6 +37,12 @@ This project comprises primarily of 6 main components:
 - [OKX](bothan-okx)
 - [Band/kiwi](bothan-band)
 - [Band/macaw](bothan-band)
+
+## Supported Forex Data Sources
+
+- [Band/owlet](bothan-band)
+- [Band/fieldfare](bothan-band)
+- [Band/xenops](bothan-band)
 
 ## Features
 

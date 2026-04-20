@@ -10,7 +10,7 @@ use std::time::Duration;
 use bothan_lib::metrics::store::Metrics;
 use bothan_lib::registry::{Invalid, Registry};
 use bothan_lib::store::Store;
-use bothan_lib::worker::AssetWorker;
+use bothan_lib::worker::AssetWorker as AssetWorkerTrait;
 use mini_moka::sync::Cache;
 use semver::{Version, VersionReq};
 use serde_json::from_str;
@@ -19,22 +19,22 @@ use tokio::time::sleep;
 
 use crate::ipfs::IpfsClient;
 use crate::ipfs::error::Error as IpfsError;
-use crate::manager::crypto_asset_info::error::{
+use crate::manager::asset_info::error::{
     PostHeartbeatError, PushMonitoringRecordError, SetRegistryError,
 };
-use crate::manager::crypto_asset_info::price::tasks::get_signal_price_states;
-use crate::manager::crypto_asset_info::types::{
-    CryptoAssetManagerInfo, MONITORING_TTL, PriceSignalComputationRecord, PriceState,
+use crate::manager::asset_info::price::tasks::get_signal_price_states;
+use crate::manager::asset_info::types::{
+    AssetManagerInfo, MONITORING_TTL, PriceSignalComputationRecord, PriceState,
 };
-use crate::manager::crypto_asset_info::worker::opts::CryptoAssetWorkerOpts;
-use crate::manager::crypto_asset_info::worker::{CryptoAssetWorker, build_workers};
+use crate::manager::asset_info::worker::opts::AssetWorkerOpts;
+use crate::manager::asset_info::worker::{AnyAssetWorker, build_workers};
 use crate::monitoring::{Client as MonitoringClient, create_uuid};
 
-pub struct CryptoAssetInfoManager<S: Store + 'static> {
+pub struct AssetInfoManager<S: Store + 'static> {
     store: S,
-    opts: HashMap<String, CryptoAssetWorkerOpts>,
-    workers: Mutex<Vec<CryptoAssetWorker>>,
-    stale_threshold: i64,
+    worker_opts: HashMap<String, AssetWorkerOpts>,
+    workers: Mutex<Vec<AnyAssetWorker>>,
+    prefix_stale_thresholds: HashMap<char, i64>,
     ipfs_client: IpfsClient,
     bothan_version: Version,
     registry_version_requirement: VersionReq,
@@ -43,13 +43,14 @@ pub struct CryptoAssetInfoManager<S: Store + 'static> {
     metrics: Metrics,
 }
 
-impl<S: Store + 'static> CryptoAssetInfoManager<S> {
-    /// builds a new `CryptoAssetInfoManager`.
+impl<S: Store + 'static> AssetInfoManager<S> {
+    /// builds a new `AssetInfoManager`.
+    #[allow(clippy::too_many_arguments)]
     pub async fn build(
         store: S,
-        opts: HashMap<String, CryptoAssetWorkerOpts>,
+        worker_opts: HashMap<String, AssetWorkerOpts>,
         ipfs_client: IpfsClient,
-        stale_threshold: i64,
+        prefix_stale_thresholds: HashMap<char, i64>,
         bothan_version: Version,
         registry_version_requirement: VersionReq,
         monitoring_client: Option<Arc<MonitoringClient>>,
@@ -60,15 +61,15 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
 
         let registry = store.get_registry().await?;
 
-        let workers = Mutex::new(build_workers(&registry, &opts, store.clone()).await);
+        let workers = Mutex::new(build_workers(&registry, &worker_opts, store.clone()).await);
 
         let metrics = Metrics::new();
 
-        let manager = CryptoAssetInfoManager {
+        let manager = AssetInfoManager {
             store,
-            opts,
+            worker_opts,
             workers,
-            stale_threshold,
+            prefix_stale_thresholds,
             ipfs_client,
             bothan_version,
             registry_version_requirement,
@@ -80,8 +81,8 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         Ok(manager)
     }
 
-    /// Gets the `CryptoAssetManagerInfo`.
-    pub async fn get_info(&self) -> Result<CryptoAssetManagerInfo, S::Error> {
+    /// Gets the `AssetManagerInfo`.
+    pub async fn get_info(&self) -> Result<AssetManagerInfo, S::Error> {
         let bothan_version = self.bothan_version.to_string();
         let registry_hash = self
             .store
@@ -95,9 +96,9 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .await
             .iter()
             .map(|w| w.name().to_string())
-            .collect();
+            .collect::<Vec<String>>();
 
-        Ok(CryptoAssetManagerInfo::new(
+        Ok(AssetManagerInfo::new(
             bothan_version,
             registry_hash,
             registry_version_requirement,
@@ -121,7 +122,8 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
             .await
             .iter()
             .map(|w| w.name().to_string())
-            .collect();
+            .collect::<Vec<String>>();
+
         let bothan_version = self.bothan_version.clone();
         let registry_hash = self
             .store
@@ -145,16 +147,13 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
     ) -> Result<(String, Vec<PriceState>), S::Error> {
         let registry = self.store.get_registry().await?;
 
-        let current_time = chrono::Utc::now().timestamp();
-        let stale_cutoff = current_time - self.stale_threshold;
-
         let mut records = Vec::new();
 
         let price_states = get_signal_price_states(
             ids,
             &self.store,
             &registry,
-            stale_cutoff,
+            &self.prefix_stale_thresholds,
             &mut records,
             &self.metrics,
         )
@@ -250,7 +249,7 @@ impl<S: Store + 'static> CryptoAssetInfoManager<S> {
         // TODO: find method to wait for connections to clear up thats better than sleeping for 1 second
         sleep(Duration::from_secs(1)).await;
 
-        let workers = build_workers(&registry, &self.opts, self.store.clone()).await;
+        let workers = build_workers(&registry, &self.worker_opts, self.store.clone()).await;
         *locked_workers = workers;
 
         Ok(())

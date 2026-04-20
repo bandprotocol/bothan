@@ -10,14 +10,30 @@
 //! ```
 
 use crypto_info::CryptoInfoManagerConfig;
+use forex_info::ForexInfoManagerConfig;
 use serde::{Deserialize, Serialize};
 
+/// Shared Band worker serde helpers.
+pub(crate) mod band_serde;
 /// Crypto info manager configuration module.
 pub mod crypto_info;
+/// Forex info manager configuration module.
+pub mod forex_info;
 
 /// The configuration for all bothan-api's manager.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ManagerConfig {
     /// The configuration for the crypto info manager.
-    pub crypto: CryptoInfoManagerConfig,
+    pub crypto: Option<CryptoInfoManagerConfig>,
+    /// The configuration for the forex info manager.
+    pub forex: Option<ForexInfoManagerConfig>,
+}
+
+impl Default for ManagerConfig {
+    fn default() -> Self {
+        ManagerConfig {
+            crypto: Some(CryptoInfoManagerConfig::default()),
+            forex: Some(ForexInfoManagerConfig::default()),
+        }
+    }
 }

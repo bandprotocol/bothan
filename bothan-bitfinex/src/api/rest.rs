@@ -86,7 +86,7 @@ impl RestApi {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// use bothan_bitfinex::api::rest::RestApi;
     /// use reqwest::Client;
     /// use url::Url;

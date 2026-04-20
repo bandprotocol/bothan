@@ -375,7 +375,6 @@ impl AssetInfoProvider for WebSocketConnection {
 }
 
 /// Parses market data from the HTX WebSocket API into `AssetInfo`.
-///
 /// This function extracts the asset identifier from the channel name and creates
 /// an `AssetInfo` instance with the last price and timestamp from the ticker data.
 ///
@@ -393,6 +392,8 @@ impl AssetInfoProvider for WebSocketConnection {
 /// Returns a `ListeningError` if:
 /// - The channel ID cannot be extracted from the channel name
 /// - The price data contains invalid values (NaN)
+///
+#[allow(clippy::result_large_err)]
 fn parse_data(data: super::types::Data) -> Result<Data, ListeningError> {
     let ch = data.ch;
     let id = ch
