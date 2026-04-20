@@ -20,7 +20,6 @@ pub mod sources;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CryptoInfoManagerConfig {
     /// The source configuration for the crypto asset info manager.
-    #[serde(default)]
     pub source: Option<CryptoSourceConfigs>,
     /// The stale threshold for the crypto asset info (in seconds).
     /// Any source that has not been updated in this amount of time
