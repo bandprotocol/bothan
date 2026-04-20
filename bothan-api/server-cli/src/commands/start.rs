@@ -189,7 +189,7 @@ async fn init_bothan_server<S: Store + 'static>(
     monitoring_client: Option<Arc<MonitoringClient>>,
 ) -> anyhow::Result<Arc<BothanServer<S>>> {
     let prefix_stale_thresholds = init_prefix_stale_thresholds(
-        config.manager.crypto.stale_threshold,
+        config.manager.crypto.as_ref().map(|c| c.stale_threshold),
         config.manager.forex.as_ref().map(|f| f.stale_threshold),
     );
     let bothan_version =
@@ -197,7 +197,15 @@ async fn init_bothan_server<S: Store + 'static>(
     let registry_version_requirement = VersionReq::from_str(REGISTRY_REQUIREMENT)
         .with_context(|| "Failed to parse registry version requirement")?;
 
-    let crypto_opts = match init_crypto_opts(&config.manager.crypto.source).await {
+    let crypto_opts = match init_crypto_opts(
+        config
+            .manager
+            .crypto
+            .as_ref()
+            .and_then(|c| c.source.as_ref()),
+    )
+    .await
+    {
         Ok(workers) => workers,
         Err(e) => {
             bail!("failed to initialize workers: {:?}", e);
@@ -205,7 +213,7 @@ async fn init_bothan_server<S: Store + 'static>(
     };
 
     let forex_opts = match &config.manager.forex {
-        Some(forex) => match init_forex_opts(&forex.source).await {
+        Some(forex) => match init_forex_opts(forex.source.as_ref()).await {
             Ok(workers) => workers,
             Err(e) => {
                 bail!("failed to initialize workers: {:?}", e);
@@ -255,10 +263,13 @@ async fn init_bothan_server<S: Store + 'static>(
 }
 
 fn init_prefix_stale_thresholds(
-    crypto_stale_threshold: i64,
+    crypto_stale_threshold: Option<i64>,
     forex_stale_threshold: Option<i64>,
 ) -> HashMap<char, i64> {
-    let mut map = HashMap::from([('C', crypto_stale_threshold)]);
+    let mut map = HashMap::new();
+    if let Some(threshold) = crypto_stale_threshold {
+        map.insert('C', threshold);
+    }
     if let Some(threshold) = forex_stale_threshold {
         map.insert('F', threshold);
     }
@@ -266,33 +277,37 @@ fn init_prefix_stale_thresholds(
 }
 
 async fn init_crypto_opts(
-    source: &CryptoSourceConfigs,
+    source: Option<&CryptoSourceConfigs>,
 ) -> Result<HashMap<String, AssetWorkerOpts>, AssetWorkerError> {
     let mut worker_opts = HashMap::new();
 
-    add_worker_opts(&mut worker_opts, &source.binance).await?;
-    add_worker_opts(&mut worker_opts, &source.bitfinex).await?;
-    add_worker_opts(&mut worker_opts, &source.bybit).await?;
-    add_worker_opts(&mut worker_opts, &source.coinbase).await?;
-    add_worker_opts(&mut worker_opts, &source.coingecko).await?;
-    add_worker_opts(&mut worker_opts, &source.coinmarketcap).await?;
-    add_worker_opts(&mut worker_opts, &source.htx).await?;
-    add_worker_opts(&mut worker_opts, &source.kraken).await?;
-    add_worker_opts(&mut worker_opts, &source.okx).await?;
-    add_worker_opts(&mut worker_opts, &source.band_kiwi).await?;
-    add_worker_opts(&mut worker_opts, &source.band_macaw).await?;
+    if let Some(source) = source {
+        add_worker_opts(&mut worker_opts, &source.binance).await?;
+        add_worker_opts(&mut worker_opts, &source.bitfinex).await?;
+        add_worker_opts(&mut worker_opts, &source.bybit).await?;
+        add_worker_opts(&mut worker_opts, &source.coinbase).await?;
+        add_worker_opts(&mut worker_opts, &source.coingecko).await?;
+        add_worker_opts(&mut worker_opts, &source.coinmarketcap).await?;
+        add_worker_opts(&mut worker_opts, &source.htx).await?;
+        add_worker_opts(&mut worker_opts, &source.kraken).await?;
+        add_worker_opts(&mut worker_opts, &source.okx).await?;
+        add_worker_opts(&mut worker_opts, &source.band_kiwi).await?;
+        add_worker_opts(&mut worker_opts, &source.band_macaw).await?;
+    }
 
     Ok(worker_opts)
 }
 
 async fn init_forex_opts(
-    source: &ForexSourceConfigs,
+    source: Option<&ForexSourceConfigs>,
 ) -> Result<HashMap<String, AssetWorkerOpts>, AssetWorkerError> {
     let mut worker_opts = HashMap::new();
 
-    add_worker_opts(&mut worker_opts, &source.band_owlet).await?;
-    add_worker_opts(&mut worker_opts, &source.band_fieldfare).await?;
-    add_worker_opts(&mut worker_opts, &source.band_xenops).await?;
+    if let Some(source) = source {
+        add_worker_opts(&mut worker_opts, &source.band_owlet).await?;
+        add_worker_opts(&mut worker_opts, &source.band_fieldfare).await?;
+        add_worker_opts(&mut worker_opts, &source.band_xenops).await?;
+    }
 
     Ok(worker_opts)
 }

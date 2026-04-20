@@ -146,52 +146,54 @@ pub enum QuerySubCommand {
 
 impl QueryCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
-        let crypto_config = app_config.manager.crypto.source;
-        let forex_config = app_config.manager.forex.map(|f| f.source);
+        let crypto_config = app_config.manager.crypto.and_then(|c| c.source);
+        let forex_config = app_config.manager.forex.and_then(|f| f.source);
         let config_err = anyhow!("Config is missing. Please check your config.toml.");
         match &self.subcommand {
             QuerySubCommand::Binance { args } => {
-                let opts = crypto_config.binance.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.binance).ok_or(config_err)?;
                 query_binance(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Bitfinex { args } => {
-                let opts = crypto_config.bitfinex.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.bitfinex).ok_or(config_err)?;
                 query_bitfinex(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Bybit { args } => {
-                let opts = crypto_config.bybit.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.bybit).ok_or(config_err)?;
                 query_bybit(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Coinbase { args } => {
-                let opts = crypto_config.coinbase.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.coinbase).ok_or(config_err)?;
                 query_coinbase(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::CoinGecko { args } => {
-                let opts = crypto_config.coingecko.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.coingecko).ok_or(config_err)?;
                 query_coingecko(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::CoinMarketCap { args } => {
-                let opts = crypto_config.coinmarketcap.ok_or(config_err)?;
+                let opts = crypto_config
+                    .and_then(|c| c.coinmarketcap)
+                    .ok_or(config_err)?;
                 query_coinmarketcap(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Htx { args } => {
-                let opts = crypto_config.htx.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.htx).ok_or(config_err)?;
                 query_htx(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Kraken { args } => {
-                let opts = crypto_config.kraken.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.kraken).ok_or(config_err)?;
                 query_kraken(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::Okx { args } => {
-                let opts = crypto_config.okx.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.okx).ok_or(config_err)?;
                 query_okx(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::BandKiwi { args } => {
-                let opts = crypto_config.band_kiwi.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.band_kiwi).ok_or(config_err)?;
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::BandMacaw { args } => {
-                let opts = crypto_config.band_macaw.ok_or(config_err)?;
+                let opts = crypto_config.and_then(|c| c.band_macaw).ok_or(config_err)?;
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::BandOwlet { args } => {

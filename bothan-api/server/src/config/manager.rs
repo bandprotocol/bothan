@@ -21,11 +21,19 @@ pub mod crypto_info;
 pub mod forex_info;
 
 /// The configuration for all bothan-api's manager.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ManagerConfig {
     /// The configuration for the crypto info manager.
-    pub crypto: CryptoInfoManagerConfig,
+    pub crypto: Option<CryptoInfoManagerConfig>,
     /// The configuration for the forex info manager.
-    #[serde(default)]
     pub forex: Option<ForexInfoManagerConfig>,
+}
+
+impl Default for ManagerConfig {
+    fn default() -> Self {
+        ManagerConfig {
+            crypto: Some(CryptoInfoManagerConfig::default()),
+            forex: Some(ForexInfoManagerConfig::default()),
+        }
+    }
 }
