@@ -147,7 +147,7 @@ pub enum QuerySubCommand {
 impl QueryCli {
     pub async fn run(&self, app_config: AppConfig) -> anyhow::Result<()> {
         let crypto_config = app_config.manager.crypto.source;
-        let forex_config = app_config.manager.forex.source;
+        let forex_config = app_config.manager.forex.map(|f| f.source);
         let config_err = anyhow!("Config is missing. Please check your config.toml.");
         match &self.subcommand {
             QuerySubCommand::Binance { args } => {
@@ -195,15 +195,17 @@ impl QueryCli {
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::BandOwlet { args } => {
-                let opts = forex_config.band_owlet.ok_or(config_err)?;
+                let opts = forex_config.and_then(|f| f.band_owlet).ok_or(config_err)?;
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::BandFieldfare { args } => {
-                let opts = forex_config.band_fieldfare.ok_or(config_err)?;
+                let opts = forex_config
+                    .and_then(|f| f.band_fieldfare)
+                    .ok_or(config_err)?;
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
             QuerySubCommand::BandXenops { args } => {
-                let opts = forex_config.band_xenops.ok_or(config_err)?;
+                let opts = forex_config.and_then(|f| f.band_xenops).ok_or(config_err)?;
                 query_band(opts, &args.query_ids, args.timeout).await?;
             }
         }

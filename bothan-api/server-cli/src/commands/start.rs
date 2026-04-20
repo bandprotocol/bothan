@@ -190,7 +190,7 @@ async fn init_bothan_server<S: Store + 'static>(
 ) -> anyhow::Result<Arc<BothanServer<S>>> {
     let prefix_stale_thresholds = init_prefix_stale_thresholds(
         config.manager.crypto.stale_threshold,
-        config.manager.forex.stale_threshold,
+        config.manager.forex.as_ref().map(|f| f.stale_threshold),
     );
     let bothan_version =
         Version::from_str(VERSION).with_context(|| "Failed to parse bothan version")?;
@@ -204,11 +204,14 @@ async fn init_bothan_server<S: Store + 'static>(
         }
     };
 
-    let forex_opts = match init_forex_opts(&config.manager.forex.source).await {
-        Ok(workers) => workers,
-        Err(e) => {
-            bail!("failed to initialize workers: {:?}", e);
-        }
+    let forex_opts = match &config.manager.forex {
+        Some(forex) => match init_forex_opts(&forex.source).await {
+            Ok(workers) => workers,
+            Err(e) => {
+                bail!("failed to initialize workers: {:?}", e);
+            }
+        },
+        None => HashMap::new(),
     };
 
     let worker_opts = crypto_opts.into_iter().chain(forex_opts).collect();
@@ -253,9 +256,13 @@ async fn init_bothan_server<S: Store + 'static>(
 
 fn init_prefix_stale_thresholds(
     crypto_stale_threshold: i64,
-    forex_stale_threshold: i64,
+    forex_stale_threshold: Option<i64>,
 ) -> HashMap<char, i64> {
-    HashMap::from([('C', crypto_stale_threshold), ('F', forex_stale_threshold)])
+    let mut map = HashMap::from([('C', crypto_stale_threshold)]);
+    if let Some(threshold) = forex_stale_threshold {
+        map.insert('F', threshold);
+    }
+    map
 }
 
 async fn init_crypto_opts(
