@@ -30,7 +30,7 @@ pub const DEFAULT_URL: &str = "https://api-pub.bitfinex.com/v2/";
 ///
 /// # Examples
 ///
-/// ```rust,no_run
+/// ```rust
 /// use bothan_bitfinex::api::rest::RestApi;
 /// use reqwest::Client;
 /// use url::Url;
